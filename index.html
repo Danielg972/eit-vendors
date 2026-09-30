@@ -167,6 +167,46 @@ textarea.out{width:100%;min-height:160px;font-family:var(--f-mono);font-size:12p
 .upl select{border:1px solid var(--line);background:var(--ground);border-radius:8px;padding:9px 10px;font-size:15px}
 .upl .hint{flex-basis:100%}
 .clip{font-size:12px;color:var(--ink-3)}
+.actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(72px,1fr));gap:8px;margin:0 0 16px}
+.act{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 4px;border-radius:10px;background:var(--card);border:1px solid var(--line);color:var(--ink);text-decoration:none;font-size:12px;font-weight:500}
+.act svg{width:22px;height:22px;color:var(--olive-2)}
+:root:not([data-theme="light"]) .act svg{color:var(--tab-on)}
+.act:active{background:var(--wash)}
+.prices{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+.pl{display:grid;grid-template-columns:1fr auto;gap:2px 12px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.pl .who3{font-weight:600;min-width:0;overflow-wrap:anywhere}
+.pl .amt{font-family:var(--f-mono);font-weight:500;text-align:right}
+.pl .meta{grid-column:1 / -1;font-size:12px;color:var(--ink-3)}
+.pl .ctl{grid-column:1 / -1;display:flex;gap:6px;margin-top:4px}
+.mini{border:1px solid var(--line);background:var(--ground);border-radius:8px;padding:5px 10px;font-size:13px}
+.tag{display:inline-block;font-size:10px;letter-spacing:.6px;text-transform:uppercase;font-weight:600;border-radius:4px;padding:1px 6px;background:var(--wash);color:var(--ink-2);margin-right:4px}
+.tag.agent{background:var(--ok-wash);color:var(--ok)}
+.deal{background:var(--ochre-wash);border-radius:10px;padding:10px 12px;margin-bottom:8px}
+.deal b{display:block}
+.deal .meta{font-size:12px;color:var(--ink-2)}
+.deal.expired{opacity:.55}
+.code{font-family:var(--f-mono);background:var(--card);border:1px dashed var(--ochre);border-radius:6px;padding:1px 6px}
+.note{border-left:3px solid var(--line);padding:4px 0 4px 10px;margin-bottom:10px}
+.note .meta{font-size:12px;color:var(--ink-3)}
+.note p{margin:2px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.addline{display:flex;gap:8px;align-items:flex-start;margin-bottom:12px}
+.addline textarea{flex:1;min-width:0;border:1px solid var(--line);background:var(--card);border-radius:8px;padding:10px;font-size:16px;min-height:44px;resize:vertical}
+.lock{font-size:11px;color:var(--ink-3);font-weight:500}
+.lockbar{background:var(--wash);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--ink-2);margin-bottom:14px}
+.diff{width:100%;border-collapse:collapse;font-size:13px;margin:6px 0}
+.diff td,.diff th{padding:4px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;overflow-wrap:anywhere}
+.diff th{font-weight:500;color:var(--ink-3);font-size:12px}
+.diff .old{color:var(--bad);text-decoration:line-through}
+.diff .new{color:var(--ok);font-weight:600}
+.sug{position:relative}
+.sug-list{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:8;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 20px rgba(0,0,0,.12);overflow:hidden}
+.sug-list button{display:flex;gap:8px;width:100%;text-align:left;border:0;background:transparent;padding:10px 14px;font-size:15px;border-bottom:1px solid var(--line)}
+.sug-list button:last-child{border-bottom:0}
+.sug-list button:hover,.sug-list button.on{background:var(--wash)}
+.sug-list .k{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--ochre);margin-left:auto;align-self:center}
+.sec-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.sec-head legend{margin:0}
+.sec-head .mini{margin-left:auto}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(140px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--ground);padding:10px 16px;border-radius:999px;font-size:14px;z-index:40;max-width:calc(100% - 32px)}
 </style>
 <style>
@@ -225,9 +265,10 @@ function sample(){
 }
 
 // ---------- state ----------
-const S = { files:{}, token:null, members:[], user:null, admin:false, contributor:false, vendors:[], team:[], tab:'vendors', q:'', cat:'All', busy:false };
+const S = { files:{}, demo:{}, demoRequests:[], requests:[], token:null, members:[], user:null, admin:false, contributor:false, vendors:[], team:[], tab:'vendors', q:'', cat:'All', busy:false };
 let sb = null;
 
+function bump(vid,k,n){ const v=S.vendors.find(x=>x.id===vid); if(v) v[k]=Math.max(0,(v[k]||0)+n); }
 function toast(t){ const el=document.getElementById('toast'); el.textContent=t; el.hidden=false; clearTimeout(toast._t); toast._t=setTimeout(()=>el.hidden=true,2600); }
 
 // ---------- data layer ----------
@@ -252,6 +293,21 @@ async function filesApi(action, body){
 const DB = {
   async init(){
     if(!LIVE){ S.user={email:OWNER}; S.me={name:'Daniel',email:OWNER,status:'approved',is_admin:true}; S.admin=true; S.contributor=true; S.vendors=sample();
+      const dd=n=>new Date(Date.now()-n*86400000).toISOString();
+      S.demo['vendor_k3m9p2x']={
+        prices:[
+          {id:'p1',label:'2-hour jeep tour',audience:'Adult',price:'360',currency:'ILS',vat:'plus_vat',basis:'Per person',is_agent:true,pax_min:'',pax_max:'',season:'',source:'Quote from Moshe, WhatsApp',checked_on:'2026-08-14',note:''},
+          {id:'p2',label:'2-hour jeep tour',audience:'Child',age_from:'4',age_to:'12',price:'250',currency:'ILS',vat:'plus_vat',basis:'Per person',is_agent:true,season:'',source:'Quote from Moshe, WhatsApp',checked_on:'2026-08-14',note:''},
+          {id:'p3',label:'2-hour jeep tour',audience:'Israeli senior',price:'300',currency:'ILS',vat:'including_vat',basis:'Per person',is_agent:false,source:'Website price list',checked_on:'2026-07-02',note:'Show Teudat Ezrach Vatik'},
+          {id:'p4',label:'Private jeep, whole vehicle',audience:'Group',pax_min:'1',pax_max:'7',price:'2100',currency:'ILS',vat:'plus_vat',basis:'Per vehicle',is_agent:true,season:'Sukkot and Pesach +15%',source:'Quote email',checked_on:'2026-08-14',note:''}],
+        deals:[{id:'d1',kind:'Credit card club',provider:'Cal',title:'15% off weekday tours',details:'Pay with a Cal card, book by phone and mention the Cal benefit.',code:'',link:'',valid_to:'2026-12-31',reported_by:'rachel.ops@gmail.com',created_at:dd(4)},
+               {id:'d2',kind:'Coupon site',provider:'Cuponofesh',title:'Family package 4 for 3',details:'Voucher bought on Cuponofesh, redeem by phone.',code:'',link:'https://www.cuponofesh.co.il',valid_to:'2026-06-30',reported_by:'yossi.guide@gmail.com',created_at:dd(90)}],
+        notes:[{id:'n1',body:'Ask for Avi as driver, great with kids. Meeting point moved to the gas station at the junction.',author:'rachel.ops@gmail.com',author_name:'Rachel Amar',created_at:dd(2)},
+               {id:'n2',body:'Book at least 2 weeks ahead during chag.',author:OWNER,author_name:'Daniel',created_at:dd(20)}],
+        requests:[]};
+      S.vendors.find(v=>v.id==='vendor_k3m9p2x')._prices=4; S.vendors.find(v=>v.id==='vendor_k3m9p2x')._deals=1; S.vendors.find(v=>v.id==='vendor_k3m9p2x')._notes=2;
+      S.demoRequests=[{id:'r1',vendor_id:'vendor_a81qz0c',vendor_name:'Dan Panorama Jerusalem',kind:'vendor_fields',proposed:{agentPrice:'1250',phone:'+972 2 569 5000'},current:{agentPrice:'1150',phone:'+972 2 569 5695'},reason:'New group rate for 2027, and the group desk has a new number.',requested_by:'rachel.ops@gmail.com',requested_name:'Rachel Amar',created_at:dd(1)}];
+      S.requests=S.demoRequests;
       const d=n=>new Date(Date.now()-n*86400000).toISOString();
       S.members=[{id:'m1',name:'Daniel',email:OWNER,status:'approved',is_admin:true,created_at:d(30),last_seen_at:d(0)},
         {id:'m2',name:'Yossi Ben-David',email:'yossi.guide@gmail.com',phone:'+972 52 111 2233',note:'Galilee and Golan',role:'Licensed tour guide',license_no:'12345',has_proof:true,status:'pending',is_admin:false,created_at:d(0)},
@@ -265,20 +321,61 @@ const DB = {
     if(error) throw new Error(error.message);
     S.me = data; S.user = data?{email:data.email}:null;
     S.contributor = !!(data && data.status==='approved'); S.admin = !!(data && data.is_admin && S.contributor);
-    if(S.contributor){ await DB.loadVendors(); if(S.admin) await DB.loadTeam(); }
+    if(S.contributor){ await DB.loadVendors(); if(S.admin){ await DB.loadTeam(); try{ await DB.loadRequests(); }catch(e){} } }
   },
   async loadVendors(){ if(!LIVE) return; try{ S.vendors = await rpc('vendors_list'); }catch(e){ toast('Could not load vendors: '+e.message); } },
   async loadTeam(){ if(!LIVE) return; S.members = await rpc('members_list'); },
-  async save(v){
+  async detail(vid){
+    if(!LIVE){ return S.demo[vid] || (S.demo[vid]={prices:[],deals:[],notes:[],requests:[]}); }
+    return await rpc('vendor_detail',{p_id:vid});
+  },
+  async savePrice(vid, line, reason){
+    if(!LIVE){ const d=await DB.detail(vid); if(line.id){ const i=d.prices.findIndex(p=>p.id===line.id); d.prices[i]=Object.assign({},d.prices[i],line); } else d.prices.push(Object.assign({id:'p'+Date.now(),created_by:S.user.email},line)); bump(vid,'_prices',line.id?0:1); return {request:false}; }
+    const r = await rpc('price_save',{p_vendor:vid,p_data:line,p_reason:reason||''}); await DB.refreshVendor(vid); return r;
+  },
+  async deletePrice(vid, id, reason){
+    if(!LIVE){ const d=await DB.detail(vid); d.prices=d.prices.filter(p=>p.id!==id); bump(vid,'_prices',-1); return {request:false}; }
+    const r = await rpc('price_delete',{p_id:id,p_reason:reason||''}); await DB.refreshVendor(vid); return r;
+  },
+  async addDeal(vid, deal){
+    if(!LIVE){ const d=await DB.detail(vid); d.deals.unshift(Object.assign({id:'d'+Date.now(),reported_by:S.user.email,created_at:new Date().toISOString()},deal)); bump(vid,'_deals',1); return; }
+    await rpc('deal_add',{p_vendor:vid,p_data:deal}); await DB.refreshVendor(vid);
+  },
+  async deleteDeal(vid, id){
+    if(!LIVE){ const d=await DB.detail(vid); d.deals=d.deals.filter(x=>x.id!==id); bump(vid,'_deals',-1); return; }
+    await rpc('deal_delete',{p_id:id}); await DB.refreshVendor(vid);
+  },
+  async addNote(vid, body){
+    if(!LIVE){ const d=await DB.detail(vid); d.notes.unshift({id:'n'+Date.now(),body,author:S.user.email,author_name:S.me.name,created_at:new Date().toISOString()}); bump(vid,'_notes',1); return; }
+    await rpc('note_add',{p_vendor:vid,p_body:body}); await DB.refreshVendor(vid);
+  },
+  async deleteNote(vid, id){
+    if(!LIVE){ const d=await DB.detail(vid); d.notes=d.notes.filter(x=>x.id!==id); bump(vid,'_notes',-1); return; }
+    await rpc('note_delete',{p_id:id}); await DB.refreshVendor(vid);
+  },
+  async refreshVendor(vid){
+    if(!LIVE) return;
+    try{ const all = await rpc('vendors_list'); S.vendors = all; }catch(e){}
+  },
+  async loadRequests(){
+    if(!LIVE){ S.requests=S.demoRequests; return S.requests; }
+    S.requests = await rpc('requests_list'); return S.requests;
+  },
+  async decideRequest(id, approve){
+    if(!LIVE){ const r=S.demoRequests.find(x=>x.id===id); S.demoRequests=S.demoRequests.filter(x=>x.id!==id);
+      if(approve && r && r.kind==='vendor_fields'){ Object.assign(S.vendors.find(v=>v.id===r.vendor_id), r.proposed); } return; }
+    await rpc('request_decide',{p_id:id,p_approve:approve}); await DB.loadVendors();
+  },
+  async save(v, reason){
     const payload = {}; R5_FIELDS.forEach(k=>payload[k]=String(v[k]==null?'':v[k]).trim());
     if(!LIVE){
       const now=new Date().toISOString();
       if(v.id){ const i=S.vendors.findIndex(x=>x.id===v.id); S.vendors[i]=Object.assign(S.vendors[i],payload,{updated_at:now,updated_by:S.user.email}); return S.vendors[i]; }
       const row=Object.assign({id:newId(),review_status:'approved',created_by:S.user.email,updated_by:S.user.email,created_at:now,updated_at:now,_files:0},payload); S.vendors.push(row); return row;
     }
-    const data = await rpc('vendor_save',{p_data:Object.assign(v.id?{id:v.id}:{},payload)});
-    const i=S.vendors.findIndex(x=>x.id===data.id); if(i>=0) S.vendors[i]=data; else S.vendors.push(data);
-    return data;
+    const res = await rpc('vendor_save',{p_data:Object.assign(v.id?{id:v.id}:{},payload),p_reason:reason||''});
+    const data = res.vendor; const i=S.vendors.findIndex(x=>x.id===data.id); if(i>=0) S.vendors[i]=data; else S.vendors.push(data);
+    data._request = !!res.request; return data;
   },
   async setStatus(id, status){
     if(!LIVE){ S.vendors.find(x=>x.id===id).review_status=status; return; }
@@ -433,66 +530,113 @@ function filtered(){
 }
 
 function render(){
-  const pending = S.vendors.filter(v=>v.review_status==='pending').length;
+  const pending = S.vendors.filter(v=>v.review_status==='pending').length + (S.requests||[]).length;
   const waiting = S.members.filter(m=>m.status==='pending').length;
-  const tabs = [['vendors','Vendors',icons.list]];
+  const tabs = [['vendors','Suppliers',icons.list]];
   if(S.admin){ tabs.push(['review','Review',icons.check]); tabs.push(['team','Team',icons.people]); }
   app.innerHTML = `
     <header class="top"><div class="top-row">
       <div class="brand">Israel Suppliers<small>Master list · shared by colleagues</small></div>
       <div class="who"><span>${esc(S.me?S.me.name:S.user.email)}</span>${LIVE?'<button class="ghost-btn" id="signOut">Sign out</button>':''}</div>
     </div></header>
-    ${LIVE?'':'<div class="demo-bar">Preview with sample vendors. Changes here aren\'t saved.</div>'}
+    ${LIVE?'':'<div class="demo-bar">Preview with sample suppliers. Changes here aren\'t saved.</div>'}
     <main id="view"></main>
-    ${S.tab==='vendors'?'<button class="fab" id="add">+ Add vendor</button>':''}
+    ${S.tab==='vendors'?'<button class="fab" id="add">+ Add supplier</button>':''}
     ${tabs.length>1?`<nav class="tabs">${tabs.map(([k,l,ic])=>`<button class="tab" data-tab="${k}" ${S.tab===k?'aria-current="page"':''}>${ic}${l}${k==='review'&&pending?`<span class="badge">${pending}</span>`:''}${k==='team'&&waiting?`<span class="badge">${waiting}</span>`:''}</button>`).join('')}</nav>`:''}`;
   const so=document.getElementById('signOut'); if(so) so.onclick=()=>{ if(so.dataset.c!=='1'){ so.dataset.c='1'; so.textContent='Tap again. You\'ll need your link to return.'; return; } forgetToken(); boot(); };
-  app.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{S.tab=t.dataset.tab; render();});
+  app.querySelectorAll('.tab').forEach(t=>t.onclick=async()=>{ S.tab=t.dataset.tab; render();
+    if(LIVE && S.tab==='review'){ try{ await DB.loadVendors(); await DB.loadRequests(); render(); }catch(e){} }
+    if(LIVE && S.tab==='team'){ try{ await DB.loadTeam(); render(); }catch(e){} } });
   const add=document.getElementById('add'); if(add) add.onclick=()=>openForm(null);
   ({vendors:viewVendors, review:viewReview, team:viewTeam})[S.tab]();
 }
 
+function suggestTerms(){
+  const seen=new Map();
+  const add=(t,kind)=>{ t=String(t||'').trim(); if(t.length<2) return; const k=t.toLowerCase(); if(!seen.has(k)) seen.set(k,{t,kind}); };
+  S.vendors.forEach(v=>{ add(v.name,'Supplier'); add(v.location,'Area'); add(v.contactPerson,'Contact'); add(v.category,'Category'); });
+  return [...seen.values()];
+}
 function viewVendors(){
   const view=document.getElementById('view');
   const cats=['All',...CATEGORIES.filter(c=>S.vendors.some(v=>v.category===c))];
   view.innerHTML = `
-    <label class="search" for="q">${icons.search}<input id="q" type="search" placeholder="Search name, area, contact" value="${esc(S.q)}" autocomplete="off"></label>
+    <div class="sug"><label class="search" for="q">${icons.search}<input id="q" type="search" placeholder="Search supplier, area, contact" value="${esc(S.q)}" autocomplete="off" role="combobox" aria-autocomplete="list" aria-controls="sugList" aria-expanded="false"></label>
+    <div class="sug-list" id="sugList" role="listbox" hidden></div></div>
     <div class="chips" role="group" aria-label="Filter by category">${cats.map(c=>`<button class="chip" data-cat="${esc(c)}" aria-pressed="${S.cat===c}">${esc(c)}</button>`).join('')}</div>
     <div id="results"></div>`;
-  const q=document.getElementById('q');
-  q.addEventListener('input',()=>{S.q=q.value; drawList();});
+  const q=document.getElementById('q'), list=document.getElementById('sugList'); let hits=[], on=-1;
+  const close=()=>{ list.hidden=true; q.setAttribute('aria-expanded','false'); on=-1; };
+  const pick=h=>{ q.value=h.t; S.q=h.t; close(); drawList(); if(h.kind==='Supplier'){ const v=S.vendors.find(x=>x.name===h.t); if(v) openDetail(v.id); } };
+  const show=()=>{
+    const n=normN(q.value); if(!n){ close(); return; }
+    const terms=suggestTerms();
+    hits = terms.filter(h=>{ const t=normN(h.t); return t!==n && (t.startsWith(n) || t.split(' ').some(w=>w.startsWith(n)) || (n.length>2 && t.includes(n))); })
+      .sort((a,b)=>(normN(a.t).startsWith(n)?0:1)-(normN(b.t).startsWith(n)?0:1) || a.t.length-b.t.length).slice(0,6);
+    if(!hits.length){ close(); return; }
+    list.innerHTML=hits.map((h,i)=>`<button type="button" role="option" data-i="${i}">${esc(h.t)}<span class="k">${esc(h.kind)}</span></button>`).join('');
+    list.hidden=false; q.setAttribute('aria-expanded','true'); on=-1;
+    list.querySelectorAll('button').forEach(b=>b.onmousedown=e=>{ e.preventDefault(); pick(hits[+b.dataset.i]); });
+  };
+  q.addEventListener('input',()=>{ S.q=q.value; drawList(); show(); });
+  q.addEventListener('keydown',e=>{
+    if(list.hidden) return;
+    const bs=[...list.querySelectorAll('button')];
+    if(e.key==='ArrowDown'||e.key==='ArrowUp'){ e.preventDefault(); on=(on+(e.key==='ArrowDown'?1:-1)+bs.length)%bs.length; bs.forEach((b,i)=>b.classList.toggle('on',i===on)); }
+    else if(e.key==='Enter' && on>=0){ e.preventDefault(); pick(hits[on]); }
+    else if(e.key==='Tab' && hits[0]){ e.preventDefault(); pick(hits[on>=0?on:0]); }
+    else if(e.key==='Escape') close();
+  });
+  q.addEventListener('blur',()=>setTimeout(close,120));
   view.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{S.cat=c.dataset.cat; viewVendors();});
   drawList();
 }
 function drawList(){
   const rows=filtered(); const box=document.getElementById('results');
-  if(!S.vendors.length){ box.innerHTML=`<div class="list"><div class="empty"><h3>No vendors yet</h3>Tap <b>Add vendor</b> to add the first hotel, guide, bus company or site.</div></div>`; return; }
-  box.innerHTML = `<div class="count">${rows.length} of ${S.vendors.length} vendors</div>` + (rows.length? `<div class="list">${rows.map(v=>`
+  if(!S.vendors.length){ box.innerHTML=`<div class="list"><div class="empty"><h3>No suppliers yet</h3>Tap <b>Add supplier</b> to add the first hotel, guide, bus company or site.</div></div>`; return; }
+  box.innerHTML = `<div class="count">${rows.length} of ${S.vendors.length} suppliers</div>` + (rows.length? `<div class="list">${rows.map(v=>`
     <button class="row" data-id="${esc(v.id)}">
       <span class="row-name">${esc(v.name)}</span>
       <span class="row-price">${priceLine(v)}</span>
-      <span class="row-meta"><span class="cat">${esc(v.category)}</span>${v.location?`<span>${esc(v.location)}</span>`:''}${statusPill(v)}${v._files?`<span class="clip">📎 ${v._files}</span>`:''}</span>
+      <span class="row-meta"><span class="cat">${esc(v.category)}</span>${v.location?`<span>${esc(v.location)}</span>`:''}${statusPill(v)}${v._prices?`<span class="clip">${v._prices} price${v._prices>1?'s':''}</span>`:''}${v._deals?`<span class="clip">🏷 ${v._deals} deal${v._deals>1?'s':''}</span>`:''}${v._notes?`<span class="clip">💬 ${v._notes}</span>`:''}${v._files?`<span class="clip">📎 ${v._files}</span>`:''}</span>
     </button>`).join('')}</div>` : `<div class="list"><div class="empty"><h3>Nothing matches</h3>Try a shorter search or pick “All”.</div></div>`);
   box.querySelectorAll('.row').forEach(r=>r.onclick=()=>openDetail(r.dataset.id));
 }
 
+function reqTitle(r){ return {vendor_fields:'Change details',price_add:'New price',price_edit:'Change a price',price_delete:'Remove a price'}[r.kind]||r.kind; }
+function reqDiff(r){
+  const show=(k,val)=>{ if(k==='is_agent') return val===true||val==='true'?'Agent rate':'Public price'; if(k==='vat'||/VatTreatment$/.test(k)) return vatLabel(val)||'—'; return val===''||val==null?'—':String(val); };
+  if(r.kind==='price_delete'){ const c=r.current||{}; return `<p style="margin:6px 0">${esc(c.label||c.audience||'')} · <span class="mono">${esc(money(c.currency,c.price))}</span></p>`; }
+  const keys = r.kind==='vendor_fields' ? Object.keys(r.proposed||{}) : Object.keys(r.proposed||{}).filter(k=>r.kind==='price_add' ? (r.proposed[k]!=='' && r.proposed[k]!=null) : String((r.current||{})[k]??'')!==String(r.proposed[k]??''));
+  return `<div style="overflow-x:auto"><table class="diff"><tr><th>Field</th>${r.kind==='price_add'?'':'<th>Now</th>'}<th>Suggested</th></tr>${keys.map(k=>`<tr><td>${esc(FIELD_LABEL[k]||k)}</td>${r.kind==='price_add'?'':`<td class="old">${esc(show(k,(r.current||{})[k]))}</td>`}<td class="new">${esc(show(k,r.proposed[k]))}</td></tr>`).join('')}</table></div>`;
+}
 function viewReview(){
   const view=document.getElementById('view');
+  const reqs=S.requests||[];
   const pend=S.vendors.filter(v=>v.review_status==='pending');
   const appr=S.vendors.filter(v=>v.review_status==='approved');
   view.innerHTML = `
-    <section class="panel"><h3>Waiting for your review</h3>
-      <p>New vendors and any edits by colleagues land here. Only approved vendors go into the R5 export.</p>
+    <section class="panel"><h3>Suggested changes</h3>
+      <p>Changes colleagues suggested to prices, contacts and terms. Nothing changes until you approve.</p>
+      ${reqs.length? reqs.map(r=>`<div class="rev" style="display:block"><div class="who2"><b>${esc(reqTitle(r))}: ${esc(r.vendor_name)}</b><span>by ${esc(r.requested_name||r.requested_by)} · ${fmtDate(r.created_at)}</span></div>
+        ${reqDiff(r)}<p style="margin:4px 0 8px;font-size:14px"><span class="hint">Reason:</span> ${esc(r.reason)}</p>
+        <div class="btn-row"><button class="btn soft" data-open="${esc(r.vendor_id)}">Open supplier</button><button class="btn soft" data-rno="${esc(r.id)}">Reject</button><button class="btn primary" data-ryes="${esc(r.id)}">Approve</button></div></div>`).join('') : '<div class="empty" style="padding:16px">No suggestions waiting.</div>'}
+    </section>
+    <section class="panel"><h3>New suppliers to check</h3>
+      <p>Suppliers added by colleagues or imported from your email. Only approved suppliers go into the R5 export.</p>
       ${pend.length? pend.map(v=>`<div class="rev"><div class="who2"><b>${esc(v.name)}</b><span>${esc(v.category)} · by ${esc(v.updated_by)} · ${fmtDate(v.updated_at)}</span></div>
         <div class="btn-row"><button class="btn soft" data-open="${esc(v.id)}">View</button><button class="btn primary" data-ok="${esc(v.id)}">Approve</button></div></div>`).join('') : '<div class="empty" style="padding:16px">All caught up.</div>'}
     </section>
     <section class="panel"><h3>Export for R5</h3>
-      <p>Builds an import file with the ${appr.length} approved vendor${appr.length===1?'':'s'}, in R5's trip-file format. Save your open trip in R5 before importing, because importing clears the trip view.</p>
+      <p>Builds an import file with the ${appr.length} approved supplier${appr.length===1?'':'s'}, in R5's trip-file format. Save your open trip in R5 before importing, because importing clears the trip view.</p>
       <div class="btn-row"><button class="btn accent" id="exp" ${appr.length?'':'disabled'}>Build R5 import file</button></div>
       <div id="expOut"></div>
     </section>`;
   view.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>openDetail(b.dataset.open));
   view.querySelectorAll('[data-ok]').forEach(b=>b.onclick=async()=>{ try{ await DB.setStatus(b.dataset.ok,'approved'); toast('Approved'); render(); }catch(e){ toast(e.message); } });
+  const decide=async(b,yes)=>{ b.disabled=true; try{ await DB.decideRequest(yes?b.dataset.ryes:b.dataset.rno, yes); await DB.loadRequests(); toast(yes?'Approved and applied':'Rejected'); render(); }catch(e){ b.disabled=false; toast(e.message); } };
+  view.querySelectorAll('[data-ryes]').forEach(b=>b.onclick=()=>decide(b,true));
+  view.querySelectorAll('[data-rno]').forEach(b=>b.onclick=()=>decide(b,false));
   document.getElementById('exp').onclick=()=>exportR5(appr);
 }
 function exportR5(list){
@@ -557,24 +701,61 @@ function closeSheet(){ const w=document.getElementById('sheetWrap'); if(w){ w.re
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeSheet(); });
 
 function vatLabel(x){ const f=VAT.find(p=>p[0]===x); return f&&x?f[1]:''; }
+const AUDIENCES=['Adult','Child','Israeli senior','Senior','Student','Soldier','Group','Private','Vehicle','Other'];
+const DEAL_KINDS=['Credit card club','Coupon site','Coupon code','Group trick','Other'];
+const LOCKED=['name','category','active','contactPerson','phone','whatsapp','email','website','npResLink','listedPrice','listedPriceVatTreatment','agentPrice','agentPriceVatTreatment','maxPax','priceBasis','currency','payTerms','cancelPolicy','cancelNoticeAmount','cancelNoticeUnit','cancelDayType','cancelPenalty','cancelPolicyVerifiedDate'];
+const FIELD_LABEL={name:'Name',category:'Category',active:'Status',contactPerson:'Contact person',phone:'Phone',whatsapp:'WhatsApp',email:'Email',website:'Website',npResLink:'Park booking link',listedPrice:'Listed price',listedPriceVatTreatment:'Listed price VAT',agentPrice:'Agent price',agentPriceVatTreatment:'Agent price VAT',maxPax:'Max people',priceBasis:'Price basis',currency:'Currency',payTerms:'Payment terms',cancelPolicy:'Cancellation policy',cancelNoticeAmount:'Notice',cancelNoticeUnit:'Notice unit',cancelDayType:'Counted in',cancelPenalty:'Penalty',cancelPolicyVerifiedDate:'Policy checked on',label:'Label',audience:'For',age_from:'Age from',age_to:'Age to',pax_min:'Min people',pax_max:'Max people',season:'Season / dates',price:'Price',vat:'VAT',basis:'Basis',is_agent:'Agent rate',source:'Source',checked_on:'Checked on',note:'Note'};
+const ic = {
+  call:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>',
+  wa:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l1.7-5A8.5 8.5 0 1 1 8 19.3z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.5-2-1-1 1a3.5 3.5 0 0 1-2-2l1-1-1-2z"/></svg>',
+  mail:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>',
+  web:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>',
+  nav:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>'
+};
+function intlDigits(ph){ let d=String(ph||'').replace(/[^\d+]/g,''); if(d.startsWith('+')) return d.slice(1); if(d.startsWith('00')) return d.slice(2); if(d.startsWith('0')) return '972'+d.slice(1); return d; }
+function contactBar(v){
+  const a=[];
+  if(v.phone) a.push(`<a class="act" href="tel:${esc(String(v.phone).replace(/[^\d+]/g,''))}">${ic.call}Call</a>`);
+  const wa=v.whatsapp||(/^0?5\d/.test(String(v.phone||'').replace(/\D/g,'').replace(/^972/,'0'))?v.phone:'');
+  if(wa) a.push(`<a class="act" href="https://wa.me/${esc(intlDigits(wa))}" target="_blank" rel="noopener">${ic.wa}WhatsApp</a>`);
+  if(v.email) a.push(`<a class="act" href="mailto:${esc(v.email)}">${ic.mail}Email</a>`);
+  if(v.website) a.push(`<a class="act" href="${esc(/^https?:/.test(v.website)?v.website:'https://'+v.website)}" target="_blank" rel="noopener">${ic.web}Website</a>`);
+  if(v.location||v.name) a.push(`<a class="act" href="https://waze.com/ul?q=${encodeURIComponent((v.name+' '+(v.location||'')).trim())}&navigate=yes" target="_blank" rel="noopener">${ic.nav}Waze</a>`);
+  return a.length?`<div class="actions">${a.join('')}</div>`:'';
+}
+function money(cur,p){ return (CUR_SIGN[cur]||'')+Number(p).toLocaleString('en-US'); }
+function priceWho(p){
+  let w=p.audience; if(p.audience==='Child' && (p.age_from||p.age_to)) w+=` ${p.age_from||'0'}–${p.age_to||'?'}`;
+  if(p.pax_min||p.pax_max) w+=` · ${p.pax_min||'1'}–${p.pax_max||'+'} people`;
+  return w;
+}
+const today=()=>new Date().toISOString().slice(0,10);
+
 function openDetail(id){
   const v=S.vendors.find(x=>x.id===id); if(!v) return;
-  const sign=CUR_SIGN[v.currency]||'';
   const rows=(pairs)=>pairs.filter(p=>p[1]).map(([k,val])=>`<dt>${k}</dt><dd>${val}</dd>`).join('');
+  const sign=CUR_SIGN[v.currency]||'';
   const price=(p,vat)=>p?`<span class="mono">${esc(sign)}${esc(p)}</span>${vatLabel(vat)?` <span class="hint">${esc(vatLabel(vat))}</span>`:''}`:'';
   const notice=v.cancelNoticeAmount?`${esc(v.cancelNoticeAmount)} ${esc((v.cancelNoticeUnit||'').toLowerCase())}${v.cancelDayType?' ('+esc(v.cancelDayType.toLowerCase())+')':''}`:'';
   const rating=['rateReliability','rateService','rateValue'].map((k,i)=>v[k]?`${['Reliability','Service','Value'][i]} <b class="mono">${esc(v[k])}/5</b>`:'').filter(Boolean).join(' · ');
   const sections=[
-    ['Contact',rows([['Contact',esc(v.contactPerson)],['Phone',v.phone?`<span class="mono">${esc(v.phone)}</span>`:''],['WhatsApp',v.whatsapp?`<span class="mono">${esc(v.whatsapp)}</span>`:''],['Email',esc(v.email)],['Website',v.website?`<a href="${esc(/^https?:/.test(v.website)?v.website:'https://'+v.website)}" target="_blank" rel="noopener">${esc(v.website)}</a>`:''],['Area',esc(v.location)],['Languages',esc(v.languages)],['Kosher',esc(v.kosher)],['Max capacity',v.maxCap?esc(v.maxCap)+' pax':''],['Park booking',v.npResLink?`<a href="${esc(v.npResLink)}" target="_blank" rel="noopener">Reservation page</a>`:'']])],
-    ['Pricing',rows([['Agent price',price(v.agentPrice,v.agentPriceVatTreatment)],['Listed price',price(v.listedPrice,v.listedPriceVatTreatment)],['Basis',esc(v.priceBasis)],['Max pax',esc(v.maxPax)],['Payment terms',esc(v.payTerms)]])],
-    ['Cancellation',rows([['Policy',esc(v.cancelPolicy)],['Notice',notice],['Penalty',esc(v.cancelPenalty)],['Verified',esc(v.cancelPolicyVerifiedDate)]])],
-    ['Experience',rows([['Ratings',rating],['Strengths',esc(v.strengths)],['Weaknesses',esc(v.weaknesses)],['Notes',esc(v.notes)]])]
+    ['Contact',rows([['Contact',esc(v.contactPerson)],['Phone',v.phone?`<span class="mono">${esc(v.phone)}</span>`:''],['WhatsApp',v.whatsapp?`<span class="mono">${esc(v.whatsapp)}</span>`:''],['Email',esc(v.email)],['Website',esc(v.website)],['Area',esc(v.location)],['Languages',esc(v.languages)],['Kosher',esc(v.kosher)],['Max capacity',v.maxCap?esc(v.maxCap)+' people':''],['Park booking',v.npResLink?`<a href="${esc(v.npResLink)}" target="_blank" rel="noopener">Reservation page</a>`:'']])],
+    ['Main price (goes to R5)',rows([['Agent price',price(v.agentPrice,v.agentPriceVatTreatment)],['Listed price',price(v.listedPrice,v.listedPriceVatTreatment)],['Basis',esc(v.priceBasis)],['Max people',esc(v.maxPax)],['Payment terms',esc(v.payTerms)]])],
+    ['Cancellation',rows([['Policy',esc(v.cancelPolicy)],['Notice',notice],['Penalty',esc(v.cancelPenalty)],['Checked',esc(v.cancelPolicyVerifiedDate)]])],
+    ['Experience',rows([['Ratings',rating],['Strengths',esc(v.strengths)],['Weaknesses',esc(v.weaknesses)],['Summary',esc(v.notes)]])]
   ].filter(s=>s[1]);
-  const body=`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px"><span class="cat">${esc(v.category)}</span>${statusPill(v)}<span class="idtag">${esc(v.id)}</span></div>
-    ${sections.map(([h,dl])=>`<fieldset><legend>${h}</legend><dl class="dl">${dl}</dl></fieldset>`).join('') || '<p class="hint">Only the name is filled in so far.</p>'}
+  const body=`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px"><span class="cat">${esc(v.category)}</span>${v.location?`<span class="hint">${esc(v.location)}</span>`:''}${statusPill(v)}</div>
+    ${contactBar(v)}
+    <div id="reqBox"></div>
+    <fieldset><div class="sec-head"><legend>Prices</legend><button class="mini" id="addPrice" type="button">+ Add price</button></div><div id="pricesBox"><p class="hint">Loading…</p></div></fieldset>
+    <fieldset><div class="sec-head"><legend>Deals and discounts</legend><button class="mini" id="addDeal" type="button">+ Add deal</button></div><div id="dealsBox"><p class="hint">Loading…</p></div></fieldset>
+    <fieldset><legend>Notes from colleagues</legend>
+      <div class="addline"><textarea id="noteText" rows="1" placeholder="Add a tip, warning or update…"></textarea><button class="btn primary" id="noteAdd" type="button">Add</button></div>
+      <div id="notesBox"></div></fieldset>
     <fieldset><legend>Photos, receipts and PDFs</legend><div id="filesBox"><p class="hint">Loading files…</p></div></fieldset>
-    <p class="stamp">Added by ${esc(v.created_by)} on ${fmtDate(v.created_at)}. Last changed by ${esc(v.updated_by)} on ${fmtDate(v.updated_at)}.</p>`;
-  let foot=`<button class="btn primary" id="edit">Edit</button>`;
+    ${sections.map(([h,dl])=>`<fieldset><legend>${h}</legend><dl class="dl">${dl}</dl></fieldset>`).join('')}
+    <p class="stamp">Added by ${esc(v.created_by)} on ${fmtDate(v.created_at)}. Last changed by ${esc(v.updated_by)} on ${fmtDate(v.updated_at)}. <span class="idtag">${esc(v.id)}</span></p>`;
+  let foot=`<button class="btn primary" id="edit">${S.admin?'Edit':'Edit or suggest a change'}</button>`;
   if(S.admin){
     foot = `<button class="btn danger" id="del">Delete</button><span style="flex:1"></span>`
       + (v.review_status!=='approved'?'<button class="btn soft" id="rej">Reject</button><button class="btn accent" id="appr">Approve</button>':'') + foot;
@@ -582,9 +763,112 @@ function openDetail(id){
   const w=sheet(v.name, body, foot);
   w.querySelector('#edit').onclick=()=>openForm(v);
   drawFiles(v);
+  drawExtras(v);
+  w.querySelector('#addPrice').onclick=()=>openPriceForm(v,null);
+  w.querySelector('#addDeal').onclick=()=>openDealForm(v);
+  w.querySelector('#noteAdd').onclick=async()=>{ const t=w.querySelector('#noteText'); const body=t.value.trim(); if(!body){ t.focus(); return; }
+    try{ await DB.addNote(v.id, body); t.value=''; toast('Note added'); drawExtras(v); }catch(e){ toast(e.message); } };
   const a=w.querySelector('#appr'); if(a) a.onclick=async()=>{ try{await DB.setStatus(v.id,'approved'); closeSheet(); toast('Approved'); render();}catch(e){toast(e.message);} };
   const r=w.querySelector('#rej'); if(r) r.onclick=async()=>{ try{await DB.setStatus(v.id,'rejected'); closeSheet(); toast('Marked rejected'); render();}catch(e){toast(e.message);} };
   const d=w.querySelector('#del'); if(d) d.onclick=async()=>{ if(d.dataset.c!=='1'){ d.dataset.c='1'; d.textContent='Tap again to delete'; return; } try{await DB.remove(v.id); closeSheet(); toast('Deleted'); render();}catch(e){toast(e.message);} };
+}
+
+async function drawExtras(v){
+  let det; try{ det=await DB.detail(v.id); }catch(e){ const pb=document.getElementById('pricesBox'); if(pb) pb.innerHTML=`<div class="msg err">Couldn't load: ${esc(e.message)}</div>`; return; }
+  const me=(S.user.email||'').toLowerCase();
+  const pb=document.getElementById('pricesBox'); if(!pb) return;
+  pb.innerHTML = det.prices.length ? `<div class="prices">${det.prices.map(p=>`<div class="pl">
+      <span class="who3">${esc(p.label||p.audience)}</span><span class="amt">${esc(money(p.currency,p.price))}</span>
+      <span class="meta">${p.is_agent?'<span class="tag agent">Agent rate</span>':'<span class="tag">Public price</span>'}${esc(priceWho(p))} · ${esc((p.basis||'').toLowerCase())}${vatLabel(p.vat)?' · '+esc(vatLabel(p.vat).toLowerCase()):''}${p.season?' · '+esc(p.season):''}</span>
+      ${p.note||p.source||p.checked_on?`<span class="meta">${p.note?esc(p.note)+'<br>':''}${p.source?'Source: '+esc(p.source):''}${p.checked_on?' · checked '+esc(p.checked_on):''}</span>`:''}
+      <span class="ctl"><button class="mini" data-pedit="${esc(p.id)}" type="button">${S.admin?'Edit':'Suggest change'}</button><button class="mini" data-pdel="${esc(p.id)}" type="button">${S.admin?'Remove':'Suggest removing'}</button></span></div>`).join('')}</div>`
+    : `<p class="hint" style="margin:0 0 10px">No price lines yet. Add adult, child, Israeli senior or group rates as separate lines.</p>`;
+  pb.querySelectorAll('[data-pedit]').forEach(b=>b.onclick=()=>openPriceForm(v, det.prices.find(p=>p.id===b.dataset.pedit)));
+  pb.querySelectorAll('[data-pdel]').forEach(b=>b.onclick=async()=>{
+    if(S.admin){ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again'; return; } try{ await DB.deletePrice(v.id,b.dataset.pdel); toast('Price removed'); drawExtras(v); }catch(e){ toast(e.message); } return; }
+    openReasonSheet('Suggest removing this price','Why should it be removed?', async reason=>{ await DB.deletePrice(v.id,b.dataset.pdel,reason); toast('Sent to Daniel for approval'); openDetail(v.id); });
+  });
+  const exp=d=>d.valid_to && d.valid_to<today();
+  const db=document.getElementById('dealsBox');
+  db.innerHTML = det.deals.length ? det.deals.map(d=>`<div class="deal${exp(d)?' expired':''}">
+      <b>${esc(d.title)}</b>
+      <span class="meta">${esc(d.kind)}${d.provider?' · '+esc(d.provider):''}${d.valid_to?(exp(d)?' · expired '+esc(d.valid_to):' · until '+esc(d.valid_to)):''}</span>
+      ${d.details?`<p style="margin:4px 0 0">${esc(d.details)}</p>`:''}
+      ${d.code?`<p style="margin:4px 0 0">Code: <span class="code">${esc(d.code)}</span></p>`:''}
+      ${d.link?`<p style="margin:4px 0 0"><a href="${esc(d.link)}" target="_blank" rel="noopener">Open deal</a></p>`:''}
+      <span class="meta">Shared by ${esc(d.reported_by)}</span>
+      ${S.admin||d.reported_by===me?` <button class="mini" data-ddel="${esc(d.id)}" type="button">Remove</button>`:''}</div>`).join('')
+    : `<p class="hint" style="margin:0 0 10px">No deals yet. Share credit card club benefits (Cal, Max, Isracard, Hever), Cuponofesh-type vouchers, codes or group tricks.</p>`;
+  db.querySelectorAll('[data-ddel]').forEach(b=>b.onclick=async()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again'; return; } try{ await DB.deleteDeal(v.id,b.dataset.ddel); toast('Deal removed'); drawExtras(v); }catch(e){ toast(e.message); } });
+  const nb=document.getElementById('notesBox');
+  nb.innerHTML = det.notes.length ? det.notes.map(n=>`<div class="note"><span class="meta"><b>${esc(n.author_name||n.author)}</b> · ${fmtDate(n.created_at)}${S.admin||n.author===me?` · <button class="mini" style="padding:1px 8px" data-ndel="${esc(n.id)}" type="button">Delete</button>`:''}</span><p>${esc(n.body)}</p></div>`).join('')
+    : `<p class="hint" style="margin:0">No notes yet.</p>`;
+  nb.querySelectorAll('[data-ndel]').forEach(b=>b.onclick=async()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again'; return; } try{ await DB.deleteNote(v.id,b.dataset.ndel); drawExtras(v); }catch(e){ toast(e.message); } });
+  const rb=document.getElementById('reqBox');
+  if(rb && det.requests && det.requests.length){ rb.innerHTML=`<div class="lockbar">${det.requests.length} suggested change${det.requests.length>1?'s':''} waiting for ${S.admin?'your':"Daniel's"} approval.${S.admin?' See the Review tab.':''}</div>`; }
+}
+
+function openReasonSheet(title, prompt, onSend){
+  const w=sheet(title, `<div class="f wide"><label for="rsn">${esc(prompt)}</label><textarea id="rsn" rows="3" placeholder="e.g. new price list from the supplier, see the receipt I attached"></textarea></div><div id="rsnErr"></div>`,
+    `<button class="btn soft" id="rc" type="button">Cancel</button><button class="btn primary" id="rs" type="button">Send to Daniel</button>`);
+  w.querySelector('#rc').onclick=closeSheet;
+  w.querySelector('#rs').onclick=async()=>{ const r=w.querySelector('#rsn').value.trim(); if(r.length<3){ w.querySelector('#rsnErr').innerHTML='<div class="msg err">Add a short reason.</div>'; return; }
+    try{ await onSend(r); }catch(e){ w.querySelector('#rsnErr').innerHTML=`<div class="msg err">${esc(e.message)}</div>`; } };
+}
+
+function openPriceForm(v, p){
+  const x=Object.assign({label:'',audience:'Adult',age_from:'',age_to:'',pax_min:'',pax_max:'',season:'',price:'',currency:v.currency||'ILS',vat:'',basis:v.priceBasis||'Per person',is_agent:true,source:'',checked_on:today(),note:''}, p||{});
+  const opt=(arr,val)=>arr.map(o=>{const [k,t]=Array.isArray(o)?o:[o,o];return `<option value="${esc(k)}"${String(val)===k?' selected':''}>${esc(t)}</option>`}).join('');
+  const body=`<form id="pf" novalidate>
+    ${S.admin?'':`<div class="lockbar">🔒 Prices are checked by Daniel before they appear. Your suggestion goes to him with your reason.</div>`}
+    <div class="grid">
+      <div class="f wide"><label for="pl_label">What is it?</label><input id="pl_label" value="${esc(x.label)}" placeholder="2-hour jeep tour, entrance ticket, half board…"></div>
+      <div class="f"><label for="pl_aud">For</label><select id="pl_aud">${opt(AUDIENCES,x.audience)}</select></div>
+      <div class="f"><label for="pl_type">Type of price</label><select id="pl_type">${opt([['1','Agent rate (what we pay)'],['0','Public price']], x.is_agent?'1':'0')}</select></div>
+      <div class="f" id="ageWrap"><label>Child ages</label><div style="display:flex;gap:6px"><input id="pl_af" inputmode="numeric" value="${esc(x.age_from)}" placeholder="from"><input id="pl_at" inputmode="numeric" value="${esc(x.age_to)}" placeholder="to"></div></div>
+      <div class="f"><label>Group size (people)</label><div style="display:flex;gap:6px"><input id="pl_pmin" inputmode="numeric" value="${esc(x.pax_min)}" placeholder="min"><input id="pl_pmax" inputmode="numeric" value="${esc(x.pax_max)}" placeholder="max"></div></div>
+      <div class="f"><label for="pl_price">Price <em>*</em></label><input id="pl_price" inputmode="decimal" value="${esc(x.price)}" placeholder="0"></div>
+      <div class="f"><label for="pl_cur">Currency</label><select id="pl_cur">${opt(['ILS','USD','EUR'],x.currency)}</select></div>
+      <div class="f"><label for="pl_vat">VAT</label><select id="pl_vat">${opt(VAT,x.vat)}</select></div>
+      <div class="f"><label for="pl_basis">Basis</label><select id="pl_basis">${opt(BASIS,x.basis)}</select></div>
+      <div class="f wide"><label for="pl_season">Season or dates</label><input id="pl_season" value="${esc(x.season)}" placeholder="Weekdays only · Chol HaMoed +15% · until 31 Mar 2027"></div>
+      <div class="f wide"><label for="pl_src">Where is this price from?</label><input id="pl_src" value="${esc(x.source)}" placeholder="Quote email, receipt, website, phone call with Moshe"></div>
+      <div class="f"><label for="pl_chk">Checked on</label><input id="pl_chk" type="date" value="${esc(x.checked_on)}"></div>
+      <div class="f wide"><label for="pl_note">Note</label><input id="pl_note" value="${esc(x.note)}" placeholder="Show Teudat Ezrach Vatik at the gate"></div>
+      ${S.admin?'':`<div class="f wide"><label for="pl_reason">Why are you adding or changing it? <em>*</em></label><input id="pl_reason" placeholder="New price list received by email"></div>`}
+    </div><div id="plErr"></div></form>`;
+  const w=sheet(p?(S.admin?'Edit price':'Suggest a price change'):(S.admin?'Add price':'Suggest a price'), body,
+    `<button class="btn soft" id="pc" type="button">Cancel</button><button class="btn primary" id="ps" type="button">${S.admin?'Save':'Send to Daniel'}</button>`);
+  const aud=w.querySelector('#pl_aud'); const age=w.querySelector('#ageWrap'); const syncAge=()=>{ age.hidden = aud.value!=='Child'; }; aud.onchange=syncAge; syncAge();
+  w.querySelector('#pc').onclick=()=>openDetail(v.id);
+  w.querySelector('#ps').onclick=async()=>{
+    const g=id=>w.querySelector('#'+id).value.trim(); const err=w.querySelector('#plErr');
+    const line={id:p?p.id:undefined,label:g('pl_label'),audience:g('pl_aud'),age_from:g('pl_af'),age_to:g('pl_at'),pax_min:g('pl_pmin'),pax_max:g('pl_pmax'),price:g('pl_price').replace(/[,₪$€\s]/g,''),currency:g('pl_cur'),vat:g('pl_vat'),basis:g('pl_basis'),is_agent:g('pl_type')==='1',season:g('pl_season'),source:g('pl_src'),checked_on:g('pl_chk'),note:g('pl_note')};
+    if(!/^\d+(\.\d+)?$/.test(line.price)){ err.innerHTML='<div class="msg err">Enter the price as a number, like 360.</div>'; return; }
+    const reason = S.admin?'':g('pl_reason');
+    if(!S.admin && reason.length<3){ err.innerHTML='<div class="msg err">Add a short reason, like where the price came from.</div>'; return; }
+    try{ const r=await DB.savePrice(v.id,line,reason); toast(r&&r.request?'Sent to Daniel for approval':'Price saved'); openDetail(v.id); }
+    catch(e){ err.innerHTML=`<div class="msg err">${esc(e.message)}</div>`; }
+  };
+}
+
+function openDealForm(v){
+  const opt=(arr,val)=>arr.map(o=>`<option${o===val?' selected':''}>${esc(o)}</option>`).join('');
+  const body=`<form id="df" novalidate><div class="grid">
+    <div class="f"><label for="dl_kind">Type</label><select id="dl_kind">${opt(DEAL_KINDS,'Credit card club')}</select></div>
+    <div class="f"><label for="dl_prov">Club, site or company</label><input id="dl_prov" list="provList" placeholder="Cal, Max, Isracard, Hever, Cuponofesh…"><datalist id="provList">${['Cal','Max','Isracard','American Express','Diners','Hever','Cuponofesh','Groupon','Buyme','Leumi Card','Poalim Wonder','Histadrut'].map(x=>`<option value="${x}">`).join('')}</datalist></div>
+    <div class="f wide"><label for="dl_title">The deal <em>*</em></label><input id="dl_title" placeholder="15% off weekday tours"></div>
+    <div class="f wide"><label for="dl_det">How to use it</label><textarea id="dl_det" rows="2" placeholder="Pay with a Cal card and mention the benefit when booking by phone."></textarea></div>
+    <div class="f"><label for="dl_code">Code (if it's a public code)</label><input id="dl_code" placeholder="SUKKOT15"></div>
+    <div class="f"><label for="dl_to">Valid until</label><input id="dl_to" type="date"></div>
+    <div class="f wide"><label for="dl_link">Link</label><input id="dl_link" type="url" placeholder="https://…"></div>
+    </div><p class="hint">Please don't post personal member codes or card details. Describe the benefit instead.</p><div id="dlErr"></div></form>`;
+  const w=sheet('Share a deal', body, `<button class="btn soft" id="dc" type="button">Cancel</button><button class="btn primary" id="ds" type="button">Share</button>`);
+  w.querySelector('#dc').onclick=()=>openDetail(v.id);
+  w.querySelector('#ds').onclick=async()=>{ const g=id=>w.querySelector('#'+id).value.trim();
+    if(!g('dl_title')){ w.querySelector('#dlErr').innerHTML='<div class="msg err">Describe the deal in a few words.</div>'; return; }
+    try{ await DB.addDeal(v.id,{kind:g('dl_kind'),provider:g('dl_prov'),title:g('dl_title'),details:g('dl_det'),code:g('dl_code'),valid_to:g('dl_to'),link:g('dl_link')}); toast('Deal shared'); openDetail(v.id); }
+    catch(e){ w.querySelector('#dlErr').innerHTML=`<div class="msg err">${esc(e.message)}</div>`; } };
 }
 
 const KINDS=['Photo','Receipt','Price list','Contract','Other'];
@@ -634,12 +918,14 @@ async function drawFiles(v){
 
 function openForm(v){
   const x = Object.assign(blank(), {active:'Active',priceBasis:'Per person',currency:'ILS',category:''}, v||{});
-  const inp=(k,label,type='text',ph='',wide=false,req=false)=>`<div class="f${wide?' wide':''}"><label for="f_${k}">${label}${req?' <em>*</em>':''}</label><input id="f_${k}" name="${k}" type="${type}" value="${esc(x[k])}" placeholder="${esc(ph)}"${type==='number'?' inputmode="decimal" min="0" step="any"':''}${type==='tel'?' inputmode="tel"':''}></div>`;
-  const sel=(k,label,opts,wide=false,req=false)=>`<div class="f${wide?' wide':''}"><label for="f_${k}">${label}${req?' <em>*</em>':''}</label><select id="f_${k}" name="${k}">${opts.map(o=>{const [val,t]=Array.isArray(o)?o:[o,o];return `<option value="${esc(val)}"${String(x[k])===val?' selected':''}>${esc(t)}</option>`}).join('')}</select></div>`;
+  const guarded = !!v && !S.admin; const lk=k=>guarded && LOCKED.includes(k) ? ' <span class="lock">🔒</span>' : '';
+  const inp=(k,label,type='text',ph='',wide=false,req=false)=>`<div class="f${wide?' wide':''}"><label for="f_${k}">${label}${req?' <em>*</em>':''}${lk(k)}</label><input id="f_${k}" name="${k}" type="${type}" value="${esc(x[k])}" placeholder="${esc(ph)}"${type==='number'?' inputmode="decimal" min="0" step="any"':''}${type==='tel'?' inputmode="tel"':''}></div>`;
+  const sel=(k,label,opts,wide=false,req=false)=>`<div class="f${wide?' wide':''}"><label for="f_${k}">${label}${req?' <em>*</em>':''}${lk(k)}</label><select id="f_${k}" name="${k}">${opts.map(o=>{const [val,t]=Array.isArray(o)?o:[o,o];return `<option value="${esc(val)}"${String(x[k])===val?' selected':''}>${esc(t)}</option>`}).join('')}</select></div>`;
   const area=(k,label,ph)=>`<div class="f wide"><label for="f_${k}">${label}</label><textarea id="f_${k}" name="${k}" rows="2" placeholder="${esc(ph)}">${esc(x[k])}</textarea></div>`;
   const stars=(k,label)=>`<div class="f"><label>${label}</label><div class="stars" data-k="${k}">${[1,2,3,4,5].map(n=>`<button type="button" data-n="${n}" aria-pressed="${x[k]===String(n)}" aria-label="${label} ${n}">${n}</button>`).join('')}</div><input type="hidden" id="f_${k}" name="${k}" value="${esc(x[k])}"></div>`;
   const body=`<form id="vf" novalidate>
-    <fieldset><legend>Vendor</legend><div class="grid">
+    ${guarded?'<div class="lockbar">🔒 Name, contact details, the main price and cancellation terms are checked by Daniel. Change them here and say why, and he approves the change. Everything else saves straight away.</div>':''}
+    <fieldset><legend>Supplier</legend><div class="grid">
       ${inp('name','Vendor or company name','text','Golan Jeeps Ltd.',true,true)}
       <div id="dupBox" class="f wide" hidden></div>
       ${sel('category','Category',[['','Choose…'],...CATEGORIES],false,true)}
@@ -666,10 +952,11 @@ function openForm(v){
       ${stars('rateReliability','Reliability')}${stars('rateService','Service')}${stars('rateValue','Value')}
       ${area('strengths','Strengths','Very punctual, great English…')}${area('weaknesses','Weaknesses','Sometimes overbooks…')}${area('notes','Notes','Ask for a group discount above 10 people…')}
     </div></fieldset>
+    ${guarded?`<fieldset id="reasonWrap"><legend>Why the change?</legend><div class="f wide"><label for="f_reason">Needed only if you changed a 🔒 field</label><textarea id="f_reason" rows="2" placeholder="New price list from the supplier, see the receipt I attached"></textarea></div></fieldset>`:''}
     <div id="formErr"></div>
   </form>`;
-  const foot=`<button class="btn soft" id="cancel" type="button">Cancel</button><button class="btn primary" id="saveBtn" type="button">${v?'Save changes':'Add vendor'}</button>`;
-  const w=sheet(v?'Edit vendor':'New vendor', body, foot);
+  const foot=`<button class="btn soft" id="cancel" type="button">Cancel</button><button class="btn primary" id="saveBtn" type="button">${v?'Save changes':'Add supplier'}</button>`;
+  const w=sheet(v?(guarded?'Edit or suggest a change':'Edit supplier'):'New supplier', body, foot);
   const f=w.querySelector('#vf');
   w.querySelector('#cancel').onclick=closeSheet;
   f.querySelector('#f_category').addEventListener('change',e=>{ f.querySelector('#npWrap').hidden = e.target.value!=='National Park'; });
@@ -684,12 +971,16 @@ function openForm(v){
     const data = v?{id:v.id}:{}; R5_FIELDS.forEach(k=>{ const el=f.querySelector('#f_'+k); data[k]= el?el.value:(x[k]||''); });
     if(data.category!=='National Park') data.npResLink = x.npResLink||data.npResLink||'';
     const err=f.querySelector('#formErr');
-    const probs=[]; if(!data.name.trim()) probs.push('Add the vendor name.'); if(!data.category) probs.push('Choose a category.');
-    if(!v && dupCheck()) probs.push('This vendor is already on the list. Open it and edit it instead.');
+    const probs=[]; if(!data.name.trim()) probs.push('Add the supplier name.'); if(!data.category) probs.push('Choose a category.');
+    if(!v && dupCheck()) probs.push('This supplier is already on the list. Open it and edit it instead.');
+    let reason=''; if(guarded){ const changed=LOCKED.filter(k=>String(data[k]||'').trim()!==String(v[k]||'').trim()); reason=f.querySelector('#f_reason').value.trim();
+      if(changed.length && reason.length<3) probs.push('You changed '+changed.map(k=>FIELD_LABEL[k]||k).join(', ')+'. Say briefly why, at the bottom.'); }
     if(probs.length){ err.innerHTML=`<div class="msg err">${probs.join(' ')}</div>`; err.scrollIntoView({block:'center'}); return; }
     const btn=w.querySelector('#saveBtn'); btn.disabled=true; btn.textContent='Saving…';
-    try{ const saved=await DB.save(data); closeSheet(); S.tab='vendors'; render(); if(!v){ openDetail(saved.id); toast('Vendor added. You can add photos and receipts now.'); } else toast(!S.admin && LIVE ? 'Saved. Daniel will review it.' : 'Saved'); }
-    catch(e){ btn.disabled=false; btn.textContent=v?'Save changes':'Add vendor'; err.innerHTML=`<div class="msg err">Couldn't save: ${esc(e.message)}</div>`; }
+    try{ const saved=await DB.save(data, reason); closeSheet(); S.tab='vendors'; render();
+      if(!v){ openDetail(saved.id); toast(S.admin?'Supplier added. You can add prices, deals and photos now.':'Added. Daniel will review it. You can add prices and photos now.'); }
+      else { openDetail(saved.id); toast(saved._request?'Saved. Your 🔒 changes went to Daniel for approval.':'Saved'); } }
+    catch(e){ btn.disabled=false; btn.textContent=v?'Save changes':'Add supplier'; err.innerHTML=`<div class="msg err">Couldn't save: ${esc(e.message)}</div>`; }
   };
 }
 
