@@ -176,6 +176,8 @@ textarea.out{width:100%;min-height:160px;font-family:var(--f-mono);font-size:12p
 const SUPABASE_URL = "https://wjuqtjlrtcywjaspjpwu.supabase.co";
 const SUPABASE_KEY = "sb_publishable_uEEI8iTld1pPzys6GL0QnA_b4WVb_2A";
 const OWNER = "daniel@eretzisraeltours.com";
+const APP_URL = "https://danielg972.github.io/eit-vendors/";
+const TOKEN_KEY = "eitv_link";
 // Live on its own website; sample-data preview anywhere else (e.g. inside Claude).
 const LIVE = /(^|\.)github\.io$/.test(location.hostname) || /eretzisraeltours\.com$/.test(location.hostname);
 
@@ -207,95 +209,99 @@ function sample(){
 }
 
 // ---------- state ----------
-const S = { files:{}, user:null, admin:false, contributor:false, vendors:[], team:[], tab:'vendors', q:'', cat:'All', busy:false };
+const S = { files:{}, token:null, members:[], user:null, admin:false, contributor:false, vendors:[], team:[], tab:'vendors', q:'', cat:'All', busy:false };
 let sb = null;
 
 function toast(t){ const el=document.getElementById('toast'); el.textContent=t; el.hidden=false; clearTimeout(toast._t); toast._t=setTimeout(()=>el.hidden=true,2600); }
 
 // ---------- data layer ----------
+// Everyone signs in with a personal link (?k=…). The key is kept on the device; the server only stores its hash.
+function readToken(){
+  let t=null; try{ const u=new URL(location.href); t=u.searchParams.get('k'); if(t){ localStorage.setItem(TOKEN_KEY,t); u.searchParams.delete('k'); history.replaceState(null,'',u.pathname+u.search+u.hash); } }catch(e){}
+  if(!t){ try{ t=localStorage.getItem(TOKEN_KEY); }catch(e){} }
+  return t;
+}
+function forgetToken(){ try{ localStorage.removeItem(TOKEN_KEY); }catch(e){} S.token=null; S.me=null; }
+const personalLink = t => APP_URL + '?k=' + t;
+async function rpc(fn, args){
+  const { data, error } = await sb.rpc(fn, Object.assign({p_token:S.token}, args||{}));
+  if(error) throw new Error(error.message);
+  return data;
+}
+async function filesApi(action, body){
+  const { data, error } = await sb.functions.invoke('files', { body:Object.assign({token:S.token, action}, body) });
+  if(error){ let m=error.message; try{ const j=await error.context.json(); m=j.error||m; }catch(e){} throw new Error(m); }
+  return data;
+}
 const DB = {
   async init(){
-    if(!LIVE){ S.user={email:OWNER}; S.admin=true; S.contributor=true; S.vendors=sample();
-      S.team=[{email:OWNER,display_name:'Daniel',is_admin:true},{email:'yossi.guide@gmail.com',display_name:'Yossi',is_admin:false},{email:'rachel.ops@gmail.com',display_name:'Rachel',is_admin:false}]; return; }
-    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {auth:{persistSession:true,detectSessionInUrl:true,flowType:'pkce'}});
-    const { data } = await sb.auth.getSession();
-    S.user = data.session ? data.session.user : null;
-    sb.auth.onAuthStateChange((_e, sess)=>{ const was=!!S.user; S.user = sess?sess.user:null; if(!!S.user!==was) boot(); });
-    if(S.user) await DB.loadAccess();
+    if(!LIVE){ S.user={email:OWNER}; S.me={name:'Daniel',email:OWNER,status:'approved',is_admin:true}; S.admin=true; S.contributor=true; S.vendors=sample();
+      const d=n=>new Date(Date.now()-n*86400000).toISOString();
+      S.members=[{id:'m1',name:'Daniel',email:OWNER,status:'approved',is_admin:true,created_at:d(30),last_seen_at:d(0)},
+        {id:'m2',name:'Yossi Ben-David',email:'yossi.guide@gmail.com',phone:'+972 52 111 2233',note:'Licensed guide, North',status:'pending',is_admin:false,created_at:d(0)},
+        {id:'m3',name:'Rachel Amar',email:'rachel.ops@gmail.com',status:'approved',is_admin:false,created_at:d(6),last_seen_at:d(1)}]; return; }
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {auth:{persistSession:false,autoRefreshToken:false}});
+    S.token = readToken();
+    if(S.token) await DB.loadMe();
   },
-  async loadAccess(){
-    const me = (S.user.email||'').toLowerCase();
-    const { data } = await sb.from('contributors').select('*').eq('email', me).maybeSingle();
-    S.contributor = !!data; S.admin = !!(data && data.is_admin);
+  async loadMe(){
+    const { data, error } = await sb.rpc('whoami',{p_token:S.token});
+    if(error) throw new Error(error.message);
+    S.me = data; S.user = data?{email:data.email}:null;
+    S.contributor = !!(data && data.status==='approved'); S.admin = !!(data && data.is_admin && S.contributor);
     if(S.contributor){ await DB.loadVendors(); if(S.admin) await DB.loadTeam(); }
   },
-  async loadVendors(){
-    if(!LIVE) return;
-    const { data, error } = await sb.from('vendors').select('*, vendor_files(count)').order('name');
-    if(error){ toast('Could not load vendors: '+error.message); return; }
-    S.vendors = data.map(v=>{ v._files=(v.vendor_files&&v.vendor_files[0]&&v.vendor_files[0].count)||0; delete v.vendor_files; return v; });
-  },
-  async loadTeam(){
-    if(!LIVE) return;
-    const { data } = await sb.from('contributors').select('*').order('added_at');
-    S.team = data||[];
-  },
+  async loadVendors(){ if(!LIVE) return; try{ S.vendors = await rpc('vendors_list'); }catch(e){ toast('Could not load vendors: '+e.message); } },
+  async loadTeam(){ if(!LIVE) return; S.members = await rpc('members_list'); },
   async save(v){
     const payload = {}; R5_FIELDS.forEach(k=>payload[k]=String(v[k]==null?'':v[k]).trim());
     if(!LIVE){
       const now=new Date().toISOString();
       if(v.id){ const i=S.vendors.findIndex(x=>x.id===v.id); S.vendors[i]=Object.assign(S.vendors[i],payload,{updated_at:now,updated_by:S.user.email}); return S.vendors[i]; }
-      const row=Object.assign({id:newId(),review_status:'approved',created_by:S.user.email,updated_by:S.user.email,created_at:now,updated_at:now},payload); S.vendors.push(row); return row;
+      const row=Object.assign({id:newId(),review_status:'approved',created_by:S.user.email,updated_by:S.user.email,created_at:now,updated_at:now,_files:0},payload); S.vendors.push(row); return row;
     }
-    const q = v.id ? sb.from('vendors').update(payload).eq('id',v.id) : sb.from('vendors').insert(payload);
-    const { data, error } = await q.select().single();
-    if(error) throw error;
-    const i=S.vendors.findIndex(x=>x.id===data.id); data._files = i>=0 ? (S.vendors[i]._files||0) : 0; if(i>=0) S.vendors[i]=data; else S.vendors.push(data);
+    const data = await rpc('vendor_save',{p_data:Object.assign(v.id?{id:v.id}:{},payload)});
+    const i=S.vendors.findIndex(x=>x.id===data.id); if(i>=0) S.vendors[i]=data; else S.vendors.push(data);
     return data;
   },
   async setStatus(id, status){
-    if(!LIVE){ const v=S.vendors.find(x=>x.id===id); v.review_status=status; return; }
-    const { data, error } = await sb.from('vendors').update({review_status:status}).eq('id',id).select().single();
-    if(error) throw error; const i=S.vendors.findIndex(x=>x.id===id); data._files=S.vendors[i]._files||0; S.vendors[i]=data;
+    if(!LIVE){ S.vendors.find(x=>x.id===id).review_status=status; return; }
+    const data = await rpc('vendor_set_status',{p_id:id,p_status:status});
+    const i=S.vendors.findIndex(x=>x.id===id); S.vendors[i]=data;
   },
-  async remove(id){
-    if(LIVE){ const { error } = await sb.from('vendors').delete().eq('id',id); if(error) throw error; }
-    S.vendors = S.vendors.filter(x=>x.id!==id);
-  },
+  async remove(id){ if(LIVE) await rpc('vendor_delete',{p_id:id}); S.vendors = S.vendors.filter(x=>x.id!==id); },
   async listFiles(vid){
     if(!LIVE) return (S.files[vid]||[]).slice();
-    const { data, error } = await sb.from('vendor_files').select('*').eq('vendor_id',vid).order('created_at',{ascending:false});
-    if(error) throw error;
-    if(data.length){ const { data: urls } = await sb.storage.from('vendor-files').createSignedUrls(data.map(f=>f.path), 3600);
-      (urls||[]).forEach((u,i)=>{ data[i].url = u && u.signedUrl; }); }
-    return data;
+    return (await filesApi('list',{vendor_id:vid})).files;
   },
   async upload(vid, file, kind){
-    const safe = file.name.replace(/[^\w.\-]+/g,'_').slice(-80) || 'file';
-    const path = `${vid}/${Date.now().toString(36)}-${Math.random().toString(36).slice(2,6)}-${safe}`;
-    const row = { vendor_id:vid, path, file_name:file.name, mime_type:file.type||'', size_bytes:file.size, kind };
-    if(!LIVE){ (S.files[vid]=S.files[vid]||[]).unshift(Object.assign({id:path,uploaded_by:S.user.email,created_at:new Date().toISOString(),url:URL.createObjectURL(file)},row)); }
+    if(!LIVE){ const path=vid+'/'+Date.now(); (S.files[vid]=S.files[vid]||[]).unshift({id:path,path,vendor_id:vid,file_name:file.name,mime_type:file.type||'',size_bytes:file.size,kind,uploaded_by:S.user.email,created_at:new Date().toISOString(),url:URL.createObjectURL(file)}); }
     else {
-      const up = await sb.storage.from('vendor-files').upload(path, file, { contentType:file.type||undefined, upsert:false });
-      if(up.error) throw up.error;
-      const { error } = await sb.from('vendor_files').insert(row);
-      if(error){ await sb.storage.from('vendor-files').remove([path]); throw error; }
+      const sig = await filesApi('sign_upload',{vendor_id:vid,file_name:file.name});
+      const up = await sb.storage.from('vendor-files').uploadToSignedUrl(sig.path, sig.upload_token, file, {contentType:file.type||undefined});
+      if(up.error) throw new Error(up.error.message);
+      await filesApi('confirm',{vendor_id:vid,path:sig.path,file_name:file.name,mime_type:file.type||'',size_bytes:file.size,kind});
     }
     const v=S.vendors.find(x=>x.id===vid); if(v) v._files=(v._files||0)+1;
   },
   async removeFile(f){
-    if(LIVE){ const { error } = await sb.from('vendor_files').delete().eq('id',f.id); if(error) throw error; await sb.storage.from('vendor-files').remove([f.path]); }
+    if(LIVE) await filesApi('delete',{file_id:f.id});
     else S.files[f.vendor_id]=(S.files[f.vendor_id]||[]).filter(x=>x.id!==f.id);
     const v=S.vendors.find(x=>x.id===f.vendor_id); if(v) v._files=Math.max(0,(v._files||1)-1);
   },
-  async addPerson(email,name){
-    email=email.trim().toLowerCase();
-    if(!LIVE){ if(!S.team.find(p=>p.email===email)) S.team.push({email,display_name:name,is_admin:false}); return; }
-    const { error } = await sb.from('contributors').insert({email,display_name:name||null}); if(error) throw error; await DB.loadTeam();
+  async requestAccess(name,email,phone,note){
+    const { data, error } = await sb.rpc('request_access',{p_name:name,p_email:email,p_phone:phone,p_note:note});
+    if(error) throw new Error(error.message);
+    S.token=data.token; try{ localStorage.setItem(TOKEN_KEY,S.token); }catch(e){}
+    await DB.loadMe();
   },
-  async removePerson(email){
-    if(!LIVE){ S.team=S.team.filter(p=>p.email!==email); return; }
-    const { error } = await sb.from('contributors').delete().eq('email',email); if(error) throw error; await DB.loadTeam();
+  async decide(id,status){
+    if(!LIVE){ S.members.find(m=>m.id===id).status=status; return; }
+    await rpc('member_decide',{p_id:id,p_status:status}); await DB.loadTeam();
+  },
+  async newLink(id){
+    if(!LIVE){ const m=S.members.find(x=>x.id===id); if(m.status==='revoked') m.status='approved'; return 'sample'+Math.random().toString(16).slice(2); }
+    const t = await rpc('member_new_link',{p_id:id}); await DB.loadTeam(); return t;
   }
 };
 
@@ -320,35 +326,55 @@ function priceLine(v){
 }
 
 function boot(){
-  if(LIVE && !S.user) return renderGate();
-  if(LIVE && S.user && !S.contributor) return renderNoAccess();
+  if(LIVE && (!S.token || !S.me)) return renderGate();
+  if(LIVE && S.me.status!=='approved') return renderWaiting();
   render();
 }
+
+function copyText(text, el){
+  return navigator.clipboard.writeText(text).then(()=>toast('Copied')).catch(()=>{ if(el){ el.focus(); el.select(); } toast('Selected. Copy it from here.'); });
+}
+function linkBox(id, url){
+  return `<div class="addrow" style="margin:8px 0"><input id="${id}" type="text" readonly value="${esc(url)}" class="mono" style="font-size:13px"><button class="btn soft" type="button" data-copy="${id}">Copy</button><a class="btn primary" style="text-decoration:none" href="https://wa.me/?text=${encodeURIComponent(url)}" target="_blank" rel="noopener">WhatsApp</a></div>`;
+}
+function wireCopy(root){ root.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>{ const i=root.querySelector('#'+b.dataset.copy); copyText(i.value,i); }); }
 
 function renderGate(msg){
   app.innerHTML = `<div class="gate"><form class="gate-card" id="gateForm" novalidate>
     <h1 class="mark">EIT Vendors</h1>
-    <p>The shared vendor list for Eretz Israel Tours. Enter your email and we'll send you a sign-in link. No password needed.</p>
+    <p>The shared vendor list for Eretz Israel Tours guides and partners. Ask to join, and once Daniel approves you, you'll have your own link. No password needed.</p>
+    <div class="f"><label for="gName">Your name</label><input id="gName" type="text" autocomplete="name" placeholder="Yossi Cohen" required></div>
     <div class="f"><label for="gEmail">Email</label><input id="gEmail" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com" required></div>
-    <button class="btn primary" id="gSend" type="submit">Email me a sign-in link</button>
+    <div class="f"><label for="gPhone">Phone (optional)</label><input id="gPhone" type="tel" autocomplete="tel" inputmode="tel" placeholder="+972 52 000 0000"></div>
+    <div class="f"><label for="gNote">What do you do? (optional)</label><input id="gNote" type="text" placeholder="Licensed guide, Galilee"></div>
+    <button class="btn primary" id="gSend" type="submit">Ask to join</button>
     <div id="gMsg">${msg||''}</div>
+    <p class="hint" style="margin-top:18px">Already approved? Open the personal link Daniel sent you.</p>
   </form></div>`;
   document.getElementById('gateForm').addEventListener('submit', async e=>{
     e.preventDefault();
-    const email=document.getElementById('gEmail').value.trim(); const out=document.getElementById('gMsg');
+    const name=document.getElementById('gName').value.trim(), email=document.getElementById('gEmail').value.trim();
+    const out=document.getElementById('gMsg');
+    if(!name){ out.innerHTML='<div class="msg err">Add your name.</div>'; return; }
     if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ out.innerHTML='<div class="msg err">Enter a full email address, like name@gmail.com.</div>'; return; }
     const b=document.getElementById('gSend'); b.disabled=true; b.textContent='Sending…';
-    const { error } = await sb.auth.signInWithOtp({ email, options:{ emailRedirectTo: location.origin+location.pathname } });
-    b.disabled=false; b.textContent='Email me a sign-in link';
-    out.innerHTML = error ? `<div class="msg err">${esc(error.message)}. Wait a minute and try again.</div>` : `<div class="msg ok">Check ${esc(email)} for a link from Supabase, then open it on this device.</div>`;
+    try{ await DB.requestAccess(name,email,document.getElementById('gPhone').value,document.getElementById('gNote').value); boot(); }
+    catch(err){ b.disabled=false; b.textContent='Ask to join'; out.innerHTML=`<div class="msg err">${esc(err.message)}</div>`; }
   });
 }
-function renderNoAccess(){
+function renderWaiting(){
+  const st=S.me.status;
   app.innerHTML = `<div class="gate"><div class="gate-card">
-    <h1 class="mark">Almost there</h1>
-    <p>You're signed in as <b>${esc(S.user.email)}</b>, but this email isn't on the contributor list yet. Ask Daniel to add it, then reopen this page.</p>
-    <button class="btn soft" id="out">Sign in with a different email</button></div></div>`;
-  document.getElementById('out').onclick=()=>sb.auth.signOut();
+    <h1 class="mark">${st==='revoked'?'Access ended':'Request sent'}</h1>
+    ${st==='revoked' ? `<p>This link no longer works. If you think that's a mistake, contact Daniel.</p>`
+      : `<p>Thanks, ${esc(S.me.name.split(' ')[0])}. Daniel will approve you soon. This is your personal link. Save it, and use it to open the app on any phone or computer.</p>
+         ${linkBox('myLink', personalLink(S.token))}
+         <p class="hint">Keep it to yourself. Anyone with this link can use the app as you.</p>
+         <button class="btn soft" id="chk" style="margin-top:10px">Check if I'm approved</button>`}
+    <button class="btn soft" id="out" style="margin-top:10px">Use a different link</button></div></div>`;
+  wireCopy(app);
+  const c=document.getElementById('chk'); if(c) c.onclick=async()=>{ c.disabled=true; await DB.loadMe(); if(S.me.status==='approved'){ toast("You're in"); } else { c.disabled=false; toast('Not yet. Daniel has been notified.'); } boot(); };
+  document.getElementById('out').onclick=()=>{ forgetToken(); boot(); };
 }
 
 function filtered(){
@@ -359,18 +385,19 @@ function filtered(){
 
 function render(){
   const pending = S.vendors.filter(v=>v.review_status==='pending').length;
+  const waiting = S.members.filter(m=>m.status==='pending').length;
   const tabs = [['vendors','Vendors',icons.list]];
   if(S.admin){ tabs.push(['review','Review',icons.check]); tabs.push(['team','Team',icons.people]); }
   app.innerHTML = `
     <header class="top"><div class="top-row">
       <div class="brand">EIT Vendors<small>Eretz Israel Tours</small></div>
-      <div class="who"><span>${esc(S.user.email)}</span>${LIVE?'<button class="ghost-btn" id="signOut">Sign out</button>':''}</div>
+      <div class="who"><span>${esc(S.me?S.me.name:S.user.email)}</span>${LIVE?'<button class="ghost-btn" id="signOut">Sign out</button>':''}</div>
     </div></header>
     ${LIVE?'':'<div class="demo-bar">Preview with sample vendors. Changes here aren\'t saved.</div>'}
     <main id="view"></main>
     ${S.tab==='vendors'?'<button class="fab" id="add">+ Add vendor</button>':''}
-    ${tabs.length>1?`<nav class="tabs">${tabs.map(([k,l,ic])=>`<button class="tab" data-tab="${k}" ${S.tab===k?'aria-current="page"':''}>${ic}${l}${k==='review'&&pending?`<span class="badge">${pending}</span>`:''}</button>`).join('')}</nav>`:''}`;
-  const so=document.getElementById('signOut'); if(so) so.onclick=()=>sb.auth.signOut();
+    ${tabs.length>1?`<nav class="tabs">${tabs.map(([k,l,ic])=>`<button class="tab" data-tab="${k}" ${S.tab===k?'aria-current="page"':''}>${ic}${l}${k==='review'&&pending?`<span class="badge">${pending}</span>`:''}${k==='team'&&waiting?`<span class="badge">${waiting}</span>`:''}</button>`).join('')}</nav>`:''}`;
+  const so=document.getElementById('signOut'); if(so) so.onclick=()=>{ if(so.dataset.c!=='1'){ so.dataset.c='1'; so.textContent='Tap again. You\'ll need your link to return.'; return; } forgetToken(); boot(); };
   app.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{S.tab=t.dataset.tab; render();});
   const add=document.getElementById('add'); if(add) add.onclick=()=>openForm(null);
   ({vendors:viewVendors, review:viewReview, team:viewTeam})[S.tab]();
@@ -434,17 +461,33 @@ function exportR5(list){
 
 function viewTeam(){
   const view=document.getElementById('view');
-  view.innerHTML = `<section class="panel"><h3>Who can add vendors</h3>
-    <p>Only these emails can sign in and see the list. Colleagues sign in with a link sent to their email.</p>
-    <form class="addrow" id="addP" novalidate><input id="pEmail" type="email" placeholder="colleague@gmail.com" inputmode="email"><input id="pName" type="text" placeholder="Name (optional)" style="flex:.6"><button class="btn primary" type="submit">Add</button></form>
-    <div id="team" style="margin-top:10px">${S.team.map(p=>`<div class="person"><span><b>${esc(p.display_name||p.email.split('@')[0])}</b><br><span class="hint">${esc(p.email)}${p.is_admin?' · admin':''}</span></span>${p.is_admin?'':`<button class="btn danger" data-rm="${esc(p.email)}">Remove</button>`}</div>`).join('')}</div>
-  </section>`;
-  document.getElementById('addP').addEventListener('submit',async e=>{ e.preventDefault(); const em=document.getElementById('pEmail').value; const nm=document.getElementById('pName').value.trim();
-    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em.trim())){ toast('Enter a full email address'); return; }
-    try{ await DB.addPerson(em,nm); toast('Added. They can sign in now.'); viewTeam(); }catch(err){ toast(err.message); } });
-  view.querySelectorAll('[data-rm]').forEach(b=>b.onclick=async()=>{
-    if(b.dataset.confirm!=='1'){ b.dataset.confirm='1'; b.textContent='Tap again to remove'; return; }
-    try{ await DB.removePerson(b.dataset.rm); toast('Removed'); viewTeam(); }catch(e){ toast(e.message); } });
+  const pend=S.members.filter(m=>m.status==='pending'), active=S.members.filter(m=>m.status==='approved'), gone=S.members.filter(m=>m.status==='revoked');
+  const ago=iso=>iso?fmtDate(iso):'never';
+  view.innerHTML = `
+    <section class="panel"><h3>Invite colleagues</h3>
+      <p>Share this link in your WhatsApp groups. People who open it ask to join, and you approve them here.</p>
+      ${linkBox('joinLink', APP_URL)}
+    </section>
+    <section class="panel"><h3>Asking to join</h3>
+      ${pend.length? pend.map(m=>`<div class="rev"><div class="who2"><b>${esc(m.name)}</b><span>${esc(m.email)}${m.phone?' · '+esc(m.phone):''}${m.note?'<br>'+esc(m.note):''}</span></div>
+        <div class="btn-row"><button class="btn soft" data-no="${m.id}">Decline</button><button class="btn primary" data-yes="${m.id}">Approve</button></div></div>`).join('')
+        : '<p style="margin:0">No one is waiting.</p>'}
+    </section>
+    <section class="panel"><h3>People with access (${active.length})</h3>
+      <p>If someone loses their link, make a new one and send it to them. The old link stops working.</p>
+      ${active.map(m=>`<div class="person"><span><b>${esc(m.name)}</b>${m.is_admin?' <span class="pill approved">admin</span>':''}<br><span class="hint">${esc(m.email)} · last active ${ago(m.last_seen_at)}</span><span id="nl_${m.id}"></span></span>
+        ${m.is_admin?'':`<span class="btn-row"><button class="btn soft" data-link="${m.id}">New link</button><button class="btn danger" data-rm="${m.id}">Remove</button></span>`}</div>`).join('')}
+    </section>
+    ${gone.length?`<section class="panel"><h3>Removed</h3>${gone.map(m=>`<div class="person"><span><b>${esc(m.name)}</b><br><span class="hint">${esc(m.email)}</span><span id="nl_${m.id}"></span></span><button class="btn soft" data-link="${m.id}">Restore with new link</button></div>`).join('')}</section>`:''}`;
+  wireCopy(view);
+  view.querySelectorAll('[data-yes]').forEach(b=>b.onclick=async()=>{ try{ await DB.decide(b.dataset.yes,'approved'); toast('Approved. Their link works now.'); render(); }catch(e){ toast(e.message); } });
+  view.querySelectorAll('[data-no]').forEach(b=>b.onclick=async()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again'; return; } try{ await DB.decide(b.dataset.no,'revoked'); toast('Declined'); render(); }catch(e){ toast(e.message); } });
+  view.querySelectorAll('[data-rm]').forEach(b=>b.onclick=async()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again to remove'; return; } try{ await DB.decide(b.dataset.rm,'revoked'); toast('Removed. Their link no longer works.'); render(); }catch(e){ toast(e.message); } });
+  view.querySelectorAll('[data-link]').forEach(b=>b.onclick=async()=>{
+    try{ const id=b.dataset.link; const t=await DB.newLink(id); const m=S.members.find(x=>x.id===id);
+      render(); const slot=document.getElementById('nl_'+id);
+      if(slot){ slot.innerHTML=`<span class="hint" style="display:block;margin-top:6px">New link for ${esc(m?m.name:'them')}. Send it now; it won't be shown again.</span>${linkBox('lk_'+id, personalLink(t))}`; wireCopy(slot); }
+    }catch(e){ toast(e.message); } });
 }
 
 // ---------- sheets ----------
