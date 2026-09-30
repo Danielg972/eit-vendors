@@ -353,6 +353,10 @@ const DB = {
     if(!LIVE){ const d=await DB.detail(vid); d.notes=d.notes.filter(x=>x.id!==id); bump(vid,'_notes',-1); return; }
     await rpc('note_delete',{p_id:id}); await DB.refreshVendor(vid);
   },
+  async saveAdminNote(vid, body){
+    if(!LIVE){ (await DB.detail(vid)).admin_note=body; return; }
+    await rpc('admin_note_save',{p_vendor:vid,p_body:body});
+  },
   async refreshVendor(vid){
     if(!LIVE) return;
     try{ const all = await rpc('vendors_list'); S.vendors = all; }catch(e){}
@@ -438,6 +442,7 @@ const icons = {
 function statusPill(v){
   if(v.active==='Inactive') return '<span class="pill inactive">Inactive</span>';
   const s=v.review_status||'pending';
+  if(v.hidden && s!=='approved') return '<span class="pill pending">Only you can see this · approve to share</span>';
   return `<span class="pill ${s}">${s==='approved'?'Approved':s==='rejected'?'Rejected':'Pending review'}</span>`;
 }
 function priceLine(v){
@@ -623,7 +628,7 @@ function viewReview(){
         <div class="btn-row"><button class="btn soft" data-open="${esc(r.vendor_id)}">Open supplier</button><button class="btn soft" data-rno="${esc(r.id)}">Reject</button><button class="btn primary" data-ryes="${esc(r.id)}">Approve</button></div></div>`).join('') : '<div class="empty" style="padding:16px">No suggestions waiting.</div>'}
     </section>
     <section class="panel"><h3>New suppliers to check</h3>
-      <p>Suppliers added by colleagues or imported from your email. Only approved suppliers go into the R5 export.</p>
+      <p>Suppliers added by colleagues, and the ones I imported from your email. Imported suppliers stay hidden from colleagues until you approve them. Check each one's private note for the sources. Only approved suppliers go into the R5 export.</p>
       ${pend.length? pend.map(v=>`<div class="rev"><div class="who2"><b>${esc(v.name)}</b><span>${esc(v.category)} · by ${esc(v.updated_by)} · ${fmtDate(v.updated_at)}</span></div>
         <div class="btn-row"><button class="btn soft" data-open="${esc(v.id)}">View</button><button class="btn primary" data-ok="${esc(v.id)}">Approve</button></div></div>`).join('') : '<div class="empty" style="padding:16px">All caught up.</div>'}
     </section>
@@ -753,6 +758,7 @@ function openDetail(id){
       <div class="addline"><textarea id="noteText" rows="1" placeholder="Add a tip, warning or update…"></textarea><button class="btn primary" id="noteAdd" type="button">Add</button></div>
       <div id="notesBox"></div></fieldset>
     <fieldset><legend>Photos, receipts and PDFs</legend><div id="filesBox"><p class="hint">Loading files…</p></div></fieldset>
+    ${S.admin?`<fieldset><legend>Private note · only you see this</legend><div class="f wide"><textarea id="adminNote" rows="5" placeholder="Clients, trips, commissions, anything colleagues shouldn't see"></textarea></div><div class="btn-row" style="margin-top:8px"><button class="mini" id="adminNoteSave" type="button">Save private note</button></div></fieldset>`:''}
     ${sections.map(([h,dl])=>`<fieldset><legend>${h}</legend><dl class="dl">${dl}</dl></fieldset>`).join('')}
     <p class="stamp">Added by ${esc(v.created_by)} on ${fmtDate(v.created_at)}. Last changed by ${esc(v.updated_by)} on ${fmtDate(v.updated_at)}. <span class="idtag">${esc(v.id)}</span></p>`;
   let foot=`<button class="btn primary" id="edit">${S.admin?'Edit':'Edit or suggest a change'}</button>`;
@@ -804,6 +810,8 @@ async function drawExtras(v){
   nb.innerHTML = det.notes.length ? det.notes.map(n=>`<div class="note"><span class="meta"><b>${esc(n.author_name||n.author)}</b> · ${fmtDate(n.created_at)}${S.admin||n.author===me?` · <button class="mini" style="padding:1px 8px" data-ndel="${esc(n.id)}" type="button">Delete</button>`:''}</span><p>${esc(n.body)}</p></div>`).join('')
     : `<p class="hint" style="margin:0">No notes yet.</p>`;
   nb.querySelectorAll('[data-ndel]').forEach(b=>b.onclick=async()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again'; return; } try{ await DB.deleteNote(v.id,b.dataset.ndel); drawExtras(v); }catch(e){ toast(e.message); } });
+  const an=document.getElementById('adminNote');
+  if(an){ an.value=det.admin_note||''; const b=document.getElementById('adminNoteSave'); b.onclick=async()=>{ try{ await DB.saveAdminNote(v.id, an.value); toast('Private note saved'); }catch(e){ toast(e.message); } }; }
   const rb=document.getElementById('reqBox');
   if(rb && det.requests && det.requests.length){ rb.innerHTML=`<div class="lockbar">${det.requests.length} suggested change${det.requests.length>1?'s':''} waiting for ${S.admin?'your':"Daniel's"} approval.${S.admin?' See the Review tab.':''}</div>`; }
 }
