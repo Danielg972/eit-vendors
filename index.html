@@ -1,3 +1,8 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Israel Suppliers Master List</title>
 <meta name="theme-color" content="#1f3a2e">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -164,6 +169,16 @@ textarea.out{width:100%;min-height:160px;font-family:var(--f-mono);font-size:12p
 .clip{font-size:12px;color:var(--ink-3)}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(140px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--ground);padding:10px 16px;border-radius:999px;font-size:14px;z-index:40;max-width:calc(100% - 32px)}
 </style>
+<style>
+/* Base reset (the Claude preview adds this itself; the live site needs it) */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
 
 <div id="app"></div>
 <div id="toast" class="toast" hidden></div>
@@ -682,3 +697,6 @@ function openForm(v){
 (async()=>{ try{ await DB.init(); }catch(e){ app.innerHTML='<div class="gate"><div class="gate-card"><h1 class="mark">Can\'t connect</h1><p>'+esc(e.message)+'. Check your internet connection and reload.</p></div></div>'; return; } boot(); })();
 })();
 </script>
+
+</body>
+</html>
