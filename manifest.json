@@ -1,6 +1,6 @@
 {
-  "name": "EIT Vendors",
-  "short_name": "EIT Vendors",
+  "name": "Israel Suppliers Master List",
+  "short_name": "Suppliers List",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

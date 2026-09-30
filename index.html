@@ -1,7 +1,7 @@
-<title>EIT Vendors</title>
+<title>Israel Suppliers Master List</title>
 <meta name="theme-color" content="#1f3a2e">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="EIT Vendors">
+<meta name="apple-mobile-web-app-title" content="Suppliers List">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -176,10 +176,11 @@ textarea.out{width:100%;min-height:160px;font-family:var(--f-mono);font-size:12p
 const SUPABASE_URL = "https://wjuqtjlrtcywjaspjpwu.supabase.co";
 const SUPABASE_KEY = "sb_publishable_uEEI8iTld1pPzys6GL0QnA_b4WVb_2A";
 const OWNER = "daniel@eretzisraeltours.com";
-const APP_URL = "https://danielg972.github.io/eit-vendors/";
+// The app's own address, whichever domain it is served from (github.io now, vendors.eretzisraeltours.com later)
+const APP_URL = location.origin + location.pathname.replace(/[^/]*$/, '');
 const TOKEN_KEY = "eitv_link";
 // Live on its own website; sample-data preview anywhere else (e.g. inside Claude).
-const LIVE = /(^|\.)github\.io$/.test(location.hostname) || /eretzisraeltours\.com$/.test(location.hostname);
+const LIVE = /(^|\.)github\.io$/.test(location.hostname) || /(^|\.)eretzisraeltours\.com$/.test(location.hostname);
 
 // R5 field order (from itinerary_builder R5 saveVendor)
 const R5_FIELDS = ['name','category','active','contactPerson','phone','whatsapp','email','website','location','languages','kosher','maxCap','listedPrice','listedPriceVatTreatment','agentPrice','agentPriceVatTreatment','maxPax','priceBasis','currency','payTerms','cancelPolicy','cancelNoticeAmount','cancelNoticeUnit','cancelDayType','cancelPenalty','cancelPolicyVerifiedDate','npResLink','rateReliability','rateService','rateValue','strengths','weaknesses','notes'];
@@ -358,7 +359,7 @@ async function sendProof(file, out){
 }
 function renderGate(msg){
   app.innerHTML = `<div class="gate"><form class="gate-card" id="gateForm" novalidate>
-    <h1 class="mark">EIT Vendors</h1>
+    <h1 class="mark">Israel Suppliers Master List</h1>
     <p>A vendor list kept by colleagues, for colleagues. Guides and travel professionals share the hotels, drivers, sites and suppliers they trust, and warn each other about the ones they don't, so all of us work a little easier.</p><p>To keep it among professionals, joining needs your license. Once approved, you get your own link. No password needed.</p>
     <div class="f"><label for="gName">Your name <em>*</em></label><input id="gName" type="text" autocomplete="name" placeholder="Yossi Cohen" required></div>
     <div class="f"><label for="gEmail">Email <em>*</em></label><input id="gEmail" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com" required></div>
@@ -423,7 +424,7 @@ function render(){
   if(S.admin){ tabs.push(['review','Review',icons.check]); tabs.push(['team','Team',icons.people]); }
   app.innerHTML = `
     <header class="top"><div class="top-row">
-      <div class="brand">EIT Vendors<small>Shared by colleagues</small></div>
+      <div class="brand">Israel Suppliers<small>Master list · shared by colleagues</small></div>
       <div class="who"><span>${esc(S.me?S.me.name:S.user.email)}</span>${LIVE?'<button class="ghost-btn" id="signOut">Sign out</button>':''}</div>
     </div></header>
     ${LIVE?'':'<div class="demo-bar">Preview with sample vendors. Changes here aren\'t saved.</div>'}
@@ -483,7 +484,7 @@ function exportR5(list){
   const vendors = list.map(v=>{ const o={id:v.id}; R5_FIELDS.forEach(k=>o[k]=String(v[k]==null?'':v[k])); return o; });
   const file = { _exportFormatVersion:3, _tripVendors:vendors, days:[] };
   const json = JSON.stringify(file,null,2);
-  const name = `EIT_vendors_${new Date().toISOString().slice(0,10)}.json`;
+  const name = `Israel_suppliers_${new Date().toISOString().slice(0,10)}.json`;
   const out=document.getElementById('expOut');
   out.innerHTML = `<p style="margin:12px 0 8px">${vendors.length} vendors ready.</p>
     <div class="btn-row" style="margin-bottom:8px">${LIVE?'<button class="btn primary" id="dl">Download '+esc(name)+'</button>':''}<button class="btn soft" id="cp">Copy file contents</button></div>

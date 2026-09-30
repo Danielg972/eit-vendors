@@ -1,4 +1,4 @@
-# EIT Vendors
+# Israel Suppliers Master List
 
 Shared vendor list for Eretz Israel Tours colleagues. Static single-page app (GitHub Pages) on a free Supabase project.
 
