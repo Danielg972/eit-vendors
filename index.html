@@ -1,0 +1,604 @@
+<title>EIT Vendors</title>
+<meta name="theme-color" content="#1f3a2e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="EIT Vendors">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600&family=Secular+One&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one-column field app — sticky header, tab bar at the bottom, sheets slide up for forms. */
+:root{
+  --ink:#16261e; --ink-2:#4a5a50; --ink-3:#7c8a80;
+  --ground:#f3f5f1; --card:#ffffff; --line:#dde3db; --wash:#e8ede5;
+  --olive:#1f3a2e; --olive-2:#2c5140; --ochre:#b8742a; --ochre-wash:#f6ead9;
+  --ok:#2f7a4a; --ok-wash:#e3f1e7; --warn:#a66a12; --warn-wash:#fbefd9; --bad:#a63b2e; --bad-wash:#f8e3df;
+  --on-olive:#f3f5f1; --tab-on:#2c5140; --mark:#1f3a2e;
+  --f-display:"Secular One","Rubik",system-ui,sans-serif;
+  --f-body:"Rubik",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --ink:#e6ebe4; --ink-2:#b0bcb2; --ink-3:#86938a;
+  --ground:#121a15; --card:#1a241e; --line:#2c3a31; --wash:#223029;
+  --olive:#2c5140; --olive-2:#3b6a54; --ochre:#e0a15a; --ochre-wash:#3a2c1a;
+  --ok:#6cc58c; --ok-wash:#1d3325; --warn:#e7b35d; --warn-wash:#3a2e17; --bad:#ef8a7b; --bad-wash:#3b211d;
+  --on-olive:#f3f5f1; --tab-on:#e0a15a; --mark:#e6ebe4; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --ink:#e6ebe4; --ink-2:#b0bcb2; --ink-3:#86938a;
+  --ground:#121a15; --card:#1a241e; --line:#2c3a31; --wash:#223029;
+  --olive:#2c5140; --olive-2:#3b6a54; --ochre:#e0a15a; --ochre-wash:#3a2c1a;
+  --ok:#6cc58c; --ok-wash:#1d3325; --warn:#e7b35d; --warn-wash:#3a2e17; --bad:#ef8a7b; --bad-wash:#3b211d;
+  --on-olive:#f3f5f1; --tab-on:#e0a15a; --mark:#e6ebe4; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--ground);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--ochre);outline-offset:2px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+
+/* header */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--olive);color:var(--on-olive);padding:12px 16px}
+.top-row{max-width:760px;margin:0 auto;display:flex;align-items:center;gap:12px}
+.brand{font-family:var(--f-display);font-size:21px;letter-spacing:.2px;line-height:1}
+.brand small{display:block;font-family:var(--f-body);font-size:11px;letter-spacing:1.2px;text-transform:uppercase;opacity:.7;margin-top:4px}
+.who{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:13px;opacity:.9;min-width:0}
+.who span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:40vw}
+.ghost-btn{background:transparent;border:1px solid rgba(243,245,241,.35);color:var(--on-olive);border-radius:999px;padding:5px 12px;font-size:13px}
+.demo-bar{background:var(--ochre-wash);color:var(--ink);font-size:13px;padding:8px 16px;text-align:center;border-bottom:1px solid var(--line)}
+
+main{max-width:760px;margin:0 auto;padding:16px 16px 110px}
+.search{display:flex;gap:8px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:0 12px}
+.search input{flex:1;min-width:0;border:0;background:transparent;padding:12px 0;outline:none;font-size:16px}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:12px 0 4px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 12px;font-size:13px;color:var(--ink-2)}
+.chip[aria-pressed="true"]{background:var(--olive);border-color:var(--olive);color:var(--on-olive)}
+.count{font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-3);margin:14px 2px 8px}
+
+.list{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.row{display:grid;grid-template-columns:1fr auto;gap:4px 12px;padding:14px 16px;border:0;border-bottom:1px solid var(--line);background:transparent;text-align:left;width:100%}
+.row:last-child{border-bottom:0}
+.row:hover{background:var(--wash)}
+.row-name{font-weight:600;font-size:16px;min-width:0;overflow-wrap:anywhere}
+.row-meta{grid-column:1;font-size:13px;color:var(--ink-2);display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center}
+.row-price{grid-column:2;grid-row:1 / span 2;text-align:right;align-self:center}
+.row-price b{display:block;font-family:var(--f-mono);font-weight:500;font-size:15px}
+.row-price span{font-size:12px;color:var(--ink-3)}
+.cat{font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--ochre);font-weight:600}
+.pill{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.4px;border-radius:999px;padding:2px 8px}
+.pill.approved{background:var(--ok-wash);color:var(--ok)}
+.pill.pending{background:var(--warn-wash);color:var(--warn)}
+.pill.rejected{background:var(--bad-wash);color:var(--bad)}
+.pill.inactive{background:var(--wash);color:var(--ink-3)}
+.empty{padding:36px 20px;text-align:center;color:var(--ink-2)}
+.empty h3{font-family:var(--f-display);font-weight:400;font-size:20px;margin:0 0 6px;color:var(--ink)}
+
+.fab{position:fixed;right:16px;bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:6;background:var(--ochre);color:#1b1206;border:0;border-radius:999px;padding:14px 20px;font-weight:600;box-shadow:0 6px 18px rgba(0,0,0,.18)}
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--card);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));display:flex;justify-content:center;gap:4px}
+.tab{flex:1;max-width:180px;border:0;background:transparent;padding:8px 4px;border-radius:8px;font-size:13px;color:var(--ink-3);display:flex;flex-direction:column;align-items:center;gap:3px;position:relative}
+.tab svg{width:22px;height:22px}
+.tab[aria-current="page"]{color:var(--tab-on);font-weight:600}
+.badge{position:absolute;top:2px;left:calc(50% + 6px);background:var(--ochre);color:#1b1206;font-size:10px;font-weight:700;border-radius:999px;padding:1px 6px}
+
+/* buttons */
+.btn{border:0;border-radius:8px;padding:11px 16px;font-weight:600;font-size:15px}
+.btn.primary{background:var(--olive);color:var(--on-olive)}
+.btn.accent{background:var(--ochre);color:#1b1206}
+.btn.soft{background:var(--wash);color:var(--ink)}
+.btn.danger{background:var(--bad-wash);color:var(--bad)}
+.btn:disabled{opacity:.5;cursor:default}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap}
+
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgba(10,18,14,.45);z-index:20}
+.sheet{position:fixed;left:0;right:0;bottom:0;top:calc(24px + env(safe-area-inset-top,0px));z-index:21;background:var(--ground);border-radius:16px 16px 0 0;display:flex;flex-direction:column;max-width:760px;margin:0 auto;box-shadow:0 -8px 30px rgba(0,0,0,.2)}
+@media (prefers-reduced-motion:no-preference){.sheet{animation:up .22s ease-out}@keyframes up{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}}
+.sheet-head{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
+.sheet-head h2{font-family:var(--f-display);font-weight:400;font-size:20px;margin:0;flex:1;min-width:0;overflow-wrap:anywhere}
+.x{border:0;background:var(--wash);border-radius:999px;width:34px;height:34px;font-size:18px;line-height:1}
+.sheet-body{flex:1;overflow-y:auto;padding:16px 16px 24px}
+.sheet-foot{padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);background:var(--card);display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+
+fieldset{border:0;margin:0 0 18px;padding:0}
+legend{font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink-3);font-weight:600;margin-bottom:8px;padding:0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.f{display:flex;flex-direction:column;gap:4px;min-width:0}
+.f.wide{grid-column:1 / -1}
+.f label{font-size:13px;color:var(--ink-2)}
+.f label em{color:var(--bad);font-style:normal}
+.f input,.f select,.f textarea{width:100%;border:1px solid var(--line);background:var(--card);border-radius:8px;padding:10px 11px;font-size:16px}
+.f textarea{resize:vertical;min-height:64px}
+.hint{font-size:12px;color:var(--ink-3)}
+.dup{background:var(--warn-wash);color:var(--warn);border-radius:8px;padding:10px 12px;font-size:13px;margin-top:8px}
+.stars{display:flex;gap:4px}
+.stars button{border:1px solid var(--line);background:var(--card);border-radius:8px;width:38px;height:38px;font-family:var(--f-mono)}
+.stars button[aria-pressed="true"]{background:var(--ochre);border-color:var(--ochre);color:#1b1206;font-weight:600}
+
+/* detail */
+.dl{display:grid;grid-template-columns:minmax(110px,38%) 1fr;gap:8px 14px;margin:0 0 18px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+.dl dt{font-size:13px;color:var(--ink-3)}
+.dl dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.stamp{font-size:12px;color:var(--ink-3);margin-top:-6px}
+.idtag{font-family:var(--f-mono);font-size:12px;color:var(--ink-3)}
+
+/* panels */
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:14px}
+.panel h3{font-family:var(--f-display);font-weight:400;font-size:19px;margin:0 0 4px}
+.panel p{margin:0 0 12px;color:var(--ink-2);font-size:14px}
+.rev{display:flex;gap:12px;align-items:center;padding:12px 0;border-top:1px solid var(--line);flex-wrap:wrap}
+.rev:first-of-type{border-top:0}
+.rev .who2{flex:1;min-width:180px}
+.rev .who2 b{display:block}
+.rev .who2 span{font-size:13px;color:var(--ink-2)}
+.person{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.person span{flex:1;min-width:0;overflow-wrap:anywhere}
+.addrow{display:flex;gap:8px;flex-wrap:wrap}
+.addrow input{flex:1;min-width:180px;border:1px solid var(--line);background:var(--ground);border-radius:8px;padding:10px 11px;font-size:16px}
+textarea.out{width:100%;min-height:160px;font-family:var(--f-mono);font-size:12px;border:1px solid var(--line);border-radius:8px;background:var(--ground);padding:10px}
+
+/* sign in */
+.gate{min-height:100%;display:flex;align-items:center;justify-content:center;padding:32px 16px}
+.gate-card{width:100%;max-width:400px}
+.gate .mark{font-family:var(--f-display);font-size:34px;color:var(--mark);line-height:1.05;margin:0 0 6px}
+.gate p{color:var(--ink-2);margin:0 0 22px}
+.gate .f{margin-bottom:12px}
+.gate .btn{width:100%}
+.msg{margin-top:14px;font-size:14px;border-radius:8px;padding:10px 12px}
+.msg.ok{background:var(--ok-wash);color:var(--ok)}
+.msg.err{background:var(--bad-wash);color:var(--bad)}
+.files{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px;margin-bottom:12px}
+.file{position:relative;display:flex;flex-direction:column;gap:4px;min-width:0}
+.file a.thumb{display:flex;align-items:center;justify-content:center;aspect-ratio:1;max-width:100%;border:1px solid var(--line);border-radius:8px;background:var(--wash);overflow:hidden;text-decoration:none;color:var(--ink-2)}
+.file a.thumb img{width:100%;height:100%;object-fit:cover}
+.file .doc{font-family:var(--f-mono);font-size:13px;font-weight:500;color:var(--bad)}
+.file .fname{font-size:12px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file .fkind{font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--ochre);font-weight:600}
+.file .rm{position:absolute;top:4px;right:4px;border:0;border-radius:999px;background:var(--card);color:var(--bad);font-size:12px;padding:3px 8px;box-shadow:0 1px 4px rgba(0,0,0,.15)}
+.upl{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:var(--card);border:1px dashed var(--line);border-radius:var(--r);padding:12px}
+.upl select{border:1px solid var(--line);background:var(--ground);border-radius:8px;padding:9px 10px;font-size:15px}
+.upl .hint{flex-basis:100%}
+.clip{font-size:12px;color:var(--ink-3)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(140px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--ground);padding:10px 16px;border-radius:999px;font-size:14px;z-index:40;max-width:calc(100% - 32px)}
+</style>
+
+<div id="app"></div>
+<div id="toast" class="toast" hidden></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+(function(){
+"use strict";
+// ---------- config ----------
+const SUPABASE_URL = "https://wjuqtjlrtcywjaspjpwu.supabase.co";
+const SUPABASE_KEY = "sb_publishable_uEEI8iTld1pPzys6GL0QnA_b4WVb_2A";
+const OWNER = "daniel@eretzisraeltours.com";
+// Live on its own website; sample-data preview anywhere else (e.g. inside Claude).
+const LIVE = /(^|\.)github\.io$/.test(location.hostname) || /eretzisraeltours\.com$/.test(location.hostname);
+
+// R5 field order (from itinerary_builder R5 saveVendor)
+const R5_FIELDS = ['name','category','active','contactPerson','phone','whatsapp','email','website','location','languages','kosher','maxCap','listedPrice','listedPriceVatTreatment','agentPrice','agentPriceVatTreatment','maxPax','priceBasis','currency','payTerms','cancelPolicy','cancelNoticeAmount','cancelNoticeUnit','cancelDayType','cancelPenalty','cancelPolicyVerifiedDate','npResLink','rateReliability','rateService','rateValue','strengths','weaknesses','notes'];
+const CATEGORIES = ['Hotel','Guide','Transport','Restaurant','Attraction / Site','Activity','National Park','Flight','Other'];
+const BASIS = ['Per person','Per group','Per vehicle','Per guide','Per hour','Per day','Flat rate','Custom'];
+const VAT = [['','Unknown'],['including_vat','Including VAT'],['plus_vat','Plus VAT'],['not_applicable','VAT not applicable']];
+const CUR_SIGN = {ILS:'₪',USD:'$',EUR:'€'};
+
+const normN = s => String(s||'').toLowerCase().replace(/\s+/g,' ').replace(/[.,;:!?]/g,'').trim();
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const blank = () => Object.fromEntries(R5_FIELDS.map(k=>[k,'']));
+const fmtDate = iso => { try{ return new Date(iso).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});}catch(e){return ''} };
+const newId = () => 'vendor_' + Array.from({length:7},()=> '0123456789abcdefghijklmnopqrstuvwxyz'[Math.floor(Math.random()*36)]).join('');
+
+// ---------- sample data (preview only) ----------
+function sample(){
+  const now = Date.now(), d = n => new Date(now - n*86400000).toISOString();
+  const v = (o)=>Object.assign(blank(),{active:'Active',priceBasis:'Per person',currency:'ILS',review_status:'approved',created_by:'daniel@eretzisraeltours.com',updated_by:'daniel@eretzisraeltours.com',created_at:d(20),updated_at:d(3)},o);
+  return [
+    v({id:'vendor_k3m9p2x',name:'Golan Heights Jeep Tours',category:'Activity',contactPerson:'Moshe Levi',phone:'+972 52 555 0142',whatsapp:'+972 52 555 0142',location:'Golan Heights',languages:'English, Hebrew',maxCap:'28',listedPrice:'450',listedPriceVatTreatment:'including_vat',agentPrice:'360',agentPriceVatTreatment:'plus_vat',priceBasis:'Per person',payTerms:'Invoice after the tour',cancelPolicy:'Free cancellation up to 72 hours before',cancelNoticeAmount:'72',cancelNoticeUnit:'Hours',cancelPenalty:'Full charge inside 72h',cancelPolicyVerifiedDate:'2026-08-14',rateReliability:'5',rateService:'4',rateValue:'4',strengths:'Punctual, drivers speak good English',notes:'Book 2 weeks ahead in Sukkot'}),
+    v({id:'vendor_a81qz0c',name:'Dan Panorama Jerusalem',category:'Hotel',contactPerson:'Group desk',phone:'+972 2 569 5695',email:'groups@example-hotel.co.il',location:'Jerusalem',kosher:'Rabbanut',maxCap:'290',agentPrice:'1150',agentPriceVatTreatment:'not_applicable',priceBasis:'Per group',currency:'USD',payTerms:'30% deposit, balance 14 days before',cancelNoticeAmount:'21',cancelNoticeUnit:'Days',cancelDayType:'Calendar days',rateReliability:'4',rateService:'4',rateValue:'3'}),
+    v({id:'vendor_7tt2w4n',name:'Ein Gedi Nature Reserve',category:'National Park',location:'Dead Sea',npResLink:'https://www.parks.org.il',listedPrice:'33',listedPriceVatTreatment:'including_vat',agentPrice:'29',agentPriceVatTreatment:'including_vat',priceBasis:'Per person',review_status:'pending',created_by:'yossi.guide@gmail.com',updated_by:'yossi.guide@gmail.com',updated_at:d(1)}),
+    v({id:'vendor_p0lk5sd',name:'Shomron Bus Lines',category:'Transport',contactPerson:'Avi',phone:'+972 54 000 1234',location:'Ariel',maxCap:'50',agentPrice:'2400',agentPriceVatTreatment:'plus_vat',priceBasis:'Per day',payTerms:'Cash or transfer on the day',rateReliability:'3',review_status:'pending',created_by:'rachel.ops@gmail.com',updated_by:'rachel.ops@gmail.com',updated_at:d(0)}),
+    v({id:'vendor_q9x1b7e',name:'Machane Yehuda Food Walk',category:'Activity',location:'Jerusalem',kosher:'Mixed stalls, mostly Rabbanut',agentPrice:'220',priceBasis:'Per person',maxPax:'15',rateService:'5',rateValue:'5',strengths:'Families love it'}),
+    v({id:'vendor_z2c8m1v',name:'Ronit Katz',category:'Guide',phone:'+972 50 777 2211',languages:'English, Hebrew, French',agentPrice:'1600',priceBasis:'Per day',active:'Inactive',notes:'On leave until spring'})
+  ];
+}
+
+// ---------- state ----------
+const S = { files:{}, user:null, admin:false, contributor:false, vendors:[], team:[], tab:'vendors', q:'', cat:'All', busy:false };
+let sb = null;
+
+function toast(t){ const el=document.getElementById('toast'); el.textContent=t; el.hidden=false; clearTimeout(toast._t); toast._t=setTimeout(()=>el.hidden=true,2600); }
+
+// ---------- data layer ----------
+const DB = {
+  async init(){
+    if(!LIVE){ S.user={email:OWNER}; S.admin=true; S.contributor=true; S.vendors=sample();
+      S.team=[{email:OWNER,display_name:'Daniel',is_admin:true},{email:'yossi.guide@gmail.com',display_name:'Yossi',is_admin:false},{email:'rachel.ops@gmail.com',display_name:'Rachel',is_admin:false}]; return; }
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {auth:{persistSession:true,detectSessionInUrl:true,flowType:'pkce'}});
+    const { data } = await sb.auth.getSession();
+    S.user = data.session ? data.session.user : null;
+    sb.auth.onAuthStateChange((_e, sess)=>{ const was=!!S.user; S.user = sess?sess.user:null; if(!!S.user!==was) boot(); });
+    if(S.user) await DB.loadAccess();
+  },
+  async loadAccess(){
+    const me = (S.user.email||'').toLowerCase();
+    const { data } = await sb.from('contributors').select('*').eq('email', me).maybeSingle();
+    S.contributor = !!data; S.admin = !!(data && data.is_admin);
+    if(S.contributor){ await DB.loadVendors(); if(S.admin) await DB.loadTeam(); }
+  },
+  async loadVendors(){
+    if(!LIVE) return;
+    const { data, error } = await sb.from('vendors').select('*, vendor_files(count)').order('name');
+    if(error){ toast('Could not load vendors: '+error.message); return; }
+    S.vendors = data.map(v=>{ v._files=(v.vendor_files&&v.vendor_files[0]&&v.vendor_files[0].count)||0; delete v.vendor_files; return v; });
+  },
+  async loadTeam(){
+    if(!LIVE) return;
+    const { data } = await sb.from('contributors').select('*').order('added_at');
+    S.team = data||[];
+  },
+  async save(v){
+    const payload = {}; R5_FIELDS.forEach(k=>payload[k]=String(v[k]==null?'':v[k]).trim());
+    if(!LIVE){
+      const now=new Date().toISOString();
+      if(v.id){ const i=S.vendors.findIndex(x=>x.id===v.id); S.vendors[i]=Object.assign(S.vendors[i],payload,{updated_at:now,updated_by:S.user.email}); return S.vendors[i]; }
+      const row=Object.assign({id:newId(),review_status:'approved',created_by:S.user.email,updated_by:S.user.email,created_at:now,updated_at:now},payload); S.vendors.push(row); return row;
+    }
+    const q = v.id ? sb.from('vendors').update(payload).eq('id',v.id) : sb.from('vendors').insert(payload);
+    const { data, error } = await q.select().single();
+    if(error) throw error;
+    const i=S.vendors.findIndex(x=>x.id===data.id); data._files = i>=0 ? (S.vendors[i]._files||0) : 0; if(i>=0) S.vendors[i]=data; else S.vendors.push(data);
+    return data;
+  },
+  async setStatus(id, status){
+    if(!LIVE){ const v=S.vendors.find(x=>x.id===id); v.review_status=status; return; }
+    const { data, error } = await sb.from('vendors').update({review_status:status}).eq('id',id).select().single();
+    if(error) throw error; const i=S.vendors.findIndex(x=>x.id===id); data._files=S.vendors[i]._files||0; S.vendors[i]=data;
+  },
+  async remove(id){
+    if(LIVE){ const { error } = await sb.from('vendors').delete().eq('id',id); if(error) throw error; }
+    S.vendors = S.vendors.filter(x=>x.id!==id);
+  },
+  async listFiles(vid){
+    if(!LIVE) return (S.files[vid]||[]).slice();
+    const { data, error } = await sb.from('vendor_files').select('*').eq('vendor_id',vid).order('created_at',{ascending:false});
+    if(error) throw error;
+    if(data.length){ const { data: urls } = await sb.storage.from('vendor-files').createSignedUrls(data.map(f=>f.path), 3600);
+      (urls||[]).forEach((u,i)=>{ data[i].url = u && u.signedUrl; }); }
+    return data;
+  },
+  async upload(vid, file, kind){
+    const safe = file.name.replace(/[^\w.\-]+/g,'_').slice(-80) || 'file';
+    const path = `${vid}/${Date.now().toString(36)}-${Math.random().toString(36).slice(2,6)}-${safe}`;
+    const row = { vendor_id:vid, path, file_name:file.name, mime_type:file.type||'', size_bytes:file.size, kind };
+    if(!LIVE){ (S.files[vid]=S.files[vid]||[]).unshift(Object.assign({id:path,uploaded_by:S.user.email,created_at:new Date().toISOString(),url:URL.createObjectURL(file)},row)); }
+    else {
+      const up = await sb.storage.from('vendor-files').upload(path, file, { contentType:file.type||undefined, upsert:false });
+      if(up.error) throw up.error;
+      const { error } = await sb.from('vendor_files').insert(row);
+      if(error){ await sb.storage.from('vendor-files').remove([path]); throw error; }
+    }
+    const v=S.vendors.find(x=>x.id===vid); if(v) v._files=(v._files||0)+1;
+  },
+  async removeFile(f){
+    if(LIVE){ const { error } = await sb.from('vendor_files').delete().eq('id',f.id); if(error) throw error; await sb.storage.from('vendor-files').remove([f.path]); }
+    else S.files[f.vendor_id]=(S.files[f.vendor_id]||[]).filter(x=>x.id!==f.id);
+    const v=S.vendors.find(x=>x.id===f.vendor_id); if(v) v._files=Math.max(0,(v._files||1)-1);
+  },
+  async addPerson(email,name){
+    email=email.trim().toLowerCase();
+    if(!LIVE){ if(!S.team.find(p=>p.email===email)) S.team.push({email,display_name:name,is_admin:false}); return; }
+    const { error } = await sb.from('contributors').insert({email,display_name:name||null}); if(error) throw error; await DB.loadTeam();
+  },
+  async removePerson(email){
+    if(!LIVE){ S.team=S.team.filter(p=>p.email!==email); return; }
+    const { error } = await sb.from('contributors').delete().eq('email',email); if(error) throw error; await DB.loadTeam();
+  }
+};
+
+// ---------- views ----------
+const app = document.getElementById('app');
+const icons = {
+  list:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg>',
+  people:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 14.8c1.6.8 2.6 2.6 3 5.2"/></svg>',
+  search:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:var(--ink-3)"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>'
+};
+
+function statusPill(v){
+  if(v.active==='Inactive') return '<span class="pill inactive">Inactive</span>';
+  const s=v.review_status||'pending';
+  return `<span class="pill ${s}">${s==='approved'?'Approved':s==='rejected'?'Rejected':'Pending review'}</span>`;
+}
+function priceLine(v){
+  const p = v.agentPrice || v.listedPrice; if(!p) return '';
+  const sign = CUR_SIGN[v.currency]||'';
+  return `<b>${esc(sign)}${esc(Number(p).toLocaleString('en-US'))}</b><span>${esc((v.priceBasis||'').toLowerCase())}${v.agentPrice?'':' · listed'}</span>`;
+}
+
+function boot(){
+  if(LIVE && !S.user) return renderGate();
+  if(LIVE && S.user && !S.contributor) return renderNoAccess();
+  render();
+}
+
+function renderGate(msg){
+  app.innerHTML = `<div class="gate"><form class="gate-card" id="gateForm" novalidate>
+    <h1 class="mark">EIT Vendors</h1>
+    <p>The shared vendor list for Eretz Israel Tours. Enter your email and we'll send you a sign-in link. No password needed.</p>
+    <div class="f"><label for="gEmail">Email</label><input id="gEmail" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com" required></div>
+    <button class="btn primary" id="gSend" type="submit">Email me a sign-in link</button>
+    <div id="gMsg">${msg||''}</div>
+  </form></div>`;
+  document.getElementById('gateForm').addEventListener('submit', async e=>{
+    e.preventDefault();
+    const email=document.getElementById('gEmail').value.trim(); const out=document.getElementById('gMsg');
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ out.innerHTML='<div class="msg err">Enter a full email address, like name@gmail.com.</div>'; return; }
+    const b=document.getElementById('gSend'); b.disabled=true; b.textContent='Sending…';
+    const { error } = await sb.auth.signInWithOtp({ email, options:{ emailRedirectTo: location.origin+location.pathname } });
+    b.disabled=false; b.textContent='Email me a sign-in link';
+    out.innerHTML = error ? `<div class="msg err">${esc(error.message)}. Wait a minute and try again.</div>` : `<div class="msg ok">Check ${esc(email)} for a link from Supabase, then open it on this device.</div>`;
+  });
+}
+function renderNoAccess(){
+  app.innerHTML = `<div class="gate"><div class="gate-card">
+    <h1 class="mark">Almost there</h1>
+    <p>You're signed in as <b>${esc(S.user.email)}</b>, but this email isn't on the contributor list yet. Ask Daniel to add it, then reopen this page.</p>
+    <button class="btn soft" id="out">Sign in with a different email</button></div></div>`;
+  document.getElementById('out').onclick=()=>sb.auth.signOut();
+}
+
+function filtered(){
+  const q=normN(S.q);
+  return S.vendors.filter(v=>(S.cat==='All'||v.category===S.cat) && (!q || normN([v.name,v.location,v.contactPerson,v.category,v.notes].join(' ')).includes(q)))
+    .sort((a,b)=>a.name.localeCompare(b.name));
+}
+
+function render(){
+  const pending = S.vendors.filter(v=>v.review_status==='pending').length;
+  const tabs = [['vendors','Vendors',icons.list]];
+  if(S.admin){ tabs.push(['review','Review',icons.check]); tabs.push(['team','Team',icons.people]); }
+  app.innerHTML = `
+    <header class="top"><div class="top-row">
+      <div class="brand">EIT Vendors<small>Eretz Israel Tours</small></div>
+      <div class="who"><span>${esc(S.user.email)}</span>${LIVE?'<button class="ghost-btn" id="signOut">Sign out</button>':''}</div>
+    </div></header>
+    ${LIVE?'':'<div class="demo-bar">Preview with sample vendors. Changes here aren\'t saved.</div>'}
+    <main id="view"></main>
+    ${S.tab==='vendors'?'<button class="fab" id="add">+ Add vendor</button>':''}
+    ${tabs.length>1?`<nav class="tabs">${tabs.map(([k,l,ic])=>`<button class="tab" data-tab="${k}" ${S.tab===k?'aria-current="page"':''}>${ic}${l}${k==='review'&&pending?`<span class="badge">${pending}</span>`:''}</button>`).join('')}</nav>`:''}`;
+  const so=document.getElementById('signOut'); if(so) so.onclick=()=>sb.auth.signOut();
+  app.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{S.tab=t.dataset.tab; render();});
+  const add=document.getElementById('add'); if(add) add.onclick=()=>openForm(null);
+  ({vendors:viewVendors, review:viewReview, team:viewTeam})[S.tab]();
+}
+
+function viewVendors(){
+  const view=document.getElementById('view');
+  const cats=['All',...CATEGORIES.filter(c=>S.vendors.some(v=>v.category===c))];
+  view.innerHTML = `
+    <label class="search" for="q">${icons.search}<input id="q" type="search" placeholder="Search name, area, contact" value="${esc(S.q)}" autocomplete="off"></label>
+    <div class="chips" role="group" aria-label="Filter by category">${cats.map(c=>`<button class="chip" data-cat="${esc(c)}" aria-pressed="${S.cat===c}">${esc(c)}</button>`).join('')}</div>
+    <div id="results"></div>`;
+  const q=document.getElementById('q');
+  q.addEventListener('input',()=>{S.q=q.value; drawList();});
+  view.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{S.cat=c.dataset.cat; viewVendors();});
+  drawList();
+}
+function drawList(){
+  const rows=filtered(); const box=document.getElementById('results');
+  if(!S.vendors.length){ box.innerHTML=`<div class="list"><div class="empty"><h3>No vendors yet</h3>Tap <b>Add vendor</b> to add the first hotel, guide, bus company or site.</div></div>`; return; }
+  box.innerHTML = `<div class="count">${rows.length} of ${S.vendors.length} vendors</div>` + (rows.length? `<div class="list">${rows.map(v=>`
+    <button class="row" data-id="${esc(v.id)}">
+      <span class="row-name">${esc(v.name)}</span>
+      <span class="row-price">${priceLine(v)}</span>
+      <span class="row-meta"><span class="cat">${esc(v.category)}</span>${v.location?`<span>${esc(v.location)}</span>`:''}${statusPill(v)}${v._files?`<span class="clip">📎 ${v._files}</span>`:''}</span>
+    </button>`).join('')}</div>` : `<div class="list"><div class="empty"><h3>Nothing matches</h3>Try a shorter search or pick “All”.</div></div>`);
+  box.querySelectorAll('.row').forEach(r=>r.onclick=()=>openDetail(r.dataset.id));
+}
+
+function viewReview(){
+  const view=document.getElementById('view');
+  const pend=S.vendors.filter(v=>v.review_status==='pending');
+  const appr=S.vendors.filter(v=>v.review_status==='approved');
+  view.innerHTML = `
+    <section class="panel"><h3>Waiting for your review</h3>
+      <p>New vendors and any edits by colleagues land here. Only approved vendors go into the R5 export.</p>
+      ${pend.length? pend.map(v=>`<div class="rev"><div class="who2"><b>${esc(v.name)}</b><span>${esc(v.category)} · by ${esc(v.updated_by)} · ${fmtDate(v.updated_at)}</span></div>
+        <div class="btn-row"><button class="btn soft" data-open="${esc(v.id)}">View</button><button class="btn primary" data-ok="${esc(v.id)}">Approve</button></div></div>`).join('') : '<div class="empty" style="padding:16px">All caught up.</div>'}
+    </section>
+    <section class="panel"><h3>Export for R5</h3>
+      <p>Builds an import file with the ${appr.length} approved vendor${appr.length===1?'':'s'}, in R5's trip-file format. Save your open trip in R5 before importing, because importing clears the trip view.</p>
+      <div class="btn-row"><button class="btn accent" id="exp" ${appr.length?'':'disabled'}>Build R5 import file</button></div>
+      <div id="expOut"></div>
+    </section>`;
+  view.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>openDetail(b.dataset.open));
+  view.querySelectorAll('[data-ok]').forEach(b=>b.onclick=async()=>{ try{ await DB.setStatus(b.dataset.ok,'approved'); toast('Approved'); render(); }catch(e){ toast(e.message); } });
+  document.getElementById('exp').onclick=()=>exportR5(appr);
+}
+function exportR5(list){
+  const vendors = list.map(v=>{ const o={id:v.id}; R5_FIELDS.forEach(k=>o[k]=String(v[k]==null?'':v[k])); return o; });
+  const file = { _exportFormatVersion:3, _tripVendors:vendors, days:[] };
+  const json = JSON.stringify(file,null,2);
+  const name = `EIT_vendors_${new Date().toISOString().slice(0,10)}.json`;
+  const out=document.getElementById('expOut');
+  out.innerHTML = `<p style="margin:12px 0 8px">${vendors.length} vendors ready.</p>
+    <div class="btn-row" style="margin-bottom:8px">${LIVE?'<button class="btn primary" id="dl">Download '+esc(name)+'</button>':''}<button class="btn soft" id="cp">Copy file contents</button></div>
+    <textarea class="out" id="expText" readonly>${esc(json)}</textarea>`;
+  const dl=document.getElementById('dl'); if(dl) dl.onclick=()=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([json],{type:'application/json'})); a.download=name; document.body.appendChild(a); a.click(); a.remove(); };
+  document.getElementById('cp').onclick=()=>{ const t=document.getElementById('expText'); navigator.clipboard.writeText(json).then(()=>toast('Copied')).catch(()=>{t.focus();t.select();toast('Selected. Copy it from here.');}); };
+}
+
+function viewTeam(){
+  const view=document.getElementById('view');
+  view.innerHTML = `<section class="panel"><h3>Who can add vendors</h3>
+    <p>Only these emails can sign in and see the list. Colleagues sign in with a link sent to their email.</p>
+    <form class="addrow" id="addP" novalidate><input id="pEmail" type="email" placeholder="colleague@gmail.com" inputmode="email"><input id="pName" type="text" placeholder="Name (optional)" style="flex:.6"><button class="btn primary" type="submit">Add</button></form>
+    <div id="team" style="margin-top:10px">${S.team.map(p=>`<div class="person"><span><b>${esc(p.display_name||p.email.split('@')[0])}</b><br><span class="hint">${esc(p.email)}${p.is_admin?' · admin':''}</span></span>${p.is_admin?'':`<button class="btn danger" data-rm="${esc(p.email)}">Remove</button>`}</div>`).join('')}</div>
+  </section>`;
+  document.getElementById('addP').addEventListener('submit',async e=>{ e.preventDefault(); const em=document.getElementById('pEmail').value; const nm=document.getElementById('pName').value.trim();
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em.trim())){ toast('Enter a full email address'); return; }
+    try{ await DB.addPerson(em,nm); toast('Added. They can sign in now.'); viewTeam(); }catch(err){ toast(err.message); } });
+  view.querySelectorAll('[data-rm]').forEach(b=>b.onclick=async()=>{
+    if(b.dataset.confirm!=='1'){ b.dataset.confirm='1'; b.textContent='Tap again to remove'; return; }
+    try{ await DB.removePerson(b.dataset.rm); toast('Removed'); viewTeam(); }catch(e){ toast(e.message); } });
+}
+
+// ---------- sheets ----------
+function sheet(title, body, foot){
+  closeSheet();
+  const wrap=document.createElement('div'); wrap.id='sheetWrap';
+  wrap.innerHTML=`<div class="scrim" id="scrim"></div><div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(title)}">
+    <div class="sheet-head"><h2>${esc(title)}</h2><button class="x" id="closeS" aria-label="Close">×</button></div>
+    <div class="sheet-body">${body}</div>${foot?`<div class="sheet-foot">${foot}</div>`:''}</div>`;
+  document.body.appendChild(wrap); document.body.style.overflow='hidden';
+  wrap.querySelector('#scrim').onclick=closeSheet; wrap.querySelector('#closeS').onclick=closeSheet;
+  return wrap;
+}
+function closeSheet(){ const w=document.getElementById('sheetWrap'); if(w){ w.remove(); document.body.style.overflow=''; } }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeSheet(); });
+
+function vatLabel(x){ const f=VAT.find(p=>p[0]===x); return f&&x?f[1]:''; }
+function openDetail(id){
+  const v=S.vendors.find(x=>x.id===id); if(!v) return;
+  const sign=CUR_SIGN[v.currency]||'';
+  const rows=(pairs)=>pairs.filter(p=>p[1]).map(([k,val])=>`<dt>${k}</dt><dd>${val}</dd>`).join('');
+  const price=(p,vat)=>p?`<span class="mono">${esc(sign)}${esc(p)}</span>${vatLabel(vat)?` <span class="hint">${esc(vatLabel(vat))}</span>`:''}`:'';
+  const notice=v.cancelNoticeAmount?`${esc(v.cancelNoticeAmount)} ${esc((v.cancelNoticeUnit||'').toLowerCase())}${v.cancelDayType?' ('+esc(v.cancelDayType.toLowerCase())+')':''}`:'';
+  const rating=['rateReliability','rateService','rateValue'].map((k,i)=>v[k]?`${['Reliability','Service','Value'][i]} <b class="mono">${esc(v[k])}/5</b>`:'').filter(Boolean).join(' · ');
+  const sections=[
+    ['Contact',rows([['Contact',esc(v.contactPerson)],['Phone',v.phone?`<span class="mono">${esc(v.phone)}</span>`:''],['WhatsApp',v.whatsapp?`<span class="mono">${esc(v.whatsapp)}</span>`:''],['Email',esc(v.email)],['Website',v.website?`<a href="${esc(/^https?:/.test(v.website)?v.website:'https://'+v.website)}" target="_blank" rel="noopener">${esc(v.website)}</a>`:''],['Area',esc(v.location)],['Languages',esc(v.languages)],['Kosher',esc(v.kosher)],['Max capacity',v.maxCap?esc(v.maxCap)+' pax':''],['Park booking',v.npResLink?`<a href="${esc(v.npResLink)}" target="_blank" rel="noopener">Reservation page</a>`:'']])],
+    ['Pricing',rows([['Agent price',price(v.agentPrice,v.agentPriceVatTreatment)],['Listed price',price(v.listedPrice,v.listedPriceVatTreatment)],['Basis',esc(v.priceBasis)],['Max pax',esc(v.maxPax)],['Payment terms',esc(v.payTerms)]])],
+    ['Cancellation',rows([['Policy',esc(v.cancelPolicy)],['Notice',notice],['Penalty',esc(v.cancelPenalty)],['Verified',esc(v.cancelPolicyVerifiedDate)]])],
+    ['Experience',rows([['Ratings',rating],['Strengths',esc(v.strengths)],['Weaknesses',esc(v.weaknesses)],['Notes',esc(v.notes)]])]
+  ].filter(s=>s[1]);
+  const body=`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px"><span class="cat">${esc(v.category)}</span>${statusPill(v)}<span class="idtag">${esc(v.id)}</span></div>
+    ${sections.map(([h,dl])=>`<fieldset><legend>${h}</legend><dl class="dl">${dl}</dl></fieldset>`).join('') || '<p class="hint">Only the name is filled in so far.</p>'}
+    <fieldset><legend>Photos, receipts and PDFs</legend><div id="filesBox"><p class="hint">Loading files…</p></div></fieldset>
+    <p class="stamp">Added by ${esc(v.created_by)} on ${fmtDate(v.created_at)}. Last changed by ${esc(v.updated_by)} on ${fmtDate(v.updated_at)}.</p>`;
+  let foot=`<button class="btn primary" id="edit">Edit</button>`;
+  if(S.admin){
+    foot = `<button class="btn danger" id="del">Delete</button><span style="flex:1"></span>`
+      + (v.review_status!=='approved'?'<button class="btn soft" id="rej">Reject</button><button class="btn accent" id="appr">Approve</button>':'') + foot;
+  }
+  const w=sheet(v.name, body, foot);
+  w.querySelector('#edit').onclick=()=>openForm(v);
+  drawFiles(v);
+  const a=w.querySelector('#appr'); if(a) a.onclick=async()=>{ try{await DB.setStatus(v.id,'approved'); closeSheet(); toast('Approved'); render();}catch(e){toast(e.message);} };
+  const r=w.querySelector('#rej'); if(r) r.onclick=async()=>{ try{await DB.setStatus(v.id,'rejected'); closeSheet(); toast('Marked rejected'); render();}catch(e){toast(e.message);} };
+  const d=w.querySelector('#del'); if(d) d.onclick=async()=>{ if(d.dataset.c!=='1'){ d.dataset.c='1'; d.textContent='Tap again to delete'; return; } try{await DB.remove(v.id); closeSheet(); toast('Deleted'); render();}catch(e){toast(e.message);} };
+}
+
+const KINDS=['Photo','Receipt','Price list','Contract','Other'];
+async function shrink(file){
+  // Phone photos are large; resize to max 2000px JPEG. Keep PDFs and anything the browser can't decode as-is.
+  if(!/^image\/(jpeg|png|webp)$/.test(file.type) || file.size < 1500000) return file;
+  try{
+    const bmp = await createImageBitmap(file); const k = Math.min(1, 2000/Math.max(bmp.width,bmp.height));
+    const c=document.createElement('canvas'); c.width=Math.round(bmp.width*k); c.height=Math.round(bmp.height*k);
+    c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);
+    const blob = await new Promise(r=>c.toBlob(r,'image/jpeg',0.85));
+    return blob && blob.size < file.size ? new File([blob], file.name.replace(/\.\w+$/,'')+'.jpg', {type:'image/jpeg'}) : file;
+  }catch(e){ return file; }
+}
+async function drawFiles(v){
+  const box=document.getElementById('filesBox'); if(!box) return;
+  let files=[]; try{ files=await DB.listFiles(v.id); }catch(e){ box.innerHTML=`<div class="msg err">Couldn't load files: ${esc(e.message)}</div>`; return; }
+  const me=(S.user.email||'').toLowerCase();
+  box.innerHTML = (files.length?`<div class="files">${files.map((f,i)=>{
+      const img=/^image\//.test(f.mime_type) && !/hei[cf]/.test(f.mime_type);
+      const inner = img && f.url ? `<img src="${esc(f.url)}" alt="${esc(f.file_name)}" loading="lazy">` : `<span class="doc">${/pdf/.test(f.mime_type)?'PDF':'FILE'}</span>`;
+      const canRm = S.admin || f.uploaded_by===me;
+      return `<div class="file"><a class="thumb" href="${esc(f.url||'#')}" target="_blank" rel="noopener">${inner}</a>
+        <span class="fkind">${esc(f.kind)}</span><span class="fname" title="${esc(f.file_name)}">${esc(f.file_name)}</span>
+        ${canRm?`<button class="rm" data-i="${i}" type="button">Remove</button>`:''}</div>`; }).join('')}</div>`
+    : `<p class="hint" style="margin:0 0 10px">No files yet. Add a photo of the place, a receipt, a price list or a contract.</p>`)
+  + `<div class="upl"><select id="upKind" aria-label="What is it?">${KINDS.map(k=>`<option>${k}</option>`).join('')}</select>
+      <label class="btn accent" for="upFile" style="display:inline-block">Add photo or file</label>
+      <input id="upFile" type="file" accept="image/*,application/pdf" multiple hidden>
+      <span class="hint" id="upMsg">Photos and PDFs, up to 10 MB each.</span></div>`;
+  box.querySelectorAll('.rm').forEach(b=>b.onclick=async()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again'; return; }
+    try{ await DB.removeFile(files[+b.dataset.i]); toast('File removed'); drawFiles(v); }catch(e){ toast(e.message); } });
+  const input=box.querySelector('#upFile'), msg=box.querySelector('#upMsg');
+  input.onchange=async()=>{
+    const picked=[...input.files]; if(!picked.length) return; const kind=box.querySelector('#upKind').value; let ok=0;
+    for(const [n,f0] of picked.entries()){
+      msg.textContent=`Uploading ${n+1} of ${picked.length}…`;
+      if(!/^image\/|^application\/pdf$/.test(f0.type) && !/\.(pdf|heic|heif)$/i.test(f0.name)){ toast(`${f0.name}: only photos and PDFs`); continue; }
+      const f=await shrink(f0);
+      if(f.size>10485760){ toast(`${f0.name} is over 10 MB`); continue; }
+      try{ await DB.upload(v.id,f,kind); ok++; }catch(e){ toast(`${f0.name}: ${e.message}`); }
+    }
+    if(ok) toast(ok===1?'File added':`${ok} files added`);
+    drawFiles(v);
+  };
+}
+
+function openForm(v){
+  const x = Object.assign(blank(), {active:'Active',priceBasis:'Per person',currency:'ILS',category:''}, v||{});
+  const inp=(k,label,type='text',ph='',wide=false,req=false)=>`<div class="f${wide?' wide':''}"><label for="f_${k}">${label}${req?' <em>*</em>':''}</label><input id="f_${k}" name="${k}" type="${type}" value="${esc(x[k])}" placeholder="${esc(ph)}"${type==='number'?' inputmode="decimal" min="0" step="any"':''}${type==='tel'?' inputmode="tel"':''}></div>`;
+  const sel=(k,label,opts,wide=false,req=false)=>`<div class="f${wide?' wide':''}"><label for="f_${k}">${label}${req?' <em>*</em>':''}</label><select id="f_${k}" name="${k}">${opts.map(o=>{const [val,t]=Array.isArray(o)?o:[o,o];return `<option value="${esc(val)}"${String(x[k])===val?' selected':''}>${esc(t)}</option>`}).join('')}</select></div>`;
+  const area=(k,label,ph)=>`<div class="f wide"><label for="f_${k}">${label}</label><textarea id="f_${k}" name="${k}" rows="2" placeholder="${esc(ph)}">${esc(x[k])}</textarea></div>`;
+  const stars=(k,label)=>`<div class="f"><label>${label}</label><div class="stars" data-k="${k}">${[1,2,3,4,5].map(n=>`<button type="button" data-n="${n}" aria-pressed="${x[k]===String(n)}" aria-label="${label} ${n}">${n}</button>`).join('')}</div><input type="hidden" id="f_${k}" name="${k}" value="${esc(x[k])}"></div>`;
+  const body=`<form id="vf" novalidate>
+    <fieldset><legend>Vendor</legend><div class="grid">
+      ${inp('name','Vendor or company name','text','Golan Jeeps Ltd.',true,true)}
+      <div id="dupBox" class="f wide" hidden></div>
+      ${sel('category','Category',[['','Choose…'],...CATEGORIES],false,true)}
+      ${sel('active','Status',['Active','Inactive'])}
+      <div class="f wide" id="npWrap" ${x.category==='National Park'?'':'hidden'}><label for="f_npResLink">National park booking link</label><input id="f_npResLink" name="npResLink" type="url" value="${esc(x.npResLink)}" placeholder="https://booking.parks.org.il/…"></div>
+    </div></fieldset>
+    <fieldset><legend>Contact</legend><div class="grid">
+      ${inp('contactPerson','Contact person','text','Moshe Cohen')}${inp('phone','Phone','tel','+972 52 000 0000')}${inp('whatsapp','WhatsApp','tel','+972 52 000 0000')}
+      ${inp('email','Email','email')}${inp('website','Website','text','example.co.il')}${inp('location','Area','text','Golan Heights')}
+      ${inp('languages','Languages','text','English, Hebrew')}${inp('kosher','Kosher status','text','Mehadrin / Rabbanut / N/A')}${inp('maxCap','Max capacity (people)','number')}
+    </div></fieldset>
+    <fieldset><legend>Pricing</legend><div class="grid">
+      ${inp('agentPrice','Agent price (ours)','number','0')}${sel('agentPriceVatTreatment','Agent price VAT',VAT)}
+      ${inp('listedPrice','Listed price (public)','number','0')}${sel('listedPriceVatTreatment','Listed price VAT',VAT)}
+      ${sel('currency','Currency',['ILS','USD','EUR'])}${sel('priceBasis','Price basis',BASIS)}
+      ${inp('maxPax','Max people for this price','number','15')}${inp('payTerms','Payment terms','text','50% deposit, balance on arrival',true)}
+    </div><p class="hint" style="margin:8px 0 0">Leave VAT as Unknown if you're not sure.</p></fieldset>
+    <fieldset><legend>Cancellation</legend><div class="grid">
+      ${inp('cancelPolicy','Policy as written','text','Free cancellation until 48h before',true)}
+      ${inp('cancelNoticeAmount','Notice','number','7')}${sel('cancelNoticeUnit','Unit',[['','—'],'Hours','Days'])}${sel('cancelDayType','Counted in',[['','Not specified'],'Calendar days','Business days'])}
+      ${inp('cancelPenalty','Penalty','text','50% fee inside notice period')}${inp('cancelPolicyVerifiedDate','Policy checked on','date')}
+    </div></fieldset>
+    <fieldset><legend>Your experience</legend><div class="grid">
+      ${stars('rateReliability','Reliability')}${stars('rateService','Service')}${stars('rateValue','Value')}
+      ${area('strengths','Strengths','Very punctual, great English…')}${area('weaknesses','Weaknesses','Sometimes overbooks…')}${area('notes','Notes','Ask for a group discount above 10 people…')}
+    </div></fieldset>
+    <div id="formErr"></div>
+  </form>`;
+  const foot=`<button class="btn soft" id="cancel" type="button">Cancel</button><button class="btn primary" id="saveBtn" type="button">${v?'Save changes':'Add vendor'}</button>`;
+  const w=sheet(v?'Edit vendor':'New vendor', body, foot);
+  const f=w.querySelector('#vf');
+  w.querySelector('#cancel').onclick=closeSheet;
+  f.querySelector('#f_category').addEventListener('change',e=>{ f.querySelector('#npWrap').hidden = e.target.value!=='National Park'; });
+  f.querySelectorAll('.stars').forEach(g=>g.addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; const hid=f.querySelector('#f_'+g.dataset.k);
+    const val = hid.value===b.dataset.n?'':b.dataset.n; hid.value=val; g.querySelectorAll('button').forEach(o=>o.setAttribute('aria-pressed', o.dataset.n===val)); }));
+  const dupCheck=()=>{ const n=normN(f.querySelector('#f_name').value); const box=f.querySelector('#dupBox');
+    const hit = n && S.vendors.find(o=>o.id!==(v&&v.id) && normN(o.name)===n);
+    box.hidden=!hit; box.innerHTML = hit?`<div class="dup"><b>${esc(hit.name)}</b> is already on the list (${esc(hit.category)}). <button type="button" class="btn soft" style="padding:4px 10px;margin-left:4px" id="goDup">Open it</button></div>`:'';
+    const g=box.querySelector('#goDup'); if(g) g.onclick=()=>openDetail(hit.id); return hit; };
+  f.querySelector('#f_name').addEventListener('input',dupCheck); dupCheck();
+  w.querySelector('#saveBtn').onclick=async()=>{
+    const data = v?{id:v.id}:{}; R5_FIELDS.forEach(k=>{ const el=f.querySelector('#f_'+k); data[k]= el?el.value:(x[k]||''); });
+    if(data.category!=='National Park') data.npResLink = x.npResLink||data.npResLink||'';
+    const err=f.querySelector('#formErr');
+    const probs=[]; if(!data.name.trim()) probs.push('Add the vendor name.'); if(!data.category) probs.push('Choose a category.');
+    if(!v && dupCheck()) probs.push('This vendor is already on the list. Open it and edit it instead.');
+    if(probs.length){ err.innerHTML=`<div class="msg err">${probs.join(' ')}</div>`; err.scrollIntoView({block:'center'}); return; }
+    const btn=w.querySelector('#saveBtn'); btn.disabled=true; btn.textContent='Saving…';
+    try{ const saved=await DB.save(data); closeSheet(); S.tab='vendors'; render(); if(!v){ openDetail(saved.id); toast('Vendor added. You can add photos and receipts now.'); } else toast(!S.admin && LIVE ? 'Saved. Daniel will review it.' : 'Saved'); }
+    catch(e){ btn.disabled=false; btn.textContent=v?'Save changes':'Add vendor'; err.innerHTML=`<div class="msg err">Couldn't save: ${esc(e.message)}</div>`; }
+  };
+}
+
+// ---------- start ----------
+(async()=>{ try{ await DB.init(); }catch(e){ app.innerHTML='<div class="gate"><div class="gate-card"><h1 class="mark">Can\'t connect</h1><p>'+esc(e.message)+'. Check your internet connection and reload.</p></div></div>'; return; } boot(); })();
+})();
+</script>
