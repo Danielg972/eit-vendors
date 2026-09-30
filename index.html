@@ -238,8 +238,8 @@ const DB = {
     if(!LIVE){ S.user={email:OWNER}; S.me={name:'Daniel',email:OWNER,status:'approved',is_admin:true}; S.admin=true; S.contributor=true; S.vendors=sample();
       const d=n=>new Date(Date.now()-n*86400000).toISOString();
       S.members=[{id:'m1',name:'Daniel',email:OWNER,status:'approved',is_admin:true,created_at:d(30),last_seen_at:d(0)},
-        {id:'m2',name:'Yossi Ben-David',email:'yossi.guide@gmail.com',phone:'+972 52 111 2233',note:'Licensed guide, North',status:'pending',is_admin:false,created_at:d(0)},
-        {id:'m3',name:'Rachel Amar',email:'rachel.ops@gmail.com',status:'approved',is_admin:false,created_at:d(6),last_seen_at:d(1)}]; return; }
+        {id:'m2',name:'Yossi Ben-David',email:'yossi.guide@gmail.com',phone:'+972 52 111 2233',note:'Galilee and Golan',role:'Licensed tour guide',license_no:'12345',has_proof:true,status:'pending',is_admin:false,created_at:d(0)},
+        {id:'m3',name:'Rachel Amar',email:'rachel.ops@gmail.com',role:'Travel agent',license_no:'TA-2291',has_proof:true,status:'approved',is_admin:false,created_at:d(6),last_seen_at:d(1)}]; return; }
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {auth:{persistSession:false,autoRefreshToken:false}});
     S.token = readToken();
     if(S.token) await DB.loadMe();
@@ -289,12 +289,20 @@ const DB = {
     else S.files[f.vendor_id]=(S.files[f.vendor_id]||[]).filter(x=>x.id!==f.id);
     const v=S.vendors.find(x=>x.id===f.vendor_id); if(v) v._files=Math.max(0,(v._files||1)-1);
   },
-  async requestAccess(name,email,phone,note){
-    const { data, error } = await sb.rpc('request_access',{p_name:name,p_email:email,p_phone:phone,p_note:note});
+  async requestAccess(name,email,role,license,phone,note){
+    const { data, error } = await sb.rpc('request_access',{p_name:name,p_email:email,p_role:role,p_license:license,p_phone:phone,p_note:note});
     if(error) throw new Error(error.message);
     S.token=data.token; try{ localStorage.setItem(TOKEN_KEY,S.token); }catch(e){}
     await DB.loadMe();
   },
+  async uploadProof(file){
+    const sig = await filesApi('proof_upload_url',{file_name:file.name});
+    const up = await sb.storage.from('member-proofs').uploadToSignedUrl(sig.path, sig.upload_token, file, {contentType:file.type||undefined});
+    if(up.error) throw new Error(up.error.message);
+    await filesApi('proof_confirm',{path:sig.path,mime_type:file.type||''});
+    if(S.me) S.me.has_proof=true;
+  },
+  async proofUrl(id){ if(!LIVE) return null; return (await filesApi('proof_view',{member_id:id})).url; },
   async decide(id,status){
     if(!LIVE){ S.members.find(m=>m.id===id).status=status; return; }
     await rpc('member_decide',{p_id:id,p_status:status}); await DB.loadTeam();
@@ -339,27 +347,49 @@ function linkBox(id, url){
 }
 function wireCopy(root){ root.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>{ const i=root.querySelector('#'+b.dataset.copy); copyText(i.value,i); }); }
 
+const ROLES=['Licensed tour guide','Travel agent','Tour operator','Other'];
+function proofNeeded(){ return !S.me || !S.me.has_proof; }
+async function sendProof(file, out){
+  if(!file){ return false; }
+  if(!/^image\/|^application\/pdf$/.test(file.type)){ out.innerHTML='<div class="msg err">Upload a photo or a PDF of your license.</div>'; return false; }
+  const f = await shrink(file);
+  if(f.size>10485760){ out.innerHTML='<div class="msg err">That file is over 10 MB. Take a photo instead.</div>'; return false; }
+  await DB.uploadProof(f); return true;
+}
 function renderGate(msg){
   app.innerHTML = `<div class="gate"><form class="gate-card" id="gateForm" novalidate>
     <h1 class="mark">EIT Vendors</h1>
-    <p>The shared vendor list for Eretz Israel Tours guides and partners. Ask to join, and once Daniel approves you, you'll have your own link. No password needed.</p>
-    <div class="f"><label for="gName">Your name</label><input id="gName" type="text" autocomplete="name" placeholder="Yossi Cohen" required></div>
-    <div class="f"><label for="gEmail">Email</label><input id="gEmail" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com" required></div>
-    <div class="f"><label for="gPhone">Phone (optional)</label><input id="gPhone" type="tel" autocomplete="tel" inputmode="tel" placeholder="+972 52 000 0000"></div>
-    <div class="f"><label for="gNote">What do you do? (optional)</label><input id="gNote" type="text" placeholder="Licensed guide, Galilee"></div>
+    <p>The shared vendor list for licensed guides and travel professionals working with Eretz Israel Tours. Ask to join with proof of your license. Once Daniel approves you, you'll have your own link. No password needed.</p>
+    <div class="f"><label for="gName">Your name <em>*</em></label><input id="gName" type="text" autocomplete="name" placeholder="Yossi Cohen" required></div>
+    <div class="f"><label for="gEmail">Email <em>*</em></label><input id="gEmail" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com" required></div>
+    <div class="f"><label for="gRole">What do you do? <em>*</em></label><select id="gRole"><option value="">Choose…</option>${ROLES.map(r=>`<option>${r}</option>`).join('')}</select></div>
+    <div class="f"><label for="gLic">License number <em id="licReq">*</em></label><input id="gLic" type="text" placeholder="Tour guide or travel agency license no."></div>
+    <div class="f"><label for="gProof">Photo of your license or card <em>*</em></label><input id="gProof" type="file" accept="image/*,application/pdf"><span class="hint">Only Daniel can see it.</span></div>
+    <div class="f"><label for="gPhone">Phone</label><input id="gPhone" type="tel" autocomplete="tel" inputmode="tel" placeholder="+972 52 000 0000"></div>
+    <div class="f"><label for="gNote">Anything else? (area, company, who referred you)</label><input id="gNote" type="text" placeholder="Galilee, referred by Rachel"></div>
     <button class="btn primary" id="gSend" type="submit">Ask to join</button>
     <div id="gMsg">${msg||''}</div>
     <p class="hint" style="margin-top:18px">Already approved? Open the personal link Daniel sent you.</p>
   </form></div>`;
+  const role=document.getElementById('gRole');
+  role.onchange=()=>{ document.getElementById('licReq').hidden = !['Licensed tour guide','Travel agent'].includes(role.value); };
   document.getElementById('gateForm').addEventListener('submit', async e=>{
     e.preventDefault();
-    const name=document.getElementById('gName').value.trim(), email=document.getElementById('gEmail').value.trim();
-    const out=document.getElementById('gMsg');
-    if(!name){ out.innerHTML='<div class="msg err">Add your name.</div>'; return; }
-    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ out.innerHTML='<div class="msg err">Enter a full email address, like name@gmail.com.</div>'; return; }
+    const v=id=>document.getElementById(id).value.trim();
+    const out=document.getElementById('gMsg'); const file=document.getElementById('gProof').files[0];
+    const probs=[];
+    if(!v('gName')) probs.push('Add your name.');
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v('gEmail'))) probs.push('Enter a full email address.');
+    if(!v('gRole')) probs.push('Choose what you do.');
+    if(['Licensed tour guide','Travel agent'].includes(v('gRole')) && v('gLic').length<3) probs.push('Add your license number.');
+    if(!file) probs.push('Add a photo of your license or card.');
+    if(probs.length){ out.innerHTML=`<div class="msg err">${probs.join(' ')}</div>`; return; }
     const b=document.getElementById('gSend'); b.disabled=true; b.textContent='Sending…';
-    try{ await DB.requestAccess(name,email,document.getElementById('gPhone').value,document.getElementById('gNote').value); boot(); }
-    catch(err){ b.disabled=false; b.textContent='Ask to join'; out.innerHTML=`<div class="msg err">${esc(err.message)}</div>`; }
+    try{
+      await DB.requestAccess(v('gName'),v('gEmail'),v('gRole'),v('gLic'),v('gPhone'),v('gNote'));
+      try{ await sendProof(file,out); }catch(err){ toast("Your request was sent, but the photo didn't upload. Try again on the next screen."); }
+      await DB.loadMe(); boot();
+    }catch(err){ b.disabled=false; b.textContent='Ask to join'; out.innerHTML=`<div class="msg err">${esc(err.message)}</div>`; }
   });
 }
 function renderWaiting(){
@@ -370,9 +400,12 @@ function renderWaiting(){
       : `<p>Thanks, ${esc(S.me.name.split(' ')[0])}. Daniel will approve you soon. This is your personal link. Save it, and use it to open the app on any phone or computer.</p>
          ${linkBox('myLink', personalLink(S.token))}
          <p class="hint">Keep it to yourself. Anyone with this link can use the app as you.</p>
+         ${S.me.has_proof?'':`<div class="dup" style="margin-top:12px">Daniel still needs a photo of your license or card.<div class="addrow" style="margin-top:8px"><input id="wProof" type="file" accept="image/*,application/pdf"><button class="btn primary" id="wSend" type="button">Upload</button></div><div id="wMsg"></div></div>`}
          <button class="btn soft" id="chk" style="margin-top:10px">Check if I'm approved</button>`}
     <button class="btn soft" id="out" style="margin-top:10px">Use a different link</button></div></div>`;
   wireCopy(app);
+  const ws=document.getElementById('wSend'); if(ws) ws.onclick=async()=>{ const out=document.getElementById('wMsg'); const f=document.getElementById('wProof').files[0]; if(!f){ out.innerHTML='<div class="msg err">Choose a photo first.</div>'; return; }
+    ws.disabled=true; ws.textContent='Uploading…'; try{ if(await sendProof(f,out)){ toast('Uploaded. Thanks.'); renderWaiting(); } }catch(e){ out.innerHTML=`<div class="msg err">${esc(e.message)}</div>`; } ws.disabled=false; ws.textContent='Upload'; };
   const c=document.getElementById('chk'); if(c) c.onclick=async()=>{ c.disabled=true; await DB.loadMe(); if(S.me.status==='approved'){ toast("You're in"); } else { c.disabled=false; toast('Not yet. Daniel has been notified.'); } boot(); };
   document.getElementById('out').onclick=()=>{ forgetToken(); boot(); };
 }
@@ -469,17 +502,20 @@ function viewTeam(){
       ${linkBox('joinLink', APP_URL)}
     </section>
     <section class="panel"><h3>Asking to join</h3>
-      ${pend.length? pend.map(m=>`<div class="rev"><div class="who2"><b>${esc(m.name)}</b><span>${esc(m.email)}${m.phone?' · '+esc(m.phone):''}${m.note?'<br>'+esc(m.note):''}</span></div>
-        <div class="btn-row"><button class="btn soft" data-no="${m.id}">Decline</button><button class="btn primary" data-yes="${m.id}">Approve</button></div></div>`).join('')
+      ${pend.length? pend.map(m=>`<div class="rev"><div class="who2"><b>${esc(m.name)}</b><span>${esc(m.role||'Role not given')}${m.license_no?` · license <span class="mono">${esc(m.license_no)}</span>`:''}<br>${esc(m.email)}${m.phone?' · '+esc(m.phone):''}${m.note?'<br>'+esc(m.note):''}</span></div>
+        <div class="btn-row">${m.has_proof?`<button class="btn soft" data-proof="${m.id}">View proof</button>`:'<span class="pill pending">No proof yet</span>'}<button class="btn soft" data-no="${m.id}">Decline</button><button class="btn primary" data-yes="${m.id}">Approve</button></div><span id="pf_${m.id}" style="flex-basis:100%"></span></div>`).join('')
         : '<p style="margin:0">No one is waiting.</p>'}
     </section>
     <section class="panel"><h3>People with access (${active.length})</h3>
       <p>If someone loses their link, make a new one and send it to them. The old link stops working.</p>
-      ${active.map(m=>`<div class="person"><span><b>${esc(m.name)}</b>${m.is_admin?' <span class="pill approved">admin</span>':''}<br><span class="hint">${esc(m.email)} · last active ${ago(m.last_seen_at)}</span><span id="nl_${m.id}"></span></span>
+      ${active.map(m=>`<div class="person"><span><b>${esc(m.name)}</b>${m.is_admin?' <span class="pill approved">admin</span>':''}<br><span class="hint">${esc(m.role||'')}${m.license_no?' · '+esc(m.license_no):''}${m.role||m.license_no?'<br>':''}${esc(m.email)} · last active ${ago(m.last_seen_at)}</span><span id="nl_${m.id}"></span></span>
         ${m.is_admin?'':`<span class="btn-row"><button class="btn soft" data-link="${m.id}">New link</button><button class="btn danger" data-rm="${m.id}">Remove</button></span>`}</div>`).join('')}
     </section>
     ${gone.length?`<section class="panel"><h3>Removed</h3>${gone.map(m=>`<div class="person"><span><b>${esc(m.name)}</b><br><span class="hint">${esc(m.email)}</span><span id="nl_${m.id}"></span></span><button class="btn soft" data-link="${m.id}">Restore with new link</button></div>`).join('')}</section>`:''}`;
   wireCopy(view);
+  view.querySelectorAll('[data-proof]').forEach(b=>b.onclick=async()=>{ const slot=document.getElementById('pf_'+b.dataset.proof);
+    if(!LIVE){ slot.innerHTML='<p class="hint" style="margin:8px 0 0">In the live app this opens their uploaded license.</p>'; return; }
+    b.disabled=true; try{ const url=await DB.proofUrl(b.dataset.proof); slot.innerHTML=`<a class="btn accent" style="display:inline-block;margin-top:8px;text-decoration:none" href="${esc(url)}" target="_blank" rel="noopener">Open their license</a> <span class="hint">Link works for 10 minutes.</span>`; }catch(e){ toast(e.message); } b.disabled=false; });
   view.querySelectorAll('[data-yes]').forEach(b=>b.onclick=async()=>{ try{ await DB.decide(b.dataset.yes,'approved'); toast('Approved. Their link works now.'); render(); }catch(e){ toast(e.message); } });
   view.querySelectorAll('[data-no]').forEach(b=>b.onclick=async()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again'; return; } try{ await DB.decide(b.dataset.no,'revoked'); toast('Declined'); render(); }catch(e){ toast(e.message); } });
   view.querySelectorAll('[data-rm]').forEach(b=>b.onclick=async()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again to remove'; return; } try{ await DB.decide(b.dataset.rm,'revoked'); toast('Removed. Their link no longer works.'); render(); }catch(e){ toast(e.message); } });
