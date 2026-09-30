@@ -718,12 +718,17 @@ const ic = {
   nav:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>'
 };
 function intlDigits(ph){ let d=String(ph||'').replace(/[^\d+]/g,''); if(d.startsWith('+')) return d.slice(1); if(d.startsWith('00')) return d.slice(2); if(d.startsWith('0')) return '972'+d.slice(1); return d; }
+// fields sometimes hold several numbers or emails ("02-123; fax 02-456"); use the first real one
+function firstPhone(x){ const parts=String(x||'').split(/[;,/]|\bor\b/i).map(p=>p.trim()).filter(p=>p && !/fax/i.test(p));
+  for(const p of parts){ const d=p.replace(/[^\d+*]/g,''); if(d.replace(/\D/g,'').length>=4) return d; } return ''; }
+function firstEmail(x){ const m=String(x||'').match(/[^\s;,<>]+@[^\s;,<>]+\.[^\s;,<>]+/); return m?m[0]:''; }
 function contactBar(v){
-  const a=[];
-  if(v.phone) a.push(`<a class="act" href="tel:${esc(String(v.phone).replace(/[^\d+]/g,''))}">${ic.call}Call</a>`);
-  const wa=v.whatsapp||(/^0?5\d/.test(String(v.phone||'').replace(/\D/g,'').replace(/^972/,'0'))?v.phone:'');
+  const a=[]; const ph=firstPhone(v.phone), em=firstEmail(v.email);
+  if(ph) a.push(`<a class="act" href="tel:${esc(ph)}">${ic.call}Call</a>`);
+  const mobile=String(v.phone||'').split(/[;,/]/).map(firstPhone).find(p=>/^0?5\d{8}$/.test(p.replace(/^\+?972/,'0')))||'';
+  const wa=firstPhone(v.whatsapp)||mobile;
   if(wa) a.push(`<a class="act" href="https://wa.me/${esc(intlDigits(wa))}" target="_blank" rel="noopener">${ic.wa}WhatsApp</a>`);
-  if(v.email) a.push(`<a class="act" href="mailto:${esc(v.email)}">${ic.mail}Email</a>`);
+  if(em) a.push(`<a class="act" href="mailto:${esc(em)}">${ic.mail}Email</a>`);
   if(v.website) a.push(`<a class="act" href="${esc(/^https?:/.test(v.website)?v.website:'https://'+v.website)}" target="_blank" rel="noopener">${ic.web}Website</a>`);
   if(v.location||v.name) a.push(`<a class="act" href="https://waze.com/ul?q=${encodeURIComponent((v.name+' '+(v.location||'')).trim())}&navigate=yes" target="_blank" rel="noopener">${ic.nav}Waze</a>`);
   return a.length?`<div class="actions">${a.join('')}</div>`:'';
