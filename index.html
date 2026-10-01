@@ -251,6 +251,13 @@ textarea.out{width:100%;min-height:160px;font-family:var(--f-mono);font-size:12p
 .modal-card h3{font-family:var(--f-display);font-weight:400;font-size:21px;margin:0 0 8px}
 .modal-card p{margin:0 0 14px;color:var(--ink-2)}
 .modal-card .btn{width:100%;margin-bottom:8px}
+.from{display:flex;align-items:center;gap:6px;grid-column:1 / -1;margin:0 0 4px;padding:5px 8px;border-radius:8px;background:var(--ochre-wash);color:var(--ink);font-size:13px}
+.from b{font-weight:600}
+.from .r{color:var(--ink-2)}
+.pl.colleague{border-color:var(--ochre)}
+.rule{display:flex;gap:10px;align-items:flex-start;max-width:760px;margin:12px auto 0;padding:10px 14px;border-radius:10px;background:var(--bad-wash);color:var(--ink);font-size:14px}
+.rule b{color:var(--bad)}
+.rule button{margin-left:auto;flex:none}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(140px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--ground);padding:10px 16px;border-radius:999px;font-size:14px;z-index:40;max-width:calc(100% - 32px)}
 </style>
 <style>
@@ -283,7 +290,7 @@ const LIVE = /(^|\.)github\.io$/.test(location.hostname) || /(^|\.)eretzisraelto
 
 // R5 field order (from itinerary_builder R5 saveVendor)
 const R5_FIELDS = ['name','category','active','contactPerson','phone','whatsapp','email','website','location','languages','kosher','maxCap','listedPrice','listedPriceVatTreatment','agentPrice','agentPriceVatTreatment','maxPax','priceBasis','currency','payTerms','cancelPolicy','cancelNoticeAmount','cancelNoticeUnit','cancelDayType','cancelPenalty','cancelPolicyVerifiedDate','npResLink','rateReliability','rateService','rateValue','strengths','weaknesses','notes'];
-const CATEGORIES = ['Hotel','Guide','Transport','Restaurant','Attraction / Site','Activity','Adventure','National Parks','Flight','Other'];
+const CATEGORIES = ['Hotel','Guide','Transport','Restaurant','Attraction / Site','Activity','Adventure','National Parks','Travel Agent','Itinerary Planner','Flight','Other'];
 const EXTRA_FIELDS = ['region','tags'];
 const REGIONS = ['Jerusalem','Gush Etzion & Judea','Binyamin & Shomron','Dead Sea & Judean Desert','Negev & Arava','Eilat','Tel Aviv & Center','Shfela','Haifa & Coast','Galilee','Golan','Countrywide'];
 const TAG_SUGGEST = {Adventure:['Jeep','ATV / RZR','Rappelling','Kayak & rafting','Zipline','Boat','Snorkelling','Bikes','Horse riding','Camels','Shooting'],
@@ -291,7 +298,9 @@ const TAG_SUGGEST = {Adventure:['Jeep','ATV / RZR','Rappelling','Kayak & rafting
   Hotel:['Kosher','Shabbat-friendly','Kibbutz','Boutique','Pool'],
   Transport:['Minibus','Midibus','Coach','Armoured bus','Van','Airport transfers'],
   Restaurant:['Meat','Dairy','Mehadrin','Group menus','Winery'],
-  Guide:['English','French','Spanish','Russian','Driver-guide']};
+  Guide:['English','French','Spanish','Russian','Driver-guide'],
+  'Travel Agent':['Hotel bookings','Flights','Packages','Groups','Commission'],
+  'Itinerary Planner':['Full trip planning','Day trips','Groups','Families','Bar/bat mitzvah']};
 const BASIS = ['Per person','Per group','Per vehicle','Per guide','Per hour','Per day','Flat rate','Custom'];
 const VAT = [['','Unknown'],['including_vat','Including VAT'],['plus_vat','Plus VAT'],['not_applicable','VAT not applicable']];
 const CUR_SIGN = {ILS:'₪',USD:'$',EUR:'€'};
@@ -570,12 +579,12 @@ function linkBox(id, url){
 function wireCopy(root){ root.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>{ const i=root.querySelector('#'+b.dataset.copy); copyText(i.value,i); }); }
 
 const ROLES=['Licensed tour guide','Travel agent','Tour operator','Other'];
-const TERMS_VERSION='2026-10-01';
+const TERMS_VERSION='2026-10-01b';
 const TERMS_HTML=`<p class="hint">Version ${TERMS_VERSION}. Plain-language summary. Draft: not yet reviewed by a lawyer.</p>
 <h4>1. Who runs this</h4><p>The Israel Suppliers Master List is run by Eretz Israel Tours, which approves members and manages the list.</p>
 <h4>2. Who can join</h4><p>Licensed tour guides, travel agents, tour operators and other travel professionals approved by Eretz Israel Tours. You confirm the details and license you submit are yours and true. Eretz Israel Tours can decline, pause or remove access at any time.</p>
 <h4>3. What you share</h4><p>Share supplier information you believe is accurate and that you're allowed to share. Don't post personal member codes, card or bank details, or personal details of your clients. Be fair in ratings and notes: describe your own experience.</p>
-<h4>4. How you use it</h4><p>Use the list for your own professional work. Keep your personal link to yourself, and don't copy, resell or publish the list.</p>
+<h4>4. How you use it</h4><p>Use the list for your own professional work. Keep your personal link to yourself, and don't copy, resell or publish the list.</p><p><b>Never show the list to suppliers.</b> Don't show suppliers the app, screenshots, prices, notes or ratings from it. Anyone who does will lose access immediately.</p>
 <h4>5. Prices are a guide</h4><p>Prices, terms and contacts come from colleagues and can change. Always confirm with the supplier before booking. Eretz Israel Tours isn't responsible for information shared by members or for suppliers' services.</p>
 <h4>6. Your data and privacy</h4><p>We store your name, email, phone, role, license number and license photo, what you add, and when you last used the app. Colleagues see your name next to what you add. Your license photo is visible only to Eretz Israel Tours.</p><p><b>Eretz Israel Tours can see everything in the app, including items marked "private".</b> "Private" means hidden from other colleagues, not from Eretz Israel Tours.</p><p>Data is stored with Supabase (servers in Frankfurt, EU) and the app is hosted on GitHub Pages. You can ask Eretz Israel Tours at any time to see, correct or delete your data and account.</p>
 <h4>7. Sponsored content</h4><p>If supplier offers or promotions are ever paid for, they will be clearly labelled as sponsored. Ratings and notes are never for sale.</p>
@@ -671,10 +680,12 @@ function render(){
       <div class="who"><button class="ghost-btn" id="fbBtn" type="button">Feedback</button><span>${esc(S.me?S.me.name:S.user.email)}</span>${LIVE?'<button class="ghost-btn" id="signOut">Sign out</button>':''}</div>
     </div></header>
     ${LIVE?'':'<div class="demo-bar">Preview with sample suppliers. Changes here aren\'t saved.</div>'}
+    ${S.me&&S.me.reminder_due?`<div style="padding:0 16px"><div class="rule" role="note"><span>🔒 <b>Colleagues only.</b> Never show this list to suppliers: not the app, screenshots, prices or notes. Anyone who does loses access.</span><button class="mini" id="ruleOk" type="button">Got it</button></div></div>`:''}
     <main id="view"></main>
     ${S.tab==='vendors'?'<button class="fab" id="add">+ Add supplier</button>':''}
     ${tabs.length>1?`<nav class="tabs">${tabs.map(([k,l,ic])=>`<button class="tab" data-tab="${k}" ${S.tab===k?'aria-current="page"':''}>${ic}${l}${k==='review'&&pending?`<span class="badge">${pending}</span>`:''}${k==='team'&&waiting?`<span class="badge">${waiting}</span>`:''}</button>`).join('')}</nav>`:''}`;
   document.getElementById('fbBtn').onclick=()=>openFeedback();
+  const ro=document.getElementById('ruleOk'); if(ro) ro.onclick=async()=>{ S.me.reminder_due=false; render(); if(LIVE){ try{ await sb.rpc('ack_reminder',{p_token:S.token}); }catch(e){} } };
   const so=document.getElementById('signOut'); if(so) so.onclick=()=>{ if(so.dataset.c!=='1'){ so.dataset.c='1'; so.textContent='Tap again. You\'ll need your link to return.'; return; } forgetToken(); boot(); };
   app.querySelectorAll('.tab').forEach(t=>t.onclick=async()=>{ S.tab=t.dataset.tab; render();
     if(LIVE && S.tab==='review'){ try{ await DB.loadVendors(); await DB.loadRequests(); await DB.loadFeedback(); render(); }catch(e){} }
@@ -777,7 +788,7 @@ function viewReview(){
   document.getElementById('exp').onclick=()=>exportR5(appr);
 }
 function exportR5(list){
-  const vendors = list.map(v=>{ const o={id:v.id}; R5_FIELDS.forEach(k=>o[k]=String(v[k]==null?'':v[k])); if(o.category==='National Parks') o.category='National Park'; if(o.category==='Adventure') o.category='Activity'; return o; });
+  const vendors = list.map(v=>{ const o={id:v.id}; R5_FIELDS.forEach(k=>o[k]=String(v[k]==null?'':v[k])); if(o.category==='National Parks') o.category='National Park'; if(o.category==='Adventure') o.category='Activity'; if(o.category==='Travel Agent'||o.category==='Itinerary Planner') o.category='Other'; return o; });
   const file = { _exportFormatVersion:3, _tripVendors:vendors, days:[] };
   const json = JSON.stringify(file,null,2);
   const name = `Israel_suppliers_${new Date().toISOString().slice(0,10)}.json`;
@@ -849,6 +860,7 @@ const ic = {
   web:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>',
   nav:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>'
 };
+function fromBadge(by,date,prefix){ if(!by || by.admin) return ''; return `<span class="from">👤 <span>${esc(prefix||'From')} <b>${esc(by.name)}</b>${by.role?` <span class="r">· ${esc(by.role)}</span>`:''}${date?` <span class="r">· ${fmtDate(date)}</span>`:''}</span></span>`; }
 function intlDigits(ph){ let d=String(ph||'').replace(/[^\d+]/g,''); if(d.startsWith('+')) return d.slice(1); if(d.startsWith('00')) return d.slice(2); if(d.startsWith('0')) return '972'+d.slice(1); return d; }
 // fields sometimes hold several numbers or emails ("02-123; fax 02-456"); use the first real one
 function firstPhone(x){ const parts=String(x||'').split(/[;,/]|\bor\b/i).map(p=>p.trim()).filter(p=>p && !/fax/i.test(p));
@@ -932,9 +944,9 @@ async function drawExtras(v){
   const me=(S.user.email||'').toLowerCase();
   const pb=document.getElementById('pricesBox'); if(!pb) return;
   const privNote = (!S.admin && det.prices_private) ? '<p class="hint" style="margin:0 0 10px">Eretz Israel Tours keeps its prices for this supplier private. You can still add your own prices: only you (and Eretz Israel Tours) see them.</p>' : '';
-  pb.innerHTML = privNote + (det.prices.length ? `<div class="prices">${det.prices.map(p=>`<div class="pl">
+  pb.innerHTML = privNote + (det.prices.length ? `<div class="prices">${det.prices.map(p=>`<div class="pl${p.by&&!p.by.admin?' colleague':''}">${fromBadge(p.by,p.by_date,p.owner?(p.mine?'Your own price ·':'Own price from'):'From')}
       <span class="who3">${esc(p.label||p.audience)}</span><span class="amt">${p.price?esc(money(p.currency,p.price)):'<span class="hint">Price to confirm</span>'}</span>
-      <span class="meta">${p.mine?'<span class="tag" style="background:var(--ochre-wash);color:var(--ochre)">Your own price</span>':(p.owner&&S.admin?`<span class="tag" style="background:var(--ochre-wash);color:var(--ochre)">${esc(p.owner_name||p.owner)}'s own</span>`:(p.private?'<span class="tag" style="background:var(--bad-wash);color:var(--bad)">Private</span>':''))}${p.is_agent?'<span class="tag agent">Agent rate</span>':'<span class="tag">Public price</span>'}${esc(priceWho(p))} · ${esc((p.basis||'').toLowerCase())}${vatLabel(p.vat)?' · '+esc(vatLabel(p.vat).toLowerCase()):''}${p.season?' · '+esc(p.season):''}</span>
+      <span class="meta">${p.owner?'<span class="tag" style="background:var(--ochre-wash);color:var(--ochre)">Only '+(p.mine?'you':'them')+' and Eretz Israel Tours see this</span>':(p.private?'<span class="tag" style="background:var(--bad-wash);color:var(--bad)">Private</span>':'')}${p.is_agent?'<span class="tag agent">Agent rate</span>':'<span class="tag">Public price</span>'}${esc(priceWho(p))} · ${esc((p.basis||'').toLowerCase())}${vatLabel(p.vat)?' · '+esc(vatLabel(p.vat).toLowerCase()):''}${p.season?' · '+esc(p.season):''}</span>
       ${p.note||p.source||p.checked_on?`<span class="meta">${p.note?esc(p.note)+'<br>':''}${p.source?'Source: '+esc(p.source):''}${p.checked_on?' · checked '+esc(p.checked_on):''}</span>`:''}
       <span class="ctl">${(S.admin&&!(p.owner&&!p.mine))||p.mine?`<button class="mini" data-pedit="${esc(p.id)}" type="button">Edit</button>`:(S.admin?'':`<button class="mini" data-pedit="${esc(p.id)}" type="button">Suggest change</button>`)}<button class="mini" data-pdel="${esc(p.id)}" type="button">${S.admin||p.mine?'Remove':'Suggest removing'}</button></span></div>`).join('')}</div>`
     : (privNote?'':`<p class="hint" style="margin:0 0 10px">No price lines yet. Add adult, child, Israeli senior or group rates as separate lines.</p>`));
@@ -955,7 +967,7 @@ function drawExtrasRest(v,det){
       ${d.details?`<p style="margin:4px 0 0">${esc(d.details)}</p>`:''}
       ${d.code?`<p style="margin:4px 0 0">Code: <span class="code">${esc(d.code)}</span></p>`:''}
       ${d.link?`<p style="margin:4px 0 0"><a href="${esc(d.link)}" target="_blank" rel="noopener">Open deal</a></p>`:''}
-      <span class="meta">Shared by ${esc(who(d.reported_by))}</span>
+      ${(det.deal_by||{})[d.id]&&!(det.deal_by[d.id].admin)?fromBadge(det.deal_by[d.id],d.created_at,'Shared by'):`<span class="meta">Shared by ${esc(who(d.reported_by))}</span>`}
       ${S.admin||d.reported_by===me?` <button class="mini" data-ddel="${esc(d.id)}" type="button">Remove</button>`:''}</div>`).join('')
     : `<p class="hint" style="margin:0 0 10px">No deals yet. Share credit card club benefits (Cal, Max, Isracard, Hever), Cuponofesh-type vouchers, codes or group tricks.</p>`;
   db.querySelectorAll('[data-ddel]').forEach(b=>b.onclick=async()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again'; return; } try{ await DB.deleteDeal(v.id,b.dataset.ddel); toast('Deal removed'); drawExtras(v); }catch(e){ toast(e.message); } });
@@ -1054,6 +1066,7 @@ async function drawQuotes(v){
     return `<div class="qcard${old?' old':''}" data-q="${qi}">
       <div class="qhead"><b>${esc(fmtRange(q))}</b>${fbPill(q.status==='Booked'?'Done':q.status==='Requested'?'New':q.status==='Received'?'Planned':"Won't do").replace(/>[^<]+</,'>'+esc(q.status)+'<')}</div>
       <div class="qsub">${[q.title&&q.can_edit?esc(q.title):'',q.pax?esc(q.pax)+' people':'',esc(q.units||''),q.valid_until?(q.valid_until<today()&&q.status!=='Booked'?'<span style="color:var(--bad)">expired '+esc(q.valid_until)+'</span>':'valid until '+esc(q.valid_until)):'',q.ref&&q.can_edit?'ref '+esc(q.ref):''].filter(Boolean).join(' · ')}</div>
+      ${q.owner_admin===false?fromBadge({name:q.owner_name||q.owner,role:q.owner_role||'',admin:false},q.updated_at,q.owner===me?'Your quote ·':'Quote from'):''}
       <div class="qsub">${who}${vatLabel(q.vat)?' · '+esc(vatLabel(q.vat).toLowerCase()):''}</div>
       <div class="otabs" role="tablist">${q.options.map((o,oi)=>`<button class="otab" role="tab" type="button" data-o="${oi}" aria-selected="${oi===0}">${esc(o.name)}<span class="ot">${esc(fmtMoney(q.currency,lineCalc(o.lines).total))}</span></button>`).join('')}</div>
       <div class="opane"></div>
