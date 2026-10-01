@@ -275,6 +275,7 @@ const BASIS = ['Per person','Per group','Per vehicle','Per guide','Per hour','Pe
 const VAT = [['','Unknown'],['including_vat','Including VAT'],['plus_vat','Plus VAT'],['not_applicable','VAT not applicable']];
 const CUR_SIGN = {ILS:'₪',USD:'$',EUR:'€'};
 
+const who = e => String(e||'').split(OWNER).join('Eretz Israel Tours').replace(/^import from EIT email \(Claude\)$/,'Imported by Eretz Israel Tours');
 const normN = s => String(s||'').toLowerCase().replace(/\s+/g,' ').replace(/[.,;:!?]/g,'').trim();
 const esc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const blank = () => Object.fromEntries(R5_FIELDS.map(k=>[k,'']));
@@ -323,7 +324,7 @@ async function filesApi(action, body){
 }
 const DB = {
   async init(){
-    if(!LIVE){ S.user={email:OWNER}; S.me={name:'Daniel',email:OWNER,status:'approved',is_admin:true}; S.admin=true; S.contributor=true; S.vendors=sample();
+    if(!LIVE){ S.user={email:OWNER}; S.me={name:'Eretz Israel Tours',email:OWNER,status:'approved',is_admin:true}; S.admin=true; S.contributor=true; S.vendors=sample();
       const dd=n=>new Date(Date.now()-n*86400000).toISOString();
       S.demo['vendor_k3m9p2x']={
         prices:[
@@ -334,21 +335,21 @@ const DB = {
         deals:[{id:'d1',kind:'Credit card club',provider:'Cal',title:'15% off weekday tours',details:'Pay with a Cal card, book by phone and mention the Cal benefit.',code:'',link:'',valid_to:'2026-12-31',reported_by:'rachel.ops@gmail.com',created_at:dd(4)},
                {id:'d2',kind:'Coupon site',provider:'Cuponofesh',title:'Family package 4 for 3',details:'Voucher bought on Cuponofesh, redeem by phone.',code:'',link:'https://www.cuponofesh.co.il',valid_to:'2026-06-30',reported_by:'yossi.guide@gmail.com',created_at:dd(90)}],
         notes:[{id:'n1',body:'Ask for Avi as driver, great with kids. Meeting point moved to the gas station at the junction.',author:'rachel.ops@gmail.com',author_name:'Rachel Amar',created_at:dd(2)},
-               {id:'n2',body:'Book at least 2 weeks ahead during chag.',author:OWNER,author_name:'Daniel',created_at:dd(20)}],
+               {id:'n2',body:'Book at least 2 weeks ahead during chag.',author:OWNER,author_name:'Eretz Israel Tours',created_at:dd(20)}],
         requests:[]};
       S.vendors.find(v=>v.id==='vendor_k3m9p2x')._prices=4; S.vendors.find(v=>v.id==='vendor_k3m9p2x')._deals=1; S.vendors.find(v=>v.id==='vendor_k3m9p2x')._notes=2;
       S.demoRequests=[{id:'r1',vendor_id:'vendor_a81qz0c',vendor_name:'Dan Panorama Jerusalem',kind:'vendor_fields',proposed:{agentPrice:'1250',phone:'+972 2 569 5000'},current:{agentPrice:'1150',phone:'+972 2 569 5695'},reason:'New group rate for 2027, and the group desk has a new number.',requested_by:'rachel.ops@gmail.com',requested_name:'Rachel Amar',created_at:dd(1)}];
       S.requests=S.demoRequests;
-      S.demoQuotes['vendor_p0lk5sd']=[{id:'q1',vendor_id:'vendor_p0lk5sd',title:'Jacobs family, 6 days',date_from:'2026-10-18',date_to:'2026-10-23',pax:'13',units:'1 vehicle',received_on:'2026-09-15',valid_until:'2026-10-05',ref:'',status:'Received',currency:'ILS',vat:'not_applicable',conditions:'Price includes driver, fuel and tolls. Overtime after 10 hours ₪150/hour. Driver overnight outside Jerusalem ₪350/night.',private_note:'',shared:false,owner:OWNER,owner_name:'Daniel',files:1,can_edit:true,
+      S.demoQuotes['vendor_p0lk5sd']=[{id:'q1',vendor_id:'vendor_p0lk5sd',title:'Jacobs family, 6 days',date_from:'2026-10-18',date_to:'2026-10-23',pax:'13',units:'1 vehicle',received_on:'2026-09-15',valid_until:'2026-10-05',ref:'',status:'Received',currency:'ILS',vat:'not_applicable',conditions:'Price includes driver, fuel and tolls. Overtime after 10 hours ₪150/hour. Driver overnight outside Jerusalem ₪350/night.',private_note:'',shared:false,owner:OWNER,owner_name:'Eretz Israel Tours',files:1,can_edit:true,
         options:[{id:'o1',name:'35-seat midibus',note:'',lines:[{label:'Midibus with driver',kind:'Base',price:'3000',unit:'per vehicle per day',qty:'1',times:'6'},{label:'Driver overnight in the north',kind:'Extra',price:'350',unit:'flat',qty:'2',times:'1'}]},
                  {id:'o2',name:'50-seat coach',note:'More luggage room',lines:[{label:'Coach with driver',kind:'Base',price:'3800',unit:'per vehicle per day',qty:'1',times:'6'},{label:'Driver overnight in the north',kind:'Extra',price:'350',unit:'flat',qty:'2',times:'1'}]}]}];
-      S.demoQuotes['vendor_a81qz0c']=[{id:'q2',vendor_id:'vendor_a81qz0c',title:'Bar mitzvah group',date_from:'2025-06-13',date_to:'2025-06-16',pax:'24',units:'10 rooms',received_on:'2025-04-02',valid_until:'2025-04-20',ref:'GRP-5521',status:'Booked',currency:'USD',vat:'not_applicable',conditions:'25% deposit, balance 14 days before arrival. Free cancellation until 21 days before.',private_note:'',shared:true,owner:OWNER,owner_name:'Daniel',files:0,can_edit:true,
+      S.demoQuotes['vendor_a81qz0c']=[{id:'q2',vendor_id:'vendor_a81qz0c',title:'Bar mitzvah group',date_from:'2025-06-13',date_to:'2025-06-16',pax:'24',units:'10 rooms',received_on:'2025-04-02',valid_until:'2025-04-20',ref:'GRP-5521',status:'Booked',currency:'USD',vat:'not_applicable',conditions:'25% deposit, balance 14 days before arrival. Free cancellation until 21 days before.',private_note:'',shared:true,owner:OWNER,owner_name:'Eretz Israel Tours',files:0,can_edit:true,
         options:[{id:'o3',name:'Standard rooms',note:'',lines:[{label:'Standard double, B&B',kind:'Base',price:'432',unit:'per room per night',qty:'10',times:'3'},{label:'Shabbat dinner',kind:'Meal',price:'65',unit:'per person',qty:'24',times:'1'},{label:'Shabbat lunch',kind:'Meal',price:'55',unit:'per person',qty:'24',times:'1'},{label:'Group discount',kind:'Discount',price:'5',unit:'% of subtotal',qty:'1',times:'1'}]},
                  {id:'o4',name:'Sea view rooms',note:'',lines:[{label:'Deluxe sea view, B&B',kind:'Base',price:'492',unit:'per room per night',qty:'10',times:'3'},{label:'Shabbat dinner',kind:'Meal',price:'65',unit:'per person',qty:'24',times:'1'},{label:'Shabbat lunch',kind:'Meal',price:'55',unit:'per person',qty:'24',times:'1'}]}]}];
       S.feedback=[{id:'f1',kind:'Suggestion',message:'Could we filter suppliers by area (North, Jerusalem, Dead Sea)?',context:'Suppliers list',device:'iPhone Safari',has_file:false,status:'Planned',reply:'Good idea, adding area filters next.',author:'rachel.ops@gmail.com',author_name:'Rachel Amar',created_at:dd(1)},
                   {id:'f2',kind:'Bug',message:'WhatsApp button opened the wrong number for Shomron Bus Lines.',context:'Supplier: Shomron Bus Lines',device:'Android Chrome',has_file:true,status:'New',reply:'',author:'yossi.guide@gmail.com',author_name:'Yossi Ben-David',created_at:dd(0)}];
       const d=n=>new Date(Date.now()-n*86400000).toISOString();
-      S.members=[{id:'m1',name:'Daniel',email:OWNER,status:'approved',is_admin:true,created_at:d(30),last_seen_at:d(0)},
+      S.members=[{id:'m1',name:'Eretz Israel Tours',email:OWNER,status:'approved',is_admin:true,created_at:d(30),last_seen_at:d(0)},
         {id:'m2',name:'Yossi Ben-David',email:'yossi.guide@gmail.com',phone:'+972 52 111 2233',note:'Galilee and Golan',role:'Licensed tour guide',license_no:'12345',has_proof:true,status:'pending',is_admin:false,created_at:d(0)},
         {id:'m3',name:'Rachel Amar',email:'rachel.ops@gmail.com',role:'Travel agent',license_no:'TA-2291',has_proof:true,status:'approved',is_admin:false,created_at:d(6),last_seen_at:d(1)}]; return; }
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {auth:{persistSession:false,autoRefreshToken:false}});
@@ -542,12 +543,12 @@ function wireCopy(root){ root.querySelectorAll('[data-copy]').forEach(b=>b.oncli
 const ROLES=['Licensed tour guide','Travel agent','Tour operator','Other'];
 const TERMS_VERSION='2026-10-01';
 const TERMS_HTML=`<p class="hint">Version ${TERMS_VERSION}. Plain-language summary. Draft: not yet reviewed by a lawyer.</p>
-<h4>1. Who runs this</h4><p>The Israel Suppliers Master List is run by Daniel Gutman (Eretz Israel Tours), who approves members and manages the list.</p>
-<h4>2. Who can join</h4><p>Licensed tour guides, travel agents, tour operators and other travel professionals Daniel approves. You confirm the details and license you submit are yours and true. Daniel can decline, pause or remove access at any time.</p>
+<h4>1. Who runs this</h4><p>The Israel Suppliers Master List is run by Eretz Israel Tours, which approves members and manages the list.</p>
+<h4>2. Who can join</h4><p>Licensed tour guides, travel agents, tour operators and other travel professionals approved by Eretz Israel Tours. You confirm the details and license you submit are yours and true. Eretz Israel Tours can decline, pause or remove access at any time.</p>
 <h4>3. What you share</h4><p>Share supplier information you believe is accurate and that you're allowed to share. Don't post personal member codes, card or bank details, or personal details of your clients. Be fair in ratings and notes: describe your own experience.</p>
 <h4>4. How you use it</h4><p>Use the list for your own professional work. Keep your personal link to yourself, and don't copy, resell or publish the list.</p>
-<h4>5. Prices are a guide</h4><p>Prices, terms and contacts come from colleagues and can change. Always confirm with the supplier before booking. Daniel and Eretz Israel Tours aren't responsible for information shared by members or for suppliers' services.</p>
-<h4>6. Your data and privacy</h4><p>We store your name, email, phone, role, license number and license photo, what you add, and when you last used the app. Colleagues see your name next to what you add. Your license photo is visible only to Daniel.</p><p><b>Daniel can see everything in the app, including items marked "private".</b> "Private" means hidden from other colleagues, not from Daniel.</p><p>Data is stored with Supabase (servers in Frankfurt, EU) and the app is hosted on GitHub Pages. You can ask Daniel at any time to see, correct or delete your data and account.</p>
+<h4>5. Prices are a guide</h4><p>Prices, terms and contacts come from colleagues and can change. Always confirm with the supplier before booking. Eretz Israel Tours isn't responsible for information shared by members or for suppliers' services.</p>
+<h4>6. Your data and privacy</h4><p>We store your name, email, phone, role, license number and license photo, what you add, and when you last used the app. Colleagues see your name next to what you add. Your license photo is visible only to Eretz Israel Tours.</p><p><b>Eretz Israel Tours can see everything in the app, including items marked "private".</b> "Private" means hidden from other colleagues, not from Eretz Israel Tours.</p><p>Data is stored with Supabase (servers in Frankfurt, EU) and the app is hosted on GitHub Pages. You can ask Eretz Israel Tours at any time to see, correct or delete your data and account.</p>
 <h4>7. Sponsored content</h4><p>If supplier offers or promotions are ever paid for, they will be clearly labelled as sponsored. Ratings and notes are never for sale.</p>
 <h4>8. Changes</h4><p>If these terms change, you'll be asked to accept the new version.</p>`;
 function openTerms(){ sheet('Terms and privacy', `<div class="terms">${TERMS_HTML}</div>`, `<button class="btn primary" id="tOk" type="button">Close</button>`).querySelector('#tOk').onclick=closeSheet; }
@@ -567,13 +568,13 @@ function renderGate(msg){
     <div class="f"><label for="gEmail">Email <em>*</em></label><input id="gEmail" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com" required></div>
     <div class="f"><label for="gRole">What do you do? <em>*</em></label><select id="gRole"><option value="">Choose…</option>${ROLES.map(r=>`<option>${r}</option>`).join('')}</select></div>
     <div class="f"><label for="gLic">License number <em id="licReq">*</em></label><input id="gLic" type="text" placeholder="Tour guide or travel agency license no."></div>
-    <div class="f"><label for="gProof">Photo of your license or card <em>*</em></label><input id="gProof" type="file" accept="image/*,application/pdf"><span class="hint">Only Daniel can see it.</span></div>
+    <div class="f"><label for="gProof">Photo of your license or card <em>*</em></label><input id="gProof" type="file" accept="image/*,application/pdf"><span class="hint">Only Eretz Israel Tours can see it.</span></div>
     <div class="f"><label for="gPhone">Phone</label><input id="gPhone" type="tel" autocomplete="tel" inputmode="tel" placeholder="+972 52 000 0000"></div>
     <div class="f"><label for="gNote">Anything else? (area, company, who referred you)</label><input id="gNote" type="text" placeholder="Galilee, referred by Rachel"></div>
-    <label class="check" for="gTerms"><input id="gTerms" type="checkbox"><span>I agree to the <button type="button" class="linkbtn" id="gTermsLink">terms and privacy notice</button>, including that Daniel can see everything I add, also items I mark private.</span></label>
+    <label class="check" for="gTerms"><input id="gTerms" type="checkbox"><span>I agree to the <button type="button" class="linkbtn" id="gTermsLink">terms and privacy notice</button>, including that Eretz Israel Tours can see everything I add, also items I mark private.</span></label>
     <button class="btn primary" id="gSend" type="submit">Ask to join</button>
     <div id="gMsg">${msg||''}</div>
-    <p class="hint" style="margin-top:18px">Already approved? Open the personal link Daniel sent you.</p>
+    <p class="hint" style="margin-top:18px">Already approved? Open the personal link you were sent.</p>
   </form></div>`;
   document.getElementById('gTermsLink').onclick=openTerms;
   const role=document.getElementById('gRole');
@@ -601,7 +602,7 @@ function renderGate(msg){
 function renderTermsGate(){
   app.innerHTML=`<div class="gate"><div class="gate-card"><h1 class="mark">Updated terms</h1><p>Please read and accept the terms to keep using the list.</p>
     <div class="panel terms" style="max-height:50vh;overflow:auto">${TERMS_HTML}</div>
-    <label class="check" for="tAcc"><input id="tAcc" type="checkbox"><span>I agree to these terms, including that Daniel can see everything I add, also items I mark private.</span></label>
+    <label class="check" for="tAcc"><input id="tAcc" type="checkbox"><span>I agree to these terms, including that Eretz Israel Tours can see everything I add, also items I mark private.</span></label>
     <button class="btn primary" id="tGo" type="button">Continue</button><div id="tMsg"></div></div></div>`;
   document.getElementById('tGo').onclick=async()=>{ if(!document.getElementById('tAcc').checked){ document.getElementById('tMsg').innerHTML='<div class="msg err">Tick the box to continue.</div>'; return; }
     try{ await DB.acceptTerms(); boot(); }catch(e){ document.getElementById('tMsg').innerHTML=`<div class="msg err">${esc(e.message)}</div>`; } };
@@ -610,17 +611,17 @@ function renderWaiting(){
   const st=S.me.status;
   app.innerHTML = `<div class="gate"><div class="gate-card">
     <h1 class="mark">${st==='revoked'?'Access ended':'Request sent'}</h1>
-    ${st==='revoked' ? `<p>This link no longer works. If you think that's a mistake, contact Daniel.</p>`
-      : `<p>Thanks, ${esc(S.me.name.split(' ')[0])}. Daniel will approve you soon. This is your personal link. Save it, and use it to open the app on any phone or computer.</p>
+    ${st==='revoked' ? `<p>This link no longer works. If you think that's a mistake, contact Eretz Israel Tours.</p>`
+      : `<p>Thanks, ${esc(S.me.name.split(' ')[0])}. Eretz Israel Tours will review your request soon. This is your personal link. Save it, and use it to open the app on any phone or computer.</p>
          ${linkBox('myLink', personalLink(S.token))}
          <p class="hint">Keep it to yourself. Anyone with this link can use the app as you.</p>
-         ${S.me.has_proof?'':`<div class="dup" style="margin-top:12px">Daniel still needs a photo of your license or card.<div class="addrow" style="margin-top:8px"><input id="wProof" type="file" accept="image/*,application/pdf"><button class="btn primary" id="wSend" type="button">Upload</button></div><div id="wMsg"></div></div>`}
+         ${S.me.has_proof?'':`<div class="dup" style="margin-top:12px">We still need a photo of your license or card.<div class="addrow" style="margin-top:8px"><input id="wProof" type="file" accept="image/*,application/pdf"><button class="btn primary" id="wSend" type="button">Upload</button></div><div id="wMsg"></div></div>`}
          <button class="btn soft" id="chk" style="margin-top:10px">Check if I'm approved</button>`}
     <button class="btn soft" id="out" style="margin-top:10px">Use a different link</button></div></div>`;
   wireCopy(app);
   const ws=document.getElementById('wSend'); if(ws) ws.onclick=async()=>{ const out=document.getElementById('wMsg'); const f=document.getElementById('wProof').files[0]; if(!f){ out.innerHTML='<div class="msg err">Choose a photo first.</div>'; return; }
     ws.disabled=true; ws.textContent='Uploading…'; try{ if(await sendProof(f,out)){ toast('Uploaded. Thanks.'); renderWaiting(); } }catch(e){ out.innerHTML=`<div class="msg err">${esc(e.message)}</div>`; } ws.disabled=false; ws.textContent='Upload'; };
-  const c=document.getElementById('chk'); if(c) c.onclick=async()=>{ c.disabled=true; await DB.loadMe(); if(S.me.status==='approved'){ toast("You're in"); } else { c.disabled=false; toast('Not yet. Daniel has been notified.'); } boot(); };
+  const c=document.getElementById('chk'); if(c) c.onclick=async()=>{ c.disabled=true; await DB.loadMe(); if(S.me.status==='approved'){ toast("You're in"); } else { c.disabled=false; toast('Not yet. Your request is waiting for review.'); } boot(); };
   document.getElementById('out').onclick=()=>{ forgetToken(); boot(); };
 }
 
@@ -727,7 +728,7 @@ function viewReview(){
     </section>
     <section class="panel"><h3>New suppliers to check</h3>
       <p>Suppliers added by colleagues, and the ones I imported from your email. Imported suppliers stay hidden from colleagues until you approve them. Check each one's private note for the sources. Only approved suppliers go into the R5 export.</p>
-      ${pend.length? pend.map(v=>`<div class="rev"><div class="who2"><b>${esc(v.name)}</b><span>${esc(v.category)} · by ${esc(v.updated_by)} · ${fmtDate(v.updated_at)}</span></div>
+      ${pend.length? pend.map(v=>`<div class="rev"><div class="who2"><b>${esc(v.name)}</b><span>${esc(v.category)} · by ${esc(who(v.updated_by))} · ${fmtDate(v.updated_at)}</span></div>
         <div class="btn-row"><button class="btn soft" data-open="${esc(v.id)}">View</button><button class="btn primary" data-ok="${esc(v.id)}">Approve</button></div></div>`).join('') : '<div class="empty" style="padding:16px">All caught up.</div>'}
     </section>
     <section class="panel"><h3>Export for R5</h3>
@@ -867,7 +868,7 @@ function openDetail(id){
     <fieldset><legend>Photos, receipts and PDFs</legend><div id="filesBox"><p class="hint">Loading files…</p></div></fieldset>
     ${S.admin?`<fieldset><legend>Private note · only you see this</legend><div class="f wide"><textarea id="adminNote" rows="5" placeholder="Clients, trips, commissions, anything colleagues shouldn't see"></textarea></div><div class="btn-row" style="margin-top:8px"><button class="mini" id="adminNoteSave" type="button">Save private note</button></div></fieldset>`:''}
     ${sections.map(([h,dl])=>`<fieldset><legend>${h}</legend><dl class="dl">${dl}</dl></fieldset>`).join('')}
-    <p class="stamp">Added by ${esc(v.created_by)} on ${fmtDate(v.created_at)}. Last changed by ${esc(v.updated_by)} on ${fmtDate(v.updated_at)}. <span class="idtag">${esc(v.id)}</span></p>`;
+    <p class="stamp">Added by ${esc(who(v.created_by))} on ${fmtDate(v.created_at)}. Last changed by ${esc(who(v.updated_by))} on ${fmtDate(v.updated_at)}. <span class="idtag">${esc(v.id)}</span></p>`;
   let foot=`<button class="btn primary" id="edit">${S.admin?'Edit':'Edit or suggest a change'}</button>`;
   if(S.admin){
     foot = `<button class="btn danger" id="del">Delete</button><span style="flex:1"></span>`
@@ -904,7 +905,7 @@ async function drawExtras(v){
   pb.querySelectorAll('[data-pedit]').forEach(b=>b.onclick=()=>openPriceForm(v, det.prices.find(p=>p.id===b.dataset.pedit)));
   pb.querySelectorAll('[data-pdel]').forEach(b=>b.onclick=async()=>{
     if(S.admin){ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again'; return; } try{ await DB.deletePrice(v.id,b.dataset.pdel); toast('Price removed'); drawExtras(v); }catch(e){ toast(e.message); } return; }
-    openReasonSheet('Suggest removing this price','Why should it be removed?', async reason=>{ await DB.deletePrice(v.id,b.dataset.pdel,reason); toast('Sent to Daniel for approval'); openDetail(v.id); });
+    openReasonSheet('Suggest removing this price','Why should it be removed?', async reason=>{ await DB.deletePrice(v.id,b.dataset.pdel,reason); toast('Sent for approval'); openDetail(v.id); });
   });
   drawExtrasRest(v,det);
 }
@@ -918,7 +919,7 @@ function drawExtrasRest(v,det){
       ${d.details?`<p style="margin:4px 0 0">${esc(d.details)}</p>`:''}
       ${d.code?`<p style="margin:4px 0 0">Code: <span class="code">${esc(d.code)}</span></p>`:''}
       ${d.link?`<p style="margin:4px 0 0"><a href="${esc(d.link)}" target="_blank" rel="noopener">Open deal</a></p>`:''}
-      <span class="meta">Shared by ${esc(d.reported_by)}</span>
+      <span class="meta">Shared by ${esc(who(d.reported_by))}</span>
       ${S.admin||d.reported_by===me?` <button class="mini" data-ddel="${esc(d.id)}" type="button">Remove</button>`:''}</div>`).join('')
     : `<p class="hint" style="margin:0 0 10px">No deals yet. Share credit card club benefits (Cal, Max, Isracard, Hever), Cuponofesh-type vouchers, codes or group tricks.</p>`;
   db.querySelectorAll('[data-ddel]').forEach(b=>b.onclick=async()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again'; return; } try{ await DB.deleteDeal(v.id,b.dataset.ddel); toast('Deal removed'); drawExtras(v); }catch(e){ toast(e.message); } });
@@ -929,7 +930,7 @@ function drawExtrasRest(v,det){
   const an=document.getElementById('adminNote');
   if(an){ an.value=det.admin_note||''; const b=document.getElementById('adminNoteSave'); b.onclick=async()=>{ try{ await DB.saveAdminNote(v.id, an.value); toast('Private note saved'); }catch(e){ toast(e.message); } }; }
   const rb=document.getElementById('reqBox');
-  if(rb && det.requests && det.requests.length){ rb.innerHTML=`<div class="lockbar">${det.requests.length} suggested change${det.requests.length>1?'s':''} waiting for ${S.admin?'your':"Daniel's"} approval.${S.admin?' See the Review tab.':''}</div>`; }
+  if(rb && det.requests && det.requests.length){ rb.innerHTML=`<div class="lockbar">${det.requests.length} suggested change${det.requests.length>1?'s':''} waiting for ${S.admin?'your ':''}approval.${S.admin?' See the Review tab.':''}</div>`; }
 }
 
 const FB_KINDS=[['Suggestion','💡 Idea'],['Bug','🐞 Something broke'],['Question','❓ Question'],['Other','Other']];
@@ -939,13 +940,13 @@ function openFeedback(){
   const where = S.openVendor ? 'Supplier: '+S.openVendor : ({vendors:'Suppliers list',review:'Review',team:'Team'}[S.tab]||S.tab);
   const mine=(S.feedback||[]).filter(f=>f.author===(S.user.email||'').toLowerCase());
   const body=`<form id="fbf" novalidate>
-    <p style="margin:0 0 12px;color:var(--ink-2)">Ideas, problems, questions: everything goes straight to Daniel.</p>
+    <p style="margin:0 0 12px;color:var(--ink-2)">Ideas, problems, questions: everything goes straight to Eretz Israel Tours.</p>
     <div class="chips" role="radiogroup" aria-label="Type" style="padding-top:0">${FB_KINDS.map(([k,l],i)=>`<button type="button" class="chip" data-k="${k}" aria-pressed="${i===0}">${l}</button>`).join('')}</div>
     <div class="f wide" style="margin-top:8px"><label for="fbMsg">Your message</label><textarea id="fbMsg" rows="5" placeholder="What would make this better, or what went wrong?"></textarea></div>
     <div class="f wide" style="margin-top:10px"><label for="fbFile">Screenshot (optional)</label><input id="fbFile" type="file" accept="image/*,application/pdf"></div>
     <p class="hint" style="margin:8px 0 0">Sent with: ${esc(where)} and your phone or browser type, to help fix bugs. <button type="button" class="linkbtn" id="fbTerms">Terms and privacy</button></p>
     <div id="fbErr"></div></form>
-    ${mine.length?`<fieldset style="margin-top:22px"><legend>What you sent before</legend>${mine.map(f=>`<div class="note"><span class="meta">${esc(f.kind)} · ${fmtDate(f.created_at)} ${fbPill(f.status)}</span><p>${esc(f.message)}</p>${f.reply?`<p style="margin-top:6px;color:var(--ok)"><b>Daniel:</b> ${esc(f.reply)}</p>`:''}</div>`).join('')}</fieldset>`:''}`;
+    ${mine.length?`<fieldset style="margin-top:22px"><legend>What you sent before</legend>${mine.map(f=>`<div class="note"><span class="meta">${esc(f.kind)} · ${fmtDate(f.created_at)} ${fbPill(f.status)}</span><p>${esc(f.message)}</p>${f.reply?`<p style="margin-top:6px;color:var(--ok)"><b>Eretz Israel Tours:</b> ${esc(f.reply)}</p>`:''}</div>`).join('')}</fieldset>`:''}`;
   const w=sheet('Feedback', body, `<button class="btn soft" id="fbC" type="button">Cancel</button><button class="btn primary" id="fbS" type="button">Send</button>`);
   let kind='Suggestion';
   w.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{ kind=b.dataset.k; w.querySelectorAll('[data-k]').forEach(o=>o.setAttribute('aria-pressed', o===b)); });
@@ -955,7 +956,7 @@ function openFeedback(){
     if(msg.length<3){ err.innerHTML='<div class="msg err">Write a few words first.</div>'; return; }
     let file=w.querySelector('#fbFile').files[0]; if(file){ file=await shrink(file); if(file.size>10485760){ err.innerHTML='<div class="msg err">That file is over 10 MB.</div>'; return; } }
     btn.disabled=true; btn.textContent='Sending…';
-    try{ await DB.sendFeedback(kind,msg,where,file); closeSheet(); toast('Thanks! Daniel will see it.'); render(); }
+    try{ await DB.sendFeedback(kind,msg,where,file); closeSheet(); toast('Thanks! We\'ll take a look.'); render(); }
     catch(e){ btn.disabled=false; btn.textContent='Send'; err.innerHTML=`<div class="msg err">${esc(e.message)}</div>`; }
   };
 }
@@ -1011,7 +1012,7 @@ async function drawQuotes(v){
   const me=(S.user.email||'').toLowerCase();
   box.innerHTML = qs.map((q,qi)=>{
     const old = ['Expired','Declined'].includes(q.status) || (q.valid_until && q.valid_until<today() && q.status!=='Booked');
-    const who = q.owner===me ? (q.shared?'Shared with colleagues':'Private · only you'+(S.admin?'':' and Daniel')) : `From ${esc(q.owner_name||q.owner)}${q.shared?'':' · private'}`;
+    const who = q.owner===me ? (q.shared?'Shared with colleagues':'Private · only you'+(S.admin?'':' and Eretz Israel Tours')) : `From ${esc(q.owner_name||q.owner)}${q.shared?'':' · private'}`;
     return `<div class="qcard${old?' old':''}" data-q="${qi}">
       <div class="qhead"><b>${esc(fmtRange(q))}</b>${fbPill(q.status==='Booked'?'Done':q.status==='Requested'?'New':q.status==='Received'?'Planned':"Won't do").replace(/>[^<]+</,'>'+esc(q.status)+'<')}</div>
       <div class="qsub">${[q.title&&q.can_edit?esc(q.title):'',q.pax?esc(q.pax)+' people':'',esc(q.units||''),q.valid_until?(q.valid_until<today()&&q.status!=='Booked'?'<span style="color:var(--bad)">expired '+esc(q.valid_until)+'</span>':'valid until '+esc(q.valid_until)):'',q.ref&&q.can_edit?'ref '+esc(q.ref):''].filter(Boolean).join(' · ')}</div>
@@ -1068,7 +1069,7 @@ function openQuoteForm(v, q0){
       <div class="otabs" id="optTabs" role="tablist"></div><div id="optEd"></div></fieldset>
     <div class="grid">
       <div class="f wide"><label for="q_cond">Conditions</label><textarea id="q_cond" rows="3" placeholder="Deposit, cancellation, overtime, what's included…">${esc(q.conditions)}</textarea></div>
-      <div class="f wide"><label for="q_note">Private note</label><textarea id="q_note" rows="2" placeholder="Only you${S.admin?'':' and Daniel'} can see this">${esc(q.private_note)}</textarea></div>
+      <div class="f wide"><label for="q_note">Private note</label><textarea id="q_note" rows="2" placeholder="Only you${S.admin?'':' and Eretz Israel Tours'} can see this">${esc(q.private_note)}</textarea></div>
     </div>
     <label class="switch" for="q_shared" style="margin-top:12px"><input id="q_shared" type="checkbox" ${q.shared?'checked':''}><span><b>Share with colleagues</b><br><span class="hint">They see the dates, options, prices and conditions. Never the client, reference or private note.</span></span></label>
     <div id="qErr"></div></form>`;
@@ -1118,7 +1119,7 @@ function openQuoteForm(v, q0){
 
 function openReasonSheet(title, prompt, onSend){
   const w=sheet(title, `<div class="f wide"><label for="rsn">${esc(prompt)}</label><textarea id="rsn" rows="3" placeholder="e.g. new price list from the supplier, see the receipt I attached"></textarea></div><div id="rsnErr"></div>`,
-    `<button class="btn soft" id="rc" type="button">Cancel</button><button class="btn primary" id="rs" type="button">Send to Daniel</button>`);
+    `<button class="btn soft" id="rc" type="button">Cancel</button><button class="btn primary" id="rs" type="button">Send for approval</button>`);
   w.querySelector('#rc').onclick=closeSheet;
   w.querySelector('#rs').onclick=async()=>{ const r=w.querySelector('#rsn').value.trim(); if(r.length<3){ w.querySelector('#rsnErr').innerHTML='<div class="msg err">Add a short reason.</div>'; return; }
     try{ await onSend(r); }catch(e){ w.querySelector('#rsnErr').innerHTML=`<div class="msg err">${esc(e.message)}</div>`; } };
@@ -1128,7 +1129,7 @@ function openPriceForm(v, p, pre){
   const x=Object.assign({label:'',audience:'Adult',age_from:'',age_to:'',pax_min:'',pax_max:'',season:'',price:'',currency:v.currency||'ILS',vat:'',basis:v.priceBasis||'Per person',is_agent:true,source:'',checked_on:today(),note:''}, p||pre||{});
   const opt=(arr,val)=>arr.map(o=>{const [k,t]=Array.isArray(o)?o:[o,o];return `<option value="${esc(k)}"${String(val)===k?' selected':''}>${esc(t)}</option>`}).join('');
   const body=`<form id="pf" novalidate>
-    ${S.admin?'':`<div class="lockbar">🔒 Prices are checked by Daniel before they appear. Your suggestion goes to him with your reason.</div>`}
+    ${S.admin?'':`<div class="lockbar">🔒 Prices are checked by Eretz Israel Tours before they appear. Your suggestion is sent with your reason.</div>`}
     <div class="grid">
       <div class="f wide"><label for="pl_label">What is it?</label><input id="pl_label" value="${esc(x.label)}" placeholder="2-hour jeep tour, entrance ticket, half board…"></div>
       <div class="f"><label for="pl_aud">For</label><select id="pl_aud">${opt(AUDIENCES,x.audience)}</select></div>
@@ -1146,7 +1147,7 @@ function openPriceForm(v, p, pre){
       ${S.admin?`<label class="check f wide" for="pl_priv"><input id="pl_priv" type="checkbox" ${x.private?'checked':''}><span><b>Private:</b> only you see this price</span></label>`:`<div class="f wide"><label for="pl_reason">Why are you adding or changing it? <em>*</em></label><input id="pl_reason" placeholder="New price list received by email"></div>`}
     </div><div id="plErr"></div></form>`;
   const w=sheet(p?(S.admin?'Edit price':'Suggest a price change'):(S.admin?'Add price':'Suggest a price'), body,
-    `<button class="btn soft" id="pc" type="button">Cancel</button><button class="btn primary" id="ps" type="button">${S.admin?'Save':'Send to Daniel'}</button>`);
+    `<button class="btn soft" id="pc" type="button">Cancel</button><button class="btn primary" id="ps" type="button">${S.admin?'Save':'Send for approval'}</button>`);
   const aud=w.querySelector('#pl_aud'); const age=w.querySelector('#ageWrap'); const syncAge=()=>{ age.hidden = aud.value!=='Child'; }; aud.onchange=syncAge; syncAge();
   w.querySelector('#pc').onclick=()=>openDetail(v.id);
   w.querySelector('#ps').onclick=async()=>{
@@ -1155,7 +1156,7 @@ function openPriceForm(v, p, pre){
     if(!/^\d+(\.\d+)?$/.test(line.price)){ err.innerHTML='<div class="msg err">Enter the price as a number, like 360.</div>'; return; }
     const reason = S.admin?'':g('pl_reason');
     if(!S.admin && reason.length<3){ err.innerHTML='<div class="msg err">Add a short reason, like where the price came from.</div>'; return; }
-    try{ const r=await DB.savePrice(v.id,line,reason); toast(r&&r.request?'Sent to Daniel for approval':'Price saved'); openDetail(v.id); }
+    try{ const r=await DB.savePrice(v.id,line,reason); toast(r&&r.request?'Sent for approval':'Price saved'); openDetail(v.id); }
     catch(e){ err.innerHTML=`<div class="msg err">${esc(e.message)}</div>`; }
   };
 }
@@ -1233,7 +1234,7 @@ function openForm(v){
   const area=(k,label,ph)=>`<div class="f wide"><label for="f_${k}">${label}</label><textarea id="f_${k}" name="${k}" rows="2" placeholder="${esc(ph)}">${esc(x[k])}</textarea></div>`;
   const stars=(k,label)=>`<div class="f"><label>${label}</label><div class="stars" data-k="${k}">${[1,2,3,4,5].map(n=>`<button type="button" data-n="${n}" aria-pressed="${x[k]===String(n)}" aria-label="${label} ${n}">${n}</button>`).join('')}</div><input type="hidden" id="f_${k}" name="${k}" value="${esc(x[k])}"></div>`;
   const body=`<form id="vf" novalidate>
-    ${guarded?'<div class="lockbar">🔒 Name, contact details, the main price and cancellation terms are checked by Daniel. Change them here and say why, and he approves the change. Everything else saves straight away.</div>':''}
+    ${guarded?'<div class="lockbar">🔒 Name, contact details, the main price and cancellation terms are checked by Eretz Israel Tours. Change them here and say why, and the change shows once approved. Everything else saves straight away.</div>':''}
     <fieldset><legend>Supplier</legend><div class="grid">
       ${inp('name','Vendor or company name','text','Golan Jeeps Ltd.',true,true)}
       <div id="dupBox" class="f wide" hidden></div>
@@ -1287,8 +1288,8 @@ function openForm(v){
     if(probs.length){ err.innerHTML=`<div class="msg err">${probs.join(' ')}</div>`; err.scrollIntoView({block:'center'}); return; }
     const btn=w.querySelector('#saveBtn'); btn.disabled=true; btn.textContent='Saving…';
     try{ const saved=await DB.save(data, reason); closeSheet(); S.tab='vendors'; render();
-      if(!v){ openDetail(saved.id); toast(S.admin?'Supplier added. You can add prices, deals and photos now.':'Added. Daniel will review it. You can add prices and photos now.'); }
-      else { openDetail(saved.id); toast(saved._request?'Saved. Your 🔒 changes went to Daniel for approval.':'Saved'); } }
+      if(!v){ openDetail(saved.id); toast(S.admin?'Supplier added. You can add prices, deals and photos now.':'Added. It will be reviewed. You can add prices and photos now.'); }
+      else { openDetail(saved.id); toast(saved._request?'Saved. Your 🔒 changes were sent for approval.':'Saved'); } }
     catch(e){ btn.disabled=false; btn.textContent=v?'Save changes':'Add supplier'; err.innerHTML=`<div class="msg err">Couldn't save: ${esc(e.message)}</div>`; }
   };
 }
