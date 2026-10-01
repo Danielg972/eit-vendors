@@ -283,7 +283,15 @@ const LIVE = /(^|\.)github\.io$/.test(location.hostname) || /(^|\.)eretzisraelto
 
 // R5 field order (from itinerary_builder R5 saveVendor)
 const R5_FIELDS = ['name','category','active','contactPerson','phone','whatsapp','email','website','location','languages','kosher','maxCap','listedPrice','listedPriceVatTreatment','agentPrice','agentPriceVatTreatment','maxPax','priceBasis','currency','payTerms','cancelPolicy','cancelNoticeAmount','cancelNoticeUnit','cancelDayType','cancelPenalty','cancelPolicyVerifiedDate','npResLink','rateReliability','rateService','rateValue','strengths','weaknesses','notes'];
-const CATEGORIES = ['Hotel','Guide','Transport','Restaurant','Attraction / Site','Activity','National Parks','Flight','Other'];
+const CATEGORIES = ['Hotel','Guide','Transport','Restaurant','Attraction / Site','Activity','Adventure','National Parks','Flight','Other'];
+const EXTRA_FIELDS = ['region','tags'];
+const REGIONS = ['Jerusalem','Gush Etzion & Judea','Binyamin & Shomron','Dead Sea & Judean Desert','Negev & Arava','Eilat','Tel Aviv & Center','Shfela','Haifa & Coast','Galilee','Golan','Countrywide'];
+const TAG_SUGGEST = {Adventure:['Jeep','ATV / RZR','Rappelling','Kayak & rafting','Zipline','Boat','Snorkelling','Bikes','Horse riding','Camels','Shooting'],
+  Activity:['Workshop','Food & wine','Volunteering','Archaeology','Family','Shooting','Farm'],
+  Hotel:['Kosher','Shabbat-friendly','Kibbutz','Boutique','Pool'],
+  Transport:['Minibus','Midibus','Coach','Armoured bus','Van','Airport transfers'],
+  Restaurant:['Meat','Dairy','Mehadrin','Group menus','Winery'],
+  Guide:['English','French','Spanish','Russian','Driver-guide']};
 const BASIS = ['Per person','Per group','Per vehicle','Per guide','Per hour','Per day','Flat rate','Custom'];
 const VAT = [['','Unknown'],['including_vat','Including VAT'],['plus_vat','Plus VAT'],['not_applicable','VAT not applicable']];
 const CUR_SIGN = {ILS:'₪',USD:'$',EUR:'€'};
@@ -310,7 +318,7 @@ function sample(){
 }
 
 // ---------- state ----------
-const S = { demoQuotes:{}, feedback:[], openVendor:null, files:{}, demo:{}, demoRequests:[], requests:[], token:null, members:[], user:null, admin:false, contributor:false, vendors:[], team:[], tab:'vendors', q:'', cat:'All', busy:false };
+const S = { reg:'All', demoQuotes:{}, feedback:[], openVendor:null, files:{}, demo:{}, demoRequests:[], requests:[], token:null, members:[], user:null, admin:false, contributor:false, vendors:[], team:[], tab:'vendors', q:'', cat:'All', busy:false };
 let sb = null;
 
 function bump(vid,k,n){ const v=S.vendors.find(x=>x.id===vid); if(v) v[k]=Math.max(0,(v[k]||0)+n); }
@@ -464,7 +472,7 @@ const DB = {
     await rpc('request_decide',{p_id:id,p_approve:approve}); await DB.loadVendors();
   },
   async save(v, reason){
-    const payload = {}; R5_FIELDS.forEach(k=>payload[k]=String(v[k]==null?'':v[k]).trim());
+    const payload = {}; R5_FIELDS.concat(EXTRA_FIELDS).forEach(k=>payload[k]=String(v[k]==null?'':v[k]).trim());
     if(!LIVE){
       const now=new Date().toISOString();
       if(v.id){ const i=S.vendors.findIndex(x=>x.id===v.id); S.vendors[i]=Object.assign(S.vendors[i],payload,{updated_at:now,updated_by:S.user.email}); return S.vendors[i]; }
@@ -648,7 +656,7 @@ function renderWaiting(){
 
 function filtered(){
   const q=normN(S.q);
-  return S.vendors.filter(v=>(S.cat==='All'||v.category===S.cat) && (!q || normN([v.name,v.location,v.contactPerson,v.category,v.notes].join(' ')).includes(q)))
+  return S.vendors.filter(v=>(S.cat==='All'||v.category===S.cat) && (S.reg==='All'||(v.region||'')===S.reg) && (!q || normN([v.name,v.location,v.region,v.tags,v.contactPerson,v.category,v.notes].join(' ')).includes(q)))
     .sort((a,b)=>a.name.localeCompare(b.name));
 }
 
@@ -678,20 +686,22 @@ function render(){
 function suggestTerms(){
   const seen=new Map();
   const add=(t,kind)=>{ t=String(t||'').trim(); if(t.length<2) return; const k=t.toLowerCase(); if(!seen.has(k)) seen.set(k,{t,kind}); };
-  S.vendors.forEach(v=>{ add(v.name,'Supplier'); add(v.location,'Area'); add(v.contactPerson,'Contact'); add(v.category,'Category'); });
+  S.vendors.forEach(v=>{ add(v.name,'Supplier'); add(v.region,'Region'); add(v.location,'Area'); add(v.contactPerson,'Contact'); add(v.category,'Category'); String(v.tags||'').split(',').forEach(t=>add(t,'Type')); });
   return [...seen.values()];
 }
 function viewVendors(){
   const view=document.getElementById('view');
   const cats=['All',...CATEGORIES.filter(c=>S.vendors.some(v=>v.category===c))];
   view.innerHTML = `
-    <div class="sug"><label class="search" for="q">${icons.search}<input id="q" type="search" placeholder="Search supplier, area, contact" value="${esc(S.q)}" autocomplete="off" role="combobox" aria-autocomplete="list" aria-controls="sugList" aria-expanded="false"></label>
+    <div class="sug"><label class="search" for="q">${icons.search}<input id="q" type="search" placeholder="Search name, region, type, contact" value="${esc(S.q)}" autocomplete="off" role="combobox" aria-autocomplete="list" aria-controls="sugList" aria-expanded="false"></label>
     <div class="sug-list" id="sugList" role="listbox" hidden></div></div>
     <div class="chips" role="group" aria-label="Filter by category">${cats.map(c=>`<button class="chip" data-cat="${esc(c)}" aria-pressed="${S.cat===c}">${esc(c)}</button>`).join('')}</div>
+    <div class="chips" role="group" aria-label="Filter by region" style="padding-top:2px">${['All',...[...new Set(REGIONS.filter(r=>S.vendors.some(v=>v.region===r)).concat(S.vendors.map(v=>v.region).filter(r=>r&&!REGIONS.includes(r))))]].map(r=>`<button class="chip" data-reg="${esc(r)}" aria-pressed="${S.reg===r}">${r==='All'?'📍 All regions':esc(r)}</button>`).join('')}</div>
     <div id="results"></div>`;
   const q=document.getElementById('q'), list=document.getElementById('sugList'); let hits=[], on=-1;
   const close=()=>{ list.hidden=true; q.setAttribute('aria-expanded','false'); on=-1; };
-  const pick=h=>{ q.value=h.t; S.q=h.t; close(); drawList(); if(h.kind==='Supplier'){ const v=S.vendors.find(x=>x.name===h.t); if(v) openDetail(v.id); } };
+  const pick=h=>{ if(h.kind==='Region'&&REGIONS.concat(S.vendors.map(v=>v.region)).includes(h.t)){ S.reg=h.t; S.q=''; viewVendors(); return; } if(h.kind==='Category'&&CATEGORIES.includes(h.t)){ S.cat=h.t; S.q=''; viewVendors(); return; }
+    q.value=h.t; S.q=h.t; close(); drawList(); if(h.kind==='Supplier'){ const v=S.vendors.find(x=>x.name===h.t); if(v) openDetail(v.id); } };
   const show=()=>{
     const n=normN(q.value); if(!n){ close(); return; }
     const terms=suggestTerms();
@@ -712,7 +722,8 @@ function viewVendors(){
     else if(e.key==='Escape') close();
   });
   q.addEventListener('blur',()=>setTimeout(close,120));
-  view.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{S.cat=c.dataset.cat; viewVendors();});
+  view.querySelectorAll('[data-cat]').forEach(c=>c.onclick=()=>{S.cat=c.dataset.cat; viewVendors();});
+  view.querySelectorAll('[data-reg]').forEach(c=>c.onclick=()=>{S.reg=c.dataset.reg; viewVendors();});
   drawList();
 }
 function drawList(){
@@ -722,7 +733,7 @@ function drawList(){
     <button class="row" data-id="${esc(v.id)}">
       <span class="row-name">${esc(v.name)}</span>
       <span class="row-price">${priceLine(v)}</span>
-      <span class="row-meta"><span class="cat">${esc(v.category)}</span>${v.location?`<span>${esc(v.location)}</span>`:''}${v.reservation==='required'?'<span class="clip">📅 Reserve ahead</span>':''}${statusPill(v)}${v._prices?`<span class="clip">${v._prices} price${v._prices>1?'s':''}</span>`:''}${v._deals?`<span class="clip">🏷 ${v._deals} deal${v._deals>1?'s':''}</span>`:''}${v._notes?`<span class="clip">💬 ${v._notes}</span>`:''}${v._files?`<span class="clip">📎 ${v._files}</span>`:''}</span>
+      <span class="row-meta"><span class="cat">${esc(v.category)}</span>${v.region||v.location?`<span>${esc(v.region||v.location)}</span>`:''}${v.tags?`<span class="hint">${esc(v.tags)}</span>`:''}${v.reservation==='required'?'<span class="clip">📅 Reserve ahead</span>':''}${statusPill(v)}${v._prices?`<span class="clip">${v._prices} price${v._prices>1?'s':''}</span>`:''}${v._deals?`<span class="clip">🏷 ${v._deals} deal${v._deals>1?'s':''}</span>`:''}${v._notes?`<span class="clip">💬 ${v._notes}</span>`:''}${v._files?`<span class="clip">📎 ${v._files}</span>`:''}</span>
     </button>`).join('')}</div>` : `<div class="list"><div class="empty"><h3>Nothing matches</h3>Try a shorter search or pick “All”.</div></div>`);
   box.querySelectorAll('.row').forEach(r=>r.onclick=()=>openDetail(r.dataset.id));
 }
@@ -766,7 +777,7 @@ function viewReview(){
   document.getElementById('exp').onclick=()=>exportR5(appr);
 }
 function exportR5(list){
-  const vendors = list.map(v=>{ const o={id:v.id}; R5_FIELDS.forEach(k=>o[k]=String(v[k]==null?'':v[k])); if(o.category==='National Parks') o.category='National Park'; return o; });
+  const vendors = list.map(v=>{ const o={id:v.id}; R5_FIELDS.forEach(k=>o[k]=String(v[k]==null?'':v[k])); if(o.category==='National Parks') o.category='National Park'; if(o.category==='Adventure') o.category='Activity'; return o; });
   const file = { _exportFormatVersion:3, _tripVendors:vendors, days:[] };
   const json = JSON.stringify(file,null,2);
   const name = `Israel_suppliers_${new Date().toISOString().slice(0,10)}.json`;
@@ -870,12 +881,12 @@ function openDetail(id){
   const notice=v.cancelNoticeAmount?`${esc(v.cancelNoticeAmount)} ${esc((v.cancelNoticeUnit||'').toLowerCase())}${v.cancelDayType?' ('+esc(v.cancelDayType.toLowerCase())+')':''}`:'';
   const rating=['rateReliability','rateService','rateValue'].map((k,i)=>v[k]?`${['Reliability','Service','Value'][i]} <b class="mono">${esc(v[k])}/5</b>`:'').filter(Boolean).join(' · ');
   const sections=[
-    ['Contact',rows([['Contact',esc(v.contactPerson)],['Phone',v.phone?`<span class="mono">${esc(v.phone)}</span>`:''],['WhatsApp',v.whatsapp?`<span class="mono">${esc(v.whatsapp)}</span>`:''],['Email',esc(v.email)],['Website',esc(v.website)],['Area',esc(v.location)],['Languages',esc(v.languages)],['Kosher',esc(v.kosher)],['Max capacity',v.maxCap?esc(v.maxCap)+' people':''],['Park booking',v.npResLink?`<a href="${esc(v.npResLink)}" target="_blank" rel="noopener">Reservation page</a>`:'']])],
+    ['Contact',rows([['Contact',esc(v.contactPerson)],['Phone',v.phone?`<span class="mono">${esc(v.phone)}</span>`:''],['WhatsApp',v.whatsapp?`<span class="mono">${esc(v.whatsapp)}</span>`:''],['Email',esc(v.email)],['Website',esc(v.website)],['Region',esc(v.region)],['Type',esc(v.tags)],['Area',esc(v.location)],['Languages',esc(v.languages)],['Kosher',esc(v.kosher)],['Max capacity',v.maxCap?esc(v.maxCap)+' people':''],['Park booking',v.npResLink?`<a href="${esc(v.npResLink)}" target="_blank" rel="noopener">Reservation page</a>`:'']])],
     [S.admin?(v.prices_private?'Main price (goes to R5) · private':'Main price (goes to R5)'):'Main price',rows([['Agent price',price(v.agentPrice,v.agentPriceVatTreatment)],['Listed price',price(v.listedPrice,v.listedPriceVatTreatment)],['Basis',esc(v.priceBasis)],['Max people',esc(v.maxPax)],['Payment terms',esc(v.payTerms)]])],
     ['Cancellation',rows([['Policy',esc(v.cancelPolicy)],['Notice',notice],['Penalty',esc(v.cancelPenalty)],['Checked',esc(v.cancelPolicyVerifiedDate)]])],
     ['Experience',rows([['Ratings',rating],['Strengths',esc(v.strengths)],['Weaknesses',esc(v.weaknesses)],['Summary',esc(v.notes)]])]
   ].filter(s=>s[1]);
-  const body=`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px"><span class="cat">${esc(v.category)}</span>${v.location?`<span class="hint">${esc(v.location)}</span>`:''}${statusPill(v)}</div>
+  const body=`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px"><span class="cat">${esc(v.category)}</span>${v.region||v.location?`<span class="hint">${esc(v.region||v.location)}</span>`:''}${statusPill(v)}</div>
     <div id="parentBox"></div>
     ${contactBar(v)}
     <div id="resBox"></div>
@@ -1331,12 +1342,16 @@ function openForm(v, preset){
       ${inp('name','Vendor or company name','text','Golan Jeeps Ltd.',true,true)}
       <div id="dupBox" class="f wide" hidden></div>
       ${sel('category','Category',[['','Choose…'],...CATEGORIES],false,true)}
+      <div class="f wide"><label for="f_tags">Type (separate with commas)</label><input id="f_tags" value="${esc(x.tags)}" placeholder="Jeep, ATV / RZR"><div class="presets" id="tagSug" style="margin:6px 0 0"></div></div>
       ${sel('active','Status',['Active','Inactive'])}
       <div class="f wide" id="npWrap" ${x.category==='National Parks'?'':'hidden'}><label for="f_npResLink">National park booking link</label><input id="f_npResLink" name="npResLink" type="url" value="${esc(x.npResLink)}" placeholder="https://booking.parks.org.il/…"></div>
     </div></fieldset>
     <fieldset><legend>Contact</legend><div class="grid">
       ${inp('contactPerson','Contact person','text','Moshe Cohen')}${inp('phone','Phone','tel','+972 52 000 0000')}${inp('whatsapp','WhatsApp','tel','+972 52 000 0000')}
-      ${inp('email','Email','email')}${inp('website','Website','text','example.co.il')}${inp('location','Area','text','Golan Heights')}
+      ${inp('email','Email','email')}${inp('website','Website','text','example.co.il')}
+      <div class="f"><label for="f_regionSel">Region</label><select id="f_regionSel"><option value="">Choose…</option>${REGIONS.map(r=>`<option${x.region===r?' selected':''}>${esc(r)}</option>`).join('')}<option value="__other"${x.region&&!REGIONS.includes(x.region)?' selected':''}>Other…</option></select>
+        <input id="f_regionOther" placeholder="Type the region" value="${esc(x.region&&!REGIONS.includes(x.region)?x.region:'')}" ${x.region&&!REGIONS.includes(x.region)?'':'hidden'} style="margin-top:6px"><input type="hidden" id="f_region" value="${esc(x.region)}"></div>
+      ${inp('location','Town or address','text','Kfar Adumim junction')}
       ${inp('languages','Languages','text','English, Hebrew')}${inp('kosher','Kosher status','text','Mehadrin / Rabbanut / N/A')}${inp('maxCap','Max capacity (people)','number')}
     </div></fieldset>
     <fieldset><legend>Pricing</legend><div class="grid">
@@ -1361,7 +1376,15 @@ function openForm(v, preset){
   const w=sheet(v?(guarded?'Edit or suggest a change':'Edit supplier'):'New supplier', body, foot);
   const f=w.querySelector('#vf');
   w.querySelector('#cancel').onclick=closeSheet;
-  f.querySelector('#f_category').addEventListener('change',e=>{ f.querySelector('#npWrap').hidden = e.target.value!=='National Parks'; });
+  const tagsIn=f.querySelector('#f_tags'), tagSug=f.querySelector('#tagSug');
+  const drawTagSug=()=>{ const have=tagsIn.value.split(',').map(t=>t.trim().toLowerCase()).filter(Boolean); const opts=(TAG_SUGGEST[f.querySelector('#f_category').value]||[]).filter(t=>!have.includes(t.toLowerCase()));
+    tagSug.innerHTML=opts.map(t=>`<button class="mini" type="button" data-t="${esc(t)}">+ ${esc(t)}</button>`).join('');
+    tagSug.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{ const cur=tagsIn.value.split(',').map(t=>t.trim()).filter(Boolean); cur.push(b.dataset.t); tagsIn.value=cur.join(', '); drawTagSug(); }); };
+  tagsIn.addEventListener('input',drawTagSug); drawTagSug();
+  const rSel=f.querySelector('#f_regionSel'), rOther=f.querySelector('#f_regionOther'), rHid=f.querySelector('#f_region');
+  const syncReg=()=>{ rOther.hidden = rSel.value!=='__other'; rHid.value = rSel.value==='__other' ? rOther.value.trim() : rSel.value; };
+  rSel.addEventListener('change',()=>{ syncReg(); if(!rOther.hidden) rOther.focus(); }); rOther.addEventListener('input',syncReg);
+  f.querySelector('#f_category').addEventListener('change',e=>{ f.querySelector('#npWrap').hidden = e.target.value!=='National Parks'; drawTagSug(); });
   f.querySelectorAll('.stars').forEach(g=>g.addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; const hid=f.querySelector('#f_'+g.dataset.k);
     const val = hid.value===b.dataset.n?'':b.dataset.n; hid.value=val; g.querySelectorAll('button').forEach(o=>o.setAttribute('aria-pressed', o.dataset.n===val)); }));
   const dupCheck=()=>{ const n=normN(f.querySelector('#f_name').value); const box=f.querySelector('#dupBox');
@@ -1370,7 +1393,7 @@ function openForm(v, preset){
     const g=box.querySelector('#goDup'); if(g) g.onclick=()=>openDetail(hit.id); return hit; };
   f.querySelector('#f_name').addEventListener('input',dupCheck); dupCheck();
   w.querySelector('#saveBtn').onclick=async()=>{
-    const data = v?{id:v.id}:{}; R5_FIELDS.forEach(k=>{ const el=f.querySelector('#f_'+k); data[k]= el?el.value:(x[k]||''); });
+    syncReg(); const data = v?{id:v.id}:{}; R5_FIELDS.concat(EXTRA_FIELDS).forEach(k=>{ const el=f.querySelector('#f_'+k); data[k]= el?el.value:(x[k]||''); });
     if(data.category!=='National Parks') data.npResLink = x.npResLink||data.npResLink||'';
     const err=f.querySelector('#formErr');
     const probs=[]; if(!data.name.trim()) probs.push('Add the supplier name.'); if(!data.category) probs.push('Choose a category.');
