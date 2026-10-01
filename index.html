@@ -1642,7 +1642,7 @@ async function drawFiles(v, qid, boxId, canAdd){
 
 // ---- Quick fill: pull name, phones, emails, website and map link out of a contact, vCard or pasted text ----
 // Contacts that belong to us, never to a supplier (our own signature is in every email thread)
-const OWN_PHONES=['504500658','9177405650']; const OWN_MAIL=/eretzisraeltours|danielg972/i;
+const OWN_PHONES=['504500658','559440364','9177405650']; const OWN_MAIL=/eretzisraeltours|danielg972/i;
 const isOwnPhone=p=>{ const d=String(p).replace(/\D/g,''); const mine=[...OWN_PHONES, String((S.me&&S.me.phone)||'').replace(/\D/g,'').slice(-9)].filter(x=>x.length>=8); return mine.some(m=>d.endsWith(m)); };
 function parseContactText(txt){
   const out={phones:[],emails:[],urls:[],maps:'',name:'',org:'',address:''};
