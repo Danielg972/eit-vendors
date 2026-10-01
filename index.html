@@ -341,7 +341,7 @@ function sample(){
 }
 
 // ---------- state ----------
-const S = { myTop:[], reg:'All', demoQuotes:{}, feedback:[], openVendor:null, files:{}, demo:{}, demoRequests:[], requests:[], token:null, members:[], user:null, admin:false, contributor:false, vendors:[], team:[], tab:'vendors', q:'', cat:'All', busy:false };
+const S = { usage:{category:{},region:{}}, myTop:[], reg:'All', demoQuotes:{}, feedback:[], openVendor:null, files:{}, demo:{}, demoRequests:[], requests:[], token:null, members:[], user:null, admin:false, contributor:false, vendors:[], team:[], tab:'vendors', q:'', cat:'All', busy:false };
 let sb = null;
 
 function bump(vid,k,n){ const v=S.vendors.find(x=>x.id===vid); if(v) v[k]=Math.max(0,(v[k]||0)+n); }
@@ -407,7 +407,7 @@ const DB = {
     S.contributor = !!(data && data.status==='approved'); S.admin = !!(data && data.is_admin && S.contributor);
     if(S.contributor){ await DB.loadVendors(); try{ await DB.loadFeedback(); }catch(e){} if(S.admin){ await DB.loadTeam(); try{ await DB.loadRequests(); }catch(e){} try{ await DB.loadReports(); }catch(e){} } }
   },
-  async loadVendors(){ if(!LIVE) return; try{ S.vendors = await rpc('vendors_list'); }catch(e){ toast('Could not load vendors: '+e.message); } try{ S.myTop = await rpc('my_top'); }catch(e){ S.myTop=[]; } },
+  async loadVendors(){ if(!LIVE) return; try{ S.vendors = await rpc('vendors_list'); }catch(e){ toast('Could not load vendors: '+e.message); } try{ S.myTop = await rpc('my_top'); }catch(e){ S.myTop=[]; } try{ S.usage = await rpc('my_usage'); }catch(e){} },
   async loadTeam(){ if(!LIVE) return; S.members = await rpc('members_list'); },
   async detail(vid){
     if(!LIVE){ return S.demo[vid] || (S.demo[vid]={prices:[],deals:[],notes:[],requests:[],sites:S.vendors.filter(x=>x.parent_id===vid).map(x=>({id:x.id,name:x.name,location:x.location,reservation:x.reservation})),parent:(()=>{const v=S.vendors.find(x=>x.id===vid); const pv=v&&v.parent_id&&S.vendors.find(x=>x.id===v.parent_id); return pv?{id:pv.id,name:pv.name}:null;})(),res_reports:[],res_answered:false}); }
@@ -704,6 +704,9 @@ function filtered(){
 }
 // Mixed order: a shuffle that is different for each person and changes every day, so no supplier sits at the top
 // just because of its name. Stable within the day so the list doesn't jump around while you use it.
+// Categories and regions in the order this person uses them most (stable sort keeps the default order for ties).
+function byUse(kind, list){ const u=(S.usage&&S.usage[kind])||{}; return [...list].sort((a,b)=>(u[b]||0)-(u[a]||0)); }
+function useBump(kind, val){ if(!val||val==='All') return; /* order updates next time the app opens, so chips don't jump under your finger */ if(LIVE) sb.rpc('log_filter',{p_token:S.token,p_kind:kind,p_value:val}).then(()=>{},()=>{}); }
 function mixKey(v){ const seed=(S.user&&S.user.email||'')+new Date().toISOString().slice(0,10)+v.id; let h=2166136261; for(let i=0;i<seed.length;i++){ h^=seed.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
 
 function render(){
@@ -740,12 +743,12 @@ function suggestTerms(){
 }
 function viewVendors(){
   const view=document.getElementById('view');
-  const cats=['All',...CATEGORIES.filter(c=>S.vendors.some(v=>v.category===c))];
+  const cats=['All',...byUse('category',CATEGORIES.filter(c=>S.vendors.some(v=>v.category===c)))];
   view.innerHTML = `
     <div class="sug"><label class="search" for="q">${icons.search}<input id="q" type="search" placeholder="Search name, region, type, contact" value="${esc(S.q)}" autocomplete="off" role="combobox" aria-autocomplete="list" aria-controls="sugList" aria-expanded="false"></label>
     <div class="sug-list" id="sugList" role="listbox" hidden></div></div>
     <div class="chips" role="group" aria-label="Filter by category">${cats.map(c=>`<button class="chip" data-cat="${esc(c)}" aria-pressed="${S.cat===c}">${esc(c)}</button>`).join('')}</div>
-    <div class="chips" role="group" aria-label="Filter by region" style="padding-top:2px">${['All',...[...new Set(REGIONS.filter(r=>S.vendors.some(v=>v.region===r)).concat(S.vendors.map(v=>v.region).filter(r=>r&&!REGIONS.includes(r))))]].map(r=>`<button class="chip" data-reg="${esc(r)}" aria-pressed="${S.reg===r}">${r==='All'?'📍 All regions':esc(r)}</button>`).join('')}</div>
+    <div class="chips" role="group" aria-label="Filter by region" style="padding-top:2px">${['All',...byUse('region',[...new Set(REGIONS.filter(r=>S.vendors.some(v=>v.region===r)).concat(S.vendors.map(v=>v.region).filter(r=>r&&!REGIONS.includes(r))))])].map(r=>`<button class="chip" data-reg="${esc(r)}" aria-pressed="${S.reg===r}">${r==='All'?'📍 All regions':esc(r)}</button>`).join('')}</div>
     ${S.cat==='Guide'?`<div class="chips" role="group" aria-label="Guide details" style="padding-top:2px">${GUIDE_ATTRS.map(a=>`<button class="chip" data-gat="${esc(a)}" aria-pressed="${(S.gat||[]).includes(a)}">${(S.gat||[]).includes(a)?'✓ ':''}${esc(a)}</button>`).join('')}</div>`:''}
     <div id="favBox"></div>
     <div id="results"></div>`;
@@ -778,8 +781,8 @@ function viewVendors(){
     else if(e.key==='Escape') close();
   });
   q.addEventListener('blur',()=>setTimeout(close,120));
-  view.querySelectorAll('[data-cat]').forEach(c=>c.onclick=()=>{S.cat=c.dataset.cat; viewVendors();});
-  view.querySelectorAll('[data-reg]').forEach(c=>c.onclick=()=>{S.reg=c.dataset.reg; viewVendors();});
+  view.querySelectorAll('[data-cat]').forEach(c=>c.onclick=()=>{S.cat=c.dataset.cat; if(S.cat!=='All') useBump('category',S.cat); viewVendors();});
+  view.querySelectorAll('[data-reg]').forEach(c=>c.onclick=()=>{S.reg=c.dataset.reg; if(S.reg!=='All') useBump('region',S.reg); viewVendors();});
   view.querySelectorAll('[data-gat]').forEach(c=>c.onclick=()=>{ const a=c.dataset.gat; S.gat=(S.gat||[]).includes(a)?S.gat.filter(x=>x!==a):[...(S.gat||[]),a]; viewVendors(); });
   drawList();
 }
@@ -1546,7 +1549,7 @@ function openForm(v, preset){
     <fieldset><legend>Supplier</legend><div class="grid">
       ${inp('name','Vendor or company name','text','Golan Jeeps Ltd.',true,true)}
       <div id="dupBox" class="f wide" hidden></div>
-      ${sel('category','Category',[['','Choose…'],...CATEGORIES],false,true)}
+      ${sel('category','Category',[['','Choose…'],...byUse('category',CATEGORIES)],false,true)}
       <div class="f wide"><label for="f_tags">Type (separate with commas)</label><input id="f_tags" value="${esc(x.tags)}" placeholder="Jeep, ATV / RZR"><div class="presets" id="tagSug" style="margin:6px 0 0"></div></div>
       <div class="f" id="gWrap" ${x.category==='Guide'?'':'hidden'}><label for="f_experience_years">Years guiding</label><input id="f_experience_years" type="number" inputmode="numeric" min="0" max="80" value="${esc(x.experience_years)}" placeholder="12"></div>
       ${sel('active','Status',['Active','Inactive'])}
@@ -1555,7 +1558,7 @@ function openForm(v, preset){
     <fieldset><legend>Contact</legend><div class="grid">
       ${inp('contactPerson','Contact person','text','Moshe Cohen')}${inp('phone','Phone','tel','+972 52 000 0000')}${inp('whatsapp','WhatsApp','tel','+972 52 000 0000')}
       ${inp('email','Email','email')}${inp('website','Website','text','example.co.il')}
-      <div class="f"><label for="f_regionSel">Region</label><select id="f_regionSel"><option value="">Choose…</option>${REGIONS.map(r=>`<option${x.region===r?' selected':''}>${esc(r)}</option>`).join('')}<option value="__other"${x.region&&!REGIONS.includes(x.region)?' selected':''}>Other…</option></select>
+      <div class="f"><label for="f_regionSel">Region</label><select id="f_regionSel"><option value="">Choose…</option>${byUse('region',REGIONS).map(r=>`<option${x.region===r?' selected':''}>${esc(r)}</option>`).join('')}<option value="__other"${x.region&&!REGIONS.includes(x.region)?' selected':''}>Other…</option></select>
         <input id="f_regionOther" placeholder="Type the region" value="${esc(x.region&&!REGIONS.includes(x.region)?x.region:'')}" ${x.region&&!REGIONS.includes(x.region)?'':'hidden'} style="margin-top:6px"><input type="hidden" id="f_region" value="${esc(x.region)}"></div>
       ${inp('location','Town or address','text','Kfar Adumim junction')}
       ${inp('languages','Languages','text','English, Hebrew')}${inp('kosher','Kosher status','text','Mehadrin / Rabbanut / N/A')}${inp('maxCap','Max capacity (people)','number')}
