@@ -264,6 +264,10 @@ textarea.out{width:100%;min-height:160px;font-family:var(--f-mono);font-size:12p
 .fav b{display:block;font-size:14px;line-height:1.25;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .fav span{font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--ochre);font-weight:600}
 .favs-h{font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-3);margin:14px 2px 0}
+.red-wrap{display:flex;flex-direction:column;gap:12px}
+.red-page{position:relative;border:1px solid var(--line);border-radius:8px;overflow:hidden;touch-action:none;background:#fff}
+.red-page canvas{display:block;width:100%;height:auto}
+.red-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;position:sticky;top:0;background:var(--ground);padding:6px 0;z-index:2}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(140px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--ground);padding:10px 16px;border-radius:999px;font-size:14px;z-index:40;max-width:calc(100% - 32px)}
 </style>
 <style>
@@ -507,13 +511,13 @@ const DB = {
     if(!LIVE) return (S.files[qid||vid]||[]).slice();
     return (await filesApi('list',{vendor_id:vid,quote_id:qid||undefined})).files;
   },
-  async upload(vid, file, kind, qid){
+  async upload(vid, file, kind, qid, priv){
     if(!LIVE){ const path=vid+'/'+Date.now(); (S.files[qid||vid]=S.files[qid||vid]||[]).unshift({id:path,path,vendor_id:vid,file_name:file.name,mime_type:file.type||'',size_bytes:file.size,kind,uploaded_by:S.user.email,created_at:new Date().toISOString(),url:URL.createObjectURL(file)}); }
     else {
       const sig = await filesApi('sign_upload',{vendor_id:vid,file_name:file.name,quote_id:qid||undefined});
       const up = await sb.storage.from('vendor-files').uploadToSignedUrl(sig.path, sig.upload_token, file, {contentType:file.type||undefined});
       if(up.error) throw new Error(up.error.message);
-      await filesApi('confirm',{vendor_id:vid,path:sig.path,file_name:file.name,mime_type:file.type||'',size_bytes:file.size,kind,quote_id:qid||undefined});
+      await filesApi('confirm',{vendor_id:vid,path:sig.path,file_name:file.name,mime_type:file.type||'',size_bytes:file.size,kind,quote_id:qid||undefined,private:!!priv});
     }
     const v=S.vendors.find(x=>x.id===vid); if(v && !qid) v._files=(v._files||0)+1;
   },
@@ -585,7 +589,7 @@ function linkBox(id, url){
 function wireCopy(root){ root.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>{ const i=root.querySelector('#'+b.dataset.copy); copyText(i.value,i); }); }
 
 const ROLES=['Licensed tour guide','Travel agent','Tour operator','Other'];
-const TERMS_VERSION='2026-10-01c';
+const TERMS_VERSION='2026-10-01d';
 const TERMS_HTML=`<p class="hint">Version ${TERMS_VERSION}. Plain-language summary. Draft: not yet reviewed by a lawyer.</p>
 <h4>1. Who runs this</h4><p>The Israel Suppliers Master List is run by Eretz Israel Tours, which approves members and manages the list.</p>
 <h4>2. Who can join</h4><p>Licensed tour guides, travel agents, tour operators and other travel professionals approved by Eretz Israel Tours. You confirm the details and license you submit are yours and true. Eretz Israel Tours can decline, pause or remove access at any time.</p>
@@ -593,6 +597,7 @@ const TERMS_HTML=`<p class="hint">Version ${TERMS_VERSION}. Plain-language summa
 <h4>4. How you use it</h4><p>Use the list for your own professional work. Keep your personal link to yourself, and don't copy, resell or publish the list.</p><p><b>Never show the list to suppliers.</b> Don't show suppliers the app, screenshots, prices, notes or ratings from it. Anyone who does will lose access immediately.</p>
 <h4>5. Prices are a guide</h4><p>Prices, terms and contacts come from colleagues and can change. Always confirm with the supplier before booking. Eretz Israel Tours isn't responsible for information shared by members or for suppliers' services.</p>
 <h4>6. Your data and privacy</h4><p>We store your name, email, phone, role, license number and license photo, what you add, when you last used the app, and which supplier contact buttons you tap (call, WhatsApp, email, website, maps and booking links), with the time. Colleagues see your name next to what you add. Your license photo is visible only to Eretz Israel Tours.</p><p><b>Eretz Israel Tours can see everything in the app, including items marked "private".</b> "Private" means hidden from other colleagues, not from Eretz Israel Tours.</p><p>Data is stored with Supabase (servers in Frankfurt, EU) and the app is hosted on GitHub Pages. You can ask Eretz Israel Tours at any time to see, correct or delete your data and account.</p>
+<h4>6a. Email copies</h4><p><b>When you email a supplier with the app's Email button, Eretz Israel Tours is added as a BCC to help keep prices, bookings and supplier details up to date for everyone. You can see and remove it in each email, and you can opt out at any time under My settings.</b> WhatsApp messages and calls are not copied; the app only records that you tapped the button.</p>
 <h4>7. Sponsored content</h4><p>If supplier offers or promotions are ever paid for, they will be clearly labelled as sponsored. Ratings and notes are never for sale.</p>
 <h4>8. Changes</h4><p>If these terms change, you'll be asked to accept the new version.</p>`;
 function openTerms(){ sheet('Terms and privacy', `<div class="terms">${TERMS_HTML}</div>`, `<button class="btn primary" id="tOk" type="button">Close</button>`).querySelector('#tOk').onclick=closeSheet; }
@@ -683,7 +688,7 @@ function render(){
   app.innerHTML = `
     <header class="top"><div class="top-row">
       <div class="brand">Israel Suppliers<small>Master list · shared by colleagues</small></div>
-      <div class="who"><button class="ghost-btn" id="fbBtn" type="button">Feedback</button><span>${esc(S.me?S.me.name:S.user.email)}</span>${LIVE?'<button class="ghost-btn" id="signOut">Sign out</button>':''}</div>
+      <div class="who"><button class="ghost-btn" id="fbBtn" type="button">Feedback</button><button class="ghost-btn" id="meBtn" type="button" style="border:0;max-width:40vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(S.me?S.me.name:S.user.email)} ⚙</button>${LIVE?'<button class="ghost-btn" id="signOut">Sign out</button>':''}</div>
     </div></header>
     ${LIVE?'':'<div class="demo-bar">Preview with sample suppliers. Changes here aren\'t saved.</div>'}
     ${S.me&&S.me.reminder_due?`<div style="padding:0 16px"><div class="rule" role="note"><span>🔒 <b>Colleagues only.</b> Never show this list to suppliers: not the app, screenshots, prices or notes. Anyone who does loses access.</span><button class="mini" id="ruleOk" type="button">Got it</button></div></div>`:''}
@@ -691,6 +696,7 @@ function render(){
     ${S.tab==='vendors'?'<button class="fab" id="add">+ Add supplier</button>':''}
     ${tabs.length>1?`<nav class="tabs">${tabs.map(([k,l,ic])=>`<button class="tab" data-tab="${k}" ${S.tab===k?'aria-current="page"':''}>${ic}${l}${k==='review'&&pending?`<span class="badge">${pending}</span>`:''}${k==='team'&&waiting?`<span class="badge">${waiting}</span>`:''}</button>`).join('')}</nav>`:''}`;
   document.getElementById('fbBtn').onclick=()=>openFeedback();
+  const me=document.getElementById('meBtn'); if(me) me.onclick=()=>{ if(S.me) openMySettings(); };
   const ro=document.getElementById('ruleOk'); if(ro) ro.onclick=async()=>{ S.me.reminder_due=false; render(); if(LIVE){ try{ await sb.rpc('ack_reminder',{p_token:S.token}); }catch(e){} } };
   const so=document.getElementById('signOut'); if(so) so.onclick=()=>{ if(so.dataset.c!=='1'){ so.dataset.c='1'; so.textContent='Tap again. You\'ll need your link to return.'; return; } forgetToken(); boot(); };
   app.querySelectorAll('.tab').forEach(t=>t.onclick=async()=>{ S.tab=t.dataset.tab; render();
@@ -821,6 +827,10 @@ function viewTeam(){
       <p>Share this link in your WhatsApp groups. People who open it ask to join, and you approve them here.</p>
       ${linkBox('joinLink', APP_URL)}
     </section>
+    <section class="panel"><h3>Email copies (BCC)</h3>
+      <p>Supplier emails sent from the app's Email button copy this address, unless a colleague opts out. Leave empty to turn it off.</p>
+      <div class="addrow"><input id="bccIn" type="email" value="${esc((S.me&&S.me.bcc_email)||'')}" placeholder="suppliers@eretzisraeltours.com"><button class="btn primary" id="bccSave" type="button">Save</button></div>
+    </section>
     <section class="panel"><h3>Asking to join</h3>
       ${pend.length? pend.map(m=>`<div class="rev"><div class="who2"><b>${esc(m.name)}</b><span>${esc(m.role||'Role not given')}${m.license_no?` · license <span class="mono">${esc(m.license_no)}</span>`:''}<br>${esc(m.email)}${m.phone?' · '+esc(m.phone):''}${m.note?'<br>'+esc(m.note):''}</span></div>
         <div class="btn-row">${m.has_proof?`<button class="btn soft" data-proof="${m.id}">View proof</button>`:'<span class="pill pending">No proof yet</span>'}<button class="btn soft" data-no="${m.id}">Decline</button><button class="btn primary" data-yes="${m.id}">Approve</button></div><span id="pf_${m.id}" style="flex-basis:100%"></span></div>`).join('')
@@ -834,6 +844,8 @@ function viewTeam(){
     <section class="panel" id="actPanel"><h3>Activity</h3><p>Taps on Call, WhatsApp, Email, Website, Waze, Maps, booking and deal links.</p><div id="actAll"><p class="hint">Loading…</p></div></section>
     ${gone.length?`<section class="panel"><h3>Removed</h3>${gone.map(m=>`<div class="person"><span><b>${esc(m.name)}</b><br><span class="hint">${esc(m.email)}</span><span id="nl_${m.id}"></span></span><button class="btn soft" data-link="${m.id}">Restore with new link</button></div>`).join('')}</section>`:''}`;
   wireCopy(view);
+  view.querySelector('#bccSave').onclick=async()=>{ const v=view.querySelector('#bccIn').value.trim();
+    try{ if(LIVE){ const { error } = await sb.rpc('set_setting',{p_token:S.token,p_key:'bcc_email',p_value:v}); if(error) throw new Error(error.message); } S.me.bcc_email=v.toLowerCase(); toast(v?'Email copies go to '+v:'Email copies turned off'); }catch(e){ toast(e.message); } };
   (async()=>{ const box=view.querySelector('#actAll'); if(!box) return;
     let a; try{ a = LIVE ? await rpc('activity',{p_vendor:''}) : {recent:[],top:[],by_person:[]}; }catch(e){ box.innerHTML=`<div class="msg err">${esc(e.message)}</div>`; return; }
     if(!a.recent.length){ box.innerHTML='<p class="hint" style="margin:0">Nothing yet. It fills in as colleagues use the contact buttons.</p>'; return; }
@@ -886,6 +898,31 @@ function track(vid, action){
   try{ fetch(SUPABASE_URL+'/rest/v1/rpc/log_action',{method:'POST',keepalive:true,headers:{apikey:SUPABASE_KEY,'Content-Type':'application/json'},body:JSON.stringify({p_token:S.token,p_vendor:vid||'',p_action:action})}); }catch(e){}
 }
 document.addEventListener('click',e=>{ const a=e.target.closest('[data-track]'); if(a) track(a.dataset.v||'', a.dataset.track); }, true);
+function bccOn(){ return !!(S.me && S.me.bcc_email && !S.me.bcc_opt_out && !S.me.is_admin); }
+function mailHref(em, force){ const useBcc = force===undefined ? bccOn() : force; return 'mailto:'+em+(useBcc?'?bcc='+encodeURIComponent(S.me.bcc_email):''); }
+document.addEventListener('click',e=>{ const a=e.target.closest('[data-mail]'); if(!a) return;
+  if(S.me && S.me.bcc_email && !S.me.is_admin && !S.me.bcc_ack){ e.preventDefault(); bccPopup(a.dataset.mail); return; }
+  a.href = mailHref(a.dataset.mail); });
+function bccPopup(em){
+  const m=document.createElement('div'); m.className='modal'; m.id='bccModal';
+  m.innerHTML=`<div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="bT"><h3 id="bT">✉️ About emails from the app</h3>
+    <p>Emails you send with the app's Email button include <b>${esc(S.me.bcc_email)}</b> as a hidden copy (BCC). The supplier doesn't see it. It helps Eretz Israel Tours keep prices, bookings and supplier details up to date for everyone.</p>
+    <p class="hint">You'll see it in your email and can delete it any time. You can also turn it off under My settings (tap your name at the top).</p>
+    <button class="btn primary" data-b="ok" type="button">OK, continue to email</button>
+    <button class="btn soft" data-b="out" type="button">Don't copy my emails</button></div>`;
+  document.body.appendChild(m);
+  m.querySelectorAll('[data-b]').forEach(b=>b.onclick=async()=>{ const out=b.dataset.b==='out'; m.remove();
+    S.me.bcc_ack=true; S.me.bcc_opt_out=out; if(LIVE){ try{ await sb.rpc('set_bcc_pref',{p_token:S.token,p_opt_out:out}); }catch(e){} }
+    location.href = mailHref(em, !out); });
+}
+function openMySettings(){
+  const body=`<p style="margin:0 0 12px;color:var(--ink-2)">${esc(S.me.name)} · ${esc(S.me.email)}${S.me.role?' · '+esc(S.me.role):''}</p>
+    ${S.me.is_admin?'':`<label class="switch" for="myBcc"><input id="myBcc" type="checkbox" ${S.me.bcc_opt_out?'':'checked'}><span><b>Copy Eretz Israel Tours on supplier emails</b><br><span class="hint">Adds ${esc(S.me.bcc_email||'the Eretz Israel Tours address')} as a hidden copy when you use the Email button. Helps keep prices and bookings up to date.</span></span></label>`}
+    <p style="margin-top:14px"><button type="button" class="linkbtn" id="myTerms">Terms and privacy</button></p>`;
+  const w=sheet('My settings', body, `<button class="btn primary" id="msOk" type="button">Done</button>`);
+  w.querySelector('#msOk').onclick=closeSheet; w.querySelector('#myTerms').onclick=openTerms;
+  const c=w.querySelector('#myBcc'); if(c) c.onchange=async()=>{ S.me.bcc_opt_out=!c.checked; S.me.bcc_ack=true; if(LIVE){ try{ await sb.rpc('set_bcc_pref',{p_token:S.token,p_opt_out:!c.checked}); }catch(e){ toast(e.message); } } toast(c.checked?'Your supplier emails will copy Eretz Israel Tours':'Your emails won\'t be copied'); };
+}
 function fromBadge(by,date,prefix){ if(!by || by.admin) return ''; return `<span class="from">👤 <span>${esc(prefix||'From')} <b>${esc(by.name)}</b>${by.role?` <span class="r">· ${esc(by.role)}</span>`:''}${date?` <span class="r">· ${fmtDate(date)}</span>`:''}</span></span>`; }
 function intlDigits(ph){ let d=String(ph||'').replace(/[^\d+]/g,''); if(d.startsWith('+')) return d.slice(1); if(d.startsWith('00')) return d.slice(2); if(d.startsWith('0')) return '972'+d.slice(1); return d; }
 // fields sometimes hold several numbers or emails ("02-123; fax 02-456"); use the first real one
@@ -899,7 +936,7 @@ function contactBar(v){
   const mobile=String(v.phone||'').split(/[;,/]/).map(firstPhone).find(p=>/^0?5\d{8}$/.test(p.replace(/^\+?972/,'0')))||'';
   const wa=firstPhone(v.whatsapp)||mobile;
   if(wa) a.push(`<a class="act" ${t('whatsapp')} href="https://wa.me/${esc(intlDigits(wa))}" target="_blank" rel="noopener">${ic.wa}WhatsApp</a>`);
-  if(em) a.push(`<a class="act" ${t('email')} href="mailto:${esc(em)}">${ic.mail}Email</a>`);
+  if(em) a.push(`<a class="act" ${t('email')} data-mail="${esc(em)}" data-vname="${esc(v.name)}" href="${esc(mailHref(em))}">${ic.mail}Email</a>`);
   if(v.website) a.push(`<a class="act" ${t('website')} href="${esc(/^https?:/.test(v.website)?v.website:'https://'+v.website)}" target="_blank" rel="noopener">${ic.web}Website</a>`);
   const where=encodeURIComponent((v.name.replace(/\s*\(.*?\)\s*/g,' ')+' '+(v.location||'')).trim());
   if(v.location||v.name){ a.push(`<a class="act" ${t('waze')} href="https://waze.com/ul?q=${where}&navigate=yes" target="_blank" rel="noopener">${ic.nav}Waze</a>`);
@@ -1338,7 +1375,57 @@ function openDealForm(v){
     catch(e){ w.querySelector('#dlErr').innerHTML=`<div class="msg err">${esc(e.message)}</div>`; } };
 }
 
-const KINDS=['Photo','Receipt','Price list','Contract','Quote','Other'];
+const KINDS=['Price list','Booking confirmation','Receipt','Quote','Contract','Photo','Other'];
+function loadScript(src){ return new Promise((res,rej)=>{ if(document.querySelector(`script[src="${src}"]`)) return res(); const sc=document.createElement('script'); sc.src=src; sc.onload=res; sc.onerror=()=>rej(new Error('Could not load '+src)); document.head.appendChild(sc); }); }
+const PDFJS='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js', PDFJS_WORKER='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js', JSPDF='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+async function fileToCanvases(f){
+  if(f.type==='application/pdf' || /\.pdf$/i.test(f.name)){
+    await loadScript(PDFJS); window.pdfjsLib.GlobalWorkerOptions.workerSrc=PDFJS_WORKER;
+    const pdf=await window.pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise; const out=[];
+    for(let i=1;i<=Math.min(pdf.numPages,20);i++){ const pg=await pdf.getPage(i); const vp=pg.getViewport({scale:2}); const c=document.createElement('canvas'); c.width=vp.width; c.height=vp.height; await pg.render({canvasContext:c.getContext('2d'),viewport:vp}).promise; out.push(c); }
+    return {pdf:true,pages:out};
+  }
+  const bmp=await createImageBitmap(f); const k=Math.min(1,2400/Math.max(bmp.width,bmp.height)); const c=document.createElement('canvas'); c.width=Math.round(bmp.width*k); c.height=Math.round(bmp.height*k); c.getContext('2d').drawImage(bmp,0,0,c.width,c.height); return {pdf:false,pages:[c]};
+}
+// Lets people black out private details; the result is flattened, so hidden text can't be recovered.
+function redactFiles(files){
+  return new Promise(resolve=>{
+    let idx=0; const results=[];
+    const next=async()=>{
+      if(idx>=files.length){ resolve(results); return; }
+      const f=files[idx++];
+      if(!/^image\/(jpeg|png|webp|gif)$/.test(f.type) && !(f.type==='application/pdf'||/\.pdf$/i.test(f.name))){ results.push(f); return next(); }
+      let doc; try{ doc=await fileToCanvases(f); }catch(e){ toast("Couldn't open "+f.name+" for blacking out; uploading as is."); results.push(f); return next(); }
+      const boxes=doc.pages.map(()=>[]);
+      const w=sheet(`Hide private details · ${f.name}`, `<div class="red-wrap"><div class="red-tools"><span class="hint">Drag over anything private (client names, phone numbers, card details) to black it out.</span><button class="mini" id="rUndo" type="button">Undo</button></div>
+        ${doc.pages.map((c,i)=>`<div class="red-page" data-i="${i}"></div>`).join('')}${doc.pages.length===20?'<p class="hint">Only the first 20 pages are kept.</p>':''}</div>`,
+        `<button class="btn soft" id="rCancel" type="button">Cancel</button><button class="btn soft" id="rSkip" type="button">Nothing to hide</button><button class="btn primary" id="rSave" type="button">Save with black boxes</button>`);
+      const views=[...w.querySelectorAll('.red-page')].map((holder,i)=>{ const base=doc.pages[i]; const vc=document.createElement('canvas'); vc.width=base.width; vc.height=base.height; holder.appendChild(vc);
+        const draw=(tmp)=>{ const g=vc.getContext('2d'); g.drawImage(base,0,0); g.fillStyle='#000'; boxes[i].concat(tmp?[tmp]:[]).forEach(b=>g.fillRect(b.x,b.y,b.w,b.h)); };
+        draw(); let start=null;
+        const pos=e=>{ const r=vc.getBoundingClientRect(); return {x:(e.clientX-r.left)*vc.width/r.width, y:(e.clientY-r.top)*vc.height/r.height}; };
+        vc.addEventListener('pointerdown',e=>{ start=pos(e); vc.setPointerCapture(e.pointerId); });
+        vc.addEventListener('pointermove',e=>{ if(!start) return; const p=pos(e); draw({x:Math.min(start.x,p.x),y:Math.min(start.y,p.y),w:Math.abs(p.x-start.x),h:Math.abs(p.y-start.y)}); });
+        vc.addEventListener('pointerup',e=>{ if(!start) return; const p=pos(e); const b={x:Math.min(start.x,p.x),y:Math.min(start.y,p.y),w:Math.abs(p.x-start.x),h:Math.abs(p.y-start.y)}; start=null; if(b.w>4&&b.h>4){ boxes[i].push(b); undoStack.push(i); } draw(); });
+        return {vc,draw}; });
+      const undoStack=[];
+      w.querySelector('#rUndo').onclick=()=>{ const i=undoStack.pop(); if(i===undefined) return; boxes[i].pop(); views[i].draw(); };
+      w.querySelector('#rCancel').onclick=()=>{ closeSheet(); resolve(null); };
+      w.querySelector('#rSkip').onclick=()=>{ closeSheet(); results.push(f); next(); };
+      w.querySelector('#rSave').onclick=async()=>{ const btn=w.querySelector('#rSave'); btn.disabled=true; btn.textContent='Preparing…';
+        try{
+          const base=f.name.replace(/\.[^.]+$/,'');
+          if(doc.pdf){ await loadScript(JSPDF); const { jsPDF } = window.jspdf; let pdf;
+            views.forEach((v,i)=>{ const c=v.vc; const o=c.width>c.height?'l':'p'; if(!pdf) pdf=new jsPDF({orientation:o,unit:'px',format:[c.width,c.height]}); else pdf.addPage([c.width,c.height],o); pdf.addImage(c.toDataURL('image/jpeg',0.85),'JPEG',0,0,c.width,c.height); });
+            results.push(new File([pdf.output('blob')], base+'-redacted.pdf', {type:'application/pdf'}));
+          } else { const blob=await new Promise(r=>views[0].vc.toBlob(r,'image/jpeg',0.88)); results.push(new File([blob], base+'-redacted.jpg', {type:'image/jpeg'})); }
+          closeSheet(); next();
+        }catch(e){ btn.disabled=false; btn.textContent='Save with black boxes'; toast(e.message); }
+      };
+    };
+    next();
+  });
+}
 async function shrink(file){
   // Phone photos are large; resize to max 2000px JPEG. Keep PDFs and anything the browser can't decode as-is.
   if(!/^image\/(jpeg|png|webp)$/.test(file.type) || file.size < 1500000) return file;
@@ -1360,27 +1447,30 @@ async function drawFiles(v, qid, boxId, canAdd){
       const inner = img && f.url ? `<img src="${esc(f.url)}" alt="${esc(f.file_name)}" loading="lazy">` : `<span class="doc">${/pdf/.test(f.mime_type)?'PDF':'FILE'}</span>`;
       const canRm = S.admin || f.uploaded_by===me;
       return `<div class="file"><a class="thumb" href="${esc(f.url||'#')}" target="_blank" rel="noopener">${inner}</a>
-        <span class="fkind">${esc(f.kind)}</span><span class="fname" title="${esc(f.file_name)}">${esc(f.file_name)}</span>
+        <span class="fkind">${esc(f.kind)}${f.private?' · 🔒':''}</span><span class="fname" title="${esc(f.file_name)}">${esc(f.file_name)}</span>${f.by&&!f.by.admin?`<span class="fname" style="color:var(--ochre)">👤 ${esc(f.by.name)}</span>`:''}
         ${canRm?`<button class="rm" data-i="${i}" type="button">Remove</button>`:''}</div>`; }).join('')}</div>`
     : `<p class="hint" style="margin:8px 0 10px">${qid?'No attachments yet. Add the quote email screenshot or PDF.':'No files yet. Add a photo of the place, a receipt, a price list or a contract.'}</p>`)
   + (canAdd?`<div class="upl"><select id="${sid}_kind" aria-label="What is it?">${KINDS.map(k=>`<option${qid&&k==='Quote'?' selected':''}>${k}</option>`).join('')}</select>
       <label class="btn accent" for="${sid}_file" style="display:inline-block">Add photo or file</label>
       <input id="${sid}_file" type="file" accept="image/*,application/pdf" multiple hidden>
-      <span class="hint" id="${sid}_msg">Photos and PDFs, up to 10 MB each.</span></div>`:'');
+      <label class="check" for="${sid}_priv" style="margin:0;flex-basis:100%"><input id="${sid}_priv" type="checkbox"><span>Only me and Eretz Israel Tours can see this file</span></label>
+      <span class="hint" id="${sid}_msg">Price lists, booking confirmations, receipts: photos or PDFs up to 10 MB. Before saving you can black out names, phone numbers, card details or anything private.</span></div>`:'');
   box.querySelectorAll('.rm').forEach(b=>b.onclick=async()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again'; return; }
     try{ await DB.removeFile(files[+b.dataset.i]); toast('File removed'); redraw(); }catch(e){ toast(e.message); } });
   const input=box.querySelector('#'+sid+'_file'), msg=box.querySelector('#'+sid+'_msg'); if(!input) return;
   input.onchange=async()=>{
-    const picked=[...input.files]; if(!picked.length) return; const kind=box.querySelector('#'+sid+'_kind').value; let ok=0;
+    let picked=[...input.files]; input.value=''; if(!picked.length) return; const kind=box.querySelector('#'+sid+'_kind').value; const priv=box.querySelector('#'+sid+'_priv').checked; let ok=0;
+    picked = await redactFiles(picked); if(!picked){ if(!document.body.contains(box)) openDetail(v.id); return; }
+    if(!document.body.contains(box)){ openDetail(v.id); toast('Uploading…'); }
     for(const [n,f0] of picked.entries()){
-      msg.textContent=`Uploading ${n+1} of ${picked.length}…`;
+      if(document.body.contains(msg)) msg.textContent=`Uploading ${n+1} of ${picked.length}…`;
       if(!/^image\/|^application\/pdf$/.test(f0.type) && !/\.(pdf|heic|heif)$/i.test(f0.name)){ toast(`${f0.name}: only photos and PDFs`); continue; }
       const f=await shrink(f0);
       if(f.size>10485760){ toast(`${f0.name} is over 10 MB`); continue; }
-      try{ await DB.upload(v.id,f,kind,qid); ok++; }catch(e){ toast(`${f0.name}: ${e.message}`); }
+      try{ await DB.upload(v.id,f,kind,qid,priv); ok++; }catch(e){ toast(`${f0.name}: ${e.message}`); }
     }
     if(ok) toast(ok===1?'File added':`${ok} files added`);
-    redraw();
+    if(document.body.contains(box)) redraw(); else openDetail(v.id);
   };
 }
 
