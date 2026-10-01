@@ -1158,7 +1158,7 @@ begin
     raise exception 'This email already has access or a request waiting. Ask Eretz Israel Tours to send you your personal link.'; end if;
   insert into public.members (name, email, phone, note, role, license_no, token_hash, terms_version, terms_accepted_at)
   values (trim(p_name), e, left(coalesce(trim(p_phone),''),40), left(coalesce(trim(p_note),''),300), p_role, left(trim(coalesce(p_license,'')),40), public._hash(t), left(p_terms,20), now());
-  return json_build_object('token', t, 'status', 'pending');
+  return json_build_object('token', t, 'status', 'pending', 'alert', (select value from public.app_settings where key = 'ntfy_topic'));
 end $function$
 ;
 
@@ -1536,3 +1536,9 @@ revoke all on function vendor_detail(text,text) from public; grant execute on fu
 -- ===== Added 2026-10-01 after export: keep-alive ping (used by .github/workflows/keep-alive.yml) =====
 CREATE OR REPLACE FUNCTION public.ping() RETURNS text LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO '' AS $$ select 'ok:' || (select count(*) from public.vendors)::text $$;
 revoke all on function public.ping() from public; grant execute on function public.ping() to anon, authenticated;
+
+-- ===== Added 2026-10-01: join-request push alert =====
+-- request_access (above) returns the ntfy topic so the joining browser can post a push alert to Eretz Israel Tours.
+-- Set it once to a random, unguessable value (NOT stored in this public repo):
+--   insert into public.app_settings(key, value) values ('ntfy_topic', 'eit-suppliers-<random>') on conflict (key) do update set value = excluded.value;
+-- pg_net was enabled during testing (create extension pg_net with schema extensions) but is not used: ntfy.sh rate-limits Supabase's shared IP.

@@ -574,6 +574,9 @@ const DB = {
     const { data, error } = await sb.rpc('request_access',{p_name:name,p_email:email,p_role:role,p_license:license,p_phone:phone,p_note:note,p_terms:terms});
     if(error) throw new Error(error.message);
     S.token=data.token; try{ localStorage.setItem(TOKEN_KEY,S.token); }catch(e){}
+    // Push alert to Eretz Israel Tours' phone (ntfy). Sent from this browser; carries no personal details.
+    if(data.alert){ try{ fetch('https://ntfy.sh/',{method:'POST',keepalive:true,body:JSON.stringify({topic:data.alert,title:'Israel Suppliers: new join request',
+      message:'Someone asked to join'+(role?' ('+role+')':'')+(/^No proof:/.test(note||'')?', without proof':'')+'. Open the Team tab to review.',click:'https://vendors.eretzisraeltours.com/',tags:['bust_in_silhouette'],priority:4})}).catch(()=>{}); }catch(e){} }
     await DB.loadMe();
   },
   async uploadProof(file){
