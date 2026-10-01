@@ -924,6 +924,26 @@ function reportsPanel(){
       <div class="btn-row"><button class="btn soft" data-open="${esc(r.vendor_id)}">Open supplier</button>${r.status==='New'?`<button class="btn soft" data-rp="${esc(r.id)}" data-st="Dismissed">Dismiss</button><button class="btn primary" data-rp="${esc(r.id)}" data-st="Fixed">Done</button>`:''}</div></div>`).join('') : '<div class="empty" style="padding:16px">No updates waiting.</div>'}
   </section>`;
 }
+// After approving: a ready welcome message, sent from Eretz Israel Tours' own WhatsApp or email in one tap.
+function welcomeText(m, lang){
+  const first=String(m.name||'').trim().split(/\s+/)[0]||'';
+  return lang==='he'
+    ? `שלום ${first}, אושרת לרשימת הספקים של Eretz Israel Tours (Israel Suppliers Master List). פתח/י את vendors.eretzisraeltours.com בטלפון שממנו נרשמת, או את הקישור האישי שקיבלת בהרשמה. אם הקישור אבד, כתוב/כתבי לי ואשלח חדש. תזכורת: הרשימה לעמיתים בלבד, אין להציג אותה לספקים. בהצלחה!`
+    : `Hi ${first}, you've been approved for the Israel Suppliers Master List by Eretz Israel Tours. Open vendors.eretzisraeltours.com on the phone you signed up with, or use the personal link you got when you joined. If you've lost it, reply and I'll send a new one. Reminder: the list is for colleagues only, never show it to suppliers. Welcome!`;
+}
+function openWelcome(m){
+  const ph=firstPhone(m.phone||''), em=m.email||''; let lang='en';
+  const body=`<p style="margin:0 0 10px;color:var(--ink-2)"><b>${esc(m.name)}</b> is approved. Send a welcome message from your own WhatsApp or email.</p>
+    <div class="chips" style="padding-top:0"><button type="button" class="chip" data-wl="en" aria-pressed="true">English</button><button type="button" class="chip" data-wl="he" aria-pressed="false">עברית</button></div>
+    <div class="f wide" style="margin-top:8px"><label for="wTxt">Message (you can edit it)</label><textarea id="wTxt" rows="7">${esc(welcomeText(m,'en'))}</textarea></div>
+    ${ph?'':'<p class="hint" style="margin:8px 0 0">No phone number on their request, so WhatsApp isn\'t available.</p>'}`;
+  const w=sheet('Welcome message', body, `<button class="btn soft" id="wSkip" type="button">Skip</button>${em?'<button class="btn soft" id="wMail" type="button">Email</button>':''}${ph?'<button class="btn primary" id="wWa" type="button">WhatsApp</button>':''}`);
+  const t=w.querySelector('#wTxt');
+  w.querySelectorAll('[data-wl]').forEach(b=>b.onclick=()=>{ lang=b.dataset.wl; w.querySelectorAll('[data-wl]').forEach(o=>o.setAttribute('aria-pressed',o===b)); t.value=welcomeText(m,lang); t.dir=lang==='he'?'rtl':'ltr'; });
+  w.querySelector('#wSkip').onclick=closeSheet;
+  const wa=w.querySelector('#wWa'); if(wa) wa.onclick=()=>{ window.open(`https://wa.me/${intlDigits(ph)}?text=${encodeURIComponent(t.value)}`,'_blank','noopener'); closeSheet(); };
+  const ml=w.querySelector('#wMail'); if(ml) ml.onclick=()=>{ location.href=`mailto:${em}?subject=${encodeURIComponent(lang==='he'?'אושרת לרשימת הספקים':'You\'re approved: Israel Suppliers Master List')}&body=${encodeURIComponent(t.value)}`; closeSheet(); };
+}
 function viewReview(){
   const view=document.getElementById('view');
   const reqs=S.requests||[];
@@ -1008,7 +1028,7 @@ function viewTeam(){
   view.querySelectorAll('[data-proof]').forEach(b=>b.onclick=async()=>{ const slot=document.getElementById('pf_'+b.dataset.proof);
     if(!LIVE){ slot.innerHTML='<p class="hint" style="margin:8px 0 0">In the live app this opens their uploaded license.</p>'; return; }
     b.disabled=true; try{ const url=await DB.proofUrl(b.dataset.proof); slot.innerHTML=`<a class="btn accent" style="display:inline-block;margin-top:8px;text-decoration:none" href="${esc(url)}" target="_blank" rel="noopener">Open their license</a> <span class="hint">Link works for 10 minutes.</span>`; }catch(e){ toast(e.message); } b.disabled=false; });
-  view.querySelectorAll('[data-yes]').forEach(b=>b.onclick=async()=>{ try{ await DB.decide(b.dataset.yes,'approved'); toast('Approved. Their link works now.'); render(); }catch(e){ toast(e.message); } });
+  view.querySelectorAll('[data-yes]').forEach(b=>b.onclick=async()=>{ const m=S.members.find(x=>x.id===b.dataset.yes); try{ await DB.decide(b.dataset.yes,'approved'); render(); if(m) openWelcome(m); else toast('Approved. Their link works now.'); }catch(e){ toast(e.message); } });
   view.querySelectorAll('[data-no]').forEach(b=>b.onclick=async()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again'; return; } try{ await DB.decide(b.dataset.no,'revoked'); toast('Declined'); render(); }catch(e){ toast(e.message); } });
   view.querySelectorAll('[data-rm]').forEach(b=>b.onclick=async()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again to remove'; return; } try{ await DB.decide(b.dataset.rm,'revoked'); toast('Removed. Their link no longer works.'); render(); }catch(e){ toast(e.message); } });
   view.querySelectorAll('[data-link]').forEach(b=>b.onclick=async()=>{
