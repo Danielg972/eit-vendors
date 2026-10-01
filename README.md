@@ -58,3 +58,6 @@ Shared vendor list for Eretz Israel Tours colleagues. Static single-page app (Gi
 - Security cleanup (1 Oct 2026, found while writing docs/AUDIT_2026-10-01.md): dropped 11 leftover Supabase-Auth RLS policies and revoked `authenticated` grants on vendors, vendor_files and contributors. Now 0 table grants to anon/authenticated and 0 policies; all access is through token RPCs and the files edge function.
 - Project audit for other Claude projects: `docs/AUDIT_2026-10-01.md`.
 - Project brief for other EIT projects (what it is, goals, vision, how it works, overlaps, skills wanted): `docs/PROJECT_BRIEF.md`.
+- Winery category (Har Bracha, Gush Etzion, Settlers, Tishbi moved to it; the last three also Restaurant). R5 export maps Winery → Restaurant.
+- Map pin (`vendors.maps_link`): paste a Google Maps / Waze link or tap "📍 I'm here" (phone location). Maps button opens the pin; Waze navigates to its coordinates when the link carries them.
+- ⚡ Quick fill at the top of the supplier form: "From my contacts" (Android Chrome contact picker), "Paste text" (email signature, WhatsApp contact, web page; reads the clipboard when allowed) and "Contact card (.vcf)". Picks out business name, contact person, phones (mobile → WhatsApp), email, website, map link and address; only fills empty fields.

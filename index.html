@@ -100,6 +100,7 @@ main{max-width:760px;margin:0 auto;padding:16px 16px 110px}
 .presets .mini.on{background:var(--ink,#1f3a2e);color:#fff}
 .food{border:1px solid var(--line,#ddd);border-radius:12px;padding:10px 12px;margin:0 0 16px}.food summary{cursor:pointer;font-weight:600}.food[open] summary{margin-bottom:8px}
 .food a.mini{text-decoration:none}.foodadd{display:grid;gap:6px;margin-top:10px}.foodadd input,.foodadd select{width:100%}
+.quickfill{border:1px dashed var(--line,#ccc);border-radius:12px;padding:10px 12px;margin:0 0 14px}
 .kcrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}
 .agentbox a.btn{text-decoration:none}.agentbox{border:1px solid var(--line, #ddd);border-radius:12px;padding:10px 12px;margin:10px 0}.agentbox .ah{margin-bottom:4px}.agentbox p{margin:4px 0 8px;font-size:14px;white-space:pre-wrap}
 .disclaim{font-size:12.5px;line-height:1.45;color:var(--ink-2);background:var(--warn-wash);border-radius:10px;padding:10px 12px;margin:18px 0 12px}
@@ -308,16 +309,16 @@ const LIVE = /(^|\.)github\.io$/.test(location.hostname) || /(^|\.)eretzisraelto
 
 // R5 field order (from itinerary_builder R5 saveVendor)
 const R5_FIELDS = ['name','category','active','contactPerson','phone','whatsapp','email','website','location','languages','kosher','maxCap','listedPrice','listedPriceVatTreatment','agentPrice','agentPriceVatTreatment','maxPax','priceBasis','currency','payTerms','cancelPolicy','cancelNoticeAmount','cancelNoticeUnit','cancelDayType','cancelPenalty','cancelPolicyVerifiedDate','npResLink','rateReliability','rateService','rateValue','strengths','weaknesses','notes'];
-const CATEGORIES = ['Hotel','Guide','Transport','Restaurant','Attraction / Site','Activity','Adventure','National Parks','Travel Agent','Itinerary Planner','Flight','Other'];
-const EXTRA_FIELDS = ['region','tags','experience_years','also_categories'];
+const CATEGORIES = ['Hotel','Guide','Transport','Restaurant','Winery','Attraction / Site','Activity','Adventure','National Parks','Travel Agent','Itinerary Planner','Flight','Other'];
+const EXTRA_FIELDS = ['region','tags','experience_years','also_categories','maps_link'];
 const GUIDE_ATTRS = ['Eshkol license','Owns an Eshkol vehicle','Midbari 4x4 vehicle','Carries a gun'];
 // Which form fields matter for which categories. A field still shows if it already has a value.
 const REL = {
-  kosher:['Hotel','Restaurant','Activity','Attraction / Site','Other'],
+  kosher:['Hotel','Restaurant','Winery','Activity','Attraction / Site','Other'],
   languages:['Guide','Transport','Activity','Adventure','Attraction / Site','Travel Agent','Itinerary Planner','Hotel','Other'],
-  maxCap:['Hotel','Restaurant','Transport','Activity','Adventure','Attraction / Site','National Parks','Other'],
-  free:['Attraction / Site','National Parks','Activity','Other'],
-  food:['Hotel','Guide','Transport','Restaurant','Attraction / Site','Activity','Adventure','National Parks','Other']
+  maxCap:['Hotel','Restaurant','Winery','Transport','Activity','Adventure','Attraction / Site','National Parks','Other'],
+  free:['Attraction / Site','National Parks','Activity','Winery','Other'],
+  food:['Hotel','Guide','Transport','Restaurant','Winery','Attraction / Site','Activity','Adventure','National Parks','Other']
 };
 const catsOf = v => [v.category, ...String(v.also_categories||'').split(',').map(t=>t.trim()).filter(Boolean)];
 const rel = (field, v) => catsOf(v).some(c=>REL[field].includes(c));
@@ -329,7 +330,8 @@ const TAG_SUGGEST = {Adventure:['Jeep','ATV / RZR','Rappelling','Kayak & rafting
   Restaurant:['Meat','Dairy','Mehadrin','Group menus','Winery'],
   Guide:['Eshkol license','Owns an Eshkol vehicle','Midbari 4x4 vehicle','Carries a gun','Driver-guide','English','French','Spanish','Russian'],
   'Travel Agent':['Hotel bookings','Flights','Packages','Groups','Commission'],
-  'Itinerary Planner':['Full trip planning','Day trips','Groups','Families','Bar/bat mitzvah']};
+  'Itinerary Planner':['Full trip planning','Day trips','Groups','Families','Bar/bat mitzvah'],
+  Winery:['Tasting','Tour','Restaurant','Boutique','Free bottle for guide','Group menus']};
 const KOSHER_OPTS = ['Rabbanut','Rabbanut Mehadrin','Badatz Eda Haredit','Badatz Beit Yosef','Badatz Rubin','Rav Landau','Kosher, no certificate','Kosher-style (not certified)','Not kosher','Not relevant'];
 const LANG_OPTS = ['English','Hebrew','French','Spanish','Russian','German','Portuguese','Italian','Yiddish','Arabic','Dutch'];
 const TOWNS = ['Jerusalem','Tel Aviv','Haifa','Eilat','Tiberias','Safed (Tzfat)','Netanya','Herzliya','Caesarea','Akko','Nazareth','Rosh Pina','Katzrin','Metula','Mitzpe Ramon','Arad','Beer Sheva','Ein Gedi','Masada','Ein Bokek','Dead Sea','Modiin','Beit Shemesh','Efrat','Gush Etzion','Ariel','Shilo','Kfar Adumim','Mishor Adumim','Zichron Yaakov','Rehovot','Ashkelon','Ashdod','Jaffa','Bethlehem','Even Yehuda','Ra\'anana','Kfar Saba','Hod Hasharon','Ben Gurion Airport'];
@@ -953,7 +955,7 @@ function viewReview(){
   document.getElementById('exp').onclick=()=>exportR5(appr);
 }
 function exportR5(list){
-  const vendors = list.map(v=>{ const o={id:v.id}; R5_FIELDS.forEach(k=>o[k]=String(v[k]==null?'':v[k])); if(o.category==='National Parks') o.category='National Park'; if(o.category==='Adventure') o.category='Activity'; if(o.category==='Travel Agent'||o.category==='Itinerary Planner') o.category='Other'; return o; });
+  const vendors = list.map(v=>{ const o={id:v.id}; R5_FIELDS.forEach(k=>o[k]=String(v[k]==null?'':v[k])); if(o.category==='National Parks') o.category='National Park'; if(o.category==='Winery') o.category='Restaurant'; if(o.category==='Adventure') o.category='Activity'; if(o.category==='Travel Agent'||o.category==='Itinerary Planner') o.category='Other'; return o; });
   const file = { _exportFormatVersion:3, _tripVendors:vendors, days:[] };
   const json = JSON.stringify(file,null,2);
   const name = `Israel_suppliers_${new Date().toISOString().slice(0,10)}.json`;
@@ -1076,6 +1078,8 @@ function intlDigits(ph){ let d=String(ph||'').replace(/[^\d+]/g,''); if(d.starts
 function firstPhone(x){ const parts=String(x||'').split(/[;,/]|\bor\b/i).map(p=>p.trim()).filter(p=>p && !/fax/i.test(p));
   for(const p of parts){ const d=p.replace(/[^\d+*]/g,''); if(d.replace(/\D/g,'').length>=4) return d; } return ''; }
 function firstEmail(x){ const m=String(x||'').match(/[^\s;,<>]+@[^\s;,<>]+\.[^\s;,<>]+/); return m?m[0]:''; }
+// "31.77,35.21" from a Google Maps / Waze link, when the link carries coordinates
+function coordsOf(u){ const m=String(u||'').match(/(?:[?&](?:q|ll|query|daddr)=|@)(-?\d{1,2}\.\d+)[, %2C]+(-?\d{1,3}\.\d+)/i); return m?m[1]+','+m[2]:''; }
 function contactBar(v){
   const a=[]; const ph=firstPhone(v.phone), em=firstEmail(v.email);
   const t=k=>`data-track="${k}" data-v="${esc(v.id)}"`;
@@ -1086,8 +1090,11 @@ function contactBar(v){
   if(em) a.push(`<a class="act" ${t('email')} data-mail="${esc(em)}" data-vname="${esc(v.name)}" href="${esc(mailHref(em))}">${ic.mail}Email</a>`);
   if(v.website) a.push(`<a class="act" ${t('website')} href="${esc(/^https?:/.test(v.website)?v.website:'https://'+v.website)}" target="_blank" rel="noopener">${ic.web}Website</a>`);
   const where=encodeURIComponent((v.name.replace(/\s*\(.*?\)\s*/g,' ')+' '+(v.location||'')).trim());
-  if(v.location||v.name){ a.push(`<a class="act" ${t('waze')} href="https://waze.com/ul?q=${where}&navigate=yes" target="_blank" rel="noopener">${ic.nav}Waze</a>`);
-    a.push(`<a class="act" ${t('maps')} href="https://www.google.com/maps/search/?api=1&query=${where}" target="_blank" rel="noopener">${ic.maps}Maps</a>`); }
+  const ll=coordsOf(v.maps_link);
+  const waze = ll ? `https://waze.com/ul?ll=${ll}&navigate=yes` : `https://waze.com/ul?q=${where}&navigate=yes`;
+  const gmap = v.maps_link || `https://www.google.com/maps/search/?api=1&query=${where}`;
+  if(v.location||v.name||v.maps_link){ a.push(`<a class="act" ${t('waze')} href="${esc(waze)}" target="_blank" rel="noopener">${ic.nav}Waze</a>`);
+    a.push(`<a class="act" ${t('maps')} href="${esc(gmap)}" target="_blank" rel="noopener">${ic.maps}Maps</a>`); }
   return a.length?`<div class="actions">${a.join('')}</div>`:'';
 }
 function money(cur,p){ if(String(p).trim()!=='' && Number(p)===0) return 'Free'; return (CUR_SIGN[cur]||'')+Number(p).toLocaleString('en-US'); }
@@ -1106,7 +1113,7 @@ function openDetail(id){
   const notice=v.cancelNoticeAmount?`${esc(v.cancelNoticeAmount)} ${esc((v.cancelNoticeUnit||'').toLowerCase())}${v.cancelDayType?' ('+esc(v.cancelDayType.toLowerCase())+')':''}`:'';
   const rating=['rateReliability','rateService','rateValue'].map((k,i)=>v[k]?`${['Reliability','Service','Value'][i]} <b class="mono">${esc(v[k])}/5</b>`:'').filter(Boolean).join(' · ');
   const sections=[
-    ['Contact',rows([['Contact',esc(v.contactPerson)],['Phone',v.phone?`<span class="mono">${esc(v.phone)}</span>`:''],['WhatsApp',v.whatsapp?`<span class="mono">${esc(v.whatsapp)}</span>`:''],['Email',esc(v.email)],['Website',esc(v.website)],['Region',esc(v.region)],[v.category==='Guide'?'Guide details':'Type',esc(v.tags)],['Years guiding',v.category==='Guide'&&v.experience_years?esc(v.experience_years)+' years':''],['Area',esc(v.location)],['Languages',esc(v.languages)],['Kosher',(v.kosher||rel('kosher',v))?(v.kosher?esc(v.kosher):'<span class="hint">Not added</span>')+`<span id="kcert"></span>`:''],['Max capacity',v.maxCap?esc(v.maxCap)+' people':''],['Park booking',v.npResLink?`<a data-track="booking" data-v="${esc(v.id)}" href="${esc(v.npResLink)}" target="_blank" rel="noopener">Reservation page</a>`:'']])],
+    ['Contact',rows([['Contact',esc(v.contactPerson)],['Phone',v.phone?`<span class="mono">${esc(v.phone)}</span>`:''],['WhatsApp',v.whatsapp?`<span class="mono">${esc(v.whatsapp)}</span>`:''],['Email',esc(v.email)],['Website',esc(v.website)],['Region',esc(v.region)],[v.category==='Guide'?'Guide details':'Type',esc(v.tags)],['Years guiding',v.category==='Guide'&&v.experience_years?esc(v.experience_years)+' years':''],['Area',esc(v.location)],['Map pin',v.maps_link?`<a data-track="maps" data-v="${esc(v.id)}" href="${esc(v.maps_link)}" target="_blank" rel="noopener">Open map pin</a>`:''],['Languages',esc(v.languages)],['Kosher',(v.kosher||rel('kosher',v))?(v.kosher?esc(v.kosher):'<span class="hint">Not added</span>')+`<span id="kcert"></span>`:''],['Max capacity',v.maxCap?esc(v.maxCap)+' people':''],['Park booking',v.npResLink?`<a data-track="booking" data-v="${esc(v.id)}" href="${esc(v.npResLink)}" target="_blank" rel="noopener">Reservation page</a>`:'']])],
     [S.admin?(v.prices_private?'Main price (goes to R5) · private':'Main price (goes to R5)'):'Main price',rows([['Agent price',price(v.agentPrice,v.agentPriceVatTreatment)],['Listed price',price(v.listedPrice,v.listedPriceVatTreatment)],['Basis',esc(v.priceBasis)],['Max people',esc(v.maxPax)],['Payment terms',esc(v.payTerms)]])],
     ['Cancellation',rows([['Policy',esc(v.cancelPolicy)],['Notice',notice],['Penalty',esc(v.cancelPenalty)],['Checked',esc(v.cancelPolicyVerifiedDate)]])],
     ['Experience',rows([['Ratings',rating],['Strengths',esc(v.strengths)],['Weaknesses',esc(v.weaknesses)],['Summary',esc(v.notes)]])]
@@ -1633,6 +1640,54 @@ async function drawFiles(v, qid, boxId, canAdd){
   };
 }
 
+// ---- Quick fill: pull name, phones, emails, website and map link out of a contact, vCard or pasted text ----
+function parseContactText(txt){
+  const out={phones:[],emails:[],urls:[],maps:'',name:'',org:'',address:''};
+  const t=String(txt||'');
+  if(/BEGIN:VCARD/i.test(t)){
+    const un=t.replace(/\r?\n[ \t]/g,''); // unfold
+    un.split(/\r?\n/).forEach(l=>{ const m=l.match(/^([A-Z\-]+)(?:;[^:]*)?:(.*)$/i); if(!m) return; const k=m[1].toUpperCase(), val=m[2].replace(/\\,/g,',').replace(/\;/g,';').trim();
+      if(k==='FN'&&!out.name) out.name=val; else if(k==='N'&&!out.name) out.name=val.split(';').slice(0,2).reverse().join(' ').trim();
+      else if(k==='ORG') out.org=val.split(';')[0]; else if(k==='TEL') out.phones.push(val); else if(k==='EMAIL') out.emails.push(val);
+      else if(k==='URL') out.urls.push(val); else if(k==='ADR') out.address=val.split(';').filter(Boolean).join(', '); });
+  }
+  (t.match(/https?:\/\/\S+|www\.\S+/gi)||[]).forEach(u=>{ u=u.replace(/[),.;]+$/,''); if(/google\.[a-z.]+\/maps|maps\.app\.goo\.gl|goo\.gl\/maps|waze\.com/i.test(u)){ if(!out.maps) out.maps=/^http/.test(u)?u:'https://'+u; } else if(!out.urls.includes(u)) out.urls.push(u); });
+  (t.match(/[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}/gi)||[]).forEach(e=>{ if(!out.emails.includes(e)) out.emails.push(e); });
+  (t.replace(/https?:\/\/\S+/g,' ').match(/(?:\+?972[\s\-]?|0)(?:[23489]|5\d|7\d)[\s\-]?\d{3}[\s\-]?\d{4}|\*\d{4}/g)||[]).forEach(p=>{ p=p.trim(); if(!out.phones.some(q=>q.replace(/\D/g,'').endsWith(p.replace(/\D/g,'').slice(-8)))) out.phones.push(p); });
+  if(!out.name&&!out.org){ const cand=t.split(/\r?\n/).map(l=>l.trim()).filter(l=>l && l.length<70 && !/@|https?:|www\.|\d{5,}|\d[\d\s\-]{6,}|BEGIN:|^(tel|phone|mobile|cell|fax|email|e-mail|address|טל|נייד)\b/i.test(l) && !/^((best|kind|warm)\s+)?(regards|wishes)|^(thanks|thank you|cheers|sincerely|בברכה|תודה)/i.test(l)).slice(0,2);
+    if(cand.length===2){ out.name=cand[0]; out.org=cand[1]; } else if(cand.length) out.name=cand[0]; }
+  return out;
+}
+const isMobile=p=>/^0?5\d{8}$/.test(String(p).replace(/\D/g,'').replace(/^972/,'0'));
+function applyQuickFill(f, d){
+  const filled=[]; const set=(k,val,label)=>{ const el=f.querySelector('#f_'+k); if(!el||!val) return; if(String(el.value||'').trim()) return; el.value=val; el.dispatchEvent(new Event('input',{bubbles:true})); filled.push(label); };
+  const org=d.org, person=d.name;
+  set('name', org||person, 'name');
+  if(org&&person) set('contactPerson', person, 'contact person');
+  const phones=d.phones.filter(Boolean); const mob=phones.find(isMobile);
+  if(phones.length) set('phone', phones.slice(0,3).join('; '), phones.length>1?'phones':'phone');
+  if(mob) set('whatsapp', mob, 'WhatsApp');
+  if(d.emails.length) set('email', d.emails[0], 'email');
+  if(d.urls.length) set('website', d.urls[0], 'website');
+  if(d.maps) set('maps_link', d.maps, 'map pin');
+  if(d.address) set('location', d.address, 'address');
+  return filled;
+}
+function wireQuickFill(f){
+  const msg=f.querySelector('#qfMsg'); if(!msg) return;
+  const done=filled=>{ msg.textContent = filled.length ? '✓ Filled: '+filled.join(', ')+'. Check them before saving.' : 'Nothing new to fill (fields that already have something are left as they are).'; };
+  const pb=f.querySelector('#qfPasteBtn'), pw=f.querySelector('#qfPasteWrap');
+  pb.onclick=async()=>{ pw.hidden=!pw.hidden; if(!pw.hidden){ const ta=f.querySelector('#qfText'); try{ if(!ta.value && navigator.clipboard && navigator.clipboard.readText){ const c=await navigator.clipboard.readText(); if(c) ta.value=c; } }catch(e){} ta.focus(); } };
+  f.querySelector('#qfGo').onclick=()=>done(applyQuickFill(f, parseContactText(f.querySelector('#qfText').value)));
+  const vb=f.querySelector('#qfVcfBtn'), vf=f.querySelector('#qfVcf'); vb.onclick=()=>vf.click();
+  vf.onchange=async()=>{ const file=vf.files[0]; vf.value=''; if(!file) return; done(applyQuickFill(f, parseContactText(await file.text()))); };
+  const cb=f.querySelector('#qfContacts'); if(cb) cb.onclick=async()=>{ try{ const r=await navigator.contacts.select(['name','tel','email','address'],{multiple:false}); if(!r||!r[0]) return; const c=r[0];
+      const adr=(c.address&&c.address[0])?[c.address[0].addressLine&&c.address[0].addressLine.join(' '),c.address[0].city].filter(Boolean).join(', '):'';
+      done(applyQuickFill(f,{name:(c.name||[])[0]||'',org:'',phones:c.tel||[],emails:c.email||[],urls:[],maps:'',address:adr})); }catch(e){ msg.textContent='Could not open contacts: '+e.message; } };
+  const hb=f.querySelector('#hereBtn'); if(hb) hb.onclick=()=>{ if(!navigator.geolocation){ toast('Location is not available on this device'); return; } hb.disabled=true; hb.textContent='Finding…';
+    navigator.geolocation.getCurrentPosition(p=>{ const ll=p.coords.latitude.toFixed(6)+','+p.coords.longitude.toFixed(6); f.querySelector('#f_maps_link').value='https://www.google.com/maps?q='+ll; hb.disabled=false; hb.textContent="📍 I'm here"; toast('Map pin set to where you are'); },
+      e=>{ hb.disabled=false; hb.textContent="📍 I'm here"; toast('Could not get your location: '+e.message); },{enableHighAccuracy:true,timeout:15000}); };
+}
 function openForm(v, preset){
   const x = Object.assign(blank(), {active:'Active',priceBasis:'Per person',currency:'ILS',category:''}, v||preset||{});
   const guarded = !!v && !S.admin; const lk=k=>guarded && LOCKED.includes(k) ? ' <span class="lock">🔒</span>' : '';
@@ -1642,6 +1697,10 @@ function openForm(v, preset){
   const stars=(k,label)=>`<div class="f"><label>${label}</label><div class="stars" data-k="${k}">${[1,2,3,4,5].map(n=>`<button type="button" data-n="${n}" aria-pressed="${x[k]===String(n)}" aria-label="${label} ${n}">${n}</button>`).join('')}</div><input type="hidden" id="f_${k}" name="${k}" value="${esc(x[k])}"></div>`;
   const body=`<form id="vf" novalidate>
     ${guarded?'<div class="lockbar">🔒 Name, contact details, the main price and cancellation terms are checked by Eretz Israel Tours. Change them here and say why, and the change shows once approved. Everything else saves straight away.</div>':''}
+    <div class="quickfill"><b>⚡ Quick fill</b> <span class="hint">Fill the form from a contact or text instead of typing.</span>
+      <div class="btn-row" style="margin-top:8px">${('contacts' in navigator && 'select' in navigator.contacts)?'<button type="button" class="btn soft" id="qfContacts">📇 From my contacts</button>':''}<button type="button" class="btn soft" id="qfPasteBtn">📋 Paste text</button><button type="button" class="btn soft" id="qfVcfBtn">📎 Contact card (.vcf)</button><input type="file" id="qfVcf" accept=".vcf,text/vcard,text/x-vcard" hidden></div>
+      <div id="qfPasteWrap" hidden style="margin-top:8px"><textarea id="qfText" rows="5" placeholder="Paste an email signature, a WhatsApp contact, a website's contact page, a Google Maps link… Names, phones, emails, websites and map links are picked out."></textarea><div class="btn-row" style="margin-top:6px"><button type="button" class="btn primary" id="qfGo">Fill the form</button></div></div>
+      <div id="qfMsg" class="hint" style="margin-top:6px"></div></div>
     <fieldset><legend>Supplier</legend><div class="grid">
       ${inp('name','Vendor or company name','text','Golan Jeeps Ltd.',true,true)}
       <div id="dupBox" class="f wide" hidden></div>
@@ -1658,6 +1717,7 @@ function openForm(v, preset){
       <div class="f"><label for="f_regionSel">Region</label><select id="f_regionSel"><option value="">Choose…</option>${byUse('region',REGIONS).map(r=>`<option${x.region===r?' selected':''}>${esc(r)}</option>`).join('')}<option value="__other"${x.region&&!REGIONS.includes(x.region)?' selected':''}>Other…</option></select>
         <input id="f_regionOther" placeholder="Type the region" value="${esc(x.region&&!REGIONS.includes(x.region)?x.region:'')}" ${x.region&&!REGIONS.includes(x.region)?'':'hidden'} style="margin-top:6px"><input type="hidden" id="f_region" value="${esc(x.region)}"></div>
       ${inp('location','Town or address','text','Start typing: Jerusalem, Mitzpe Ramon…')}
+      <div class="f wide"><label for="f_maps_link">Map pin (Google Maps or Waze link)</label><div style="display:flex;gap:6px"><input id="f_maps_link" type="url" inputmode="url" value="${esc(x.maps_link||'')}" placeholder="Paste a Google Maps or Waze link"><button type="button" class="mini" id="hereBtn" title="Use where I am now">📍 I'm here</button></div><span class="hint">In Google Maps: open the place, tap Share, Copy link, and paste it here. Or tap "I'm here" when you're standing at the place.</span></div>
       <datalist id="dl_location">${[...new Set(TOWNS.concat(S.vendors.map(o=>o.location).filter(Boolean)))].sort().map(t=>`<option value="${esc(t)}">`).join('')}</datalist>
       <div class="f wide" id="langWrap"><label for="f_languages">Languages</label><input id="f_languages" name="languages" value="${esc(x.languages)}" placeholder="Tap below or type"><div class="presets" id="langSug" style="margin:6px 0 0"></div></div>
       <div class="f wide" id="kosWrap"><label for="f_kosher">Kosher</label><input id="f_kosher" name="kosher" list="dl_kosher" value="${esc(x.kosher)}" placeholder="Tap below or type"><datalist id="dl_kosher">${KOSHER_OPTS.map(k=>`<option value="${esc(k)}">`).join('')}</datalist><div class="presets" id="kosSug" style="margin:6px 0 0">${KOSHER_OPTS.map(k=>`<button type="button" class="mini" data-kos="${esc(k)}">${esc(k)}</button>`).join('')}</div>${v?`<div class="kcrow"><button type="button" class="btn soft" id="kcFormBtn">📷 Add kosher certificate photo</button><input id="kcFormFile" type="file" accept="image/*,application/pdf" hidden><span class="hint" id="kcFormMsg">Take a photo of the certificate or pick one from your phone. Saves straight away.</span></div>`:'<span class="hint">After you save the supplier, you can add a photo of the kosher certificate here or on the supplier page.</span>'}</div>${inp('maxCap','Max capacity (people)','number')}
@@ -1708,7 +1768,7 @@ function openForm(v, preset){
   f.querySelector('#f_location').setAttribute('list','dl_location'); f.querySelector('#f_location').setAttribute('autocomplete','off');
   const kos=f.querySelector('#f_kosher'); const kosDraw=()=>f.querySelectorAll('[data-kos]').forEach(b=>b.classList.toggle('on',kos.value===b.dataset.kos));
   f.querySelectorAll('[data-kos]').forEach(b=>b.onclick=()=>{ kos.value = kos.value===b.dataset.kos ? '' : b.dataset.kos; kosDraw(); }); kos.addEventListener('input',kosDraw); kosDraw();
-  syncRel();
+  syncRel(); wireQuickFill(f);
   const kcb=f.querySelector('#kcFormBtn'); if(kcb){ const kf=f.querySelector('#kcFormFile'), km=f.querySelector('#kcFormMsg');
     kcb.onclick=()=>kf.click();
     kf.onchange=async()=>{ const f0=kf.files[0]; kf.value=''; if(!f0) return; kcb.disabled=true; km.textContent='Uploading…';
@@ -1734,6 +1794,7 @@ function openForm(v, preset){
   w.querySelector('#saveBtn').onclick=async()=>{
     syncReg(); const data = v?{id:v.id}:{}; R5_FIELDS.concat(EXTRA_FIELDS).forEach(k=>{ const el=f.querySelector('#f_'+k); data[k]= el?el.value:(x[k]||''); });
     if(data.category!=='National Parks') data.npResLink = x.npResLink||data.npResLink||'';
+    data.maps_link=String(data.maps_link||'').trim(); if(data.maps_link && !/^https?:\/\//i.test(data.maps_link)) data.maps_link='https://'+data.maps_link;
     data.experience_years=String(data.experience_years||'').replace(/\D/g,'').slice(0,2); if(!catsOf(data).includes('Guide') && !x.experience_years) data.experience_years='';
     const err=f.querySelector('#formErr');
     const probs=[]; if(!data.name.trim()) probs.push('Add the supplier name.'); if(!data.category) probs.push('Choose a category.');
