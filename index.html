@@ -595,6 +595,7 @@ function statusPill(v){
 }
 function priceLine(v){
   const p = v.agentPrice || v.listedPrice; if(!p) return '';
+  if(Number(p)===0) return `<b>Free</b><span>${esc((v.priceBasis||'').toLowerCase())}</span>`;
   const sign = CUR_SIGN[v.currency]||'';
   return `<b>${esc(sign)}${esc(Number(p).toLocaleString('en-US'))}</b><span>${esc((v.priceBasis||'').toLowerCase())}${v.agentPrice?'':' · listed'}</span>`;
 }
@@ -1056,7 +1057,7 @@ function contactBar(v){
     a.push(`<a class="act" ${t('maps')} href="https://www.google.com/maps/search/?api=1&query=${where}" target="_blank" rel="noopener">${ic.maps}Maps</a>`); }
   return a.length?`<div class="actions">${a.join('')}</div>`:'';
 }
-function money(cur,p){ return (CUR_SIGN[cur]||'')+Number(p).toLocaleString('en-US'); }
+function money(cur,p){ if(String(p).trim()!=='' && Number(p)===0) return 'Free'; return (CUR_SIGN[cur]||'')+Number(p).toLocaleString('en-US'); }
 function priceWho(p){
   let w=p.audience; if(p.audience==='Child' && (p.age_from||p.age_to)) w+=` ${p.age_from||'0'}–${p.age_to||'?'}`;
   if(p.pax_min||p.pax_max) w+=` · ${p.pax_min||'1'}–${p.pax_max||'+'} people`;
@@ -1068,7 +1069,7 @@ function openDetail(id){
   const v=S.vendors.find(x=>x.id===id); if(!v) return;
   const rows=(pairs)=>pairs.filter(p=>p[1]).map(([k,val])=>`<dt>${k}</dt><dd>${val}</dd>`).join('');
   const sign=CUR_SIGN[v.currency]||'';
-  const price=(p,vat)=>p?`<span class="mono">${esc(sign)}${esc(p)}</span>${vatLabel(vat)?` <span class="hint">${esc(vatLabel(vat))}</span>`:''}`:'';
+  const price=(p,vat)=>p&&Number(p)===0?'<b>Free</b>':p?`<span class="mono">${esc(sign)}${esc(p)}</span>${vatLabel(vat)?` <span class="hint">${esc(vatLabel(vat))}</span>`:''}`:'';
   const notice=v.cancelNoticeAmount?`${esc(v.cancelNoticeAmount)} ${esc((v.cancelNoticeUnit||'').toLowerCase())}${v.cancelDayType?' ('+esc(v.cancelDayType.toLowerCase())+')':''}`:'';
   const rating=['rateReliability','rateService','rateValue'].map((k,i)=>v[k]?`${['Reliability','Service','Value'][i]} <b class="mono">${esc(v[k])}/5</b>`:'').filter(Boolean).join(' · ');
   const sections=[
@@ -1444,7 +1445,7 @@ function openPriceForm(v, p, pre, pp){
       <div class="f"><label for="pl_type">Type of price</label><select id="pl_type">${opt([['1','Agent rate (what we pay)'],['0','Public price']], x.is_agent?'1':'0')}</select></div>
       <div class="f" id="ageWrap"><label>Child ages</label><div style="display:flex;gap:6px"><input id="pl_af" inputmode="numeric" value="${esc(x.age_from)}" placeholder="from"><input id="pl_at" inputmode="numeric" value="${esc(x.age_to)}" placeholder="to"></div></div>
       <div class="f"><label>Group size (people)</label><div style="display:flex;gap:6px"><input id="pl_pmin" inputmode="numeric" value="${esc(x.pax_min)}" placeholder="min"><input id="pl_pmax" inputmode="numeric" value="${esc(x.pax_max)}" placeholder="max"></div></div>
-      <div class="f"><label for="pl_price">Price</label><input id="pl_price" inputmode="decimal" value="${esc(x.price)}" placeholder="Leave empty if unknown"></div>
+      <div class="f"><label for="pl_price">Price</label><div style="display:flex;gap:6px"><input id="pl_price" inputmode="decimal" value="${esc(x.price)}" placeholder="Leave empty if unknown"><button type="button" class="mini" id="pl_free">Free</button></div></div>
       <div class="f"><label for="pl_cur">Currency</label><select id="pl_cur">${opt(['ILS','USD','EUR'],x.currency)}</select></div>
       <div class="f"><label for="pl_vat">VAT</label><select id="pl_vat">${opt(VAT,x.vat)}</select></div>
       <div class="f"><label for="pl_basis">Basis</label><select id="pl_basis">${opt(BASIS,x.basis)}</select></div>
@@ -1460,6 +1461,7 @@ function openPriceForm(v, p, pre, pp){
   w.querySelectorAll('[data-who]').forEach(b=>b.onclick=()=>{ forMe=b.dataset.who==='me'; w.querySelectorAll('[data-who]').forEach(o=>o.setAttribute('aria-pressed',o===b));
     w.querySelector('#whoNote').textContent = forMe?'Only you and Eretz Israel Tours see it. It saves straight away.':'🔒 Shared prices are checked by Eretz Israel Tours before they appear. Say where the price comes from.';
     w.querySelector('#reasonWrapP').hidden = forMe; w.querySelector('#ps').textContent = forMe?'Save':'Send for approval'; });
+  w.querySelector('#pl_free').onclick=()=>{ w.querySelector('#pl_price').value='0'; if(!w.querySelector('#pl_label').value.trim()) w.querySelector('#pl_label').value='Entrance'; };
   const aud=w.querySelector('#pl_aud'); const age=w.querySelector('#ageWrap'); const syncAge=()=>{ age.hidden = aud.value!=='Child'; }; aud.onchange=syncAge; syncAge();
   w.querySelector('#pc').onclick=()=>openDetail(v.id);
   w.querySelector('#ps').onclick=async()=>{
@@ -1625,6 +1627,7 @@ function openForm(v, preset){
       <div class="f wide"><label for="f_kosher">Kosher</label><input id="f_kosher" name="kosher" list="dl_kosher" value="${esc(x.kosher)}" placeholder="Tap below or type"><datalist id="dl_kosher">${KOSHER_OPTS.map(k=>`<option value="${esc(k)}">`).join('')}</datalist><div class="presets" id="kosSug" style="margin:6px 0 0">${KOSHER_OPTS.map(k=>`<button type="button" class="mini" data-kos="${esc(k)}">${esc(k)}</button>`).join('')}</div>${v?`<div class="kcrow"><button type="button" class="btn soft" id="kcFormBtn">📷 Add kosher certificate photo</button><input id="kcFormFile" type="file" accept="image/*,application/pdf" hidden><span class="hint" id="kcFormMsg">Take a photo of the certificate or pick one from your phone. Saves straight away.</span></div>`:'<span class="hint">After you save the supplier, you can add a photo of the kosher certificate here or on the supplier page.</span>'}</div>${inp('maxCap','Max capacity (people)','number')}
     </div></fieldset>
     <fieldset><legend>Pricing</legend><div class="grid">
+      <div class="f wide"><button type="button" class="btn soft" id="freeBtn">🆓 It's free (no entrance fee)</button></div>
       ${inp('agentPrice','Agent price (ours)','number','0')}${sel('agentPriceVatTreatment','Agent price VAT',VAT)}
       ${inp('listedPrice','Listed price (public)','number','0')}${sel('listedPriceVatTreatment','Listed price VAT',VAT)}
       ${sel('currency','Currency',['ILS','USD','EUR'])}${sel('priceBasis','Price basis',BASIS)}
@@ -1659,6 +1662,7 @@ function openForm(v, preset){
     kf.onchange=async()=>{ const f0=kf.files[0]; kf.value=''; if(!f0) return; kcb.disabled=true; km.textContent='Uploading…';
       try{ const fl=await shrink(f0); if(fl.size>10485760) throw new Error('That file is over 10 MB'); await DB.upload(v.id, fl, 'Kosher certificate', null, false); km.textContent='✓ Certificate added. It shows on the supplier page.'; toast('Kosher certificate added'); }
       catch(e){ km.textContent=e.message; } kcb.disabled=false; }; }
+  const fb=f.querySelector('#freeBtn'); if(fb) fb.onclick=()=>{ f.querySelector('#f_agentPrice').value='0'; f.querySelector('#f_listedPrice').value='0'; const vt=f.querySelector('#f_agentPriceVatTreatment'); if(vt) vt.value='not_applicable'; const lt=f.querySelector('#f_listedPriceVatTreatment'); if(lt) lt.value='not_applicable'; toast('Marked free'); };
   const langIn=f.querySelector('#f_languages'), langSug=f.querySelector('#langSug');
   const langList=()=>langIn.value.split(',').map(t=>t.trim()).filter(Boolean);
   const drawLang=()=>{ const have=langList().map(t=>t.toLowerCase()); langSug.innerHTML=LANG_OPTS.map(l=>`<button type="button" class="mini${have.includes(l.toLowerCase())?' on':''}" data-lang="${esc(l)}">${have.includes(l.toLowerCase())?'✓ ':''}${esc(l)}</button>`).join('');
