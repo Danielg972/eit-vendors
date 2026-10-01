@@ -63,3 +63,10 @@ Shared vendor list for Eretz Israel Tours colleagues. Static single-page app (Gi
 - ⚡ Quick fill at the top of the supplier form: "From my contacts" (Android Chrome contact picker), "Paste text" (email signature, WhatsApp contact, web page; reads the clipboard when allowed) and "Contact card (.vcf)". Picks out business name, contact person, phones (mobile → WhatsApp), email, website, map link and address; only fills empty fields.
 - Quick fill fix: pasted email threads are cut at the first quoted reply ("On … wrote:", "From:", "בתאריך … מאת"), and EIT's own phones, emails and website (and the signed-in member's own email/phone) are never picked up. Greetings ("שלום דניאל", "Hi") are not taken as names. Fixed Tefillin Factory Adei Ad, which had picked up EIT's phone.
 - Gmail sweep (1 Oct 2026): 17 more suppliers found in EIT's email (10 from real correspondence, 7 from offers sent to agents), added hidden and pending with a "found in email, not yet verified" line; the Gmail thread id and confidence are in each private note. Quick fill also ignores EIT's second number (055-944-0364).
+
+## Change rules (adopted 1 Oct 2026, decision D-1 — see docs/DECISIONS.md)
+- Any schema, function, grant or security change: apply it, then re-export `supabase/schema.sql` (and `supabase/functions/files/index.ts` if the edge function changed) in the same commit.
+- Update `docs/STATUS.md` whenever something the Cockpit could depend on changes (fields, IDs, counts worth watching, risks).
+- No Cockpit-facing fields, IDs or export formats until the integration contract is separately authorised. The R5 export is frozen (legacy backup only).
+- Standing rules: never call the owner "Daniel" in the app; never touch R5; all data access through token-checked RPCs (no table grants, no policies); never return members' emails, phones or licenses to non-admins; bump TERMS_VERSION when the terms change; keep "From [name]" labels; test in DEMO mode plus a non-admin probe; update this README and the Project doc after every change.
+- Keep-alive now calls the `ping` RPC (the old REST table read returned 401 and failed).

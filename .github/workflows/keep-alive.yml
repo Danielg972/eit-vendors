@@ -1,5 +1,6 @@
 name: Keep database awake
-# Free Supabase projects pause after a week without activity. This pings the database every 3 days.
+# Free Supabase projects pause after a week without activity. This calls a harmless database function every 3 days.
+# (Direct table reads are blocked by design, so the ping uses the public "ping" function, which runs a real query.)
 on:
   schedule:
     - cron: "17 6 */3 * *"
@@ -10,5 +11,5 @@ jobs:
     steps:
       - name: Ping Supabase
         run: |
-          curl -fsS "https://wjuqtjlrtcywjaspjpwu.supabase.co/rest/v1/vendors?select=id&limit=1" \
-            -H "apikey: sb_publishable_uEEI8iTld1pPzys6GL0QnA_b4WVb_2A" -o /dev/null -w "HTTP %{http_code}\n"
+          curl -fsS -X POST "https://wjuqtjlrtcywjaspjpwu.supabase.co/rest/v1/rpc/ping" \
+            -H "apikey: sb_publishable_uEEI8iTld1pPzys6GL0QnA_b4WVb_2A" -H "Content-Type: application/json" -d '{}' -w "\nHTTP %{http_code}\n"

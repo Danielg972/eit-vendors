@@ -940,9 +940,9 @@ function viewReview(){
       ${pend.length? pend.map(v=>`<div class="rev"><div class="who2"><b>${esc(v.name)}</b><span>${esc(v.category)} · by ${esc(who(v.updated_by))} · ${fmtDate(v.updated_at)}</span></div>
         <div class="btn-row"><button class="btn soft" data-open="${esc(v.id)}">View</button><button class="btn primary" data-ok="${esc(v.id)}">Approve</button></div></div>`).join('') : '<div class="empty" style="padding:16px">All caught up.</div>'}
     </section>
-    <section class="panel"><h3>Export for R5</h3>
-      <p>Builds an import file with the ${appr.length} approved supplier${appr.length===1?'':'s'}, in R5's trip-file format. Save your open trip in R5 before importing, because importing clears the trip view.</p>
-      <div class="btn-row"><button class="btn accent" id="exp" ${appr.length?'':'disabled'}>Build R5 import file</button></div>
+    <section class="panel"><h3>Legacy R5 export <span class="hint">(backup only)</span></h3>
+      <p>Frozen as a backup tool (decision 1 Oct 2026). The Cockpit will later read suppliers from this list one way, on your click, and copy the chosen price into the trip; this file is not that link. It has never been tested end-to-end in R5, IDs don't match your R5 vendors, and importing clears R5's open trip view. Builds a file with the ${appr.length} approved supplier${appr.length===1?'':'s'}.</p>
+      <div class="btn-row"><button class="btn soft" id="exp" ${appr.length?'':'disabled'}>Build legacy R5 file</button></div>
       <div id="expOut"></div>
     </section>`;
   view.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>openDetail(b.dataset.open));

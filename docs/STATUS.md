@@ -1,0 +1,54 @@
+# Israel Suppliers Master List: current status
+
+*Short, factual status for the Cockpit Steward and other EIT projects. Updated by the Vendor Master session after any change that matters to them. The commit that last changed this file is its version.*
+
+**As of:** 1 October 2026
+
+## Identity
+
+| | |
+|---|---|
+| App | https://vendors.eretzisraeltours.com |
+| Repo | `Danielg972/eit-vendors`, branch `main` (cite by commit SHA) |
+| Database | Supabase project `wjuqtjlrtcywjaspjpwu` (org "EIT Vendors", Frankfurt) |
+| Schema record | `supabase/schema.sql` (tables, functions, grants), plus `supabase/functions/files/index.ts` (edge function v8) |
+| Terms version | `2026-10-01e` (draft, not yet reviewed by a lawyer) |
+| Decisions | `docs/DECISIONS.md` (D-1: Vendor Master / Cockpit boundary, approved 1 Oct 2026) |
+
+## Integration with the Cockpit
+
+| | |
+|---|---|
+| Status | **None built. Disabled.** |
+| Agreed boundary | D-1: the Vendor Master holds supplier identity and dated reference prices; the Cockpit holds trip-applied prices. Any later link is one-way, on Daniel's click, and snapshots the price into the trip. |
+| Supplier identity contract | Not written yet. It is the first integration step, after v4.97 is deployed and v4.98 is closed, and needs separate authorisation. |
+| Fields the Cockpit could later read | `vendors` (id, name, category, also_categories, contacts, region, location, maps_link); `vendor_prices` (label, audience, price, currency, vat, basis, is_agent, source, checked_on, updated_at, private, owner) |
+| R5 export | Frozen, legacy backup only. Not round-tripped; IDs don't match R5; importing clears R5's trip view. |
+
+## Data (counts worth watching)
+
+| | |
+|---|---|
+| Suppliers | 100 total: 50 live, 50 hidden or pending review |
+| Price lines | 119 |
+| Members | 4 approved, 0 join requests waiting |
+| Waiting for Eretz Israel Tours | 0 change requests, 0 supplier updates, 0 feedback |
+| Unverified imports | Old Providers Master List (33), Gmail sweep (17), remaining email-import items. All hidden until approved. |
+
+## Health
+
+- **Keep-alive:** fixed 1 Oct 2026. The old ping read a blocked table and failed with HTTP 401. It now calls the `ping` function, which was tested and returned `ok:100`. Next run is in at most 3 days, or it can be run by hand in GitHub Actions.
+- **Security:** 0 table grants to anon or authenticated, 0 RLS policies. All access goes through token-checked RPCs and the `files` edge function. Colleague-privacy probe passed on 1 Oct 2026.
+- **Change process:** changes are committed straight to `main` and deployed by GitHub Pages; there is no review gate. Schema changes must be re-exported to `supabase/schema.sql` in the same change. That rule was adopted 1 Oct 2026.
+
+## Known risks
+
+1. The terms have not been reviewed by a lawyer.
+2. Supplier identity is not yet mapped to the Cockpit's suppliers. About 30 overlap, by eye.
+3. "Current price" has no freshness policy yet; each line only carries its checked date.
+4. Lighter governance than the Cockpit: no review gate and no automated tests.
+5. Free-tier limits: Supabase 500 MB database and 1 GB storage.
+
+## Changes that would affect the Cockpit (log)
+
+- 2026-10-01: D-1 boundary approved. R5 export frozen. No integration-facing schema changes made.

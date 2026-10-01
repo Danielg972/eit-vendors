@@ -2,6 +2,7 @@
 
 *An introduction for other Eretz Israel Tours projects. Written 1 October 2026 by the Claude project that builds it ("Vender Master Sheet").*
 *The companion technical audit is `docs/AUDIT_2026-10-01.md` in the same repo.*
+*Revised 1 October 2026 after Daniel approved decision D-1, the Vendor Master / Cockpit boundary (`docs/DECISIONS.md`). Current status: `docs/STATUS.md`.*
 
 ---
 
@@ -9,7 +10,7 @@
 
 I am the Claude project that builds and runs the **Israel Suppliers Master List** for Eretz Israel Tours (EIT). The list is a private, app-like website, **https://vendors.eretzisraeltours.com**, where licensed guides, travel agents and tour operators share what they know about Israeli suppliers: hotels, guides, buses, jeeps, sites, national parks, restaurants and more.
 
-I am a small, fast, separate project. I am **not** part of the EIT Builder / Cockpit software program and not under its change-process governance. I never touch the frozen R5 builder file. The only thing I hand the Builder is an import file it can read.
+I am a small, fast, separate project. I am **not** part of the EIT Builder / Cockpit software program and not under its change-process governance. I never touch the frozen R5 builder file. Under decision D-1, I am the source for **reusable supplier facts and dated reference prices**, and the Cockpit is the source for **prices actually applied to trips**. No link to the Cockpit is built yet. When one is authorised, it will be one-way and on Daniel's click, and it will copy the chosen price into the trip so that later changes here never alter a trip. My old R5 export file is frozen as a backup tool.
 
 ## 2. Why it exists (the problem)
 
@@ -39,7 +40,7 @@ EIT's own records have the same problem. Supplier facts are spread across Gmail,
 
 **Medium term:**
 
-- It becomes the **source of truth for EIT's supplier data**. The Builder and the pricing work read from it instead of keeping separate vendor lists.
+- It becomes the **source of truth for EIT's supplier facts and reference prices**. The Cockpit reads from it one-way, on Daniel's click, and snapshots any chosen price into the trip (D-1). It is never a live link that can change a trip.
 - Colleagues' reports keep it current: "closed", "moved", "prices changed", new deals and agent sign-up links.
 - AI fills in details from uploaded receipts, price lists and screenshots. This was discussed and deferred.
 
@@ -102,7 +103,7 @@ EIT's own records have the same problem. Supplier facts are spread across Gmail,
 
 | Project / skill | What we share | How they should see my work |
 |---|---|---|
-| **EIT Builder / Cockpit** (R5, v4.70+, cloud cockpit) | Supplier data. I produce an R5-format import file of approved suppliers | I am an **upstream data source**, outside their governance. My export must match R5's frozen field list and import wrapper. Importing blanks R5's trip view. IDs need matching to existing R5 vendors (pending an R5 vendor export from Daniel) |
+| **EIT Builder / Cockpit** (cloud Cockpit; v4.97 frozen for deploy, v4.98 closing) | Supplier identity and reference prices | Governed by D-1. I am an **upstream reference source**, outside Cockpit governance; the Cockpit owns trip-applied prices and trip quotes. **No integration is built or authorised yet.** When it is: identity map first, then a written contract and a verifier proving no change here can silently alter a trip, then one-way on-click reads. No shared database, no batch merges. The R5 export file is frozen as a legacy backup and is **not** the integration path |
 | **Pricing** (`eit-pricing-steward`, `eit-pricing-intelligence`, `eit-trip-pricing`) | Supplier prices, agent vs public prices, VAT, receipts and price lists | Price lines here are **colleague-reported**. Check each line's source and date. A receipt or the supplier's own document attached here outranks a typed price. Old imported prices are private and marked unverified |
 | **Supplier outreach** (`eit-supplier-rfq`) | Agent sign-up links, the "ask for agent prices" message, supplier emails BCC'd to `suppliers@eretzisraeltours.com` | Read agent links and how-tos from here. BCC'd emails in Gmail are a record of what colleagues asked suppliers |
 | **Trip operations** (`eit-group-tour-ceo`, GGN) | Supplier contacts, kosher status, park reservation rules, food tips | Read from the list freely. **Never** put client or trip details in visible fields; they belong only in EIT's private notes |
@@ -113,16 +114,18 @@ EIT's own records have the same problem. Supplier facts are spread across Gmail,
 
 1. **`suppliers-list-lookup`**
    - **Purpose:** let any EIT project answer "who do we use for X in Y region, and what does it cost?" from the live list.
-   - **Behaviour:** read-only; respects private and hidden items; shows each price's source and date.
+   - **Behaviour:** read-only; respects private and hidden items; returns dated, source-labelled price evidence (never just "the price"); never silently picks among several matching price lines.
 2. **`suppliers-list-steward`**
-   - **Purpose:** a weekly check of what needs Eretz Israel Tours: join requests, change requests, supplier updates, feedback, hidden imports waiting for review, the terms version, free-tier usage and whether the keep-alive is working.
-   - **Behaviour:** reports only; builds nothing.
+   - **Purpose:** a light check of what needs Eretz Israel Tours, read from `docs/STATUS.md`. It reports exceptions only: reviews piling up, terms or security changes, schema or integration-contract changes, stale data, a failed keep-alive, or anything that could affect the Cockpit.
+   - **Behaviour:** reports only; no automatic repair; no routine deep database checks unless an event calls for it.
 3. **`suppliers-list-import`**
    - **Purpose:** house rules for bringing supplier data in from email, sheets, receipts or WhatsApp.
    - **Rules:** imported data lands hidden and pending with an "unverified" note; old prices are private; client names never go in visible fields; duplicates are caught by name and phone.
-4. **`suppliers-to-r5`**
-   - **Purpose:** move approved suppliers into the Builder safely.
-   - **Steps:** back up R5 first; match IDs; check fields against the frozen R5 list; warn that the trip view blanks on import.
+4. ~~`suppliers-to-r5`~~ **Withdrawn (D-1).** Replace it later, when separately authorised, with:
+   - **Supplier identity contract:** a stable shared identifier or alias map; exact matching only; ambiguous suppliers stay unmapped ("do not guess").
+   - **Price snapshot contract:** Daniel picks a line; the Cockpit copies the amount plus provenance (line id, source, checked date) into the trip; nothing upstream can change it afterwards.
+   - **Freshness policy:** what "current" means per category or evidence type. Show the checked date; warn, never auto-replace.
+   - **Integration verifier:** proves a change here cannot alter an already-priced trip, that ambiguous matches fail closed, and that Cockpit client-output boundaries stay intact.
 5. **`suppliers-list-change-rules`**
    - **Purpose:** standing rules for any AI changing the app.
    - **Rules:**
@@ -134,13 +137,16 @@ EIT's own records have the same problem. Supplier facts are spread across Gmail,
      - Keep "From [name]" labels.
      - Test with sample data and a non-admin check.
      - Update the README and Project doc after every change.
+     - Re-export `supabase/schema.sql` (and the edge-function source) in the same change as any schema, function or security change.
+     - Update `docs/STATUS.md` when anything the Cockpit could depend on changes.
+     - No Cockpit-facing fields or export formats until the integration contract is authorised (D-1).
 
 ## 9. Open items as of 1 October 2026
 
 - Lawyer review of the terms.
-- 41 imported suppliers waiting for EIT's check.
-- An R5 vendor export from Daniel, so IDs can be matched.
-- Confirming the free database's keep-alive actually works.
+- 50 hidden or pending suppliers waiting for EIT's check.
+- Supplier identity map with the Cockpit (after v4.97 is deployed and v4.98 is closed, and only when separately authorised).
+- Keep-alive fixed on 1 Oct 2026; confirm the next scheduled run succeeds.
 - Inviting the first wave of colleagues.
 - AI auto-fill from receipts and screenshots (deferred).
 - Monetization (ideas only).
