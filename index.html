@@ -98,6 +98,7 @@ main{max-width:760px;margin:0 auto;padding:16px 16px 110px}
 .btn.red{background:#c0392b;color:#fff}
 .btn.upd{width:100%;margin:10px 0 4px;justify-content:center;gap:8px;flex-wrap:wrap}.btn.upd span{font-weight:400;font-size:12.5px;opacity:.9}
 .presets .mini.on{background:var(--ink,#1f3a2e);color:#fff}
+.kcrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}
 .agentbox a.btn{text-decoration:none}.agentbox{border:1px solid var(--line, #ddd);border-radius:12px;padding:10px 12px;margin:10px 0}.agentbox .ah{margin-bottom:4px}.agentbox p{margin:4px 0 8px;font-size:14px;white-space:pre-wrap}
 .disclaim{font-size:12.5px;line-height:1.45;color:var(--ink-2);background:var(--warn-wash);border-radius:10px;padding:10px 12px;margin:18px 0 12px}
 .btn:disabled{opacity:.5;cursor:default}
@@ -1561,7 +1562,7 @@ async function drawFiles(v, qid, boxId, canAdd){
   let files=[]; try{ files=await DB.listFiles(v.id, qid); }catch(e){ box.innerHTML=`<div class="msg err">Couldn't load files: ${esc(e.message)}</div>`; return; }
   const me=(S.user.email||'').toLowerCase();
   if(!qid){ const kc=document.getElementById('kcert'), cert=files.find(f=>f.kind==='Kosher certificate');
-    if(kc){ kc.innerHTML = cert&&cert.url ? ` <a href="${esc(cert.url)}" target="_blank" rel="noopener">📄 See certificate</a>` : (canAdd?` <button type="button" class="mini" id="kcAdd">📷 Add certificate</button>`:'');
+    if(kc){ kc.innerHTML = cert&&cert.url ? ` <a href="${esc(cert.url)}" target="_blank" rel="noopener">📄 See certificate</a>` : (canAdd?`<br><button type="button" class="btn soft" id="kcAdd" style="margin-top:6px">📷 Add kosher certificate</button>`:'');
       const ka=document.getElementById('kcAdd'); if(ka) ka.onclick=()=>{ const sel=document.getElementById(sid+'_kind'); if(sel) sel.value='Kosher certificate'; const inp=document.getElementById(sid+'_file'); if(inp) inp.click(); }; } }
   box.innerHTML = (files.length?`<div class="files" style="margin-top:8px">${files.map((f,i)=>{
       const img=/^image\//.test(f.mime_type) && !/hei[cf]/.test(f.mime_type);
@@ -1621,7 +1622,7 @@ function openForm(v, preset){
       ${inp('location','Town or address','text','Start typing: Jerusalem, Mitzpe Ramon…')}
       <datalist id="dl_location">${[...new Set(TOWNS.concat(S.vendors.map(o=>o.location).filter(Boolean)))].sort().map(t=>`<option value="${esc(t)}">`).join('')}</datalist>
       <div class="f wide"><label for="f_languages">Languages</label><input id="f_languages" name="languages" value="${esc(x.languages)}" placeholder="Tap below or type"><div class="presets" id="langSug" style="margin:6px 0 0"></div></div>
-      <div class="f wide"><label for="f_kosher">Kosher</label><input id="f_kosher" name="kosher" list="dl_kosher" value="${esc(x.kosher)}" placeholder="Tap below or type"><datalist id="dl_kosher">${KOSHER_OPTS.map(k=>`<option value="${esc(k)}">`).join('')}</datalist><div class="presets" id="kosSug" style="margin:6px 0 0">${KOSHER_OPTS.map(k=>`<button type="button" class="mini" data-kos="${esc(k)}">${esc(k)}</button>`).join('')}</div><span class="hint">Add a photo of the kosher certificate on the supplier page, under Photos, receipts and PDFs.</span></div>${inp('maxCap','Max capacity (people)','number')}
+      <div class="f wide"><label for="f_kosher">Kosher</label><input id="f_kosher" name="kosher" list="dl_kosher" value="${esc(x.kosher)}" placeholder="Tap below or type"><datalist id="dl_kosher">${KOSHER_OPTS.map(k=>`<option value="${esc(k)}">`).join('')}</datalist><div class="presets" id="kosSug" style="margin:6px 0 0">${KOSHER_OPTS.map(k=>`<button type="button" class="mini" data-kos="${esc(k)}">${esc(k)}</button>`).join('')}</div>${v?`<div class="kcrow"><button type="button" class="btn soft" id="kcFormBtn">📷 Add kosher certificate photo</button><input id="kcFormFile" type="file" accept="image/*,application/pdf" hidden><span class="hint" id="kcFormMsg">Take a photo of the certificate or pick one from your phone. Saves straight away.</span></div>`:'<span class="hint">After you save the supplier, you can add a photo of the kosher certificate here or on the supplier page.</span>'}</div>${inp('maxCap','Max capacity (people)','number')}
     </div></fieldset>
     <fieldset><legend>Pricing</legend><div class="grid">
       ${inp('agentPrice','Agent price (ours)','number','0')}${sel('agentPriceVatTreatment','Agent price VAT',VAT)}
@@ -1653,6 +1654,11 @@ function openForm(v, preset){
   f.querySelector('#f_location').setAttribute('list','dl_location'); f.querySelector('#f_location').setAttribute('autocomplete','off');
   const kos=f.querySelector('#f_kosher'); const kosDraw=()=>f.querySelectorAll('[data-kos]').forEach(b=>b.classList.toggle('on',kos.value===b.dataset.kos));
   f.querySelectorAll('[data-kos]').forEach(b=>b.onclick=()=>{ kos.value = kos.value===b.dataset.kos ? '' : b.dataset.kos; kosDraw(); }); kos.addEventListener('input',kosDraw); kosDraw();
+  const kcb=f.querySelector('#kcFormBtn'); if(kcb){ const kf=f.querySelector('#kcFormFile'), km=f.querySelector('#kcFormMsg');
+    kcb.onclick=()=>kf.click();
+    kf.onchange=async()=>{ const f0=kf.files[0]; kf.value=''; if(!f0) return; kcb.disabled=true; km.textContent='Uploading…';
+      try{ const fl=await shrink(f0); if(fl.size>10485760) throw new Error('That file is over 10 MB'); await DB.upload(v.id, fl, 'Kosher certificate', null, false); km.textContent='✓ Certificate added. It shows on the supplier page.'; toast('Kosher certificate added'); }
+      catch(e){ km.textContent=e.message; } kcb.disabled=false; }; }
   const langIn=f.querySelector('#f_languages'), langSug=f.querySelector('#langSug');
   const langList=()=>langIn.value.split(',').map(t=>t.trim()).filter(Boolean);
   const drawLang=()=>{ const have=langList().map(t=>t.toLowerCase()); langSug.innerHTML=LANG_OPTS.map(l=>`<button type="button" class="mini${have.includes(l.toLowerCase())?' on':''}" data-lang="${esc(l)}">${have.includes(l.toLowerCase())?'✓ ':''}${esc(l)}</button>`).join('');
