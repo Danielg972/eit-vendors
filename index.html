@@ -309,15 +309,25 @@ const LIVE = /(^|\.)github\.io$/.test(location.hostname) || /(^|\.)eretzisraelto
 // R5 field order (from itinerary_builder R5 saveVendor)
 const R5_FIELDS = ['name','category','active','contactPerson','phone','whatsapp','email','website','location','languages','kosher','maxCap','listedPrice','listedPriceVatTreatment','agentPrice','agentPriceVatTreatment','maxPax','priceBasis','currency','payTerms','cancelPolicy','cancelNoticeAmount','cancelNoticeUnit','cancelDayType','cancelPenalty','cancelPolicyVerifiedDate','npResLink','rateReliability','rateService','rateValue','strengths','weaknesses','notes'];
 const CATEGORIES = ['Hotel','Guide','Transport','Restaurant','Attraction / Site','Activity','Adventure','National Parks','Travel Agent','Itinerary Planner','Flight','Other'];
-const EXTRA_FIELDS = ['region','tags','experience_years'];
-const GUIDE_ATTRS = ['Eshkol license','Owns an Eshkol vehicle','Midbari (desert guide)','Carries a gun'];
+const EXTRA_FIELDS = ['region','tags','experience_years','also_categories'];
+const GUIDE_ATTRS = ['Eshkol license','Owns an Eshkol vehicle','Midbari 4x4 vehicle','Carries a gun'];
+// Which form fields matter for which categories. A field still shows if it already has a value.
+const REL = {
+  kosher:['Hotel','Restaurant','Activity','Attraction / Site','Other'],
+  languages:['Guide','Transport','Activity','Adventure','Attraction / Site','Travel Agent','Itinerary Planner','Hotel','Other'],
+  maxCap:['Hotel','Restaurant','Transport','Activity','Adventure','Attraction / Site','National Parks','Other'],
+  free:['Attraction / Site','National Parks','Activity','Other'],
+  food:['Hotel','Guide','Transport','Restaurant','Attraction / Site','Activity','Adventure','National Parks','Other']
+};
+const catsOf = v => [v.category, ...String(v.also_categories||'').split(',').map(t=>t.trim()).filter(Boolean)];
+const rel = (field, v) => catsOf(v).some(c=>REL[field].includes(c));
 const REGIONS = ['Jerusalem','Gush Etzion & Judea','Binyamin & Shomron','Dead Sea & Judean Desert','Negev & Arava','Eilat','Tel Aviv & Center','Shfela','Haifa & Coast','Galilee','Golan','Countrywide'];
 const TAG_SUGGEST = {Adventure:['Jeep','ATV / RZR','Rappelling','Kayak & rafting','Zipline','Boat','Snorkelling','Bikes','Horse riding','Camels','Shooting'],
   Activity:['Workshop','Food & wine','Volunteering','Archaeology','Family','Shooting','Farm'],
   Hotel:['Kosher','Shabbat-friendly','Kibbutz','Boutique','Pool'],
   Transport:['Minibus','Midibus','Coach','Armoured bus','Van','Airport transfers'],
   Restaurant:['Meat','Dairy','Mehadrin','Group menus','Winery'],
-  Guide:['Eshkol license','Owns an Eshkol vehicle','Midbari (desert guide)','Carries a gun','Driver-guide','English','French','Spanish','Russian'],
+  Guide:['Eshkol license','Owns an Eshkol vehicle','Midbari 4x4 vehicle','Carries a gun','Driver-guide','English','French','Spanish','Russian'],
   'Travel Agent':['Hotel bookings','Flights','Packages','Groups','Commission'],
   'Itinerary Planner':['Full trip planning','Day trips','Groups','Families','Bar/bat mitzvah']};
 const KOSHER_OPTS = ['Rabbanut','Rabbanut Mehadrin','Badatz Eda Haredit','Badatz Beit Yosef','Badatz Rubin','Rav Landau','Kosher, no certificate','Kosher-style (not certified)','Not kosher','Not relevant'];
@@ -716,7 +726,7 @@ function renderWaiting(){
 
 function filtered(){
   const q=normN(S.q);
-  return S.vendors.filter(v=>(S.cat==='All'||v.category===S.cat) && (S.reg==='All'||(v.region||'')===S.reg) && (S.cat!=='Guide'||!(S.gat||[]).length||S.gat.every(a=>String(v.tags||'').toLowerCase().split(',').map(t=>t.trim()).includes(a.toLowerCase()))) && (!q || normN([v.name,v.location,v.region,v.tags,v.contactPerson,v.category,v.notes].join(' ')).includes(q)))
+  return S.vendors.filter(v=>(S.cat==='All'||catsOf(v).includes(S.cat)) && (S.reg==='All'||(v.region||'')===S.reg) && (S.cat!=='Guide'||!(S.gat||[]).length||S.gat.every(a=>String(v.tags||'').toLowerCase().split(',').map(t=>t.trim()).includes(a.toLowerCase()))) && (!q || normN([v.name,v.location,v.region,v.tags,v.contactPerson,v.category,v.notes].join(' ')).includes(q)))
     .sort(S.sort==='az' ? (a,b)=>a.name.localeCompare(b.name) : (a,b)=>mixKey(a)-mixKey(b));
 }
 // Mixed order: a shuffle that is different for each person and changes every day, so no supplier sits at the top
@@ -760,7 +770,7 @@ function suggestTerms(){
 }
 function viewVendors(){
   const view=document.getElementById('view');
-  const cats=['All',...byUse('category',CATEGORIES.filter(c=>S.vendors.some(v=>v.category===c)))];
+  const cats=['All',...byUse('category',CATEGORIES.filter(c=>S.vendors.some(v=>catsOf(v).includes(c))))];
   view.innerHTML = `
     <div class="sug"><label class="search" for="q">${icons.search}<input id="q" type="search" placeholder="Search name, region, type, contact" value="${esc(S.q)}" autocomplete="off" role="combobox" aria-autocomplete="list" aria-controls="sugList" aria-expanded="false"></label>
     <div class="sug-list" id="sugList" role="listbox" hidden></div></div>
@@ -812,7 +822,7 @@ function drawList(){
     <button class="row" data-id="${esc(v.id)}">
       <span class="row-name">${esc(v.name)}</span>
       <span class="row-price">${priceLine(v)}</span>
-      <span class="row-meta"><span class="cat">${esc(v.category)}</span>${v.region||v.location?`<span>${esc(v.region||v.location)}</span>`:''}${v.tags?`<span class="hint">${esc(v.tags)}</span>`:''}${v.category==='Guide'&&v.experience_years?`<span class="hint">${esc(v.experience_years)} yrs</span>`:''}${v.reservation==='required'?'<span class="clip">📅 Reserve ahead</span>':''}${statusPill(v)}${v._prices?`<span class="clip">${v._prices} price${v._prices>1?'s':''}</span>`:''}${v._deals?`<span class="clip">🏷 ${v._deals} deal${v._deals>1?'s':''}</span>`:''}${v._notes?`<span class="clip">💬 ${v._notes}</span>`:''}${v._files?`<span class="clip">📎 ${v._files}</span>`:''}</span>
+      <span class="row-meta"><span class="cat">${esc(v.category)}${v.also_categories?' + '+esc(v.also_categories):''}</span>${v.region||v.location?`<span>${esc(v.region||v.location)}</span>`:''}${v.tags?`<span class="hint">${esc(v.tags)}</span>`:''}${v.category==='Guide'&&v.experience_years?`<span class="hint">${esc(v.experience_years)} yrs</span>`:''}${v.reservation==='required'?'<span class="clip">📅 Reserve ahead</span>':''}${statusPill(v)}${v._prices?`<span class="clip">${v._prices} price${v._prices>1?'s':''}</span>`:''}${v._deals?`<span class="clip">🏷 ${v._deals} deal${v._deals>1?'s':''}</span>`:''}${v._notes?`<span class="clip">💬 ${v._notes}</span>`:''}${v._files?`<span class="clip">📎 ${v._files}</span>`:''}</span>
     </button>`).join('')}</div>` : `<div class="list"><div class="empty"><h3>Nothing matches</h3>Try a shorter search or pick “All”.</div></div>`);
   box.querySelectorAll('.row').forEach(r=>r.onclick=()=>openDetail(r.dataset.id));
 }
@@ -1096,12 +1106,12 @@ function openDetail(id){
   const notice=v.cancelNoticeAmount?`${esc(v.cancelNoticeAmount)} ${esc((v.cancelNoticeUnit||'').toLowerCase())}${v.cancelDayType?' ('+esc(v.cancelDayType.toLowerCase())+')':''}`:'';
   const rating=['rateReliability','rateService','rateValue'].map((k,i)=>v[k]?`${['Reliability','Service','Value'][i]} <b class="mono">${esc(v[k])}/5</b>`:'').filter(Boolean).join(' · ');
   const sections=[
-    ['Contact',rows([['Contact',esc(v.contactPerson)],['Phone',v.phone?`<span class="mono">${esc(v.phone)}</span>`:''],['WhatsApp',v.whatsapp?`<span class="mono">${esc(v.whatsapp)}</span>`:''],['Email',esc(v.email)],['Website',esc(v.website)],['Region',esc(v.region)],[v.category==='Guide'?'Guide details':'Type',esc(v.tags)],['Years guiding',v.category==='Guide'&&v.experience_years?esc(v.experience_years)+' years':''],['Area',esc(v.location)],['Languages',esc(v.languages)],['Kosher',(v.kosher||['Hotel','Restaurant','Activity','Adventure','Attraction / Site'].includes(v.category))?(v.kosher?esc(v.kosher):'<span class="hint">Not added</span>')+`<span id="kcert"></span>`:''],['Max capacity',v.maxCap?esc(v.maxCap)+' people':''],['Park booking',v.npResLink?`<a data-track="booking" data-v="${esc(v.id)}" href="${esc(v.npResLink)}" target="_blank" rel="noopener">Reservation page</a>`:'']])],
+    ['Contact',rows([['Contact',esc(v.contactPerson)],['Phone',v.phone?`<span class="mono">${esc(v.phone)}</span>`:''],['WhatsApp',v.whatsapp?`<span class="mono">${esc(v.whatsapp)}</span>`:''],['Email',esc(v.email)],['Website',esc(v.website)],['Region',esc(v.region)],[v.category==='Guide'?'Guide details':'Type',esc(v.tags)],['Years guiding',v.category==='Guide'&&v.experience_years?esc(v.experience_years)+' years':''],['Area',esc(v.location)],['Languages',esc(v.languages)],['Kosher',(v.kosher||rel('kosher',v))?(v.kosher?esc(v.kosher):'<span class="hint">Not added</span>')+`<span id="kcert"></span>`:''],['Max capacity',v.maxCap?esc(v.maxCap)+' people':''],['Park booking',v.npResLink?`<a data-track="booking" data-v="${esc(v.id)}" href="${esc(v.npResLink)}" target="_blank" rel="noopener">Reservation page</a>`:'']])],
     [S.admin?(v.prices_private?'Main price (goes to R5) · private':'Main price (goes to R5)'):'Main price',rows([['Agent price',price(v.agentPrice,v.agentPriceVatTreatment)],['Listed price',price(v.listedPrice,v.listedPriceVatTreatment)],['Basis',esc(v.priceBasis)],['Max people',esc(v.maxPax)],['Payment terms',esc(v.payTerms)]])],
     ['Cancellation',rows([['Policy',esc(v.cancelPolicy)],['Notice',notice],['Penalty',esc(v.cancelPenalty)],['Checked',esc(v.cancelPolicyVerifiedDate)]])],
     ['Experience',rows([['Ratings',rating],['Strengths',esc(v.strengths)],['Weaknesses',esc(v.weaknesses)],['Summary',esc(v.notes)]])]
   ].filter(s=>s[1]);
-  const body=`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px"><span class="cat">${esc(v.category)}</span>${v.region||v.location?`<span class="hint">${esc(v.region||v.location)}</span>`:''}${statusPill(v)}</div>
+  const body=`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px"><span class="cat">${esc(v.category)}${v.also_categories?' + '+esc(v.also_categories):''}</span>${v.region||v.location?`<span class="hint">${esc(v.region||v.location)}</span>`:''}${statusPill(v)}</div>
     <div id="parentBox"></div>
     ${contactBar(v)}
     <button class="btn red upd" id="upd" type="button">⚠ Update this supplier <span>closed, moved, wrong details</span></button>
@@ -1117,7 +1127,7 @@ function openDetail(id){
     <fieldset><legend>Notes from colleagues</legend>
       <div class="addline"><textarea id="noteText" rows="1" placeholder="Add a tip, warning or update…"></textarea><button class="btn primary" id="noteAdd" type="button">Add</button></div>
       <div id="notesBox"></div></fieldset>
-    <details class="food" id="foodWrap"><summary>🍽 Food nearby <span class="hint" id="foodCount"></span></summary><div id="foodBox"><p class="hint">Loading…</p></div></details>
+    ${rel('food',v)?'':'<!--'}<details class="food" id="foodWrap"><summary>🍽 Food nearby <span class="hint" id="foodCount"></span></summary><div id="foodBox"><p class="hint">Loading…</p></div></details>${rel('food',v)?'':'-->'}
     <fieldset><legend>Photos, receipts and PDFs</legend><div id="filesBox"><p class="hint">Loading files…</p></div></fieldset>
     ${S.admin?'<div id="actBox"></div>':''}
     <div id="siteSettings"></div>
@@ -1635,7 +1645,8 @@ function openForm(v, preset){
     <fieldset><legend>Supplier</legend><div class="grid">
       ${inp('name','Vendor or company name','text','Golan Jeeps Ltd.',true,true)}
       <div id="dupBox" class="f wide" hidden></div>
-      ${sel('category','Category',[['','Choose…'],...byUse('category',CATEGORIES)],false,true)}
+      ${sel('category','Main category',[['','Choose…'],...byUse('category',CATEGORIES)],false,true)}
+      <div class="f wide"><label>Also offers <span class="hint">(optional, e.g. a guide who also drives jeep tours)</span></label><input type="hidden" id="f_also_categories" value="${esc(x.also_categories||'')}"><div class="presets" id="alsoSug" style="margin:6px 0 0"></div></div>
       <div class="f wide"><label for="f_tags">Type (separate with commas)</label><input id="f_tags" value="${esc(x.tags)}" placeholder="Jeep, ATV / RZR"><div class="presets" id="tagSug" style="margin:6px 0 0"></div></div>
       <div class="f" id="gWrap" ${x.category==='Guide'?'':'hidden'}><label for="f_experience_years">Years guiding</label><input id="f_experience_years" type="number" inputmode="numeric" min="0" max="80" value="${esc(x.experience_years)}" placeholder="12"></div>
       ${sel('active','Status',['Active','Inactive'])}
@@ -1648,11 +1659,11 @@ function openForm(v, preset){
         <input id="f_regionOther" placeholder="Type the region" value="${esc(x.region&&!REGIONS.includes(x.region)?x.region:'')}" ${x.region&&!REGIONS.includes(x.region)?'':'hidden'} style="margin-top:6px"><input type="hidden" id="f_region" value="${esc(x.region)}"></div>
       ${inp('location','Town or address','text','Start typing: Jerusalem, Mitzpe Ramon…')}
       <datalist id="dl_location">${[...new Set(TOWNS.concat(S.vendors.map(o=>o.location).filter(Boolean)))].sort().map(t=>`<option value="${esc(t)}">`).join('')}</datalist>
-      <div class="f wide"><label for="f_languages">Languages</label><input id="f_languages" name="languages" value="${esc(x.languages)}" placeholder="Tap below or type"><div class="presets" id="langSug" style="margin:6px 0 0"></div></div>
-      <div class="f wide"><label for="f_kosher">Kosher</label><input id="f_kosher" name="kosher" list="dl_kosher" value="${esc(x.kosher)}" placeholder="Tap below or type"><datalist id="dl_kosher">${KOSHER_OPTS.map(k=>`<option value="${esc(k)}">`).join('')}</datalist><div class="presets" id="kosSug" style="margin:6px 0 0">${KOSHER_OPTS.map(k=>`<button type="button" class="mini" data-kos="${esc(k)}">${esc(k)}</button>`).join('')}</div>${v?`<div class="kcrow"><button type="button" class="btn soft" id="kcFormBtn">📷 Add kosher certificate photo</button><input id="kcFormFile" type="file" accept="image/*,application/pdf" hidden><span class="hint" id="kcFormMsg">Take a photo of the certificate or pick one from your phone. Saves straight away.</span></div>`:'<span class="hint">After you save the supplier, you can add a photo of the kosher certificate here or on the supplier page.</span>'}</div>${inp('maxCap','Max capacity (people)','number')}
+      <div class="f wide" id="langWrap"><label for="f_languages">Languages</label><input id="f_languages" name="languages" value="${esc(x.languages)}" placeholder="Tap below or type"><div class="presets" id="langSug" style="margin:6px 0 0"></div></div>
+      <div class="f wide" id="kosWrap"><label for="f_kosher">Kosher</label><input id="f_kosher" name="kosher" list="dl_kosher" value="${esc(x.kosher)}" placeholder="Tap below or type"><datalist id="dl_kosher">${KOSHER_OPTS.map(k=>`<option value="${esc(k)}">`).join('')}</datalist><div class="presets" id="kosSug" style="margin:6px 0 0">${KOSHER_OPTS.map(k=>`<button type="button" class="mini" data-kos="${esc(k)}">${esc(k)}</button>`).join('')}</div>${v?`<div class="kcrow"><button type="button" class="btn soft" id="kcFormBtn">📷 Add kosher certificate photo</button><input id="kcFormFile" type="file" accept="image/*,application/pdf" hidden><span class="hint" id="kcFormMsg">Take a photo of the certificate or pick one from your phone. Saves straight away.</span></div>`:'<span class="hint">After you save the supplier, you can add a photo of the kosher certificate here or on the supplier page.</span>'}</div>${inp('maxCap','Max capacity (people)','number')}
     </div></fieldset>
     <fieldset><legend>Pricing</legend><div class="grid">
-      <div class="f wide"><button type="button" class="btn soft" id="freeBtn">🆓 It's free (no entrance fee)</button></div>
+      <div class="f wide" id="freeWrap"><button type="button" class="btn soft" id="freeBtn">🆓 It's free (no entrance fee)</button></div>
       ${inp('agentPrice','Agent price (ours)','number','0')}${sel('agentPriceVatTreatment','Agent price VAT',VAT)}
       ${inp('listedPrice','Listed price (public)','number','0')}${sel('listedPriceVatTreatment','Listed price VAT',VAT)}
       ${sel('currency','Currency',['ILS','USD','EUR'])}${sel('priceBasis','Price basis',BASIS)}
@@ -1675,13 +1686,29 @@ function openForm(v, preset){
   const f=w.querySelector('#vf');
   w.querySelector('#cancel').onclick=closeSheet;
   const tagsIn=f.querySelector('#f_tags'), tagSug=f.querySelector('#tagSug');
-  const drawTagSug=()=>{ const have=tagsIn.value.split(',').map(t=>t.trim().toLowerCase()).filter(Boolean); const opts=(TAG_SUGGEST[f.querySelector('#f_category').value]||[]).filter(t=>!have.includes(t.toLowerCase()));
+  const alsoIn=f.querySelector('#f_also_categories'), alsoSug=f.querySelector('#alsoSug');
+  const curCats=()=>({category:f.querySelector('#f_category').value, also_categories:alsoIn.value});
+  const drawAlso=()=>{ const main=f.querySelector('#f_category').value; const have=alsoIn.value.split(',').map(t=>t.trim()).filter(t=>t&&t!==main); alsoIn.value=have.join(', ');
+    alsoSug.innerHTML=CATEGORIES.filter(c=>c!==main).map(c=>`<button type="button" class="mini${have.includes(c)?' on':''}" data-also="${esc(c)}">${have.includes(c)?'✓ ':'+ '}${esc(c)}</button>`).join('');
+    alsoSug.querySelectorAll('[data-also]').forEach(b=>b.onclick=()=>{ const c=b.dataset.also; const cur=alsoIn.value.split(',').map(t=>t.trim()).filter(Boolean); const i=cur.indexOf(c); if(i>=0) cur.splice(i,1); else cur.push(c); alsoIn.value=cur.join(', '); syncRel(); }); };
+  const showIf=(el,on)=>{ if(el) el.hidden=!on; };
+  const syncRel=()=>{ drawAlso(); const cv=curCats(); const has=k=>!!String(x[k]||'').trim();
+    const anyCat=!cv.category; // nothing chosen yet: show everything
+    showIf(f.querySelector('#kosWrap'), anyCat||rel('kosher',cv)||has('kosher'));
+    showIf(f.querySelector('#langWrap'), anyCat||rel('languages',cv)||has('languages'));
+    const mc=f.querySelector('#f_maxCap'); if(mc) showIf(mc.closest('.f'), anyCat||rel('maxCap',cv)||has('maxCap'));
+    showIf(f.querySelector('#freeWrap'), rel('free',cv));
+    showIf(f.querySelector('#npWrap'), catsOf(cv).includes('National Parks'));
+    showIf(f.querySelector('#gWrap'), catsOf(cv).includes('Guide'));
+    drawTagSug(); };
+  const drawTagSug=()=>{ const have=tagsIn.value.split(',').map(t=>t.trim().toLowerCase()).filter(Boolean); const opts=[...new Set(catsOf(curCats()).flatMap(c=>TAG_SUGGEST[c]||[]))].filter(t=>!have.includes(t.toLowerCase()));
     tagSug.innerHTML=opts.map(t=>`<button class="mini" type="button" data-t="${esc(t)}">+ ${esc(t)}</button>`).join('');
     tagSug.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{ const cur=tagsIn.value.split(',').map(t=>t.trim()).filter(Boolean); cur.push(b.dataset.t); tagsIn.value=cur.join(', '); drawTagSug(); }); };
-  tagsIn.addEventListener('input',drawTagSug); drawTagSug();
+  tagsIn.addEventListener('input',drawTagSug);
   f.querySelector('#f_location').setAttribute('list','dl_location'); f.querySelector('#f_location').setAttribute('autocomplete','off');
   const kos=f.querySelector('#f_kosher'); const kosDraw=()=>f.querySelectorAll('[data-kos]').forEach(b=>b.classList.toggle('on',kos.value===b.dataset.kos));
   f.querySelectorAll('[data-kos]').forEach(b=>b.onclick=()=>{ kos.value = kos.value===b.dataset.kos ? '' : b.dataset.kos; kosDraw(); }); kos.addEventListener('input',kosDraw); kosDraw();
+  syncRel();
   const kcb=f.querySelector('#kcFormBtn'); if(kcb){ const kf=f.querySelector('#kcFormFile'), km=f.querySelector('#kcFormMsg');
     kcb.onclick=()=>kf.click();
     kf.onchange=async()=>{ const f0=kf.files[0]; kf.value=''; if(!f0) return; kcb.disabled=true; km.textContent='Uploading…';
@@ -1696,7 +1723,7 @@ function openForm(v, preset){
   const rSel=f.querySelector('#f_regionSel'), rOther=f.querySelector('#f_regionOther'), rHid=f.querySelector('#f_region');
   const syncReg=()=>{ rOther.hidden = rSel.value!=='__other'; rHid.value = rSel.value==='__other' ? rOther.value.trim() : rSel.value; };
   rSel.addEventListener('change',()=>{ syncReg(); if(!rOther.hidden) rOther.focus(); }); rOther.addEventListener('input',syncReg);
-  f.querySelector('#f_category').addEventListener('change',e=>{ f.querySelector('#npWrap').hidden = e.target.value!=='National Parks'; f.querySelector('#gWrap').hidden = e.target.value!=='Guide'; drawTagSug(); });
+  f.querySelector('#f_category').addEventListener('change',e=>{ syncRel(); });
   f.querySelectorAll('.stars').forEach(g=>g.addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; const hid=f.querySelector('#f_'+g.dataset.k);
     const val = hid.value===b.dataset.n?'':b.dataset.n; hid.value=val; g.querySelectorAll('button').forEach(o=>o.setAttribute('aria-pressed', o.dataset.n===val)); }));
   const dupCheck=()=>{ const n=normN(f.querySelector('#f_name').value); const box=f.querySelector('#dupBox');
@@ -1707,7 +1734,7 @@ function openForm(v, preset){
   w.querySelector('#saveBtn').onclick=async()=>{
     syncReg(); const data = v?{id:v.id}:{}; R5_FIELDS.concat(EXTRA_FIELDS).forEach(k=>{ const el=f.querySelector('#f_'+k); data[k]= el?el.value:(x[k]||''); });
     if(data.category!=='National Parks') data.npResLink = x.npResLink||data.npResLink||'';
-    data.experience_years=String(data.experience_years||'').replace(/\D/g,'').slice(0,2); if(data.category!=='Guide' && !x.experience_years) data.experience_years='';
+    data.experience_years=String(data.experience_years||'').replace(/\D/g,'').slice(0,2); if(!catsOf(data).includes('Guide') && !x.experience_years) data.experience_years='';
     const err=f.querySelector('#formErr');
     const probs=[]; if(!data.name.trim()) probs.push('Add the supplier name.'); if(!data.category) probs.push('Choose a category.');
     if(!v && dupCheck()) probs.push('This supplier is already on the list. Open it and edit it instead.');
