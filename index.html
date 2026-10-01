@@ -1641,20 +1641,24 @@ async function drawFiles(v, qid, boxId, canAdd){
 }
 
 // ---- Quick fill: pull name, phones, emails, website and map link out of a contact, vCard or pasted text ----
+// Contacts that belong to us, never to a supplier (our own signature is in every email thread)
+const OWN_PHONES=['504500658','9177405650']; const OWN_MAIL=/eretzisraeltours|danielg972/i;
+const isOwnPhone=p=>{ const d=String(p).replace(/\D/g,''); const mine=[...OWN_PHONES, String((S.me&&S.me.phone)||'').replace(/\D/g,'').slice(-9)].filter(x=>x.length>=8); return mine.some(m=>d.endsWith(m)); };
 function parseContactText(txt){
   const out={phones:[],emails:[],urls:[],maps:'',name:'',org:'',address:''};
-  const t=String(txt||'');
-  if(/BEGIN:VCARD/i.test(t)){
+  // Keep only the newest message of a pasted email thread: quoted replies carry other people's (and our own) details
+  let t=String(txt||'').split(/\n[>\s]*(?:On .{5,120} wrote:|-{2,}\s*(?:Original|Forwarded) message|From: .+|‫?בתאריך .{5,120}(?:מאת|כתב)|נשלח מה)/)[0];
+  if(/BEGIN:VCARD/i.test(String(txt))){ t=String(txt);
     const un=t.replace(/\r?\n[ \t]/g,''); // unfold
     un.split(/\r?\n/).forEach(l=>{ const m=l.match(/^([A-Z\-]+)(?:;[^:]*)?:(.*)$/i); if(!m) return; const k=m[1].toUpperCase(), val=m[2].replace(/\\,/g,',').replace(/\;/g,';').trim();
       if(k==='FN'&&!out.name) out.name=val; else if(k==='N'&&!out.name) out.name=val.split(';').slice(0,2).reverse().join(' ').trim();
       else if(k==='ORG') out.org=val.split(';')[0]; else if(k==='TEL') out.phones.push(val); else if(k==='EMAIL') out.emails.push(val);
       else if(k==='URL') out.urls.push(val); else if(k==='ADR') out.address=val.split(';').filter(Boolean).join(', '); });
   }
-  (t.match(/https?:\/\/\S+|www\.\S+/gi)||[]).forEach(u=>{ u=u.replace(/[),.;]+$/,''); if(/google\.[a-z.]+\/maps|maps\.app\.goo\.gl|goo\.gl\/maps|waze\.com/i.test(u)){ if(!out.maps) out.maps=/^http/.test(u)?u:'https://'+u; } else if(!out.urls.includes(u)) out.urls.push(u); });
-  (t.match(/[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}/gi)||[]).forEach(e=>{ if(!out.emails.includes(e)) out.emails.push(e); });
-  (t.replace(/https?:\/\/\S+/g,' ').match(/(?:\+?972[\s\-]?|0)(?:[23489]|5\d|7\d)[\s\-]?\d{3}[\s\-]?\d{4}|\*\d{4}/g)||[]).forEach(p=>{ p=p.trim(); if(!out.phones.some(q=>q.replace(/\D/g,'').endsWith(p.replace(/\D/g,'').slice(-8)))) out.phones.push(p); });
-  if(!out.name&&!out.org){ const cand=t.split(/\r?\n/).map(l=>l.trim()).filter(l=>l && l.length<70 && !/@|https?:|www\.|\d{5,}|\d[\d\s\-]{6,}|BEGIN:|^(tel|phone|mobile|cell|fax|email|e-mail|address|טל|נייד)\b/i.test(l) && !/^((best|kind|warm)\s+)?(regards|wishes)|^(thanks|thank you|cheers|sincerely|בברכה|תודה)/i.test(l)).slice(0,2);
+  (t.match(/https?:\/\/\S+|www\.\S+/gi)||[]).forEach(u=>{ u=u.replace(/[),.;]+$/,''); if(OWN_MAIL.test(u)) return; if(/google\.[a-z.]+\/maps|maps\.app\.goo\.gl|goo\.gl\/maps|waze\.com/i.test(u)){ if(!out.maps) out.maps=/^http/.test(u)?u:'https://'+u; } else if(!out.urls.includes(u)) out.urls.push(u); });
+  (t.match(/[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}/gi)||[]).forEach(e=>{ if(!out.emails.includes(e) && !OWN_MAIL.test(e) && e.toLowerCase()!==String((S.user&&S.user.email)||'').toLowerCase()) out.emails.push(e); });
+  (t.replace(/https?:\/\/\S+/g,' ').match(/(?:\+?972[\s\-]?|0)(?:[23489]|5\d|7\d)[\s\-]?\d{3}[\s\-]?\d{4}|\*\d{4}/g)||[]).forEach(p=>{ p=p.trim(); if(isOwnPhone(p)) return; if(!out.phones.some(q=>q.replace(/\D/g,'').endsWith(p.replace(/\D/g,'').slice(-8)))) out.phones.push(p); });
+  if(!out.name&&!out.org){ const cand=t.split(/\r?\n/).map(l=>l.trim()).filter(l=>l && l.length<70 && !/@|https?:|www\.|\d{5,}|\d[\d\s\-]{6,}|BEGIN:|^(tel|phone|mobile|cell|fax|email|e-mail|address|טל|נייד)\b/i.test(l) && !/^((best|kind|warm)\s+)?(regards|wishes)|^(thanks|thank you|cheers|sincerely|בברכה|תודה|שלום|היי|hi|hello|hey|dear|good (morning|afternoon|evening)|בוקר טוב|ערב טוב|מצורף|attached)/i.test(l) && l.split(/\s+/).length<=6 && !/[.?!:]$/.test(l)).slice(0,2);
     if(cand.length===2){ out.name=cand[0]; out.org=cand[1]; } else if(cand.length) out.name=cand[0]; }
   return out;
 }
