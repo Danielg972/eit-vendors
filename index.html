@@ -265,7 +265,7 @@ function sample(){
 }
 
 // ---------- state ----------
-const S = { files:{}, demo:{}, demoRequests:[], requests:[], token:null, members:[], user:null, admin:false, contributor:false, vendors:[], team:[], tab:'vendors', q:'', cat:'All', busy:false };
+const S = { feedback:[], openVendor:null, files:{}, demo:{}, demoRequests:[], requests:[], token:null, members:[], user:null, admin:false, contributor:false, vendors:[], team:[], tab:'vendors', q:'', cat:'All', busy:false };
 let sb = null;
 
 function bump(vid,k,n){ const v=S.vendors.find(x=>x.id===vid); if(v) v[k]=Math.max(0,(v[k]||0)+n); }
@@ -308,6 +308,8 @@ const DB = {
       S.vendors.find(v=>v.id==='vendor_k3m9p2x')._prices=4; S.vendors.find(v=>v.id==='vendor_k3m9p2x')._deals=1; S.vendors.find(v=>v.id==='vendor_k3m9p2x')._notes=2;
       S.demoRequests=[{id:'r1',vendor_id:'vendor_a81qz0c',vendor_name:'Dan Panorama Jerusalem',kind:'vendor_fields',proposed:{agentPrice:'1250',phone:'+972 2 569 5000'},current:{agentPrice:'1150',phone:'+972 2 569 5695'},reason:'New group rate for 2027, and the group desk has a new number.',requested_by:'rachel.ops@gmail.com',requested_name:'Rachel Amar',created_at:dd(1)}];
       S.requests=S.demoRequests;
+      S.feedback=[{id:'f1',kind:'Suggestion',message:'Could we filter suppliers by area (North, Jerusalem, Dead Sea)?',context:'Suppliers list',device:'iPhone Safari',has_file:false,status:'Planned',reply:'Good idea, adding area filters next.',author:'rachel.ops@gmail.com',author_name:'Rachel Amar',created_at:dd(1)},
+                  {id:'f2',kind:'Bug',message:'WhatsApp button opened the wrong number for Shomron Bus Lines.',context:'Supplier: Shomron Bus Lines',device:'Android Chrome',has_file:true,status:'New',reply:'',author:'yossi.guide@gmail.com',author_name:'Yossi Ben-David',created_at:dd(0)}];
       const d=n=>new Date(Date.now()-n*86400000).toISOString();
       S.members=[{id:'m1',name:'Daniel',email:OWNER,status:'approved',is_admin:true,created_at:d(30),last_seen_at:d(0)},
         {id:'m2',name:'Yossi Ben-David',email:'yossi.guide@gmail.com',phone:'+972 52 111 2233',note:'Galilee and Golan',role:'Licensed tour guide',license_no:'12345',has_proof:true,status:'pending',is_admin:false,created_at:d(0)},
@@ -321,7 +323,7 @@ const DB = {
     if(error) throw new Error(error.message);
     S.me = data; S.user = data?{email:data.email}:null;
     S.contributor = !!(data && data.status==='approved'); S.admin = !!(data && data.is_admin && S.contributor);
-    if(S.contributor){ await DB.loadVendors(); if(S.admin){ await DB.loadTeam(); try{ await DB.loadRequests(); }catch(e){} } }
+    if(S.contributor){ await DB.loadVendors(); try{ await DB.loadFeedback(); }catch(e){} if(S.admin){ await DB.loadTeam(); try{ await DB.loadRequests(); }catch(e){} } }
   },
   async loadVendors(){ if(!LIVE) return; try{ S.vendors = await rpc('vendors_list'); }catch(e){ toast('Could not load vendors: '+e.message); } },
   async loadTeam(){ if(!LIVE) return; S.members = await rpc('members_list'); },
@@ -357,6 +359,25 @@ const DB = {
     if(!LIVE){ (await DB.detail(vid)).admin_note=body; return; }
     await rpc('admin_note_save',{p_vendor:vid,p_body:body});
   },
+  async loadFeedback(){
+    if(!LIVE){ S.feedback=S.feedback||[]; return S.feedback; }
+    S.feedback = await rpc('feedback_list'); return S.feedback;
+  },
+  async sendFeedback(kind, message, context, file){
+    const device=(navigator.userAgent||'').slice(0,250)+' · '+innerWidth+'×'+innerHeight;
+    if(!LIVE){ (S.feedback=S.feedback||[]).unshift({id:'f'+Date.now(),kind,message,context,device,has_file:!!file,status:'New',reply:'',author:S.user.email,author_name:S.me.name,created_at:new Date().toISOString()}); return; }
+    const id = await rpc('feedback_add',{p_kind:kind,p_message:message,p_context:context,p_device:device});
+    if(file){ const sig=await filesApi('feedback_upload_url',{feedback_id:id,file_name:file.name});
+      const up=await sb.storage.from('feedback-files').uploadToSignedUrl(sig.path, sig.upload_token, file, {contentType:file.type||undefined});
+      if(up.error) throw new Error('Sent, but the screenshot did not upload: '+up.error.message);
+      await filesApi('feedback_confirm',{feedback_id:id,path:sig.path,mime_type:file.type||''}); }
+    await DB.loadFeedback();
+  },
+  async updateFeedback(id, status, reply){
+    if(!LIVE){ Object.assign(S.feedback.find(f=>f.id===id),{status,reply}); return; }
+    await rpc('feedback_update',{p_id:id,p_status:status,p_reply:reply}); await DB.loadFeedback();
+  },
+  async feedbackFile(id){ if(!LIVE) return null; return (await filesApi('feedback_view',{feedback_id:id})).url; },
   async refreshVendor(vid){
     if(!LIVE) return;
     try{ const all = await rpc('vendors_list'); S.vendors = all; }catch(e){}
@@ -535,22 +556,23 @@ function filtered(){
 }
 
 function render(){
-  const pending = S.vendors.filter(v=>v.review_status==='pending').length + (S.requests||[]).length;
+  const pending = S.vendors.filter(v=>v.review_status==='pending').length + (S.requests||[]).length + (S.admin?(S.feedback||[]).filter(f=>f.status==='New').length:0);
   const waiting = S.members.filter(m=>m.status==='pending').length;
   const tabs = [['vendors','Suppliers',icons.list]];
   if(S.admin){ tabs.push(['review','Review',icons.check]); tabs.push(['team','Team',icons.people]); }
   app.innerHTML = `
     <header class="top"><div class="top-row">
       <div class="brand">Israel Suppliers<small>Master list · shared by colleagues</small></div>
-      <div class="who"><span>${esc(S.me?S.me.name:S.user.email)}</span>${LIVE?'<button class="ghost-btn" id="signOut">Sign out</button>':''}</div>
+      <div class="who"><button class="ghost-btn" id="fbBtn" type="button">Feedback</button><span>${esc(S.me?S.me.name:S.user.email)}</span>${LIVE?'<button class="ghost-btn" id="signOut">Sign out</button>':''}</div>
     </div></header>
     ${LIVE?'':'<div class="demo-bar">Preview with sample suppliers. Changes here aren\'t saved.</div>'}
     <main id="view"></main>
     ${S.tab==='vendors'?'<button class="fab" id="add">+ Add supplier</button>':''}
     ${tabs.length>1?`<nav class="tabs">${tabs.map(([k,l,ic])=>`<button class="tab" data-tab="${k}" ${S.tab===k?'aria-current="page"':''}>${ic}${l}${k==='review'&&pending?`<span class="badge">${pending}</span>`:''}${k==='team'&&waiting?`<span class="badge">${waiting}</span>`:''}</button>`).join('')}</nav>`:''}`;
+  document.getElementById('fbBtn').onclick=()=>openFeedback();
   const so=document.getElementById('signOut'); if(so) so.onclick=()=>{ if(so.dataset.c!=='1'){ so.dataset.c='1'; so.textContent='Tap again. You\'ll need your link to return.'; return; } forgetToken(); boot(); };
   app.querySelectorAll('.tab').forEach(t=>t.onclick=async()=>{ S.tab=t.dataset.tab; render();
-    if(LIVE && S.tab==='review'){ try{ await DB.loadVendors(); await DB.loadRequests(); render(); }catch(e){} }
+    if(LIVE && S.tab==='review'){ try{ await DB.loadVendors(); await DB.loadRequests(); await DB.loadFeedback(); render(); }catch(e){} }
     if(LIVE && S.tab==='team'){ try{ await DB.loadTeam(); render(); }catch(e){} } });
   const add=document.getElementById('add'); if(add) add.onclick=()=>openForm(null);
   ({vendors:viewVendors, review:viewReview, team:viewTeam})[S.tab]();
@@ -621,6 +643,7 @@ function viewReview(){
   const pend=S.vendors.filter(v=>v.review_status==='pending');
   const appr=S.vendors.filter(v=>v.review_status==='approved');
   view.innerHTML = `
+    ${feedbackPanel()}
     <section class="panel"><h3>Suggested changes</h3>
       <p>Changes colleagues suggested to prices, contacts and terms. Nothing changes until you approve.</p>
       ${reqs.length? reqs.map(r=>`<div class="rev" style="display:block"><div class="who2"><b>${esc(reqTitle(r))}: ${esc(r.vendor_name)}</b><span>by ${esc(r.requested_name||r.requested_by)} · ${fmtDate(r.created_at)}</span></div>
@@ -641,6 +664,7 @@ function viewReview(){
   view.querySelectorAll('[data-ok]').forEach(b=>b.onclick=async()=>{ try{ await DB.setStatus(b.dataset.ok,'approved'); toast('Approved'); render(); }catch(e){ toast(e.message); } });
   const decide=async(b,yes)=>{ b.disabled=true; try{ await DB.decideRequest(yes?b.dataset.ryes:b.dataset.rno, yes); await DB.loadRequests(); toast(yes?'Approved and applied':'Rejected'); render(); }catch(e){ b.disabled=false; toast(e.message); } };
   view.querySelectorAll('[data-ryes]').forEach(b=>b.onclick=()=>decide(b,true));
+  wireFeedbackPanel(view);
   view.querySelectorAll('[data-rno]').forEach(b=>b.onclick=()=>decide(b,false));
   document.getElementById('exp').onclick=()=>exportR5(appr);
 }
@@ -702,7 +726,7 @@ function sheet(title, body, foot){
   wrap.querySelector('#scrim').onclick=closeSheet; wrap.querySelector('#closeS').onclick=closeSheet;
   return wrap;
 }
-function closeSheet(){ const w=document.getElementById('sheetWrap'); if(w){ w.remove(); document.body.style.overflow=''; } }
+function closeSheet(){ S.openVendor=null; const w=document.getElementById('sheetWrap'); if(w){ w.remove(); document.body.style.overflow=''; } }
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeSheet(); });
 
 function vatLabel(x){ const f=VAT.find(p=>p[0]===x); return f&&x?f[1]:''; }
@@ -772,6 +796,7 @@ function openDetail(id){
       + (v.review_status!=='approved'?'<button class="btn soft" id="rej">Reject</button><button class="btn accent" id="appr">Approve</button>':'') + foot;
   }
   const w=sheet(v.name, body, foot);
+  S.openVendor=v.name;
   w.querySelector('#edit').onclick=()=>openForm(v);
   drawFiles(v);
   drawExtras(v);
@@ -819,6 +844,54 @@ async function drawExtras(v){
   if(an){ an.value=det.admin_note||''; const b=document.getElementById('adminNoteSave'); b.onclick=async()=>{ try{ await DB.saveAdminNote(v.id, an.value); toast('Private note saved'); }catch(e){ toast(e.message); } }; }
   const rb=document.getElementById('reqBox');
   if(rb && det.requests && det.requests.length){ rb.innerHTML=`<div class="lockbar">${det.requests.length} suggested change${det.requests.length>1?'s':''} waiting for ${S.admin?'your':"Daniel's"} approval.${S.admin?' See the Review tab.':''}</div>`; }
+}
+
+const FB_KINDS=[['Suggestion','💡 Idea'],['Bug','🐞 Something broke'],['Question','❓ Question'],['Other','Other']];
+const FB_STATUS=['New','Planned','Done',"Won't do"];
+function fbPill(st){ const c={New:'pending',Planned:'pending',Done:'approved',"Won't do":'inactive'}[st]||'pending'; return `<span class="pill ${c}">${esc(st)}</span>`; }
+function openFeedback(){
+  const where = S.openVendor ? 'Supplier: '+S.openVendor : ({vendors:'Suppliers list',review:'Review',team:'Team'}[S.tab]||S.tab);
+  const mine=(S.feedback||[]).filter(f=>f.author===(S.user.email||'').toLowerCase());
+  const body=`<form id="fbf" novalidate>
+    <p style="margin:0 0 12px;color:var(--ink-2)">Ideas, problems, questions: everything goes straight to Daniel.</p>
+    <div class="chips" role="radiogroup" aria-label="Type" style="padding-top:0">${FB_KINDS.map(([k,l],i)=>`<button type="button" class="chip" data-k="${k}" aria-pressed="${i===0}">${l}</button>`).join('')}</div>
+    <div class="f wide" style="margin-top:8px"><label for="fbMsg">Your message</label><textarea id="fbMsg" rows="5" placeholder="What would make this better, or what went wrong?"></textarea></div>
+    <div class="f wide" style="margin-top:10px"><label for="fbFile">Screenshot (optional)</label><input id="fbFile" type="file" accept="image/*,application/pdf"></div>
+    <p class="hint" style="margin:8px 0 0">Sent with: ${esc(where)} and your phone or browser type, to help fix bugs.</p>
+    <div id="fbErr"></div></form>
+    ${mine.length?`<fieldset style="margin-top:22px"><legend>What you sent before</legend>${mine.map(f=>`<div class="note"><span class="meta">${esc(f.kind)} · ${fmtDate(f.created_at)} ${fbPill(f.status)}</span><p>${esc(f.message)}</p>${f.reply?`<p style="margin-top:6px;color:var(--ok)"><b>Daniel:</b> ${esc(f.reply)}</p>`:''}</div>`).join('')}</fieldset>`:''}`;
+  const w=sheet('Feedback', body, `<button class="btn soft" id="fbC" type="button">Cancel</button><button class="btn primary" id="fbS" type="button">Send</button>`);
+  let kind='Suggestion';
+  w.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{ kind=b.dataset.k; w.querySelectorAll('[data-k]').forEach(o=>o.setAttribute('aria-pressed', o===b)); });
+  w.querySelector('#fbC').onclick=closeSheet;
+  w.querySelector('#fbS').onclick=async()=>{
+    const msg=w.querySelector('#fbMsg').value.trim(), err=w.querySelector('#fbErr'), btn=w.querySelector('#fbS');
+    if(msg.length<3){ err.innerHTML='<div class="msg err">Write a few words first.</div>'; return; }
+    let file=w.querySelector('#fbFile').files[0]; if(file){ file=await shrink(file); if(file.size>10485760){ err.innerHTML='<div class="msg err">That file is over 10 MB.</div>'; return; } }
+    btn.disabled=true; btn.textContent='Sending…';
+    try{ await DB.sendFeedback(kind,msg,where,file); closeSheet(); toast('Thanks! Daniel will see it.'); render(); }
+    catch(e){ btn.disabled=false; btn.textContent='Send'; err.innerHTML=`<div class="msg err">${esc(e.message)}</div>`; }
+  };
+}
+function feedbackPanel(){
+  const list=S.feedback||[];
+  return `<section class="panel"><h3>Feedback from colleagues</h3>
+    <p>Ideas, bugs and questions sent from the Feedback button. Your reply is shown to the person who sent it.</p>
+    ${list.length? list.map(f=>`<div class="rev" style="display:block"><div class="who2"><b>${esc(f.kind)} from ${esc(f.author_name||f.author)}</b><span>${fmtDate(f.created_at)}${f.context?' · '+esc(f.context):''}</span></div>
+      <p style="margin:6px 0;white-space:pre-wrap">${esc(f.message)}</p>
+      ${f.device?`<p class="hint" style="margin:0 0 6px">${esc(f.device)}</p>`:''}
+      ${f.has_file?`<p style="margin:0 0 8px"><button class="mini" data-fbfile="${esc(f.id)}" type="button">Open screenshot</button> <span id="fbl_${esc(f.id)}"></span></p>`:''}
+      <div class="addrow"><select class="mini" id="fbs_${esc(f.id)}">${FB_STATUS.map(x=>`<option${x===f.status?' selected':''}>${esc(x)}</option>`).join('')}</select>
+        <input id="fbr_${esc(f.id)}" value="${esc(f.reply)}" placeholder="Reply (optional)"><button class="btn primary" data-fbsave="${esc(f.id)}" type="button">Save</button></div></div>`).join('')
+      : '<div class="empty" style="padding:16px">No feedback yet.</div>'}
+  </section>`;
+}
+function wireFeedbackPanel(view){
+  view.querySelectorAll('[data-fbsave]').forEach(b=>b.onclick=async()=>{ const id=b.dataset.fbsave; b.disabled=true;
+    try{ await DB.updateFeedback(id, view.querySelector('#fbs_'+id).value, view.querySelector('#fbr_'+id).value.trim()); toast('Saved'); render(); }catch(e){ b.disabled=false; toast(e.message); } });
+  view.querySelectorAll('[data-fbfile]').forEach(b=>b.onclick=async()=>{ const slot=view.querySelector('#fbl_'+b.dataset.fbfile);
+    if(!LIVE){ slot.textContent='Opens the screenshot in the live app.'; return; }
+    try{ const url=await DB.feedbackFile(b.dataset.fbfile); slot.innerHTML=`<a href="${esc(url)}" target="_blank" rel="noopener">View (link works 10 minutes)</a>`; }catch(e){ toast(e.message); } });
 }
 
 function openReasonSheet(title, prompt, onSend){
