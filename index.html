@@ -327,7 +327,7 @@ const BASIS = ['Per person','Per group','Per vehicle','Per guide','Per hour','Pe
 const VAT = [['','Unknown'],['including_vat','Including VAT'],['plus_vat','Plus VAT'],['not_applicable','VAT not applicable']];
 const CUR_SIGN = {ILS:'₪',USD:'$',EUR:'€'};
 
-const who = e => String(e||'').split(OWNER).join('Eretz Israel Tours').replace(/^import from EIT email \(Claude\)$/,'Imported by Eretz Israel Tours');
+const who = e => { const t=String(e||'').split(OWNER).join('Eretz Israel Tours').replace(/^import from EIT email \(Claude\)$/,'Imported by Eretz Israel Tours'); return (!S.admin && /@/.test(t)) ? 'A colleague' : t; };
 const normN = s => String(s||'').toLowerCase().replace(/\s+/g,' ').replace(/[.,;:!?]/g,'').trim();
 const esc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const blank = () => Object.fromEntries(R5_FIELDS.map(k=>[k,'']));
@@ -1594,7 +1594,7 @@ async function drawFiles(v, qid, boxId, canAdd){
   box.innerHTML = (files.length?`<div class="files" style="margin-top:8px">${files.map((f,i)=>{
       const img=/^image\//.test(f.mime_type) && !/hei[cf]/.test(f.mime_type);
       const inner = img && f.url ? `<img src="${esc(f.url)}" alt="${esc(f.file_name)}" loading="lazy">` : `<span class="doc">${/pdf/.test(f.mime_type)?'PDF':'FILE'}</span>`;
-      const canRm = S.admin || f.uploaded_by===me;
+      const canRm = S.admin || f.mine || f.uploaded_by===me;
       return `<div class="file"><a class="thumb" href="${esc(f.url||'#')}" target="_blank" rel="noopener">${inner}</a>
         <span class="fkind">${esc(f.kind)}${f.private?' · 🔒':''}</span><span class="fname" title="${esc(f.file_name)}">${esc(f.file_name)}</span>${f.by&&!f.by.admin?`<span class="fname" style="color:var(--ochre)">👤 ${esc(f.by.name)}</span>`:''}
         ${canRm?`<button class="rm" data-i="${i}" type="button">Remove</button>`:''}</div>`; }).join('')}</div>`
