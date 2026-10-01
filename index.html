@@ -207,6 +207,32 @@ textarea.out{width:100%;min-height:160px;font-family:var(--f-mono);font-size:12p
 .sec-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
 .sec-head legend{margin:0}
 .sec-head .mini{margin-left:auto}
+.qcard{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px}
+.qcard.old{opacity:.6}
+.qhead{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline}
+.qhead b{font-size:16px}
+.qsub{font-size:13px;color:var(--ink-2);margin-top:2px}
+.otabs{display:flex;gap:6px;overflow-x:auto;margin:10px 0 8px;scrollbar-width:none}
+.otabs::-webkit-scrollbar{display:none}
+.otab{flex:none;border:1px solid var(--line);background:var(--ground);border-radius:8px;padding:6px 10px;font-size:13px;max-width:70vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.otab[aria-selected="true"]{background:var(--olive);border-color:var(--olive);color:var(--on-olive)}
+.otab .ot{font-family:var(--f-mono);font-size:12px;opacity:.85;margin-left:6px}
+.qlines{width:100%;border-collapse:collapse;font-size:14px}
+.qlines td{padding:6px 4px;border-bottom:1px solid var(--line);vertical-align:top}
+.qlines td.n{text-align:right;font-family:var(--f-mono);white-space:nowrap}
+.qlines tr.tot td{border-bottom:0;font-weight:600;padding-top:8px}
+.qlines .how{font-size:12px;color:var(--ink-3)}
+.qlines .k{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--ochre);font-weight:600;margin-right:4px}
+.lineed{display:grid;grid-template-columns:1fr;gap:6px;background:var(--ground);border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:8px}
+.lineed .r{display:flex;gap:6px;flex-wrap:wrap}
+.lineed input,.lineed select{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:8px;font-size:15px;min-width:0}
+.lineed .lbl{flex:1 1 100%}
+.lineed .sm{flex:1 1 70px;max-width:110px}
+.lineed .md{flex:2 1 140px}
+.lineed .lt{font-family:var(--f-mono);font-size:13px;color:var(--ink-2);align-self:center;margin-left:auto}
+.presets{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 10px}
+.switch{display:flex;gap:10px;align-items:center;background:var(--wash);border-radius:10px;padding:10px 12px}
+.switch input{width:20px;height:20px}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(140px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--ground);padding:10px 16px;border-radius:999px;font-size:14px;z-index:40;max-width:calc(100% - 32px)}
 </style>
 <style>
@@ -265,7 +291,7 @@ function sample(){
 }
 
 // ---------- state ----------
-const S = { feedback:[], openVendor:null, files:{}, demo:{}, demoRequests:[], requests:[], token:null, members:[], user:null, admin:false, contributor:false, vendors:[], team:[], tab:'vendors', q:'', cat:'All', busy:false };
+const S = { demoQuotes:{}, feedback:[], openVendor:null, files:{}, demo:{}, demoRequests:[], requests:[], token:null, members:[], user:null, admin:false, contributor:false, vendors:[], team:[], tab:'vendors', q:'', cat:'All', busy:false };
 let sb = null;
 
 function bump(vid,k,n){ const v=S.vendors.find(x=>x.id===vid); if(v) v[k]=Math.max(0,(v[k]||0)+n); }
@@ -308,6 +334,12 @@ const DB = {
       S.vendors.find(v=>v.id==='vendor_k3m9p2x')._prices=4; S.vendors.find(v=>v.id==='vendor_k3m9p2x')._deals=1; S.vendors.find(v=>v.id==='vendor_k3m9p2x')._notes=2;
       S.demoRequests=[{id:'r1',vendor_id:'vendor_a81qz0c',vendor_name:'Dan Panorama Jerusalem',kind:'vendor_fields',proposed:{agentPrice:'1250',phone:'+972 2 569 5000'},current:{agentPrice:'1150',phone:'+972 2 569 5695'},reason:'New group rate for 2027, and the group desk has a new number.',requested_by:'rachel.ops@gmail.com',requested_name:'Rachel Amar',created_at:dd(1)}];
       S.requests=S.demoRequests;
+      S.demoQuotes['vendor_p0lk5sd']=[{id:'q1',vendor_id:'vendor_p0lk5sd',title:'Jacobs family, 6 days',date_from:'2026-10-18',date_to:'2026-10-23',pax:'13',units:'1 vehicle',received_on:'2026-09-15',valid_until:'2026-10-05',ref:'',status:'Received',currency:'ILS',vat:'not_applicable',conditions:'Price includes driver, fuel and tolls. Overtime after 10 hours ₪150/hour. Driver overnight outside Jerusalem ₪350/night.',private_note:'',shared:false,owner:OWNER,owner_name:'Daniel',files:1,can_edit:true,
+        options:[{id:'o1',name:'35-seat midibus',note:'',lines:[{label:'Midibus with driver',kind:'Base',price:'3000',unit:'per vehicle per day',qty:'1',times:'6'},{label:'Driver overnight in the north',kind:'Extra',price:'350',unit:'flat',qty:'2',times:'1'}]},
+                 {id:'o2',name:'50-seat coach',note:'More luggage room',lines:[{label:'Coach with driver',kind:'Base',price:'3800',unit:'per vehicle per day',qty:'1',times:'6'},{label:'Driver overnight in the north',kind:'Extra',price:'350',unit:'flat',qty:'2',times:'1'}]}]}];
+      S.demoQuotes['vendor_a81qz0c']=[{id:'q2',vendor_id:'vendor_a81qz0c',title:'Bar mitzvah group',date_from:'2025-06-13',date_to:'2025-06-16',pax:'24',units:'10 rooms',received_on:'2025-04-02',valid_until:'2025-04-20',ref:'GRP-5521',status:'Booked',currency:'USD',vat:'not_applicable',conditions:'25% deposit, balance 14 days before arrival. Free cancellation until 21 days before.',private_note:'',shared:true,owner:OWNER,owner_name:'Daniel',files:0,can_edit:true,
+        options:[{id:'o3',name:'Standard rooms',note:'',lines:[{label:'Standard double, B&B',kind:'Base',price:'432',unit:'per room per night',qty:'10',times:'3'},{label:'Shabbat dinner',kind:'Meal',price:'65',unit:'per person',qty:'24',times:'1'},{label:'Shabbat lunch',kind:'Meal',price:'55',unit:'per person',qty:'24',times:'1'},{label:'Group discount',kind:'Discount',price:'5',unit:'% of subtotal',qty:'1',times:'1'}]},
+                 {id:'o4',name:'Sea view rooms',note:'',lines:[{label:'Deluxe sea view, B&B',kind:'Base',price:'492',unit:'per room per night',qty:'10',times:'3'},{label:'Shabbat dinner',kind:'Meal',price:'65',unit:'per person',qty:'24',times:'1'},{label:'Shabbat lunch',kind:'Meal',price:'55',unit:'per person',qty:'24',times:'1'}]}]}];
       S.feedback=[{id:'f1',kind:'Suggestion',message:'Could we filter suppliers by area (North, Jerusalem, Dead Sea)?',context:'Suppliers list',device:'iPhone Safari',has_file:false,status:'Planned',reply:'Good idea, adding area filters next.',author:'rachel.ops@gmail.com',author_name:'Rachel Amar',created_at:dd(1)},
                   {id:'f2',kind:'Bug',message:'WhatsApp button opened the wrong number for Shomron Bus Lines.',context:'Supplier: Shomron Bus Lines',device:'Android Chrome',has_file:true,status:'New',reply:'',author:'yossi.guide@gmail.com',author_name:'Yossi Ben-David',created_at:dd(0)}];
       const d=n=>new Date(Date.now()-n*86400000).toISOString();
@@ -378,6 +410,19 @@ const DB = {
     await rpc('feedback_update',{p_id:id,p_status:status,p_reply:reply}); await DB.loadFeedback();
   },
   async feedbackFile(id){ if(!LIVE) return null; return (await filesApi('feedback_view',{feedback_id:id})).url; },
+  async loadQuotes(vid){
+    if(!LIVE){ return (S.demoQuotes[vid]||[]).map(q=>Object.assign({can_edit:true},q)); }
+    return await rpc('quotes_list',{p_vendor:vid});
+  },
+  async saveQuote(vid, q){
+    if(!LIVE){ const arr=(S.demoQuotes[vid]=S.demoQuotes[vid]||[]); if(q.id){ const i=arr.findIndex(x=>x.id===q.id); arr[i]=Object.assign({},arr[i],q); return q.id; }
+      const id='q'+Date.now(); arr.unshift(Object.assign({id,owner:S.user.email,owner_name:S.me.name,files:0,created_at:new Date().toISOString()},q)); return id; }
+    return await rpc('quote_save',{p_vendor:vid,p_quote:q});
+  },
+  async deleteQuote(vid, id){
+    if(!LIVE){ S.demoQuotes[vid]=(S.demoQuotes[vid]||[]).filter(x=>x.id!==id); return; }
+    await rpc('quote_delete',{p_id:id});
+  },
   async refreshVendor(vid){
     if(!LIVE) return;
     try{ const all = await rpc('vendors_list'); S.vendors = all; }catch(e){}
@@ -408,23 +453,23 @@ const DB = {
     const i=S.vendors.findIndex(x=>x.id===id); S.vendors[i]=data;
   },
   async remove(id){ if(LIVE) await rpc('vendor_delete',{p_id:id}); S.vendors = S.vendors.filter(x=>x.id!==id); },
-  async listFiles(vid){
-    if(!LIVE) return (S.files[vid]||[]).slice();
-    return (await filesApi('list',{vendor_id:vid})).files;
+  async listFiles(vid, qid){
+    if(!LIVE) return (S.files[qid||vid]||[]).slice();
+    return (await filesApi('list',{vendor_id:vid,quote_id:qid||undefined})).files;
   },
-  async upload(vid, file, kind){
-    if(!LIVE){ const path=vid+'/'+Date.now(); (S.files[vid]=S.files[vid]||[]).unshift({id:path,path,vendor_id:vid,file_name:file.name,mime_type:file.type||'',size_bytes:file.size,kind,uploaded_by:S.user.email,created_at:new Date().toISOString(),url:URL.createObjectURL(file)}); }
+  async upload(vid, file, kind, qid){
+    if(!LIVE){ const path=vid+'/'+Date.now(); (S.files[qid||vid]=S.files[qid||vid]||[]).unshift({id:path,path,vendor_id:vid,file_name:file.name,mime_type:file.type||'',size_bytes:file.size,kind,uploaded_by:S.user.email,created_at:new Date().toISOString(),url:URL.createObjectURL(file)}); }
     else {
-      const sig = await filesApi('sign_upload',{vendor_id:vid,file_name:file.name});
+      const sig = await filesApi('sign_upload',{vendor_id:vid,file_name:file.name,quote_id:qid||undefined});
       const up = await sb.storage.from('vendor-files').uploadToSignedUrl(sig.path, sig.upload_token, file, {contentType:file.type||undefined});
       if(up.error) throw new Error(up.error.message);
-      await filesApi('confirm',{vendor_id:vid,path:sig.path,file_name:file.name,mime_type:file.type||'',size_bytes:file.size,kind});
+      await filesApi('confirm',{vendor_id:vid,path:sig.path,file_name:file.name,mime_type:file.type||'',size_bytes:file.size,kind,quote_id:qid||undefined});
     }
-    const v=S.vendors.find(x=>x.id===vid); if(v) v._files=(v._files||0)+1;
+    const v=S.vendors.find(x=>x.id===vid); if(v && !qid) v._files=(v._files||0)+1;
   },
   async removeFile(f){
     if(LIVE) await filesApi('delete',{file_id:f.id});
-    else S.files[f.vendor_id]=(S.files[f.vendor_id]||[]).filter(x=>x.id!==f.id);
+    else { const key=f.quote_id||f.vendor_id; S.files[key]=(S.files[key]||[]).filter(x=>x.id!==f.id); }
     const v=S.vendors.find(x=>x.id===f.vendor_id); if(v) v._files=Math.max(0,(v._files||1)-1);
   },
   async requestAccess(name,email,role,license,phone,note){
@@ -781,7 +826,8 @@ function openDetail(id){
   const body=`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px"><span class="cat">${esc(v.category)}</span>${v.location?`<span class="hint">${esc(v.location)}</span>`:''}${statusPill(v)}</div>
     ${contactBar(v)}
     <div id="reqBox"></div>
-    <fieldset><div class="sec-head"><legend>Prices</legend><button class="mini" id="addPrice" type="button">+ Add price</button></div><div id="pricesBox"><p class="hint">Loading…</p></div></fieldset>
+    <fieldset><div class="sec-head"><legend>Quotes</legend><button class="mini" id="addQuote" type="button">+ Add quote</button></div><div id="quotesBox"><p class="hint">Loading…</p></div></fieldset>
+    <fieldset><div class="sec-head"><legend>Standard prices</legend><button class="mini" id="addPrice" type="button">+ Add price</button></div><div id="pricesBox"><p class="hint">Loading…</p></div></fieldset>
     <fieldset><div class="sec-head"><legend>Deals and discounts</legend><button class="mini" id="addDeal" type="button">+ Add deal</button></div><div id="dealsBox"><p class="hint">Loading…</p></div></fieldset>
     <fieldset><legend>Notes from colleagues</legend>
       <div class="addline"><textarea id="noteText" rows="1" placeholder="Add a tip, warning or update…"></textarea><button class="btn primary" id="noteAdd" type="button">Add</button></div>
@@ -801,6 +847,8 @@ function openDetail(id){
   drawFiles(v);
   drawExtras(v);
   w.querySelector('#addPrice').onclick=()=>openPriceForm(v,null);
+  w.querySelector('#addQuote').onclick=()=>openQuoteForm(v,null);
+  drawQuotes(v);
   w.querySelector('#addDeal').onclick=()=>openDealForm(v);
   w.querySelector('#noteAdd').onclick=async()=>{ const t=w.querySelector('#noteText'); const body=t.value.trim(); if(!body){ t.focus(); return; }
     try{ await DB.addNote(v.id, body); t.value=''; toast('Note added'); drawExtras(v); }catch(e){ toast(e.message); } };
@@ -894,6 +942,142 @@ function wireFeedbackPanel(view){
     try{ const url=await DB.feedbackFile(b.dataset.fbfile); slot.innerHTML=`<a href="${esc(url)}" target="_blank" rel="noopener">View (link works 10 minutes)</a>`; }catch(e){ toast(e.message); } });
 }
 
+const Q_UNITS=['per room per night','per person','per person per night','per vehicle per day','per day','per hour','per group','flat','% of subtotal'];
+const Q_KINDS=['Base','Supplement','Meal','Extra','Discount'];
+const Q_STATUS=['Requested','Received','Booked','Expired','Declined'];
+function nightsOf(q){ if(!q.date_from||!q.date_to) return 0; const n=Math.round((new Date(q.date_to)-new Date(q.date_from))/86400000); return n>0?n:0; }
+function defTimes(unit,q){ const n=nightsOf(q); if(/per night/.test(unit)) return n||1; if(/per day/.test(unit)) return (n?n+1:1); return 1; }
+function lineCalc(lines){
+  const num=x=>parseFloat(x)||0; let sub=0; const rows=lines.map(l=>{ if(l.unit==='% of subtotal') return {l,amt:null}; let a=num(l.price)*num(l.qty||1)*num(l.times||1); if(l.kind==='Discount') a=-a; sub+=a; return {l,amt:a}; });
+  let total=sub; rows.forEach(r=>{ if(r.amt===null){ let a=sub*num(r.l.price)/100; if(r.l.kind==='Discount') a=-a; r.amt=a; total+=a; } });
+  return {rows,total};
+}
+function fmtMoney(cur,a){ const sign=CUR_SIGN[cur]||''; const neg=a<0; const v=Math.abs(Math.round(a*100)/100).toLocaleString('en-US',{maximumFractionDigits:2}); return (neg?'−':'')+sign+v; }
+function fmtRange(q){
+  const o={day:'numeric',month:'short'}; const y={year:'numeric'};
+  if(!q.date_from) return 'Dates not set';
+  const a=new Date(q.date_from), b=q.date_to?new Date(q.date_to):null;
+  const s1=a.toLocaleDateString('en-GB',o), s2=b?b.toLocaleDateString('en-GB',o):'';
+  const n=nightsOf(q);
+  return `${s1}${b?'–'+s2:''} ${(b||a).toLocaleDateString('en-GB',y)}${n?` · ${n} night${n>1?'s':''}`:''}`;
+}
+function lineHow(l,cur){
+  if(l.unit==='% of subtotal') return `${l.price}% of subtotal`;
+  const parts=[fmtMoney(cur,parseFloat(l.price)||0)+' '+l.unit]; if(parseFloat(l.qty)!==1) parts.push('× '+l.qty); if(parseFloat(l.times)!==1) parts.push('× '+l.times+(/night/.test(l.unit)?' nights':/day/.test(l.unit)?' days':''));
+  return parts.join(' ');
+}
+async function drawQuotes(v){
+  const box=document.getElementById('quotesBox'); if(!box) return;
+  let qs=[]; try{ qs=await DB.loadQuotes(v.id); }catch(e){ box.innerHTML=`<div class="msg err">Couldn't load quotes: ${esc(e.message)}</div>`; return; }
+  if(!qs.length){ box.innerHTML='<p class="hint" style="margin:0 0 10px">No quotes yet. Add a quote you received for specific dates, with options side by side, like a 35-seat midibus vs a 50-seat coach, or standard vs sea-view rooms.</p>'; return; }
+  const me=(S.user.email||'').toLowerCase();
+  box.innerHTML = qs.map((q,qi)=>{
+    const old = ['Expired','Declined'].includes(q.status) || (q.valid_until && q.valid_until<today() && q.status!=='Booked');
+    const who = q.owner===me ? (q.shared?'Shared with colleagues':'Private · only you'+(S.admin?'':' and Daniel')) : `From ${esc(q.owner_name||q.owner)}${q.shared?'':' · private'}`;
+    return `<div class="qcard${old?' old':''}" data-q="${qi}">
+      <div class="qhead"><b>${esc(fmtRange(q))}</b>${fbPill(q.status==='Booked'?'Done':q.status==='Requested'?'New':q.status==='Received'?'Planned':"Won't do").replace(/>[^<]+</,'>'+esc(q.status)+'<')}</div>
+      <div class="qsub">${[q.title&&q.can_edit?esc(q.title):'',q.pax?esc(q.pax)+' people':'',esc(q.units||''),q.valid_until?(q.valid_until<today()&&q.status!=='Booked'?'<span style="color:var(--bad)">expired '+esc(q.valid_until)+'</span>':'valid until '+esc(q.valid_until)):'',q.ref&&q.can_edit?'ref '+esc(q.ref):''].filter(Boolean).join(' · ')}</div>
+      <div class="qsub">${who}${vatLabel(q.vat)?' · '+esc(vatLabel(q.vat).toLowerCase()):''}</div>
+      <div class="otabs" role="tablist">${q.options.map((o,oi)=>`<button class="otab" role="tab" type="button" data-o="${oi}" aria-selected="${oi===0}">${esc(o.name)}<span class="ot">${esc(fmtMoney(q.currency,lineCalc(o.lines).total))}</span></button>`).join('')}</div>
+      <div class="opane"></div>
+      ${q.conditions?`<p class="qsub" style="white-space:pre-wrap;margin-top:8px"><b>Conditions:</b> ${esc(q.conditions)}</p>`:''}
+      ${q.private_note&&q.can_edit?`<p class="qsub" style="white-space:pre-wrap"><b>Private note:</b> ${esc(q.private_note)}</p>`:''}
+      <div class="btn-row" style="margin-top:10px">${q.can_edit?`<button class="mini" data-qedit="${qi}" type="button">Edit</button>`:''}<button class="mini" data-qfiles="${qi}" type="button">Attachments${q.files?' ('+q.files+')':''}</button>${q.can_edit?`<button class="mini" data-qdel="${qi}" type="button">Delete</button>`:''}</div>
+      <div class="qfiles"></div></div>`; }).join('');
+  box.querySelectorAll('.qcard').forEach(card=>{
+    const q=qs[+card.dataset.q], pane=card.querySelector('.opane');
+    const show=oi=>{ const o=q.options[oi]; if(!o){ pane.innerHTML=''; return; } const c=lineCalc(o.lines);
+      card.querySelectorAll('.otab').forEach(t=>t.setAttribute('aria-selected', +t.dataset.o===oi));
+      pane.innerHTML=`<table class="qlines">${c.rows.map((r,li)=>`<tr><td><span class="k">${esc(r.l.kind)}</span>${esc(r.l.label)}<div class="how">${esc(lineHow(r.l,q.currency))}${r.l.note?' · '+esc(r.l.note):''}</div></td><td class="n">${esc(fmtMoney(q.currency,r.amt))}${r.l.unit!=='% of subtotal'&&r.l.kind!=='Discount'?`<br><button class="mini" style="padding:2px 6px;font-size:11px;margin-top:4px" data-std="${oi}:${li}" type="button">Make standard price</button>`:''}</td></tr>`).join('')}
+        <tr class="tot"><td>Total${o.note?` <span class="how">· ${esc(o.note)}</span>`:''}</td><td class="n">${esc(fmtMoney(q.currency,c.total))}</td></tr></table>`;
+      pane.querySelectorAll('[data-std]').forEach(b=>b.onclick=()=>{ const [a,bb]=b.dataset.std.split(':').map(Number); const l=q.options[a].lines[bb];
+        const aud=/per vehicle/.test(l.unit)?'Vehicle':/room/.test(l.unit)?'Other':(l.kind==='Meal'?'Adult':'Adult');
+        const basis={'per room per night':'Custom','per person':'Per person','per person per night':'Per person','per vehicle per day':'Per day','per day':'Per day','per hour':'Per hour','per group':'Per group','flat':'Flat rate'}[l.unit]||'Custom';
+        openPriceForm(v,null,{label:`${l.label}${l.unit==='per room per night'?' (per room per night)':''} · ${q.options[a].name}`,audience:aud,price:l.price,currency:q.currency,vat:q.vat,basis,is_agent:true,season:fmtRange(q).split(' · ')[0],source:`Quote${q.ref&&q.can_edit?' '+q.ref:''}, received ${q.received_on||''}`.trim(),checked_on:q.received_on||today(),note:l.note||''}); });
+    };
+    card.querySelectorAll('.otab').forEach(t=>t.onclick=()=>show(+t.dataset.o)); show(0);
+  });
+  box.querySelectorAll('[data-qedit]').forEach(b=>b.onclick=()=>openQuoteForm(v, qs[+b.dataset.qedit]));
+  box.querySelectorAll('[data-qdel]').forEach(b=>b.onclick=async()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again to delete'; return; } try{ await DB.deleteQuote(v.id, qs[+b.dataset.qdel].id); toast('Quote deleted'); drawQuotes(v); }catch(e){ toast(e.message); } });
+  box.querySelectorAll('[data-qfiles]').forEach(b=>b.onclick=()=>{ const card=b.closest('.qcard'); const slot=card.querySelector('.qfiles'); const q=qs[+b.dataset.qfiles];
+    if(slot.dataset.open==='1'){ slot.innerHTML=''; slot.dataset.open=''; return; } slot.dataset.open='1'; slot.id='qf_'+q.id; drawFiles(v, q.id, slot.id, q.can_edit); });
+}
+
+function openQuoteForm(v, q0){
+  const isT = v.category==='Transport', isH = v.category==='Hotel';
+  const q = JSON.parse(JSON.stringify(q0 || {title:'',date_from:'',date_to:'',pax:'',units:'',received_on:today(),valid_until:'',ref:'',status:'Received',currency:v.currency||'ILS',vat:v.agentPriceVatTreatment||'',conditions:'',private_note:'',shared:false,
+    options:[{name: isT?'Option A: ':(isH?'Standard rooms':'Option A'), note:'', lines:[]}]}));
+  let cur=0;
+  const presets = isH ? [['Room','Base','per room per night'],['Shabbat dinner','Meal','per person'],['Shabbat lunch','Meal','per person'],['Sea view supplement','Supplement','per room per night'],['Half board','Supplement','per person per night'],['Child in parents\' room','Extra','per person per night']]
+    : isT ? [['Bus with driver','Base','per vehicle per day'],['Overtime','Extra','per hour'],['Driver overnight','Extra','flat'],['Airport transfer','Base','flat']]
+    : [['Activity','Base','per person'],['Child','Base','per person'],['Private guide','Extra','per group'],['Group minimum','Base','flat']];
+  const opt=(arr,val)=>arr.map(o=>{const [k,t]=Array.isArray(o)?o:[o,o];return `<option value="${esc(k)}"${String(val)===k?' selected':''}>${esc(t)}</option>`}).join('');
+  const body=`<form id="qf" novalidate>
+    <div class="grid">
+      <div class="f"><label for="q_from">From</label><input id="q_from" type="date" value="${esc(q.date_from)}"></div>
+      <div class="f"><label for="q_to">To</label><input id="q_to" type="date" value="${esc(q.date_to)}"></div>
+      <div class="f"><label for="q_pax">People</label><input id="q_pax" inputmode="numeric" value="${esc(q.pax)}" placeholder="24"></div>
+      <div class="f"><label for="q_units">${isH?'Rooms':isT?'Vehicles':'Units'}</label><input id="q_units" value="${esc(q.units)}" placeholder="${isH?'10 rooms':isT?'1 bus':''}"></div>
+      <div class="f"><label for="q_cur">Currency</label><select id="q_cur">${opt(['ILS','USD','EUR'],q.currency)}</select></div>
+      <div class="f"><label for="q_vat">VAT</label><select id="q_vat">${opt(VAT,q.vat)}</select></div>
+      <div class="f"><label for="q_rec">Received on</label><input id="q_rec" type="date" value="${esc(q.received_on)}"></div>
+      <div class="f"><label for="q_valid">Valid until</label><input id="q_valid" type="date" value="${esc(q.valid_until)}"></div>
+      <div class="f"><label for="q_status">Status</label><select id="q_status">${opt(Q_STATUS,q.status)}</select></div>
+      <div class="f"><label for="q_ref">Supplier's reference</label><input id="q_ref" value="${esc(q.ref)}" placeholder="GRP-5521"></div>
+      <div class="f wide"><label for="q_title">For which trip or client? (private)</label><input id="q_title" value="${esc(q.title)}" placeholder="Jacobs family, Oct 2026"></div>
+    </div>
+    <fieldset style="margin-top:16px"><div class="sec-head"><legend>Options</legend><button class="mini" id="addOpt" type="button">+ Add option</button></div>
+      <div class="otabs" id="optTabs" role="tablist"></div><div id="optEd"></div></fieldset>
+    <div class="grid">
+      <div class="f wide"><label for="q_cond">Conditions</label><textarea id="q_cond" rows="3" placeholder="Deposit, cancellation, overtime, what's included…">${esc(q.conditions)}</textarea></div>
+      <div class="f wide"><label for="q_note">Private note</label><textarea id="q_note" rows="2" placeholder="Only you${S.admin?'':' and Daniel'} can see this">${esc(q.private_note)}</textarea></div>
+    </div>
+    <label class="switch" for="q_shared" style="margin-top:12px"><input id="q_shared" type="checkbox" ${q.shared?'checked':''}><span><b>Share with colleagues</b><br><span class="hint">They see the dates, options, prices and conditions. Never the client, reference or private note.</span></span></label>
+    <div id="qErr"></div></form>`;
+  const w=sheet(q0?'Edit quote':'New quote', body, `<button class="btn soft" id="qc" type="button">Cancel</button><button class="btn primary" id="qs" type="button">Save quote</button>`);
+  const g=id=>w.querySelector('#'+id);
+  const syncDates=()=>{ q.date_from=g('q_from').value; q.date_to=g('q_to').value; };
+  const drawTabs=()=>{ g('optTabs').innerHTML=q.options.map((o,i)=>`<button class="otab" type="button" data-i="${i}" aria-selected="${i===cur}">${esc(o.name||'Option '+(i+1))}<span class="ot">${esc(fmtMoney(g('q_cur').value,lineCalc(o.lines).total))}</span></button>`).join('');
+    g('optTabs').querySelectorAll('.otab').forEach(t=>t.onclick=()=>{ readOpt(); cur=+t.dataset.i; drawTabs(); drawOpt(); }); };
+  const readOpt=()=>{ const o=q.options[cur]; if(!o) return; const ed=g('optEd'); o.name=ed.querySelector('#o_name').value; o.note=ed.querySelector('#o_note').value;
+    o.lines=[...ed.querySelectorAll('.lineed')].map(r=>({label:r.querySelector('[data-f=label]').value.trim(),kind:r.querySelector('[data-f=kind]').value,price:r.querySelector('[data-f=price]').value.replace(/[,₪$€\s]/g,''),unit:r.querySelector('[data-f=unit]').value,qty:r.querySelector('[data-f=qty]').value||'1',times:r.querySelector('[data-f=times]').value||'1',note:r.querySelector('[data-f=note]').value.trim()})); };
+  const lineRow=(l)=>`<div class="lineed">
+      <input class="lbl" data-f="label" value="${esc(l.label)}" placeholder="What (e.g. ${isH?'Deluxe sea view room':isT?'35-seat midibus with driver':'Entrance ticket'})">
+      <div class="r"><select class="md" data-f="kind">${opt(Q_KINDS,l.kind)}</select><input class="sm" data-f="price" inputmode="decimal" value="${esc(l.price)}" placeholder="${l.unit==='% of subtotal'?'%':'price'}"><select class="md" data-f="unit">${opt(Q_UNITS,l.unit)}</select></div>
+      <div class="r"><label class="hint" style="align-self:center">qty</label><input class="sm" data-f="qty" inputmode="decimal" value="${esc(l.qty)}"><label class="hint" style="align-self:center">×</label><input class="sm" data-f="times" inputmode="decimal" value="${esc(l.times)}" title="nights / days / times"><span class="lt"></span><button class="mini" type="button" data-rm>✕</button></div>
+      <input data-f="note" value="${esc(l.note||'')}" placeholder="Note (optional)"></div>`;
+  const recalc=()=>{ readOpt(); const o=q.options[cur]; const c=lineCalc(o.lines); g('optEd').querySelectorAll('.lineed').forEach((r,i)=>{ r.querySelector('.lt').textContent=fmtMoney(g('q_cur').value,c.rows[i].amt); }); g('optTotal').textContent=fmtMoney(g('q_cur').value,c.total); drawTabs(); };
+  const drawOpt=()=>{ const o=q.options[cur]; const ed=g('optEd');
+    ed.innerHTML=`<div class="grid"><div class="f"><label for="o_name">Option name</label><input id="o_name" value="${esc(o.name)}" placeholder="${isT?'35-seat midibus':'Sea view rooms'}"></div><div class="f"><label for="o_note">Option note</label><input id="o_note" value="${esc(o.note)}" placeholder="More luggage room"></div></div>
+      <div class="presets">${presets.map((p,i)=>`<button class="mini" type="button" data-p="${i}">+ ${esc(p[0])}</button>`).join('')}<button class="mini" type="button" data-p="-1">+ Blank line</button></div>
+      <div id="lines">${o.lines.map(lineRow).join('')}</div>
+      <p style="display:flex;justify-content:space-between;font-weight:600;margin:6px 2px 0"><span>Option total</span><span class="mono" id="optTotal"></span></p>
+      ${q.options.length>1?'<button class="mini" type="button" id="rmOpt" style="margin-top:8px">Remove this option</button>':''}`;
+    const wire=()=>{ ed.querySelectorAll('.lineed').forEach(r=>{ r.querySelectorAll('input,select').forEach(i=>i.oninput=recalc);
+        r.querySelector('[data-f=unit]').onchange=e=>{ syncDates(); r.querySelector('[data-f=times]').value=defTimes(e.target.value,q); recalc(); };
+        r.querySelector('[data-rm]').onclick=()=>{ r.remove(); recalc(); }; }); };
+    ed.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{ syncDates(); const p=presets[+b.dataset.p]||['','Base','per person']; const l={label:p[0],kind:p[1],price:'',unit:p[2],qty:p[2]==='per room per night'?(parseInt(g('q_units').value)||1):(p[2]==='per person'||p[2]==='per person per night'?(g('q_pax').value||1):1),times:defTimes(p[2],q),note:''};
+      ed.querySelector('#lines').insertAdjacentHTML('beforeend',lineRow(l)); wire(); recalc(); const last=[...ed.querySelectorAll('.lineed')].pop(); (p[0]?last.querySelector('[data-f=price]'):last.querySelector('[data-f=label]')).focus(); });
+    ed.querySelector('#o_name').oninput=()=>{ q.options[cur].name=ed.querySelector('#o_name').value; drawTabs(); };
+    const rm=ed.querySelector('#rmOpt'); if(rm) rm.onclick=()=>{ if(rm.dataset.c!=='1'){ rm.dataset.c='1'; rm.textContent='Tap again to remove'; return; } q.options.splice(cur,1); cur=0; drawTabs(); drawOpt(); };
+    wire(); recalc(); };
+  g('addOpt').onclick=()=>{ readOpt(); const copy=q.options[cur]?JSON.parse(JSON.stringify(q.options[cur])):{lines:[]}; copy.name='Option '+String.fromCharCode(65+q.options.length); copy.note=''; q.options.push(copy); cur=q.options.length-1; drawTabs(); drawOpt(); toast('Copied the current option. Change what differs.'); };
+  g('q_cur').onchange=recalc;
+  drawTabs(); drawOpt();
+  g('qc').onclick=()=>openDetail(v.id);
+  g('qs').onclick=async()=>{ readOpt(); const err=g('qErr');
+    const out={id:q0?q0.id:undefined,title:g('q_title').value.trim(),date_from:g('q_from').value,date_to:g('q_to').value,pax:g('q_pax').value.trim(),units:g('q_units').value.trim(),received_on:g('q_rec').value,valid_until:g('q_valid').value,ref:g('q_ref').value.trim(),status:g('q_status').value,currency:g('q_cur').value,vat:g('q_vat').value,conditions:g('q_cond').value.trim(),private_note:g('q_note').value.trim(),shared:g('q_shared').checked,
+      options:q.options.map(o=>({name:o.name,note:o.note,lines:o.lines.filter(l=>l.label||l.price)}))};
+    const bad=out.options.flatMap(o=>o.lines).find(l=>!/^\d+(\.\d+)?$/.test(l.price)||!/^\d+(\.\d+)?$/.test(l.qty)||!/^\d+(\.\d+)?$/.test(l.times));
+    if(bad){ err.innerHTML=`<div class="msg err">Check the numbers on "${esc(bad.label||'a line')}": price, qty and × must be numbers.</div>`; return; }
+    if(out.date_from&&out.date_to&&out.date_to<out.date_from){ err.innerHTML='<div class="msg err">The end date is before the start date.</div>'; return; }
+    if(!out.options.some(o=>o.lines.length)){ err.innerHTML='<div class="msg err">Add at least one line with a price.</div>'; return; }
+    const b=g('qs'); b.disabled=true; b.textContent='Saving…';
+    try{ await DB.saveQuote(v.id,out); toast(q0?'Quote saved':'Quote added. You can attach the PDF or email now.'); openDetail(v.id); }
+    catch(e){ b.disabled=false; b.textContent='Save quote'; err.innerHTML=`<div class="msg err">${esc(e.message)}</div>`; }
+  };
+}
+
 function openReasonSheet(title, prompt, onSend){
   const w=sheet(title, `<div class="f wide"><label for="rsn">${esc(prompt)}</label><textarea id="rsn" rows="3" placeholder="e.g. new price list from the supplier, see the receipt I attached"></textarea></div><div id="rsnErr"></div>`,
     `<button class="btn soft" id="rc" type="button">Cancel</button><button class="btn primary" id="rs" type="button">Send to Daniel</button>`);
@@ -902,8 +1086,8 @@ function openReasonSheet(title, prompt, onSend){
     try{ await onSend(r); }catch(e){ w.querySelector('#rsnErr').innerHTML=`<div class="msg err">${esc(e.message)}</div>`; } };
 }
 
-function openPriceForm(v, p){
-  const x=Object.assign({label:'',audience:'Adult',age_from:'',age_to:'',pax_min:'',pax_max:'',season:'',price:'',currency:v.currency||'ILS',vat:'',basis:v.priceBasis||'Per person',is_agent:true,source:'',checked_on:today(),note:''}, p||{});
+function openPriceForm(v, p, pre){
+  const x=Object.assign({label:'',audience:'Adult',age_from:'',age_to:'',pax_min:'',pax_max:'',season:'',price:'',currency:v.currency||'ILS',vat:'',basis:v.priceBasis||'Per person',is_agent:true,source:'',checked_on:today(),note:''}, p||pre||{});
   const opt=(arr,val)=>arr.map(o=>{const [k,t]=Array.isArray(o)?o:[o,o];return `<option value="${esc(k)}"${String(val)===k?' selected':''}>${esc(t)}</option>`}).join('');
   const body=`<form id="pf" novalidate>
     ${S.admin?'':`<div class="lockbar">🔒 Prices are checked by Daniel before they appear. Your suggestion goes to him with your reason.</div>`}
@@ -957,7 +1141,7 @@ function openDealForm(v){
     catch(e){ w.querySelector('#dlErr').innerHTML=`<div class="msg err">${esc(e.message)}</div>`; } };
 }
 
-const KINDS=['Photo','Receipt','Price list','Contract','Other'];
+const KINDS=['Photo','Receipt','Price list','Contract','Quote','Other'];
 async function shrink(file){
   // Phone photos are large; resize to max 2000px JPEG. Keep PDFs and anything the browser can't decode as-is.
   if(!/^image\/(jpeg|png|webp)$/.test(file.type) || file.size < 1500000) return file;
@@ -969,36 +1153,37 @@ async function shrink(file){
     return blob && blob.size < file.size ? new File([blob], file.name.replace(/\.\w+$/,'')+'.jpg', {type:'image/jpeg'}) : file;
   }catch(e){ return file; }
 }
-async function drawFiles(v){
-  const box=document.getElementById('filesBox'); if(!box) return;
-  let files=[]; try{ files=await DB.listFiles(v.id); }catch(e){ box.innerHTML=`<div class="msg err">Couldn't load files: ${esc(e.message)}</div>`; return; }
+async function drawFiles(v, qid, boxId, canAdd){
+  const sid=boxId||'filesBox'; const box=document.getElementById(sid); if(!box) return; if(canAdd===undefined) canAdd=true;
+  const redraw=()=>drawFiles(v, qid, boxId, canAdd);
+  let files=[]; try{ files=await DB.listFiles(v.id, qid); }catch(e){ box.innerHTML=`<div class="msg err">Couldn't load files: ${esc(e.message)}</div>`; return; }
   const me=(S.user.email||'').toLowerCase();
-  box.innerHTML = (files.length?`<div class="files">${files.map((f,i)=>{
+  box.innerHTML = (files.length?`<div class="files" style="margin-top:8px">${files.map((f,i)=>{
       const img=/^image\//.test(f.mime_type) && !/hei[cf]/.test(f.mime_type);
       const inner = img && f.url ? `<img src="${esc(f.url)}" alt="${esc(f.file_name)}" loading="lazy">` : `<span class="doc">${/pdf/.test(f.mime_type)?'PDF':'FILE'}</span>`;
       const canRm = S.admin || f.uploaded_by===me;
       return `<div class="file"><a class="thumb" href="${esc(f.url||'#')}" target="_blank" rel="noopener">${inner}</a>
         <span class="fkind">${esc(f.kind)}</span><span class="fname" title="${esc(f.file_name)}">${esc(f.file_name)}</span>
         ${canRm?`<button class="rm" data-i="${i}" type="button">Remove</button>`:''}</div>`; }).join('')}</div>`
-    : `<p class="hint" style="margin:0 0 10px">No files yet. Add a photo of the place, a receipt, a price list or a contract.</p>`)
-  + `<div class="upl"><select id="upKind" aria-label="What is it?">${KINDS.map(k=>`<option>${k}</option>`).join('')}</select>
-      <label class="btn accent" for="upFile" style="display:inline-block">Add photo or file</label>
-      <input id="upFile" type="file" accept="image/*,application/pdf" multiple hidden>
-      <span class="hint" id="upMsg">Photos and PDFs, up to 10 MB each.</span></div>`;
+    : `<p class="hint" style="margin:8px 0 10px">${qid?'No attachments yet. Add the quote email screenshot or PDF.':'No files yet. Add a photo of the place, a receipt, a price list or a contract.'}</p>`)
+  + (canAdd?`<div class="upl"><select id="${sid}_kind" aria-label="What is it?">${KINDS.map(k=>`<option${qid&&k==='Quote'?' selected':''}>${k}</option>`).join('')}</select>
+      <label class="btn accent" for="${sid}_file" style="display:inline-block">Add photo or file</label>
+      <input id="${sid}_file" type="file" accept="image/*,application/pdf" multiple hidden>
+      <span class="hint" id="${sid}_msg">Photos and PDFs, up to 10 MB each.</span></div>`:'');
   box.querySelectorAll('.rm').forEach(b=>b.onclick=async()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again'; return; }
-    try{ await DB.removeFile(files[+b.dataset.i]); toast('File removed'); drawFiles(v); }catch(e){ toast(e.message); } });
-  const input=box.querySelector('#upFile'), msg=box.querySelector('#upMsg');
+    try{ await DB.removeFile(files[+b.dataset.i]); toast('File removed'); redraw(); }catch(e){ toast(e.message); } });
+  const input=box.querySelector('#'+sid+'_file'), msg=box.querySelector('#'+sid+'_msg'); if(!input) return;
   input.onchange=async()=>{
-    const picked=[...input.files]; if(!picked.length) return; const kind=box.querySelector('#upKind').value; let ok=0;
+    const picked=[...input.files]; if(!picked.length) return; const kind=box.querySelector('#'+sid+'_kind').value; let ok=0;
     for(const [n,f0] of picked.entries()){
       msg.textContent=`Uploading ${n+1} of ${picked.length}…`;
       if(!/^image\/|^application\/pdf$/.test(f0.type) && !/\.(pdf|heic|heif)$/i.test(f0.name)){ toast(`${f0.name}: only photos and PDFs`); continue; }
       const f=await shrink(f0);
       if(f.size>10485760){ toast(`${f0.name} is over 10 MB`); continue; }
-      try{ await DB.upload(v.id,f,kind); ok++; }catch(e){ toast(`${f0.name}: ${e.message}`); }
+      try{ await DB.upload(v.id,f,kind,qid); ok++; }catch(e){ toast(`${f0.name}: ${e.message}`); }
     }
     if(ok) toast(ok===1?'File added':`${ok} files added`);
-    drawFiles(v);
+    redraw();
   };
 }
 
