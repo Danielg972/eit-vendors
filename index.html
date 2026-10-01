@@ -579,14 +579,14 @@ function linkBox(id, url){
 function wireCopy(root){ root.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>{ const i=root.querySelector('#'+b.dataset.copy); copyText(i.value,i); }); }
 
 const ROLES=['Licensed tour guide','Travel agent','Tour operator','Other'];
-const TERMS_VERSION='2026-10-01b';
+const TERMS_VERSION='2026-10-01c';
 const TERMS_HTML=`<p class="hint">Version ${TERMS_VERSION}. Plain-language summary. Draft: not yet reviewed by a lawyer.</p>
 <h4>1. Who runs this</h4><p>The Israel Suppliers Master List is run by Eretz Israel Tours, which approves members and manages the list.</p>
 <h4>2. Who can join</h4><p>Licensed tour guides, travel agents, tour operators and other travel professionals approved by Eretz Israel Tours. You confirm the details and license you submit are yours and true. Eretz Israel Tours can decline, pause or remove access at any time.</p>
 <h4>3. What you share</h4><p>Share supplier information you believe is accurate and that you're allowed to share. Don't post personal member codes, card or bank details, or personal details of your clients. Be fair in ratings and notes: describe your own experience.</p>
 <h4>4. How you use it</h4><p>Use the list for your own professional work. Keep your personal link to yourself, and don't copy, resell or publish the list.</p><p><b>Never show the list to suppliers.</b> Don't show suppliers the app, screenshots, prices, notes or ratings from it. Anyone who does will lose access immediately.</p>
 <h4>5. Prices are a guide</h4><p>Prices, terms and contacts come from colleagues and can change. Always confirm with the supplier before booking. Eretz Israel Tours isn't responsible for information shared by members or for suppliers' services.</p>
-<h4>6. Your data and privacy</h4><p>We store your name, email, phone, role, license number and license photo, what you add, and when you last used the app. Colleagues see your name next to what you add. Your license photo is visible only to Eretz Israel Tours.</p><p><b>Eretz Israel Tours can see everything in the app, including items marked "private".</b> "Private" means hidden from other colleagues, not from Eretz Israel Tours.</p><p>Data is stored with Supabase (servers in Frankfurt, EU) and the app is hosted on GitHub Pages. You can ask Eretz Israel Tours at any time to see, correct or delete your data and account.</p>
+<h4>6. Your data and privacy</h4><p>We store your name, email, phone, role, license number and license photo, what you add, when you last used the app, and which supplier contact buttons you tap (call, WhatsApp, email, website, maps and booking links), with the time. Colleagues see your name next to what you add. Your license photo is visible only to Eretz Israel Tours.</p><p><b>Eretz Israel Tours can see everything in the app, including items marked "private".</b> "Private" means hidden from other colleagues, not from Eretz Israel Tours.</p><p>Data is stored with Supabase (servers in Frankfurt, EU) and the app is hosted on GitHub Pages. You can ask Eretz Israel Tours at any time to see, correct or delete your data and account.</p>
 <h4>7. Sponsored content</h4><p>If supplier offers or promotions are ever paid for, they will be clearly labelled as sponsored. Ratings and notes are never for sale.</p>
 <h4>8. Changes</h4><p>If these terms change, you'll be asked to accept the new version.</p>`;
 function openTerms(){ sheet('Terms and privacy', `<div class="terms">${TERMS_HTML}</div>`, `<button class="btn primary" id="tOk" type="button">Close</button>`).querySelector('#tOk').onclick=closeSheet; }
@@ -819,8 +819,16 @@ function viewTeam(){
       ${active.map(m=>`<div class="person"><span><b>${esc(m.name)}</b>${m.is_admin?' <span class="pill approved">admin</span>':''}<br><span class="hint">${esc(m.role||'')}${m.license_no?' · '+esc(m.license_no):''}${m.role||m.license_no?'<br>':''}${esc(m.email)} · last active ${ago(m.last_seen_at)}${m.is_admin?'':(m.terms_accepted_at?' · terms accepted '+fmtDate(m.terms_accepted_at):' · terms not yet accepted')}</span><span id="nl_${m.id}"></span></span>
         ${m.is_admin?'':`<span class="btn-row"><button class="btn soft" data-link="${m.id}">New link</button><button class="btn danger" data-rm="${m.id}">Remove</button></span>`}</div>`).join('')}
     </section>
+    <section class="panel" id="actPanel"><h3>Activity</h3><p>Taps on Call, WhatsApp, Email, Website, Waze, Maps, booking and deal links.</p><div id="actAll"><p class="hint">Loading…</p></div></section>
     ${gone.length?`<section class="panel"><h3>Removed</h3>${gone.map(m=>`<div class="person"><span><b>${esc(m.name)}</b><br><span class="hint">${esc(m.email)}</span><span id="nl_${m.id}"></span></span><button class="btn soft" data-link="${m.id}">Restore with new link</button></div>`).join('')}</section>`:''}`;
   wireCopy(view);
+  (async()=>{ const box=view.querySelector('#actAll'); if(!box) return;
+    let a; try{ a = LIVE ? await rpc('activity',{p_vendor:''}) : {recent:[],top:[],by_person:[]}; }catch(e){ box.innerHTML=`<div class="msg err">${esc(e.message)}</div>`; return; }
+    if(!a.recent.length){ box.innerHTML='<p class="hint" style="margin:0">Nothing yet. It fills in as colleagues use the contact buttons.</p>'; return; }
+    box.innerHTML=`<p style="margin:0 0 6px"><b>Most contacted, last 30 days</b></p>${a.top.map(t=>`<div class="person"><span><button class="linkbtn" data-open="${esc(t.vendor_id)}" type="button">${esc(t.vendor_name)}</button></span><span class="hint">${t.n} taps · ${t.people} ${t.people>1?'people':'person'}</span></div>`).join('')}
+      <p style="margin:14px 0 6px"><b>Most active colleagues, last 30 days</b></p>${a.by_person.map(p=>`<div class="person"><span>${esc(p.member_name)}</span><span class="hint">${p.n} taps</span></div>`).join('')}
+      <p style="margin:14px 0 6px"><b>Latest</b></p>${a.recent.slice(0,30).map(r=>`<div class="person"><span><b>${esc(r.member_name||r.member)}</b> · ${esc(ACT_LABEL[r.action]||r.action)}${r.vendor_name?' · '+esc(r.vendor_name):''}</span><span class="hint">${since(r.created_at)}</span></div>`).join('')}`;
+    box.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>openDetail(b.dataset.open)); })();
   view.querySelectorAll('[data-proof]').forEach(b=>b.onclick=async()=>{ const slot=document.getElementById('pf_'+b.dataset.proof);
     if(!LIVE){ slot.innerHTML='<p class="hint" style="margin:8px 0 0">In the live app this opens their uploaded license.</p>'; return; }
     b.disabled=true; try{ const url=await DB.proofUrl(b.dataset.proof); slot.innerHTML=`<a class="btn accent" style="display:inline-block;margin-top:8px;text-decoration:none" href="${esc(url)}" target="_blank" rel="noopener">Open their license</a> <span class="hint">Link works for 10 minutes.</span>`; }catch(e){ toast(e.message); } b.disabled=false; });
@@ -858,8 +866,14 @@ const ic = {
   wa:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l1.7-5A8.5 8.5 0 1 1 8 19.3z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.5-2-1-1 1a3.5 3.5 0 0 1-2-2l1-1-1-2z"/></svg>',
   mail:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>',
   web:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>',
+  maps:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg>',
   nav:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>'
 };
+function track(vid, action){
+  if(!LIVE || !S.token) return;
+  try{ fetch(SUPABASE_URL+'/rest/v1/rpc/log_action',{method:'POST',keepalive:true,headers:{apikey:SUPABASE_KEY,'Content-Type':'application/json'},body:JSON.stringify({p_token:S.token,p_vendor:vid||'',p_action:action})}); }catch(e){}
+}
+document.addEventListener('click',e=>{ const a=e.target.closest('[data-track]'); if(a) track(a.dataset.v||'', a.dataset.track); }, true);
 function fromBadge(by,date,prefix){ if(!by || by.admin) return ''; return `<span class="from">👤 <span>${esc(prefix||'From')} <b>${esc(by.name)}</b>${by.role?` <span class="r">· ${esc(by.role)}</span>`:''}${date?` <span class="r">· ${fmtDate(date)}</span>`:''}</span></span>`; }
 function intlDigits(ph){ let d=String(ph||'').replace(/[^\d+]/g,''); if(d.startsWith('+')) return d.slice(1); if(d.startsWith('00')) return d.slice(2); if(d.startsWith('0')) return '972'+d.slice(1); return d; }
 // fields sometimes hold several numbers or emails ("02-123; fax 02-456"); use the first real one
@@ -868,13 +882,16 @@ function firstPhone(x){ const parts=String(x||'').split(/[;,/]|\bor\b/i).map(p=>
 function firstEmail(x){ const m=String(x||'').match(/[^\s;,<>]+@[^\s;,<>]+\.[^\s;,<>]+/); return m?m[0]:''; }
 function contactBar(v){
   const a=[]; const ph=firstPhone(v.phone), em=firstEmail(v.email);
-  if(ph) a.push(`<a class="act" href="tel:${esc(ph)}">${ic.call}Call</a>`);
+  const t=k=>`data-track="${k}" data-v="${esc(v.id)}"`;
+  if(ph) a.push(`<a class="act" ${t('call')} href="tel:${esc(ph)}">${ic.call}Call</a>`);
   const mobile=String(v.phone||'').split(/[;,/]/).map(firstPhone).find(p=>/^0?5\d{8}$/.test(p.replace(/^\+?972/,'0')))||'';
   const wa=firstPhone(v.whatsapp)||mobile;
-  if(wa) a.push(`<a class="act" href="https://wa.me/${esc(intlDigits(wa))}" target="_blank" rel="noopener">${ic.wa}WhatsApp</a>`);
-  if(em) a.push(`<a class="act" href="mailto:${esc(em)}">${ic.mail}Email</a>`);
-  if(v.website) a.push(`<a class="act" href="${esc(/^https?:/.test(v.website)?v.website:'https://'+v.website)}" target="_blank" rel="noopener">${ic.web}Website</a>`);
-  if(v.location||v.name) a.push(`<a class="act" href="https://waze.com/ul?q=${encodeURIComponent((v.name+' '+(v.location||'')).trim())}&navigate=yes" target="_blank" rel="noopener">${ic.nav}Waze</a>`);
+  if(wa) a.push(`<a class="act" ${t('whatsapp')} href="https://wa.me/${esc(intlDigits(wa))}" target="_blank" rel="noopener">${ic.wa}WhatsApp</a>`);
+  if(em) a.push(`<a class="act" ${t('email')} href="mailto:${esc(em)}">${ic.mail}Email</a>`);
+  if(v.website) a.push(`<a class="act" ${t('website')} href="${esc(/^https?:/.test(v.website)?v.website:'https://'+v.website)}" target="_blank" rel="noopener">${ic.web}Website</a>`);
+  const where=encodeURIComponent((v.name.replace(/\s*\(.*?\)\s*/g,' ')+' '+(v.location||'')).trim());
+  if(v.location||v.name){ a.push(`<a class="act" ${t('waze')} href="https://waze.com/ul?q=${where}&navigate=yes" target="_blank" rel="noopener">${ic.nav}Waze</a>`);
+    a.push(`<a class="act" ${t('maps')} href="https://www.google.com/maps/search/?api=1&query=${where}" target="_blank" rel="noopener">${ic.maps}Maps</a>`); }
   return a.length?`<div class="actions">${a.join('')}</div>`:'';
 }
 function money(cur,p){ return (CUR_SIGN[cur]||'')+Number(p).toLocaleString('en-US'); }
@@ -893,7 +910,7 @@ function openDetail(id){
   const notice=v.cancelNoticeAmount?`${esc(v.cancelNoticeAmount)} ${esc((v.cancelNoticeUnit||'').toLowerCase())}${v.cancelDayType?' ('+esc(v.cancelDayType.toLowerCase())+')':''}`:'';
   const rating=['rateReliability','rateService','rateValue'].map((k,i)=>v[k]?`${['Reliability','Service','Value'][i]} <b class="mono">${esc(v[k])}/5</b>`:'').filter(Boolean).join(' · ');
   const sections=[
-    ['Contact',rows([['Contact',esc(v.contactPerson)],['Phone',v.phone?`<span class="mono">${esc(v.phone)}</span>`:''],['WhatsApp',v.whatsapp?`<span class="mono">${esc(v.whatsapp)}</span>`:''],['Email',esc(v.email)],['Website',esc(v.website)],['Region',esc(v.region)],['Type',esc(v.tags)],['Area',esc(v.location)],['Languages',esc(v.languages)],['Kosher',esc(v.kosher)],['Max capacity',v.maxCap?esc(v.maxCap)+' people':''],['Park booking',v.npResLink?`<a href="${esc(v.npResLink)}" target="_blank" rel="noopener">Reservation page</a>`:'']])],
+    ['Contact',rows([['Contact',esc(v.contactPerson)],['Phone',v.phone?`<span class="mono">${esc(v.phone)}</span>`:''],['WhatsApp',v.whatsapp?`<span class="mono">${esc(v.whatsapp)}</span>`:''],['Email',esc(v.email)],['Website',esc(v.website)],['Region',esc(v.region)],['Type',esc(v.tags)],['Area',esc(v.location)],['Languages',esc(v.languages)],['Kosher',esc(v.kosher)],['Max capacity',v.maxCap?esc(v.maxCap)+' people':''],['Park booking',v.npResLink?`<a data-track="booking" data-v="${esc(v.id)}" href="${esc(v.npResLink)}" target="_blank" rel="noopener">Reservation page</a>`:'']])],
     [S.admin?(v.prices_private?'Main price (goes to R5) · private':'Main price (goes to R5)'):'Main price',rows([['Agent price',price(v.agentPrice,v.agentPriceVatTreatment)],['Listed price',price(v.listedPrice,v.listedPriceVatTreatment)],['Basis',esc(v.priceBasis)],['Max people',esc(v.maxPax)],['Payment terms',esc(v.payTerms)]])],
     ['Cancellation',rows([['Policy',esc(v.cancelPolicy)],['Notice',notice],['Penalty',esc(v.cancelPenalty)],['Checked',esc(v.cancelPolicyVerifiedDate)]])],
     ['Experience',rows([['Ratings',rating],['Strengths',esc(v.strengths)],['Weaknesses',esc(v.weaknesses)],['Summary',esc(v.notes)]])]
@@ -913,6 +930,7 @@ function openDetail(id){
       <div class="addline"><textarea id="noteText" rows="1" placeholder="Add a tip, warning or update…"></textarea><button class="btn primary" id="noteAdd" type="button">Add</button></div>
       <div id="notesBox"></div></fieldset>
     <fieldset><legend>Photos, receipts and PDFs</legend><div id="filesBox"><p class="hint">Loading files…</p></div></fieldset>
+    ${S.admin?'<div id="actBox"></div>':''}
     <div id="siteSettings"></div>
     ${S.admin?`<fieldset><legend>Private note · only you see this</legend><div class="f wide"><textarea id="adminNote" rows="5" placeholder="Clients, trips, commissions, anything colleagues shouldn't see"></textarea></div><div class="btn-row" style="margin-top:8px"><button class="mini" id="adminNoteSave" type="button">Save private note</button></div></fieldset>`:''}
     ${sections.map(([h,dl])=>`<fieldset><legend>${h}</legend><dl class="dl">${dl}</dl></fieldset>`).join('')}
@@ -966,7 +984,7 @@ function drawExtrasRest(v,det){
       <span class="meta">${esc(d.kind)}${d.provider?' · '+esc(d.provider):''}${d.valid_to?(exp(d)?' · expired '+esc(d.valid_to):' · until '+esc(d.valid_to)):''}</span>
       ${d.details?`<p style="margin:4px 0 0">${esc(d.details)}</p>`:''}
       ${d.code?`<p style="margin:4px 0 0">Code: <span class="code">${esc(d.code)}</span></p>`:''}
-      ${d.link?`<p style="margin:4px 0 0"><a href="${esc(d.link)}" target="_blank" rel="noopener">Open deal</a></p>`:''}
+      ${d.link?`<p style="margin:4px 0 0"><a data-track="deal" data-v="${esc(v.id)}" href="${esc(d.link)}" target="_blank" rel="noopener">Open deal</a></p>`:''}
       ${(det.deal_by||{})[d.id]&&!(det.deal_by[d.id].admin)?fromBadge(det.deal_by[d.id],d.created_at,'Shared by'):`<span class="meta">Shared by ${esc(who(d.reported_by))}</span>`}
       ${S.admin||d.reported_by===me?` <button class="mini" data-ddel="${esc(d.id)}" type="button">Remove</button>`:''}</div>`).join('')
     : `<p class="hint" style="margin:0 0 10px">No deals yet. Share credit card club benefits (Cal, Max, Isracard, Hever), Cuponofesh-type vouchers, codes or group tricks.</p>`;
@@ -976,6 +994,7 @@ function drawExtrasRest(v,det){
     : `<p class="hint" style="margin:0">No notes yet.</p>`;
   nb.querySelectorAll('[data-ndel]').forEach(b=>b.onclick=async()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again'; return; } try{ await DB.deleteNote(v.id,b.dataset.ndel); drawExtras(v); }catch(e){ toast(e.message); } });
   drawSiteBits(v,det);
+  drawActivity(v);
   const an=document.getElementById('adminNote');
   if(an){ an.value=det.admin_note||''; const b=document.getElementById('adminNoteSave'); b.onclick=async()=>{ try{ await DB.saveAdminNote(v.id, an.value); toast('Private note saved'); }catch(e){ toast(e.message); } }; }
   const rb=document.getElementById('reqBox');
@@ -1183,7 +1202,7 @@ function drawSiteBits(v,det){
       rb.innerHTML=`<div class="resbar"><b>📅 ${esc(RES_LABEL[v.reservation])}</b>
         ${v.reservation!=='not_needed'?`<span class="meta">${resSummary(det.res_reports||[])}</span>
         <div class="btn-row"><span class="meta" style="align-self:center">Your last visit:</span><button class="mini" type="button" data-res="yes">They checked</button><button class="mini" type="button" data-res="no">Not checked</button></div>`:''}
-        ${v.npResLink?`<p class="meta" style="margin:8px 0 0"><a href="${esc(v.npResLink)}" target="_blank" rel="noopener">Book a visit</a></p>`:''}</div>`;
+        ${v.npResLink?`<p class="meta" style="margin:8px 0 0"><a data-track="booking" data-v="${esc(v.id)}" href="${esc(v.npResLink)}" target="_blank" rel="noopener">Book a visit</a></p>`:''}</div>`;
       rb.querySelectorAll('[data-res]').forEach(b=>b.onclick=async()=>{ try{ await DB.reportReservation(v.id,b.dataset.res,today()); toast('Thanks, noted'); drawExtras(v); }catch(e){ toast(e.message); } });
     } else rb.innerHTML='';
   }
@@ -1223,6 +1242,16 @@ function resPopup(v){
   m.querySelectorAll('[data-a]').forEach(b=>b.onclick=async()=>{ const a=b.dataset.a; m.remove();
     if(a==='later'){ try{ localStorage.setItem('eitv_res_'+v.id,'later'); }catch(e){} toast('OK. Book ahead to be safe.'); return; }
     try{ await DB.reportReservation(v.id,a,''); toast('Thanks, that helps everyone'); drawExtras(v); }catch(e){ toast(e.message); } });
+}
+
+const ACT_LABEL={call:'Call',whatsapp:'WhatsApp',email:'Email',website:'Website',waze:'Waze',maps:'Google Maps',booking:'Booking link',deal:'Deal link',file:'File'};
+function since(iso){ const m=Math.round((Date.now()-new Date(iso))/60000); if(m<1) return 'just now'; if(m<60) return m+' min ago'; const h=Math.round(m/60); if(h<24) return h+' h ago'; return fmtDate(iso); }
+async function drawActivity(v){
+  const box=document.getElementById('actBox'); if(!box || !S.admin) return;
+  let a; try{ a = LIVE ? await rpc('activity',{p_vendor:v.id}) : {counts:{whatsapp:4,call:2,maps:1},recent:[{member_name:'Rachel Amar',action:'whatsapp',created_at:new Date(Date.now()-3600e3).toISOString()},{member_name:'Yossi Ben-David',action:'call',created_at:new Date(Date.now()-86400e3).toISOString()}]}; }catch(e){ return; }
+  const total=Object.values(a.counts||{}).reduce((x,y)=>x+y,0);
+  box.innerHTML=`<fieldset><legend>Contact activity · only you</legend>${total?`<p style="margin:0 0 8px">${total} tap${total>1?'s':''}: ${Object.entries(a.counts).map(([k,n])=>`${esc(ACT_LABEL[k]||k)} ${n}`).join(' · ')}</p>
+    ${a.recent.map(r=>`<div class="note" style="margin-bottom:6px"><span class="meta"><b>${esc(r.member_name||r.member)}</b> · ${esc(ACT_LABEL[r.action]||r.action)} · ${since(r.created_at)}</span></div>`).join('')}`:'<p class="hint" style="margin:0">No one has used the contact buttons yet.</p>'}</fieldset>`;
 }
 
 function openReasonSheet(title, prompt, onSend){
