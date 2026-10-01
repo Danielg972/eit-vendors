@@ -933,7 +933,7 @@ async function drawExtras(v){
   const pb=document.getElementById('pricesBox'); if(!pb) return;
   const privNote = (!S.admin && det.prices_private) ? '<p class="hint" style="margin:0 0 10px">Eretz Israel Tours keeps its prices for this supplier private. You can still add your own prices: only you (and Eretz Israel Tours) see them.</p>' : '';
   pb.innerHTML = privNote + (det.prices.length ? `<div class="prices">${det.prices.map(p=>`<div class="pl">
-      <span class="who3">${esc(p.label||p.audience)}</span><span class="amt">${esc(money(p.currency,p.price))}</span>
+      <span class="who3">${esc(p.label||p.audience)}</span><span class="amt">${p.price?esc(money(p.currency,p.price)):'<span class="hint">Price to confirm</span>'}</span>
       <span class="meta">${p.mine?'<span class="tag" style="background:var(--ochre-wash);color:var(--ochre)">Your own price</span>':(p.owner&&S.admin?`<span class="tag" style="background:var(--ochre-wash);color:var(--ochre)">${esc(p.owner_name||p.owner)}'s own</span>`:(p.private?'<span class="tag" style="background:var(--bad-wash);color:var(--bad)">Private</span>':''))}${p.is_agent?'<span class="tag agent">Agent rate</span>':'<span class="tag">Public price</span>'}${esc(priceWho(p))} · ${esc((p.basis||'').toLowerCase())}${vatLabel(p.vat)?' · '+esc(vatLabel(p.vat).toLowerCase()):''}${p.season?' · '+esc(p.season):''}</span>
       ${p.note||p.source||p.checked_on?`<span class="meta">${p.note?esc(p.note)+'<br>':''}${p.source?'Source: '+esc(p.source):''}${p.checked_on?' · checked '+esc(p.checked_on):''}</span>`:''}
       <span class="ctl">${(S.admin&&!(p.owner&&!p.mine))||p.mine?`<button class="mini" data-pedit="${esc(p.id)}" type="button">Edit</button>`:(S.admin?'':`<button class="mini" data-pedit="${esc(p.id)}" type="button">Suggest change</button>`)}<button class="mini" data-pdel="${esc(p.id)}" type="button">${S.admin||p.mine?'Remove':'Suggest removing'}</button></span></div>`).join('')}</div>`
@@ -1038,6 +1038,7 @@ function fmtRange(q){
   return `${s1}${b?'–'+s2:''} ${(b||a).toLocaleDateString('en-GB',y)}${n?` · ${n} night${n>1?'s':''}`:''}`;
 }
 function lineHow(l,cur){
+  if(l.price==='') return 'Price to confirm';
   if(l.unit==='% of subtotal') return `${l.price}% of subtotal`;
   const parts=[fmtMoney(cur,parseFloat(l.price)||0)+' '+l.unit]; if(parseFloat(l.qty)!==1) parts.push('× '+l.qty); if(parseFloat(l.times)!==1) parts.push('× '+l.times+(/night/.test(l.unit)?' nights':/day/.test(l.unit)?' days':''));
   return parts.join(' ');
@@ -1064,7 +1065,7 @@ async function drawQuotes(v){
     const q=qs[+card.dataset.q], pane=card.querySelector('.opane');
     const show=oi=>{ const o=q.options[oi]; if(!o){ pane.innerHTML=''; return; } const c=lineCalc(o.lines);
       card.querySelectorAll('.otab').forEach(t=>t.setAttribute('aria-selected', +t.dataset.o===oi));
-      pane.innerHTML=`<table class="qlines">${c.rows.map((r,li)=>`<tr><td><span class="k">${esc(r.l.kind)}</span>${esc(r.l.label)}<div class="how">${esc(lineHow(r.l,q.currency))}${r.l.note?' · '+esc(r.l.note):''}</div></td><td class="n">${esc(fmtMoney(q.currency,r.amt))}${r.l.unit!=='% of subtotal'&&r.l.kind!=='Discount'?`<br><button class="mini" style="padding:2px 6px;font-size:11px;margin-top:4px" data-std="${oi}:${li}" type="button">Make standard price</button>`:''}</td></tr>`).join('')}
+      pane.innerHTML=`<table class="qlines">${c.rows.map((r,li)=>`<tr><td><span class="k">${esc(r.l.kind)}</span>${esc(r.l.label)}<div class="how">${esc(lineHow(r.l,q.currency))}${r.l.note?' · '+esc(r.l.note):''}</div></td><td class="n">${r.l.price===''?'<span class="hint">to confirm</span>':esc(fmtMoney(q.currency,r.amt))}${r.l.price!==''&&r.l.unit!=='% of subtotal'&&r.l.kind!=='Discount'?`<br><button class="mini" style="padding:2px 6px;font-size:11px;margin-top:4px" data-std="${oi}:${li}" type="button">Make standard price</button>`:''}</td></tr>`).join('')}
         <tr class="tot"><td>Total${o.note?` <span class="how">· ${esc(o.note)}</span>`:''}</td><td class="n">${esc(fmtMoney(q.currency,c.total))}</td></tr></table>`;
       pane.querySelectorAll('[data-std]').forEach(b=>b.onclick=()=>{ const [a,bb]=b.dataset.std.split(':').map(Number); const l=q.options[a].lines[bb];
         const aud=/per vehicle/.test(l.unit)?'Vehicle':/room/.test(l.unit)?'Other':(l.kind==='Meal'?'Adult':'Adult');
@@ -1144,10 +1145,9 @@ function openQuoteForm(v, q0){
   g('qs').onclick=async()=>{ readOpt(); const err=g('qErr');
     const out={id:q0?q0.id:undefined,title:g('q_title').value.trim(),date_from:g('q_from').value,date_to:g('q_to').value,pax:g('q_pax').value.trim(),units:g('q_units').value.trim(),received_on:g('q_rec').value,valid_until:g('q_valid').value,ref:g('q_ref').value.trim(),status:g('q_status').value,currency:g('q_cur').value,vat:g('q_vat').value,conditions:g('q_cond').value.trim(),private_note:g('q_note').value.trim(),shared:g('q_shared').checked,
       options:q.options.map(o=>({name:o.name,note:o.note,lines:o.lines.filter(l=>l.label||l.price)}))};
-    const bad=out.options.flatMap(o=>o.lines).find(l=>!/^\d+(\.\d+)?$/.test(l.price)||!/^\d+(\.\d+)?$/.test(l.qty)||!/^\d+(\.\d+)?$/.test(l.times));
-    if(bad){ err.innerHTML=`<div class="msg err">Check the numbers on "${esc(bad.label||'a line')}": price, qty and × must be numbers.</div>`; return; }
+    const bad=out.options.flatMap(o=>o.lines).find(l=>(l.price&&!/^\d+(\.\d+)?$/.test(l.price))||!/^\d+(\.\d+)?$/.test(l.qty)||!/^\d+(\.\d+)?$/.test(l.times));
+    if(bad){ err.innerHTML=`<div class="msg err">Check the numbers on "${esc(bad.label||'a line')}": price (if known), qty and × must be numbers.</div>`; return; }
     if(out.date_from&&out.date_to&&out.date_to<out.date_from){ err.innerHTML='<div class="msg err">The end date is before the start date.</div>'; return; }
-    if(!out.options.some(o=>o.lines.length)){ err.innerHTML='<div class="msg err">Add at least one line with a price.</div>'; return; }
     const b=g('qs'); b.disabled=true; b.textContent='Saving…';
     try{ await DB.saveQuote(v.id,out); toast(q0?'Quote saved':'Quote added. You can attach the PDF or email now.'); openDetail(v.id); }
     catch(e){ b.disabled=false; b.textContent='Save quote'; err.innerHTML=`<div class="msg err">${esc(e.message)}</div>`; }
@@ -1234,7 +1234,7 @@ function openPriceForm(v, p, pre, pp){
       <div class="f"><label for="pl_type">Type of price</label><select id="pl_type">${opt([['1','Agent rate (what we pay)'],['0','Public price']], x.is_agent?'1':'0')}</select></div>
       <div class="f" id="ageWrap"><label>Child ages</label><div style="display:flex;gap:6px"><input id="pl_af" inputmode="numeric" value="${esc(x.age_from)}" placeholder="from"><input id="pl_at" inputmode="numeric" value="${esc(x.age_to)}" placeholder="to"></div></div>
       <div class="f"><label>Group size (people)</label><div style="display:flex;gap:6px"><input id="pl_pmin" inputmode="numeric" value="${esc(x.pax_min)}" placeholder="min"><input id="pl_pmax" inputmode="numeric" value="${esc(x.pax_max)}" placeholder="max"></div></div>
-      <div class="f"><label for="pl_price">Price <em>*</em></label><input id="pl_price" inputmode="decimal" value="${esc(x.price)}" placeholder="0"></div>
+      <div class="f"><label for="pl_price">Price</label><input id="pl_price" inputmode="decimal" value="${esc(x.price)}" placeholder="Leave empty if unknown"></div>
       <div class="f"><label for="pl_cur">Currency</label><select id="pl_cur">${opt(['ILS','USD','EUR'],x.currency)}</select></div>
       <div class="f"><label for="pl_vat">VAT</label><select id="pl_vat">${opt(VAT,x.vat)}</select></div>
       <div class="f"><label for="pl_basis">Basis</label><select id="pl_basis">${opt(BASIS,x.basis)}</select></div>
@@ -1255,7 +1255,8 @@ function openPriceForm(v, p, pre, pp){
   w.querySelector('#ps').onclick=async()=>{
     const g=id=>w.querySelector('#'+id).value.trim(); const err=w.querySelector('#plErr');
     const line={id:p?p.id:undefined,label:g('pl_label'),audience:g('pl_aud'),age_from:g('pl_af'),age_to:g('pl_at'),pax_min:g('pl_pmin'),pax_max:g('pl_pmax'),price:g('pl_price').replace(/[,₪$€\s]/g,''),currency:g('pl_cur'),vat:g('pl_vat'),basis:g('pl_basis'),is_agent:g('pl_type')==='1',season:g('pl_season'),source:g('pl_src'),checked_on:g('pl_chk'),note:g('pl_note'),private:S.admin?w.querySelector('#pl_priv').checked:false};
-    if(!/^\d+(\.\d+)?$/.test(line.price)){ err.innerHTML='<div class="msg err">Enter the price as a number, like 360.</div>'; return; }
+    if(line.price && !/^\d+(\.\d+)?$/.test(line.price)){ err.innerHTML='<div class="msg err">Enter the price as a number, like 360, or leave it empty.</div>'; return; }
+    if(!line.price && !line.label){ err.innerHTML='<div class="msg err">Say what the price is for, even if you don\'t know the amount yet.</div>'; return; }
     line.mine = !S.admin && forMe;
     const reason = (S.admin||forMe)?'':g('pl_reason');
     if(!S.admin && !forMe && reason.length<3){ err.innerHTML='<div class="msg err">Add a short reason, like where the price came from.</div>'; return; }
