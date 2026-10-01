@@ -97,6 +97,7 @@ main{max-width:760px;margin:0 auto;padding:16px 16px 110px}
 .btn.danger{background:var(--bad-wash);color:var(--bad)}
 .btn.red{background:#c0392b;color:#fff}
 .btn.upd{width:100%;margin:10px 0 4px;justify-content:center;gap:8px;flex-wrap:wrap}.btn.upd span{font-weight:400;font-size:12.5px;opacity:.9}
+.agentbox a.btn{text-decoration:none}.agentbox{border:1px solid var(--line, #ddd);border-radius:12px;padding:10px 12px;margin:10px 0}.agentbox .ah{margin-bottom:4px}.agentbox p{margin:4px 0 8px;font-size:14px;white-space:pre-wrap}
 .disclaim{font-size:12.5px;line-height:1.45;color:var(--ink-2);background:var(--warn-wash);border-radius:10px;padding:10px 12px;margin:18px 0 12px}
 .btn:disabled{opacity:.5;cursor:default}
 .btn-row{display:flex;gap:8px;flex-wrap:wrap}
@@ -477,6 +478,10 @@ const DB = {
     if(!LIVE){ const d=await DB.detail(vid); (d.res_reports=d.res_reports||[]).unshift({checked,visit_date:visit||'',note:note||'',member_name:S.me.name,created_at:new Date().toISOString(),mine:true}); d.res_answered=true; return; }
     await rpc('reservation_report',{p_vendor:vid,p_checked:checked,p_visit:visit||'',p_note:note||''});
   },
+  async setAgent(vid, link, howto){
+    if(!LIVE){ Object.assign(S.vendors.find(v=>v.id===vid),{agent_link:link,agent_howto:howto}); return; }
+    const r=await rpc('vendor_set_agent',{p_vendor:vid,p_link:link,p_howto:howto}); const i=S.vendors.findIndex(v=>v.id===vid); if(i>=0) S.vendors[i]=Object.assign(S.vendors[i],r); return r;
+  },
   async setSite(vid, parent, reservation){
     if(!LIVE){ const v=S.vendors.find(x=>x.id===vid); v.parent_id=parent||null; v.reservation=reservation||''; return; }
     await rpc('vendor_set_site',{p_id:vid,p_parent:parent||'',p_reservation:reservation||''}); await DB.loadVendors();
@@ -808,6 +813,49 @@ function reqDiff(r){
   return `<div style="overflow-x:auto"><table class="diff"><tr><th>Field</th>${r.kind==='price_add'?'':'<th>Now</th>'}<th>Suggested</th></tr>${keys.map(k=>`<tr><td>${esc(FIELD_LABEL[k]||k)}</td>${r.kind==='price_add'?'':`<td class="old">${esc(show(k,(r.current||{})[k]))}</td>`}<td class="new">${esc(show(k,r.proposed[k]))}</td></tr>`).join('')}</table></div>`;
 }
 const REPORT_KINDS=[['Closed','Closed'],['Moved','Location moved'],['Contact changed','Phone or contact changed'],['Prices changed','Prices changed'],['Mistake','Something here is wrong'],['Other','Other feedback']];
+// Agent prices: how to register with this supplier as an agent, and a ready message to ask them.
+function agentBox(v){
+  const link=v.agent_link? `<a class="btn primary" data-track="agent" data-v="${esc(v.id)}" href="${esc(v.agent_link)}" target="_blank" rel="noopener">Agent sign-up</a>`:'';
+  return `<div class="agentbox"><div class="ah">🔑 <b>Agent prices</b></div>
+    ${v.agent_link||v.agent_howto ? `${v.agent_howto?`<p>${esc(v.agent_howto)}</p>`:''}` : `<p class="hint">No agent sign-up info yet. Ask the supplier how to get listed as an agent, then add the link or instructions here for everyone.</p>`}
+    <div class="btn-row">${link}<button class="btn soft" id="agentAsk" type="button">Ask for agent prices</button><button class="mini" id="agentEdit" type="button">${v.agent_link||v.agent_howto?'Edit':'+ Add link or how-to'}</button></div></div>`;
+}
+function agentMsg(lang){
+  const nm=(S.me&&S.me.name)||''; const role=(S.me&&S.me.role)||'';
+  const he={ 'Licensed tour guide':'מורה דרך מורשה', 'Travel agent':'סוכן נסיעות', 'Tour operator':'מפעיל תיירות' }[role]||'איש מקצוע בתיירות';
+  const en={ 'Licensed tour guide':'a licensed tour guide', 'Travel agent':'a travel agent', 'Tour operator':'a tour operator' }[role]||'a tourism professional';
+  return lang==='he'
+    ? `שלום, אני ${nm}, ${he}, ומביא אליכם קבוצות ומשפחות. איך אפשר להירשם אצלכם כסוכן ולקבל מחירי סוכנים? אם יש קישור או טופס הרשמה, אשמח שתשלחו. תודה!`
+    : `Hello, this is ${nm}, ${en}. I bring groups and families to suppliers like you. How can I register with you as an agent to receive agent prices? If there's a sign-up link or form, I'd be glad if you could send it. Thank you!`;
+}
+function openAgentAsk(v){
+  const ph=firstPhone(v.phone), em=firstEmail(v.email);
+  const mobile=String(v.phone||'').split(/[;,/]/).map(firstPhone).find(p=>/^0?5\d{8}$/.test(p.replace(/^\+?972/,'0')))||'';
+  const wa=firstPhone(v.whatsapp)||mobile;
+  let lang='he';
+  const body=`<p style="margin:0 0 10px;color:var(--ink-2)">Send <b>${esc(v.name)}</b> a ready message asking how to get listed as an agent. It doesn't mention this list.</p>
+    <div class="chips" style="padding-top:0"><button type="button" class="chip" data-lang="he" aria-pressed="true">עברית</button><button type="button" class="chip" data-lang="en" aria-pressed="false">English</button></div>
+    <div class="f wide" style="margin-top:8px"><label for="agTxt">Message (you can edit it)</label><textarea id="agTxt" rows="6" dir="rtl">${esc(agentMsg('he'))}</textarea></div>
+    <p class="hint" style="margin:8px 0 0">When they reply with a link or instructions, tap <b>+ Add link or how-to</b> on the supplier so every colleague can use it.</p>`;
+  const w=sheet('Ask for agent prices', body, `<button class="btn soft" id="agBack" type="button">Back</button>${em?'<button class="btn soft" id="agMail" type="button">Email</button>':''}${wa?'<button class="btn primary" id="agWa" type="button">WhatsApp</button>':''}`);
+  const txt=w.querySelector('#agTxt');
+  w.querySelectorAll('[data-lang]').forEach(b=>b.onclick=()=>{ lang=b.dataset.lang; w.querySelectorAll('[data-lang]').forEach(o=>o.setAttribute('aria-pressed',o===b)); txt.value=agentMsg(lang); txt.dir=lang==='he'?'rtl':'ltr'; });
+  w.querySelector('#agBack').onclick=()=>openDetail(v.id);
+  const b1=w.querySelector('#agWa'); if(b1) b1.onclick=()=>{ track(v.id,'agent_ask'); window.open(`https://wa.me/${intlDigits(wa)}?text=${encodeURIComponent(txt.value)}`,'_blank','noopener'); };
+  const b2=w.querySelector('#agMail'); if(b2) b2.onclick=()=>{ track(v.id,'agent_ask'); const subj=lang==='he'?'הרשמה כסוכן':'Agent registration';
+    location.href=`mailto:${em}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(txt.value)}${bccOn()?'&bcc='+encodeURIComponent(S.me.bcc_email):''}`; };
+  if(!wa && !em) w.querySelector('#agTxt').insertAdjacentHTML('afterend','<div class="msg err" style="margin-top:8px">This supplier has no WhatsApp, mobile or email on the list. Copy the message and send it another way.</div>');
+}
+function openAgentForm(v){
+  const body=`<p style="margin:0 0 10px;color:var(--ink-2)">How colleagues get agent prices at <b>${esc(v.name)}</b>. Everyone on the list will see this.</p>
+    <div class="f wide"><label for="agL">Agent sign-up link</label><input id="agL" type="url" inputmode="url" value="${esc(v.agent_link||'')}" placeholder="https://supplier.co.il/agents"></div>
+    <div class="f wide" style="margin-top:10px"><label for="agH">How to get agent prices</label><textarea id="agH" rows="4" placeholder="Register once with your license, then tick 'I'm an agent' when you book. Agent price is 15% off.">${esc(v.agent_howto||'')}</textarea></div><div id="agErr"></div>`;
+  const w=sheet('Agent prices', body, `<button class="btn soft" id="agC" type="button">Cancel</button><button class="btn primary" id="agS" type="button">Save</button>`);
+  w.querySelector('#agC').onclick=()=>openDetail(v.id);
+  w.querySelector('#agS').onclick=async()=>{ const b=w.querySelector('#agS'); b.disabled=true;
+    try{ await DB.setAgent(v.id, w.querySelector('#agL').value.trim(), w.querySelector('#agH').value.trim()); toast('Saved'); openDetail(v.id); }
+    catch(e){ b.disabled=false; w.querySelector('#agErr').innerHTML=`<div class="msg err">${esc(e.message)}</div>`; } };
+}
 function openReport(v){
   const body=`<p style="margin:0 0 12px;color:var(--ink-2)">Tell Eretz Israel Tours what changed at <b>${esc(v.name)}</b>. It's checked before the list is updated.</p>
     <div class="chips" role="radiogroup" aria-label="What changed" style="padding-top:0;flex-wrap:wrap">${REPORT_KINDS.map(([k,l],i)=>`<button type="button" class="chip" data-rk="${k}" aria-pressed="${i===0}">${l}</button>`).join('')}</div>
@@ -1029,6 +1077,7 @@ function openDetail(id){
     ${contactBar(v)}
     <button class="btn red upd" id="upd" type="button">⚠ Update this supplier <span>closed, moved, wrong details</span></button>
     <div id="resBox"></div>
+    ${agentBox(v)}
     <div id="reqBox"></div>
     <div id="sitesWrap"></div>
     <fieldset><div class="sec-head"><legend>Quotes</legend><button class="mini" id="addQuote" type="button">+ Add quote</button></div><div id="quotesBox"><p class="hint">Loading…</p></div></fieldset>
@@ -1055,6 +1104,8 @@ function openDetail(id){
   S.openVendor=v.name; track(v.id,'open'); if(!S.myTop.includes(v.id)) S.myTop=[...S.myTop,v.id];
   w.querySelector('#edit').onclick=()=>openForm(v);
   w.querySelector('#upd').onclick=()=>openReport(v);
+  const aa=w.querySelector('#agentAsk'); if(aa) aa.onclick=()=>openAgentAsk(v);
+  const ae=w.querySelector('#agentEdit'); if(ae) ae.onclick=()=>openAgentForm(v);
   drawFiles(v);
   drawExtras(v);
   w.querySelector('#addPrice').onclick=async()=>{ let pp=false; try{ pp=(await DB.detail(v.id)).prices_private; }catch(e){} openPriceForm(v,null,null,pp); };
