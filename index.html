@@ -700,8 +700,11 @@ function renderWaiting(){
 function filtered(){
   const q=normN(S.q);
   return S.vendors.filter(v=>(S.cat==='All'||v.category===S.cat) && (S.reg==='All'||(v.region||'')===S.reg) && (S.cat!=='Guide'||!(S.gat||[]).length||S.gat.every(a=>String(v.tags||'').toLowerCase().split(',').map(t=>t.trim()).includes(a.toLowerCase()))) && (!q || normN([v.name,v.location,v.region,v.tags,v.contactPerson,v.category,v.notes].join(' ')).includes(q)))
-    .sort((a,b)=>a.name.localeCompare(b.name));
+    .sort(S.sort==='az' ? (a,b)=>a.name.localeCompare(b.name) : (a,b)=>mixKey(a)-mixKey(b));
 }
+// Mixed order: a shuffle that is different for each person and changes every day, so no supplier sits at the top
+// just because of its name. Stable within the day so the list doesn't jump around while you use it.
+function mixKey(v){ const seed=(S.user&&S.user.email||'')+new Date().toISOString().slice(0,10)+v.id; let h=2166136261; for(let i=0;i<seed.length;i++){ h^=seed.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
 
 function render(){
   const pending = S.vendors.filter(v=>v.review_status==='pending').length + (S.requests||[]).length + (S.admin?(S.feedback||[]).filter(f=>f.status==='New').length+(S.reports||[]).filter(r=>r.status==='New').length:0);
@@ -782,8 +785,10 @@ function viewVendors(){
 }
 function drawList(){
   const rows=filtered(); const box=document.getElementById('results');
+  setTimeout(()=>{ const sb2=document.getElementById('sortBtn'); if(sb2) sb2.onclick=()=>{ S.sort=S.sort==='az'?'mix':'az'; try{ localStorage.setItem('eitv_sort',S.sort); }catch(e){} drawList(); }; });
+  if(!S.sort){ try{ S.sort=localStorage.getItem('eitv_sort')||'mix'; }catch(e){ S.sort='mix'; } }
   if(!S.vendors.length){ box.innerHTML=`<div class="list"><div class="empty"><h3>No suppliers yet</h3>Tap <b>Add supplier</b> to add the first hotel, guide, bus company or site.</div></div>`; return; }
-  box.innerHTML = `<div class="count">${rows.length} of ${S.vendors.length} suppliers</div>` + (rows.length? `<div class="list">${rows.map(v=>`
+  box.innerHTML = `<div class="count" style="display:flex;align-items:center;gap:8px">${rows.length} of ${S.vendors.length} suppliers<span style="flex:1"></span><button class="mini" id="sortBtn" type="button" title="Mixed order changes daily so no supplier always comes first">${S.sort==='az'?'Order: A–Z':'Order: Mixed'}</button></div>` + (rows.length? `<div class="list">${rows.map(v=>`
     <button class="row" data-id="${esc(v.id)}">
       <span class="row-name">${esc(v.name)}</span>
       <span class="row-price">${priceLine(v)}</span>

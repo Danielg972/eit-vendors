@@ -42,3 +42,4 @@ Shared vendor list for Eretz Israel Tours colleagues. Static single-page app (Gi
 - Terms 2026-10-01e: 3a objective feedback, opinions marked, slander = removal; 5 crowdsourced disclaimer. Everyone re-accepts.
 - BCC address: suppliers@eretzisraeltours.com (SiteGround forwarder → daniel@eretzisraeltours.com → Gmail), set in app_settings.bcc_email.
 - Join form: license number optional; "I can't add my license or proof right now" opt-out with a required explanation (stored in the member note as "No proof: …", flagged ⚠ in Team). A license number already used by a pending or approved member is refused (compared ignoring spaces, dashes and case).
+- List order: default "Mixed" — a shuffle that is different for each member and changes daily (stable within the day), so no supplier is always on top because of its name. "Order: A–Z" button switches to alphabetical; the choice is remembered on that device.
