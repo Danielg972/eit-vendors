@@ -238,6 +238,19 @@ textarea.out{width:100%;min-height:160px;font-family:var(--f-mono);font-size:12p
 .check{display:flex;gap:10px;align-items:flex-start;margin:6px 0 14px;font-size:14px}
 .check input{width:20px;height:20px;flex:none;margin-top:1px}
 .linkbtn{border:0;background:none;padding:0;color:var(--olive-2);text-decoration:underline;font:inherit;cursor:pointer}
+.resbar{border:1px solid var(--ochre);background:var(--ochre-wash);border-radius:12px;padding:12px 14px;margin:0 0 16px}
+.resbar b{display:block;margin-bottom:2px}
+.resbar .meta{font-size:13px;color:var(--ink-2)}
+.resbar .btn-row{margin-top:10px}
+.sitelist{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.sitelist button{display:flex;justify-content:space-between;gap:8px;text-align:left;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:10px 12px;font-size:15px}
+.sitelist .hint{white-space:nowrap}
+.parentlink{border:0;background:var(--wash);border-radius:999px;padding:4px 10px;font-size:13px;color:var(--ink-2)}
+.modal{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(10,18,14,.5)}
+.modal-card{background:var(--card);border-radius:16px;max-width:420px;width:100%;padding:20px;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+.modal-card h3{font-family:var(--f-display);font-weight:400;font-size:21px;margin:0 0 8px}
+.modal-card p{margin:0 0 14px;color:var(--ink-2)}
+.modal-card .btn{width:100%;margin-bottom:8px}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(140px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--ground);padding:10px 16px;border-radius:999px;font-size:14px;z-index:40;max-width:calc(100% - 32px)}
 </style>
 <style>
@@ -270,7 +283,7 @@ const LIVE = /(^|\.)github\.io$/.test(location.hostname) || /(^|\.)eretzisraelto
 
 // R5 field order (from itinerary_builder R5 saveVendor)
 const R5_FIELDS = ['name','category','active','contactPerson','phone','whatsapp','email','website','location','languages','kosher','maxCap','listedPrice','listedPriceVatTreatment','agentPrice','agentPriceVatTreatment','maxPax','priceBasis','currency','payTerms','cancelPolicy','cancelNoticeAmount','cancelNoticeUnit','cancelDayType','cancelPenalty','cancelPolicyVerifiedDate','npResLink','rateReliability','rateService','rateValue','strengths','weaknesses','notes'];
-const CATEGORIES = ['Hotel','Guide','Transport','Restaurant','Attraction / Site','Activity','National Park','Flight','Other'];
+const CATEGORIES = ['Hotel','Guide','Transport','Restaurant','Attraction / Site','Activity','National Parks','Flight','Other'];
 const BASIS = ['Per person','Per group','Per vehicle','Per guide','Per hour','Per day','Flat rate','Custom'];
 const VAT = [['','Unknown'],['including_vat','Including VAT'],['plus_vat','Plus VAT'],['not_applicable','VAT not applicable']];
 const CUR_SIGN = {ILS:'₪',USD:'$',EUR:'€'};
@@ -289,7 +302,7 @@ function sample(){
   return [
     v({id:'vendor_k3m9p2x',name:'Golan Heights Jeep Tours',category:'Activity',contactPerson:'Moshe Levi',phone:'+972 52 555 0142',whatsapp:'+972 52 555 0142',location:'Golan Heights',languages:'English, Hebrew',maxCap:'28',listedPrice:'450',listedPriceVatTreatment:'including_vat',agentPrice:'360',agentPriceVatTreatment:'plus_vat',priceBasis:'Per person',payTerms:'Invoice after the tour',cancelPolicy:'Free cancellation up to 72 hours before',cancelNoticeAmount:'72',cancelNoticeUnit:'Hours',cancelPenalty:'Full charge inside 72h',cancelPolicyVerifiedDate:'2026-08-14',rateReliability:'5',rateService:'4',rateValue:'4',strengths:'Punctual, drivers speak good English',notes:'Book 2 weeks ahead in Sukkot'}),
     v({id:'vendor_a81qz0c',name:'Dan Panorama Jerusalem',category:'Hotel',contactPerson:'Group desk',phone:'+972 2 569 5695',email:'groups@example-hotel.co.il',location:'Jerusalem',kosher:'Rabbanut',maxCap:'290',agentPrice:'1150',agentPriceVatTreatment:'not_applicable',priceBasis:'Per group',currency:'USD',payTerms:'30% deposit, balance 14 days before',cancelNoticeAmount:'21',cancelNoticeUnit:'Days',cancelDayType:'Calendar days',rateReliability:'4',rateService:'4',rateValue:'3'}),
-    v({id:'vendor_7tt2w4n',name:'Ein Gedi Nature Reserve',category:'National Park',location:'Dead Sea',npResLink:'https://www.parks.org.il',listedPrice:'33',listedPriceVatTreatment:'including_vat',agentPrice:'29',agentPriceVatTreatment:'including_vat',priceBasis:'Per person',review_status:'pending',created_by:'yossi.guide@gmail.com',updated_by:'yossi.guide@gmail.com',updated_at:d(1)}),
+    v({id:'vendor_7tt2w4n',reservation:'required',name:'Ein Gedi Nature Reserve',category:'National Parks',location:'Dead Sea',npResLink:'https://www.parks.org.il',listedPrice:'33',listedPriceVatTreatment:'including_vat',agentPrice:'29',agentPriceVatTreatment:'including_vat',priceBasis:'Per person',review_status:'pending',created_by:'yossi.guide@gmail.com',updated_by:'yossi.guide@gmail.com',updated_at:d(1)}),
     v({id:'vendor_p0lk5sd',name:'Shomron Bus Lines',category:'Transport',contactPerson:'Avi',phone:'+972 54 000 1234',location:'Ariel',maxCap:'50',agentPrice:'2400',agentPriceVatTreatment:'plus_vat',priceBasis:'Per day',payTerms:'Cash or transfer on the day',rateReliability:'3',review_status:'pending',created_by:'rachel.ops@gmail.com',updated_by:'rachel.ops@gmail.com',updated_at:d(0)}),
     v({id:'vendor_q9x1b7e',name:'Machane Yehuda Food Walk',category:'Activity',location:'Jerusalem',kosher:'Mixed stalls, mostly Rabbanut',agentPrice:'220',priceBasis:'Per person',maxPax:'15',rateService:'5',rateValue:'5',strengths:'Families love it'}),
     v({id:'vendor_z2c8m1v',name:'Ronit Katz',category:'Guide',phone:'+972 50 777 2211',languages:'English, Hebrew, French',agentPrice:'1600',priceBasis:'Per day',active:'Inactive',notes:'On leave until spring'})
@@ -366,7 +379,7 @@ const DB = {
   async loadVendors(){ if(!LIVE) return; try{ S.vendors = await rpc('vendors_list'); }catch(e){ toast('Could not load vendors: '+e.message); } },
   async loadTeam(){ if(!LIVE) return; S.members = await rpc('members_list'); },
   async detail(vid){
-    if(!LIVE){ return S.demo[vid] || (S.demo[vid]={prices:[],deals:[],notes:[],requests:[]}); }
+    if(!LIVE){ return S.demo[vid] || (S.demo[vid]={prices:[],deals:[],notes:[],requests:[],sites:S.vendors.filter(x=>x.parent_id===vid).map(x=>({id:x.id,name:x.name,location:x.location,reservation:x.reservation})),parent:(()=>{const v=S.vendors.find(x=>x.id===vid); const pv=v&&v.parent_id&&S.vendors.find(x=>x.id===v.parent_id); return pv?{id:pv.id,name:pv.name}:null;})(),res_reports:[],res_answered:false}); }
     return await rpc('vendor_detail',{p_id:vid});
   },
   async savePrice(vid, line, reason){
@@ -428,6 +441,14 @@ const DB = {
   async deleteQuote(vid, id){
     if(!LIVE){ S.demoQuotes[vid]=(S.demoQuotes[vid]||[]).filter(x=>x.id!==id); return; }
     await rpc('quote_delete',{p_id:id});
+  },
+  async reportReservation(vid, checked, visit, note){
+    if(!LIVE){ const d=await DB.detail(vid); (d.res_reports=d.res_reports||[]).unshift({checked,visit_date:visit||'',note:note||'',member_name:S.me.name,created_at:new Date().toISOString(),mine:true}); d.res_answered=true; return; }
+    await rpc('reservation_report',{p_vendor:vid,p_checked:checked,p_visit:visit||'',p_note:note||''});
+  },
+  async setSite(vid, parent, reservation){
+    if(!LIVE){ const v=S.vendors.find(x=>x.id===vid); v.parent_id=parent||null; v.reservation=reservation||''; return; }
+    await rpc('vendor_set_site',{p_id:vid,p_parent:parent||'',p_reservation:reservation||''}); await DB.loadVendors();
   },
   async refreshVendor(vid){
     if(!LIVE) return;
@@ -701,7 +722,7 @@ function drawList(){
     <button class="row" data-id="${esc(v.id)}">
       <span class="row-name">${esc(v.name)}</span>
       <span class="row-price">${priceLine(v)}</span>
-      <span class="row-meta"><span class="cat">${esc(v.category)}</span>${v.location?`<span>${esc(v.location)}</span>`:''}${statusPill(v)}${v._prices?`<span class="clip">${v._prices} price${v._prices>1?'s':''}</span>`:''}${v._deals?`<span class="clip">🏷 ${v._deals} deal${v._deals>1?'s':''}</span>`:''}${v._notes?`<span class="clip">💬 ${v._notes}</span>`:''}${v._files?`<span class="clip">📎 ${v._files}</span>`:''}</span>
+      <span class="row-meta"><span class="cat">${esc(v.category)}</span>${v.location?`<span>${esc(v.location)}</span>`:''}${v.reservation==='required'?'<span class="clip">📅 Reserve ahead</span>':''}${statusPill(v)}${v._prices?`<span class="clip">${v._prices} price${v._prices>1?'s':''}</span>`:''}${v._deals?`<span class="clip">🏷 ${v._deals} deal${v._deals>1?'s':''}</span>`:''}${v._notes?`<span class="clip">💬 ${v._notes}</span>`:''}${v._files?`<span class="clip">📎 ${v._files}</span>`:''}</span>
     </button>`).join('')}</div>` : `<div class="list"><div class="empty"><h3>Nothing matches</h3>Try a shorter search or pick “All”.</div></div>`);
   box.querySelectorAll('.row').forEach(r=>r.onclick=()=>openDetail(r.dataset.id));
 }
@@ -745,7 +766,7 @@ function viewReview(){
   document.getElementById('exp').onclick=()=>exportR5(appr);
 }
 function exportR5(list){
-  const vendors = list.map(v=>{ const o={id:v.id}; R5_FIELDS.forEach(k=>o[k]=String(v[k]==null?'':v[k])); return o; });
+  const vendors = list.map(v=>{ const o={id:v.id}; R5_FIELDS.forEach(k=>o[k]=String(v[k]==null?'':v[k])); if(o.category==='National Parks') o.category='National Park'; return o; });
   const file = { _exportFormatVersion:3, _tripVendors:vendors, days:[] };
   const json = JSON.stringify(file,null,2);
   const name = `Israel_suppliers_${new Date().toISOString().slice(0,10)}.json`;
@@ -855,8 +876,11 @@ function openDetail(id){
     ['Experience',rows([['Ratings',rating],['Strengths',esc(v.strengths)],['Weaknesses',esc(v.weaknesses)],['Summary',esc(v.notes)]])]
   ].filter(s=>s[1]);
   const body=`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px"><span class="cat">${esc(v.category)}</span>${v.location?`<span class="hint">${esc(v.location)}</span>`:''}${statusPill(v)}</div>
+    <div id="parentBox"></div>
     ${contactBar(v)}
+    <div id="resBox"></div>
     <div id="reqBox"></div>
+    <div id="sitesWrap"></div>
     <fieldset><div class="sec-head"><legend>Quotes</legend><button class="mini" id="addQuote" type="button">+ Add quote</button></div><div id="quotesBox"><p class="hint">Loading…</p></div></fieldset>
     <fieldset><div class="sec-head"><legend>Standard prices</legend><button class="mini" id="addPrice" type="button">+ Add price</button></div>
       ${S.admin?`<label class="switch" for="ppToggle" style="margin-bottom:10px"><input id="ppToggle" type="checkbox" ${v.prices_private?'checked':''}><span><b>Keep this supplier's prices private</b><br><span class="hint">Colleagues still see the supplier and contacts, but no prices. You can also mark single price lines private.</span></span></label>`:''}
@@ -866,6 +890,7 @@ function openDetail(id){
       <div class="addline"><textarea id="noteText" rows="1" placeholder="Add a tip, warning or update…"></textarea><button class="btn primary" id="noteAdd" type="button">Add</button></div>
       <div id="notesBox"></div></fieldset>
     <fieldset><legend>Photos, receipts and PDFs</legend><div id="filesBox"><p class="hint">Loading files…</p></div></fieldset>
+    <div id="siteSettings"></div>
     ${S.admin?`<fieldset><legend>Private note · only you see this</legend><div class="f wide"><textarea id="adminNote" rows="5" placeholder="Clients, trips, commissions, anything colleagues shouldn't see"></textarea></div><div class="btn-row" style="margin-top:8px"><button class="mini" id="adminNoteSave" type="button">Save private note</button></div></fieldset>`:''}
     ${sections.map(([h,dl])=>`<fieldset><legend>${h}</legend><dl class="dl">${dl}</dl></fieldset>`).join('')}
     <p class="stamp">Added by ${esc(who(v.created_by))} on ${fmtDate(v.created_at)}. Last changed by ${esc(who(v.updated_by))} on ${fmtDate(v.updated_at)}. <span class="idtag">${esc(v.id)}</span></p>`;
@@ -927,6 +952,7 @@ function drawExtrasRest(v,det){
   nb.innerHTML = det.notes.length ? det.notes.map(n=>`<div class="note"><span class="meta"><b>${esc(n.author_name||n.author)}</b> · ${fmtDate(n.created_at)}${S.admin||n.author===me?` · <button class="mini" style="padding:1px 8px" data-ndel="${esc(n.id)}" type="button">Delete</button>`:''}</span><p>${esc(n.body)}</p></div>`).join('')
     : `<p class="hint" style="margin:0">No notes yet.</p>`;
   nb.querySelectorAll('[data-ndel]').forEach(b=>b.onclick=async()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again'; return; } try{ await DB.deleteNote(v.id,b.dataset.ndel); drawExtras(v); }catch(e){ toast(e.message); } });
+  drawSiteBits(v,det);
   const an=document.getElementById('adminNote');
   if(an){ an.value=det.admin_note||''; const b=document.getElementById('adminNoteSave'); b.onclick=async()=>{ try{ await DB.saveAdminNote(v.id, an.value); toast('Private note saved'); }catch(e){ toast(e.message); } }; }
   const rb=document.getElementById('reqBox');
@@ -1117,6 +1143,64 @@ function openQuoteForm(v, q0){
   };
 }
 
+const RES_LABEL={required:'Reservation officially required',recommended:'Reservation recommended',not_needed:'No reservation needed'};
+function resSummary(reps){
+  const real=reps.filter(r=>r.checked!=='unsure'); if(!real.length) return 'No one has reported yet.';
+  const yes=real.filter(r=>r.checked==='yes').length, no=real.length-yes, last=real[0];
+  return `Colleagues reported: ${yes} checked, ${no} not checked. Last: ${last.visit_date||fmtDate(last.created_at)}, ${esc(last.member_name||'a colleague')}: ${last.checked==='yes'?'they checked':'not checked'}.`;
+}
+function drawSiteBits(v,det){
+  const pb=document.getElementById('parentBox');
+  if(pb) pb.innerHTML = det.parent ? `<p style="margin:-4px 0 12px"><button class="parentlink" type="button" id="goParent">Part of ${esc(det.parent.name)} ›</button></p>` : '';
+  const gp=document.getElementById('goParent'); if(gp) gp.onclick=()=>openDetail(det.parent.id);
+  const rb=document.getElementById('resBox');
+  if(rb){
+    if(v.reservation){
+      rb.innerHTML=`<div class="resbar"><b>📅 ${esc(RES_LABEL[v.reservation])}</b>
+        ${v.reservation!=='not_needed'?`<span class="meta">${resSummary(det.res_reports||[])}</span>
+        <div class="btn-row"><span class="meta" style="align-self:center">Your last visit:</span><button class="mini" type="button" data-res="yes">They checked</button><button class="mini" type="button" data-res="no">Not checked</button></div>`:''}
+        ${v.npResLink?`<p class="meta" style="margin:8px 0 0"><a href="${esc(v.npResLink)}" target="_blank" rel="noopener">Book a visit</a></p>`:''}</div>`;
+      rb.querySelectorAll('[data-res]').forEach(b=>b.onclick=async()=>{ try{ await DB.reportReservation(v.id,b.dataset.res,today()); toast('Thanks, noted'); drawExtras(v); }catch(e){ toast(e.message); } });
+    } else rb.innerHTML='';
+  }
+  const sw=document.getElementById('sitesWrap'); if(!sw) return;
+  const sites=det.sites||[];
+  if(sites.length || (S.admin && v.category==='National Parks' && !v.parent_id)){
+    sw.innerHTML=`<fieldset><div class="sec-head"><legend>Sites</legend>${S.admin?'<button class="mini" id="addSite" type="button">+ Add site</button>':''}</div>
+      ${sites.length?`<div class="sitelist">${sites.map(x=>`<button type="button" data-site="${esc(x.id)}"><span>${esc(x.name)}${x.location?`<br><span class="hint">${esc(x.location)}</span>`:''}</span><span class="hint">${x.reservation==='required'?'📅 Reserve':''} ›</span></button>`).join('')}</div>`:'<p class="hint" style="margin:0 0 10px">No sites yet.</p>'}</fieldset>`;
+    sw.querySelectorAll('[data-site]').forEach(b=>b.onclick=()=>openDetail(b.dataset.site));
+    const as=sw.querySelector('#addSite'); if(as) as.onclick=()=>openForm(null,{category:v.category,parent_id:v.id,reservation:v.reservation,location:'',website:v.website});
+  } else sw.innerHTML='';
+  // site settings for admin
+  const ss=document.getElementById('siteSettings');
+  if(ss && S.admin){
+    const parents=S.vendors.filter(x=>x.id!==v.id && !x.parent_id && (x.category===v.category||x.id===v.parent_id));
+    ss.innerHTML=`<fieldset><legend>Site settings · only you</legend><div class="grid">
+      <div class="f"><label for="ss_parent">Part of</label><select id="ss_parent"><option value="">Nothing (stand-alone)</option>${parents.map(x=>`<option value="${esc(x.id)}"${x.id===v.parent_id?' selected':''}>${esc(x.name)}</option>`).join('')}</select></div>
+      <div class="f"><label for="ss_res">Reservation</label><select id="ss_res">${[['','Not set'],['required','Officially required'],['recommended','Recommended'],['not_needed','Not needed']].map(([k,t])=>`<option value="${k}"${k===(v.reservation||'')?' selected':''}>${t}</option>`).join('')}</select></div>
+      </div><div class="btn-row" style="margin-top:8px"><button class="mini" id="ss_save" type="button">Save site settings</button></div></fieldset>`;
+    ss.querySelector('#ss_save').onclick=async()=>{ try{ await DB.setSite(v.id, ss.querySelector('#ss_parent').value, ss.querySelector('#ss_res').value); toast('Saved'); openDetail(v.id); }catch(e){ toast(e.message); } };
+  }
+  // one-time pop-up
+  if(v.reservation==='required' && !det.res_answered){
+    let skip=false; try{ skip=localStorage.getItem('eitv_res_'+v.id)==='later'; }catch(e){}
+    if(!skip) setTimeout(()=>resPopup(v),350);
+  }
+}
+function resPopup(v){
+  if(document.getElementById('resModal')) return;
+  const m=document.createElement('div'); m.className='modal'; m.id='resModal';
+  m.innerHTML=`<div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="rmT"><h3 id="rmT">📅 Reservation needed?</h3>
+    <p>${esc(v.name)} officially requires booking a visit in advance. Last time you went, did they actually check your reservation?</p>
+    <button class="btn primary" data-a="yes" type="button">Yes, they checked</button>
+    <button class="btn soft" data-a="no" type="button">No, we walked in</button>
+    <button class="btn soft" data-a="later" type="button">I haven't been there yet</button></div>`;
+  document.body.appendChild(m);
+  m.querySelectorAll('[data-a]').forEach(b=>b.onclick=async()=>{ const a=b.dataset.a; m.remove();
+    if(a==='later'){ try{ localStorage.setItem('eitv_res_'+v.id,'later'); }catch(e){} toast('OK. Book ahead to be safe.'); return; }
+    try{ await DB.reportReservation(v.id,a,''); toast('Thanks, that helps everyone'); drawExtras(v); }catch(e){ toast(e.message); } });
+}
+
 function openReasonSheet(title, prompt, onSend){
   const w=sheet(title, `<div class="f wide"><label for="rsn">${esc(prompt)}</label><textarea id="rsn" rows="3" placeholder="e.g. new price list from the supplier, see the receipt I attached"></textarea></div><div id="rsnErr"></div>`,
     `<button class="btn soft" id="rc" type="button">Cancel</button><button class="btn primary" id="rs" type="button">Send for approval</button>`);
@@ -1226,8 +1310,8 @@ async function drawFiles(v, qid, boxId, canAdd){
   };
 }
 
-function openForm(v){
-  const x = Object.assign(blank(), {active:'Active',priceBasis:'Per person',currency:'ILS',category:''}, v||{});
+function openForm(v, preset){
+  const x = Object.assign(blank(), {active:'Active',priceBasis:'Per person',currency:'ILS',category:''}, v||preset||{});
   const guarded = !!v && !S.admin; const lk=k=>guarded && LOCKED.includes(k) ? ' <span class="lock">🔒</span>' : '';
   const inp=(k,label,type='text',ph='',wide=false,req=false)=>`<div class="f${wide?' wide':''}"><label for="f_${k}">${label}${req?' <em>*</em>':''}${lk(k)}</label><input id="f_${k}" name="${k}" type="${type}" value="${esc(x[k])}" placeholder="${esc(ph)}"${type==='number'?' inputmode="decimal" min="0" step="any"':''}${type==='tel'?' inputmode="tel"':''}></div>`;
   const sel=(k,label,opts,wide=false,req=false)=>`<div class="f${wide?' wide':''}"><label for="f_${k}">${label}${req?' <em>*</em>':''}${lk(k)}</label><select id="f_${k}" name="${k}">${opts.map(o=>{const [val,t]=Array.isArray(o)?o:[o,o];return `<option value="${esc(val)}"${String(x[k])===val?' selected':''}>${esc(t)}</option>`}).join('')}</select></div>`;
@@ -1240,7 +1324,7 @@ function openForm(v){
       <div id="dupBox" class="f wide" hidden></div>
       ${sel('category','Category',[['','Choose…'],...CATEGORIES],false,true)}
       ${sel('active','Status',['Active','Inactive'])}
-      <div class="f wide" id="npWrap" ${x.category==='National Park'?'':'hidden'}><label for="f_npResLink">National park booking link</label><input id="f_npResLink" name="npResLink" type="url" value="${esc(x.npResLink)}" placeholder="https://booking.parks.org.il/…"></div>
+      <div class="f wide" id="npWrap" ${x.category==='National Parks'?'':'hidden'}><label for="f_npResLink">National park booking link</label><input id="f_npResLink" name="npResLink" type="url" value="${esc(x.npResLink)}" placeholder="https://booking.parks.org.il/…"></div>
     </div></fieldset>
     <fieldset><legend>Contact</legend><div class="grid">
       ${inp('contactPerson','Contact person','text','Moshe Cohen')}${inp('phone','Phone','tel','+972 52 000 0000')}${inp('whatsapp','WhatsApp','tel','+972 52 000 0000')}
@@ -1269,7 +1353,7 @@ function openForm(v){
   const w=sheet(v?(guarded?'Edit or suggest a change':'Edit supplier'):'New supplier', body, foot);
   const f=w.querySelector('#vf');
   w.querySelector('#cancel').onclick=closeSheet;
-  f.querySelector('#f_category').addEventListener('change',e=>{ f.querySelector('#npWrap').hidden = e.target.value!=='National Park'; });
+  f.querySelector('#f_category').addEventListener('change',e=>{ f.querySelector('#npWrap').hidden = e.target.value!=='National Parks'; });
   f.querySelectorAll('.stars').forEach(g=>g.addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; const hid=f.querySelector('#f_'+g.dataset.k);
     const val = hid.value===b.dataset.n?'':b.dataset.n; hid.value=val; g.querySelectorAll('button').forEach(o=>o.setAttribute('aria-pressed', o.dataset.n===val)); }));
   const dupCheck=()=>{ const n=normN(f.querySelector('#f_name').value); const box=f.querySelector('#dupBox');
@@ -1279,7 +1363,7 @@ function openForm(v){
   f.querySelector('#f_name').addEventListener('input',dupCheck); dupCheck();
   w.querySelector('#saveBtn').onclick=async()=>{
     const data = v?{id:v.id}:{}; R5_FIELDS.forEach(k=>{ const el=f.querySelector('#f_'+k); data[k]= el?el.value:(x[k]||''); });
-    if(data.category!=='National Park') data.npResLink = x.npResLink||data.npResLink||'';
+    if(data.category!=='National Parks') data.npResLink = x.npResLink||data.npResLink||'';
     const err=f.querySelector('#formErr');
     const probs=[]; if(!data.name.trim()) probs.push('Add the supplier name.'); if(!data.category) probs.push('Choose a category.');
     if(!v && dupCheck()) probs.push('This supplier is already on the list. Open it and edit it instead.');
@@ -1287,7 +1371,7 @@ function openForm(v){
       if(changed.length && reason.length<3) probs.push('You changed '+changed.map(k=>FIELD_LABEL[k]||k).join(', ')+'. Say briefly why, at the bottom.'); }
     if(probs.length){ err.innerHTML=`<div class="msg err">${probs.join(' ')}</div>`; err.scrollIntoView({block:'center'}); return; }
     const btn=w.querySelector('#saveBtn'); btn.disabled=true; btn.textContent='Saving…';
-    try{ const saved=await DB.save(data, reason); closeSheet(); S.tab='vendors'; render();
+    try{ const saved=await DB.save(data, reason); if(!v && preset && preset.parent_id && S.admin){ try{ await DB.setSite(saved.id, preset.parent_id, preset.reservation||''); }catch(e){} } closeSheet(); S.tab='vendors'; render();
       if(!v){ openDetail(saved.id); toast(S.admin?'Supplier added. You can add prices, deals and photos now.':'Added. It will be reviewed. You can add prices and photos now.'); }
       else { openDetail(saved.id); toast(saved._request?'Saved. Your 🔒 changes were sent for approval.':'Saved'); } }
     catch(e){ btn.disabled=false; btn.textContent=v?'Save changes':'Add supplier'; err.innerHTML=`<div class="msg err">Couldn't save: ${esc(e.message)}</div>`; }
