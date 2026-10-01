@@ -23,7 +23,7 @@
 | Agreed boundary | D-1: the Vendor Master holds supplier identity and dated reference prices; the Cockpit holds trip-applied prices. Any later link is one-way, on Daniel's click, and snapshots the price into the trip. |
 | Supplier identity contract | Not written yet. It is the first integration step, after v4.97 is deployed and v4.98 is closed, and needs separate authorisation. |
 | Fields the Cockpit could later read | `vendors` (id, name, category, also_categories, contacts, region, location, maps_link); `vendor_prices` (label, audience, price, currency, vat, basis, is_agent, source, checked_on, updated_at, private, owner) |
-| R5 export | Frozen, legacy backup only. Not round-tripped; IDs don't match R5; importing clears R5's trip view. |
+| R5 export | Frozen, legacy backup only (owner: no active R5 use). Not round-tripped; IDs don't match R5; importing clears R5's trip view. |
 
 ## Data (counts worth watching)
 
@@ -51,4 +51,4 @@
 
 ## Changes that would affect the Cockpit (log)
 
-- 2026-10-01: D-1 boundary approved. R5 export frozen. No integration-facing schema changes made.
+- 2026-10-01: D-1 boundary approved and confirmed in the owner's own words (16:27). R5 export frozen; owner has no active R5 use. No integration-facing schema changes made.
