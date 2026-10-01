@@ -95,6 +95,9 @@ main{max-width:760px;margin:0 auto;padding:16px 16px 110px}
 .btn.accent{background:var(--ochre);color:#1b1206}
 .btn.soft{background:var(--wash);color:var(--ink)}
 .btn.danger{background:var(--bad-wash);color:var(--bad)}
+.btn.red{background:#c0392b;color:#fff}
+.btn.upd{width:100%;margin:10px 0 4px;justify-content:center;gap:8px;flex-wrap:wrap}.btn.upd span{font-weight:400;font-size:12.5px;opacity:.9}
+.disclaim{font-size:12.5px;line-height:1.45;color:var(--ink-2);background:var(--warn-wash);border-radius:10px;padding:10px 12px;margin:18px 0 12px}
 .btn:disabled{opacity:.5;cursor:default}
 .btn-row{display:flex;gap:8px;flex-wrap:wrap}
 
@@ -301,14 +304,15 @@ const LIVE = /(^|\.)github\.io$/.test(location.hostname) || /(^|\.)eretzisraelto
 // R5 field order (from itinerary_builder R5 saveVendor)
 const R5_FIELDS = ['name','category','active','contactPerson','phone','whatsapp','email','website','location','languages','kosher','maxCap','listedPrice','listedPriceVatTreatment','agentPrice','agentPriceVatTreatment','maxPax','priceBasis','currency','payTerms','cancelPolicy','cancelNoticeAmount','cancelNoticeUnit','cancelDayType','cancelPenalty','cancelPolicyVerifiedDate','npResLink','rateReliability','rateService','rateValue','strengths','weaknesses','notes'];
 const CATEGORIES = ['Hotel','Guide','Transport','Restaurant','Attraction / Site','Activity','Adventure','National Parks','Travel Agent','Itinerary Planner','Flight','Other'];
-const EXTRA_FIELDS = ['region','tags'];
+const EXTRA_FIELDS = ['region','tags','experience_years'];
+const GUIDE_ATTRS = ['Eshkol license','Owns an Eshkol vehicle','Midbari (desert guide)','Carries a gun'];
 const REGIONS = ['Jerusalem','Gush Etzion & Judea','Binyamin & Shomron','Dead Sea & Judean Desert','Negev & Arava','Eilat','Tel Aviv & Center','Shfela','Haifa & Coast','Galilee','Golan','Countrywide'];
 const TAG_SUGGEST = {Adventure:['Jeep','ATV / RZR','Rappelling','Kayak & rafting','Zipline','Boat','Snorkelling','Bikes','Horse riding','Camels','Shooting'],
   Activity:['Workshop','Food & wine','Volunteering','Archaeology','Family','Shooting','Farm'],
   Hotel:['Kosher','Shabbat-friendly','Kibbutz','Boutique','Pool'],
   Transport:['Minibus','Midibus','Coach','Armoured bus','Van','Airport transfers'],
   Restaurant:['Meat','Dairy','Mehadrin','Group menus','Winery'],
-  Guide:['English','French','Spanish','Russian','Driver-guide'],
+  Guide:['Eshkol license','Owns an Eshkol vehicle','Midbari (desert guide)','Carries a gun','Driver-guide','English','French','Spanish','Russian'],
   'Travel Agent':['Hotel bookings','Flights','Packages','Groups','Commission'],
   'Itinerary Planner':['Full trip planning','Day trips','Groups','Families','Bar/bat mitzvah']};
 const BASIS = ['Per person','Per group','Per vehicle','Per guide','Per hour','Per day','Flat rate','Custom'];
@@ -401,7 +405,7 @@ const DB = {
     if(error) throw new Error(error.message);
     S.me = data; S.user = data?{email:data.email}:null;
     S.contributor = !!(data && data.status==='approved'); S.admin = !!(data && data.is_admin && S.contributor);
-    if(S.contributor){ await DB.loadVendors(); try{ await DB.loadFeedback(); }catch(e){} if(S.admin){ await DB.loadTeam(); try{ await DB.loadRequests(); }catch(e){} } }
+    if(S.contributor){ await DB.loadVendors(); try{ await DB.loadFeedback(); }catch(e){} if(S.admin){ await DB.loadTeam(); try{ await DB.loadRequests(); }catch(e){} try{ await DB.loadReports(); }catch(e){} } }
   },
   async loadVendors(){ if(!LIVE) return; try{ S.vendors = await rpc('vendors_list'); }catch(e){ toast('Could not load vendors: '+e.message); } try{ S.myTop = await rpc('my_top'); }catch(e){ S.myTop=[]; } },
   async loadTeam(){ if(!LIVE) return; S.members = await rpc('members_list'); },
@@ -480,6 +484,18 @@ const DB = {
   async refreshVendor(vid){
     if(!LIVE) return;
     try{ const all = await rpc('vendors_list'); S.vendors = all; }catch(e){}
+  },
+  async loadReports(){
+    if(!LIVE){ S.reports=S.reports||[]; return S.reports; }
+    S.reports = await rpc('vendor_reports_list'); return S.reports;
+  },
+  async reportVendor(vid, kind, message, anon){
+    if(!LIVE){ const v=S.vendors.find(x=>x.id===vid); (S.reports=S.reports||[]).unshift({id:'r'+Date.now(),vendor_id:vid,vendor_name:v?v.name:'',kind,message,anonymous:anon,author_name:anon?'':S.me.name,status:'New',created_at:new Date().toISOString()}); return; }
+    await rpc('report_vendor',{p_vendor:vid,p_kind:kind,p_message:message,p_anonymous:!!anon});
+  },
+  async setReport(id, status){
+    if(!LIVE){ S.reports.find(r=>r.id===id).status=status; return; }
+    await rpc('vendor_report_set',{p_id:id,p_status:status}); await DB.loadReports();
   },
   async loadRequests(){
     if(!LIVE){ S.requests=S.demoRequests; return S.requests; }
@@ -589,13 +605,14 @@ function linkBox(id, url){
 function wireCopy(root){ root.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>{ const i=root.querySelector('#'+b.dataset.copy); copyText(i.value,i); }); }
 
 const ROLES=['Licensed tour guide','Travel agent','Tour operator','Other'];
-const TERMS_VERSION='2026-10-01d';
+const TERMS_VERSION='2026-10-01e';
 const TERMS_HTML=`<p class="hint">Version ${TERMS_VERSION}. Plain-language summary. Draft: not yet reviewed by a lawyer.</p>
 <h4>1. Who runs this</h4><p>The Israel Suppliers Master List is run by Eretz Israel Tours, which approves members and manages the list.</p>
 <h4>2. Who can join</h4><p>Licensed tour guides, travel agents, tour operators and other travel professionals approved by Eretz Israel Tours. You confirm the details and license you submit are yours and true. Eretz Israel Tours can decline, pause or remove access at any time.</p>
 <h4>3. What you share</h4><p>Share supplier information you believe is accurate and that you're allowed to share. Don't post personal member codes, card or bank details, or personal details of your clients. Be fair in ratings and notes: describe your own experience.</p>
+<h4>3a. Fair, objective feedback</h4><p>Feedback, ratings, notes and supplier updates must be objective and factual. When something is your personal or subjective opinion, say so clearly (for example "In my opinion…").</p><p><b>Slandering or running down a colleague, competitor, supplier or anyone else, in any form, is grounds for being removed from the service.</b> Reports sent anonymously are not shown with your name, but are kept on record so this rule can be enforced.</p>
 <h4>4. How you use it</h4><p>Use the list for your own professional work. Keep your personal link to yourself, and don't copy, resell or publish the list.</p><p><b>Never show the list to suppliers.</b> Don't show suppliers the app, screenshots, prices, notes or ratings from it. Anyone who does will lose access immediately.</p>
-<h4>5. Prices are a guide</h4><p>Prices, terms and contacts come from colleagues and can change. Always confirm with the supplier before booking. Eretz Israel Tours isn't responsible for information shared by members or for suppliers' services.</p>
+<h4>5. Crowdsourced: no responsibility for mistakes</h4><p>This is a crowdsourced list built by colleagues. Eretz Israel Tours takes no responsibility for mistakes, missing or out-of-date information. Please take great care when you add or change anything, and if you see a mistake, let us know with the <b>Update this supplier</b> button or the Feedback box. Prices, terms and contacts come from colleagues and can change. Always confirm with the supplier before booking. Eretz Israel Tours isn't responsible for information shared by members or for suppliers' services.</p>
 <h4>6. Your data and privacy</h4><p>We store your name, email, phone, role, license number and license photo, what you add, when you last used the app, and which supplier contact buttons you tap (call, WhatsApp, email, website, maps and booking links), with the time. Colleagues see your name next to what you add. Your license photo is visible only to Eretz Israel Tours.</p><p><b>Eretz Israel Tours can see everything in the app, including items marked "private".</b> "Private" means hidden from other colleagues, not from Eretz Israel Tours.</p><p>Data is stored with Supabase (servers in Frankfurt, EU) and the app is hosted on GitHub Pages. You can ask Eretz Israel Tours at any time to see, correct or delete your data and account.</p>
 <h4>6a. Email copies</h4><p><b>When you email a supplier with the app's Email button, Eretz Israel Tours is added as a BCC to help keep prices, bookings and supplier details up to date for everyone. You can see and remove it in each email, and you can opt out at any time under My settings.</b> WhatsApp messages and calls are not copied; the app only records that you tapped the button.</p>
 <h4>7. Sponsored content</h4><p>If supplier offers or promotions are ever paid for, they will be clearly labelled as sponsored. Ratings and notes are never for sale.</p>
@@ -676,12 +693,12 @@ function renderWaiting(){
 
 function filtered(){
   const q=normN(S.q);
-  return S.vendors.filter(v=>(S.cat==='All'||v.category===S.cat) && (S.reg==='All'||(v.region||'')===S.reg) && (!q || normN([v.name,v.location,v.region,v.tags,v.contactPerson,v.category,v.notes].join(' ')).includes(q)))
+  return S.vendors.filter(v=>(S.cat==='All'||v.category===S.cat) && (S.reg==='All'||(v.region||'')===S.reg) && (S.cat!=='Guide'||!(S.gat||[]).length||S.gat.every(a=>String(v.tags||'').toLowerCase().split(',').map(t=>t.trim()).includes(a.toLowerCase()))) && (!q || normN([v.name,v.location,v.region,v.tags,v.contactPerson,v.category,v.notes].join(' ')).includes(q)))
     .sort((a,b)=>a.name.localeCompare(b.name));
 }
 
 function render(){
-  const pending = S.vendors.filter(v=>v.review_status==='pending').length + (S.requests||[]).length + (S.admin?(S.feedback||[]).filter(f=>f.status==='New').length:0);
+  const pending = S.vendors.filter(v=>v.review_status==='pending').length + (S.requests||[]).length + (S.admin?(S.feedback||[]).filter(f=>f.status==='New').length+(S.reports||[]).filter(r=>r.status==='New').length:0);
   const waiting = S.members.filter(m=>m.status==='pending').length;
   const tabs = [['vendors','Suppliers',icons.list]];
   if(S.admin){ tabs.push(['review','Review',icons.check]); tabs.push(['team','Team',icons.people]); }
@@ -700,7 +717,7 @@ function render(){
   const ro=document.getElementById('ruleOk'); if(ro) ro.onclick=async()=>{ S.me.reminder_due=false; render(); if(LIVE){ try{ await sb.rpc('ack_reminder',{p_token:S.token}); }catch(e){} } };
   const so=document.getElementById('signOut'); if(so) so.onclick=()=>{ if(so.dataset.c!=='1'){ so.dataset.c='1'; so.textContent='Tap again. You\'ll need your link to return.'; return; } forgetToken(); boot(); };
   app.querySelectorAll('.tab').forEach(t=>t.onclick=async()=>{ S.tab=t.dataset.tab; render();
-    if(LIVE && S.tab==='review'){ try{ await DB.loadVendors(); await DB.loadRequests(); await DB.loadFeedback(); render(); }catch(e){} }
+    if(LIVE && S.tab==='review'){ try{ await DB.loadVendors(); await DB.loadRequests(); await DB.loadFeedback(); try{ await DB.loadReports(); }catch(e){} render(); }catch(e){} }
     if(LIVE && S.tab==='team'){ try{ await DB.loadTeam(); render(); }catch(e){} } });
   const add=document.getElementById('add'); if(add) add.onclick=()=>openForm(null);
   ({vendors:viewVendors, review:viewReview, team:viewTeam})[S.tab]();
@@ -720,6 +737,7 @@ function viewVendors(){
     <div class="sug-list" id="sugList" role="listbox" hidden></div></div>
     <div class="chips" role="group" aria-label="Filter by category">${cats.map(c=>`<button class="chip" data-cat="${esc(c)}" aria-pressed="${S.cat===c}">${esc(c)}</button>`).join('')}</div>
     <div class="chips" role="group" aria-label="Filter by region" style="padding-top:2px">${['All',...[...new Set(REGIONS.filter(r=>S.vendors.some(v=>v.region===r)).concat(S.vendors.map(v=>v.region).filter(r=>r&&!REGIONS.includes(r))))]].map(r=>`<button class="chip" data-reg="${esc(r)}" aria-pressed="${S.reg===r}">${r==='All'?'📍 All regions':esc(r)}</button>`).join('')}</div>
+    ${S.cat==='Guide'?`<div class="chips" role="group" aria-label="Guide details" style="padding-top:2px">${GUIDE_ATTRS.map(a=>`<button class="chip" data-gat="${esc(a)}" aria-pressed="${(S.gat||[]).includes(a)}">${(S.gat||[]).includes(a)?'✓ ':''}${esc(a)}</button>`).join('')}</div>`:''}
     <div id="favBox"></div>
     <div id="results"></div>`;
   const favs=(S.myTop||[]).map(id=>S.vendors.find(v=>v.id===id)).filter(Boolean).slice(0,8);
@@ -753,6 +771,7 @@ function viewVendors(){
   q.addEventListener('blur',()=>setTimeout(close,120));
   view.querySelectorAll('[data-cat]').forEach(c=>c.onclick=()=>{S.cat=c.dataset.cat; viewVendors();});
   view.querySelectorAll('[data-reg]').forEach(c=>c.onclick=()=>{S.reg=c.dataset.reg; viewVendors();});
+  view.querySelectorAll('[data-gat]').forEach(c=>c.onclick=()=>{ const a=c.dataset.gat; S.gat=(S.gat||[]).includes(a)?S.gat.filter(x=>x!==a):[...(S.gat||[]),a]; viewVendors(); });
   drawList();
 }
 function drawList(){
@@ -762,7 +781,7 @@ function drawList(){
     <button class="row" data-id="${esc(v.id)}">
       <span class="row-name">${esc(v.name)}</span>
       <span class="row-price">${priceLine(v)}</span>
-      <span class="row-meta"><span class="cat">${esc(v.category)}</span>${v.region||v.location?`<span>${esc(v.region||v.location)}</span>`:''}${v.tags?`<span class="hint">${esc(v.tags)}</span>`:''}${v.reservation==='required'?'<span class="clip">📅 Reserve ahead</span>':''}${statusPill(v)}${v._prices?`<span class="clip">${v._prices} price${v._prices>1?'s':''}</span>`:''}${v._deals?`<span class="clip">🏷 ${v._deals} deal${v._deals>1?'s':''}</span>`:''}${v._notes?`<span class="clip">💬 ${v._notes}</span>`:''}${v._files?`<span class="clip">📎 ${v._files}</span>`:''}</span>
+      <span class="row-meta"><span class="cat">${esc(v.category)}</span>${v.region||v.location?`<span>${esc(v.region||v.location)}</span>`:''}${v.tags?`<span class="hint">${esc(v.tags)}</span>`:''}${v.category==='Guide'&&v.experience_years?`<span class="hint">${esc(v.experience_years)} yrs</span>`:''}${v.reservation==='required'?'<span class="clip">📅 Reserve ahead</span>':''}${statusPill(v)}${v._prices?`<span class="clip">${v._prices} price${v._prices>1?'s':''}</span>`:''}${v._deals?`<span class="clip">🏷 ${v._deals} deal${v._deals>1?'s':''}</span>`:''}${v._notes?`<span class="clip">💬 ${v._notes}</span>`:''}${v._files?`<span class="clip">📎 ${v._files}</span>`:''}</span>
     </button>`).join('')}</div>` : `<div class="list"><div class="empty"><h3>Nothing matches</h3>Try a shorter search or pick “All”.</div></div>`);
   box.querySelectorAll('.row').forEach(r=>r.onclick=()=>openDetail(r.dataset.id));
 }
@@ -774,12 +793,38 @@ function reqDiff(r){
   const keys = r.kind==='vendor_fields' ? Object.keys(r.proposed||{}) : Object.keys(r.proposed||{}).filter(k=>r.kind==='price_add' ? (r.proposed[k]!=='' && r.proposed[k]!=null) : String((r.current||{})[k]??'')!==String(r.proposed[k]??''));
   return `<div style="overflow-x:auto"><table class="diff"><tr><th>Field</th>${r.kind==='price_add'?'':'<th>Now</th>'}<th>Suggested</th></tr>${keys.map(k=>`<tr><td>${esc(FIELD_LABEL[k]||k)}</td>${r.kind==='price_add'?'':`<td class="old">${esc(show(k,(r.current||{})[k]))}</td>`}<td class="new">${esc(show(k,r.proposed[k]))}</td></tr>`).join('')}</table></div>`;
 }
+const REPORT_KINDS=[['Closed','Closed'],['Moved','Location moved'],['Contact changed','Phone or contact changed'],['Prices changed','Prices changed'],['Mistake','Something here is wrong'],['Other','Other feedback']];
+function openReport(v){
+  const body=`<p style="margin:0 0 12px;color:var(--ink-2)">Tell Eretz Israel Tours what changed at <b>${esc(v.name)}</b>. It's checked before the list is updated.</p>
+    <div class="chips" role="radiogroup" aria-label="What changed" style="padding-top:0;flex-wrap:wrap">${REPORT_KINDS.map(([k,l],i)=>`<button type="button" class="chip" data-rk="${k}" aria-pressed="${i===0}">${l}</button>`).join('')}</div>
+    <div class="f wide" style="margin-top:10px"><label for="rpMsg" id="rpLbl">Details (optional)</label><textarea id="rpMsg" rows="4" maxlength="2000" placeholder="When did it close? New address? What's wrong?"></textarea></div>
+    <label class="check" for="rpAnon" style="margin-top:10px"><input id="rpAnon" type="checkbox"><span><b>Send anonymously</b><br><span class="hint">Your name is not shown with this report, not even to Eretz Israel Tours. It's kept on record only in case a report breaks the rules.</span></span></label>
+    <p class="hint" style="margin:10px 0 0">Keep it factual. If something is your personal opinion, say so. <button type="button" class="linkbtn" id="rpTerms">Terms</button></p><div id="rpErr"></div>`;
+  const w=sheet('Update this supplier', body, `<button class="btn soft" id="rpC" type="button">Cancel</button><button class="btn red" id="rpS" type="button">Send update</button>`);
+  let kind='Closed';
+  w.querySelectorAll('[data-rk]').forEach(b=>b.onclick=()=>{ kind=b.dataset.rk; w.querySelectorAll('[data-rk]').forEach(o=>o.setAttribute('aria-pressed',o===b)); w.querySelector('#rpLbl').textContent=['Other','Mistake'].includes(kind)?'Details':'Details (optional)'; });
+  w.querySelector('#rpC').onclick=()=>openDetail(v.id); w.querySelector('#rpTerms').onclick=openTerms;
+  w.querySelector('#rpS').onclick=async()=>{ const msg=w.querySelector('#rpMsg').value.trim(), btn=w.querySelector('#rpS');
+    if(['Other','Mistake'].includes(kind) && msg.length<3){ w.querySelector('#rpErr').innerHTML='<div class="msg err">Write a few words about it.</div>'; return; }
+    btn.disabled=true; btn.textContent='Sending…';
+    try{ await DB.reportVendor(v.id, kind, msg, w.querySelector('#rpAnon').checked); toast('Thanks. Sent to Eretz Israel Tours.'); openDetail(v.id); }catch(e){ btn.disabled=false; btn.textContent='Send update'; w.querySelector('#rpErr').innerHTML=`<div class="msg err">${esc(e.message)}</div>`; } };
+}
+function reportsPanel(){
+  const list=S.reports||[]; const open=list.filter(r=>r.status==='New');
+  return `<section class="panel"><h3>Supplier updates${open.length?` <span class="badge">${open.length}</span>`:''}</h3>
+    <p>Colleagues' reports from the red <b>Update this supplier</b> button: closed, moved, changed or wrong details. Fix the supplier, then mark the report done.</p>
+    ${list.length? list.map(r=>`<div class="rev" style="display:block;${r.status==='New'?'':'opacity:.6'}"><div class="who2"><b>${esc((REPORT_KINDS.find(k=>k[0]===r.kind)||[0,r.kind])[1])}: ${esc(r.vendor_name)}</b><span>${r.anonymous?'Anonymous colleague':esc(r.author_name||who(r.author))} · ${fmtDate(r.created_at)}${r.status!=='New'?' · '+esc(r.status):''}</span></div>
+      ${r.message?`<p style="margin:4px 0 8px;font-size:14px">${esc(r.message)}</p>`:''}
+      <div class="btn-row"><button class="btn soft" data-open="${esc(r.vendor_id)}">Open supplier</button>${r.status==='New'?`<button class="btn soft" data-rp="${esc(r.id)}" data-st="Dismissed">Dismiss</button><button class="btn primary" data-rp="${esc(r.id)}" data-st="Fixed">Done</button>`:''}</div></div>`).join('') : '<div class="empty" style="padding:16px">No updates waiting.</div>'}
+  </section>`;
+}
 function viewReview(){
   const view=document.getElementById('view');
   const reqs=S.requests||[];
   const pend=S.vendors.filter(v=>v.review_status==='pending');
   const appr=S.vendors.filter(v=>v.review_status==='approved');
   view.innerHTML = `
+    ${reportsPanel()}
     ${feedbackPanel()}
     <section class="panel"><h3>Suggested changes</h3>
       <p>Changes colleagues suggested to prices, contacts and terms. Nothing changes until you approve.</p>
@@ -802,6 +847,7 @@ function viewReview(){
   const decide=async(b,yes)=>{ b.disabled=true; try{ await DB.decideRequest(yes?b.dataset.ryes:b.dataset.rno, yes); await DB.loadRequests(); toast(yes?'Approved and applied':'Rejected'); render(); }catch(e){ b.disabled=false; toast(e.message); } };
   view.querySelectorAll('[data-ryes]').forEach(b=>b.onclick=()=>decide(b,true));
   wireFeedbackPanel(view);
+  view.querySelectorAll('[data-rp]').forEach(b=>b.onclick=async()=>{ b.disabled=true; try{ await DB.setReport(b.dataset.rp,b.dataset.st); toast(b.dataset.st==='Fixed'?'Marked done':'Dismissed'); render(); }catch(e){ b.disabled=false; toast(e.message); } });
   view.querySelectorAll('[data-rno]').forEach(b=>b.onclick=()=>decide(b,false));
   document.getElementById('exp').onclick=()=>exportR5(appr);
 }
@@ -959,7 +1005,7 @@ function openDetail(id){
   const notice=v.cancelNoticeAmount?`${esc(v.cancelNoticeAmount)} ${esc((v.cancelNoticeUnit||'').toLowerCase())}${v.cancelDayType?' ('+esc(v.cancelDayType.toLowerCase())+')':''}`:'';
   const rating=['rateReliability','rateService','rateValue'].map((k,i)=>v[k]?`${['Reliability','Service','Value'][i]} <b class="mono">${esc(v[k])}/5</b>`:'').filter(Boolean).join(' · ');
   const sections=[
-    ['Contact',rows([['Contact',esc(v.contactPerson)],['Phone',v.phone?`<span class="mono">${esc(v.phone)}</span>`:''],['WhatsApp',v.whatsapp?`<span class="mono">${esc(v.whatsapp)}</span>`:''],['Email',esc(v.email)],['Website',esc(v.website)],['Region',esc(v.region)],['Type',esc(v.tags)],['Area',esc(v.location)],['Languages',esc(v.languages)],['Kosher',esc(v.kosher)],['Max capacity',v.maxCap?esc(v.maxCap)+' people':''],['Park booking',v.npResLink?`<a data-track="booking" data-v="${esc(v.id)}" href="${esc(v.npResLink)}" target="_blank" rel="noopener">Reservation page</a>`:'']])],
+    ['Contact',rows([['Contact',esc(v.contactPerson)],['Phone',v.phone?`<span class="mono">${esc(v.phone)}</span>`:''],['WhatsApp',v.whatsapp?`<span class="mono">${esc(v.whatsapp)}</span>`:''],['Email',esc(v.email)],['Website',esc(v.website)],['Region',esc(v.region)],[v.category==='Guide'?'Guide details':'Type',esc(v.tags)],['Years guiding',v.category==='Guide'&&v.experience_years?esc(v.experience_years)+' years':''],['Area',esc(v.location)],['Languages',esc(v.languages)],['Kosher',esc(v.kosher)],['Max capacity',v.maxCap?esc(v.maxCap)+' people':''],['Park booking',v.npResLink?`<a data-track="booking" data-v="${esc(v.id)}" href="${esc(v.npResLink)}" target="_blank" rel="noopener">Reservation page</a>`:'']])],
     [S.admin?(v.prices_private?'Main price (goes to R5) · private':'Main price (goes to R5)'):'Main price',rows([['Agent price',price(v.agentPrice,v.agentPriceVatTreatment)],['Listed price',price(v.listedPrice,v.listedPriceVatTreatment)],['Basis',esc(v.priceBasis)],['Max people',esc(v.maxPax)],['Payment terms',esc(v.payTerms)]])],
     ['Cancellation',rows([['Policy',esc(v.cancelPolicy)],['Notice',notice],['Penalty',esc(v.cancelPenalty)],['Checked',esc(v.cancelPolicyVerifiedDate)]])],
     ['Experience',rows([['Ratings',rating],['Strengths',esc(v.strengths)],['Weaknesses',esc(v.weaknesses)],['Summary',esc(v.notes)]])]
@@ -967,6 +1013,7 @@ function openDetail(id){
   const body=`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px"><span class="cat">${esc(v.category)}</span>${v.region||v.location?`<span class="hint">${esc(v.region||v.location)}</span>`:''}${statusPill(v)}</div>
     <div id="parentBox"></div>
     ${contactBar(v)}
+    <button class="btn red upd" id="upd" type="button">⚠ Update this supplier <span>closed, moved, wrong details</span></button>
     <div id="resBox"></div>
     <div id="reqBox"></div>
     <div id="sitesWrap"></div>
@@ -983,6 +1030,7 @@ function openDetail(id){
     <div id="siteSettings"></div>
     ${S.admin?`<fieldset><legend>Private note · only you see this</legend><div class="f wide"><textarea id="adminNote" rows="5" placeholder="Clients, trips, commissions, anything colleagues shouldn't see"></textarea></div><div class="btn-row" style="margin-top:8px"><button class="mini" id="adminNoteSave" type="button">Save private note</button></div></fieldset>`:''}
     ${sections.map(([h,dl])=>`<fieldset><legend>${h}</legend><dl class="dl">${dl}</dl></fieldset>`).join('')}
+    <div class="disclaim"><b>Shared by colleagues.</b> This list is crowdsourced. Eretz Israel Tours takes no responsibility for mistakes. Always confirm details with the supplier before booking, and take care when you add or change information. See a mistake? Tap the red <b>Update this supplier</b> button at the top, or use Feedback.</div>
     <p class="stamp">Added by ${esc(who(v.created_by))} on ${fmtDate(v.created_at)}. Last changed by ${esc(who(v.updated_by))} on ${fmtDate(v.updated_at)}. <span class="idtag">${esc(v.id)}</span></p>`;
   let foot=`<button class="btn primary" id="edit">${S.admin?'Edit':'Edit or suggest a change'}</button>`;
   if(S.admin){
@@ -992,6 +1040,7 @@ function openDetail(id){
   const w=sheet(v.name, body, foot);
   S.openVendor=v.name; track(v.id,'open'); if(!S.myTop.includes(v.id)) S.myTop=[...S.myTop,v.id];
   w.querySelector('#edit').onclick=()=>openForm(v);
+  w.querySelector('#upd').onclick=()=>openReport(v);
   drawFiles(v);
   drawExtras(v);
   w.querySelector('#addPrice').onclick=async()=>{ let pp=false; try{ pp=(await DB.detail(v.id)).prices_private; }catch(e){} openPriceForm(v,null,null,pp); };
@@ -1488,6 +1537,7 @@ function openForm(v, preset){
       <div id="dupBox" class="f wide" hidden></div>
       ${sel('category','Category',[['','Choose…'],...CATEGORIES],false,true)}
       <div class="f wide"><label for="f_tags">Type (separate with commas)</label><input id="f_tags" value="${esc(x.tags)}" placeholder="Jeep, ATV / RZR"><div class="presets" id="tagSug" style="margin:6px 0 0"></div></div>
+      <div class="f" id="gWrap" ${x.category==='Guide'?'':'hidden'}><label for="f_experience_years">Years guiding</label><input id="f_experience_years" type="number" inputmode="numeric" min="0" max="80" value="${esc(x.experience_years)}" placeholder="12"></div>
       ${sel('active','Status',['Active','Inactive'])}
       <div class="f wide" id="npWrap" ${x.category==='National Parks'?'':'hidden'}><label for="f_npResLink">National park booking link</label><input id="f_npResLink" name="npResLink" type="url" value="${esc(x.npResLink)}" placeholder="https://booking.parks.org.il/…"></div>
     </div></fieldset>
@@ -1529,7 +1579,7 @@ function openForm(v, preset){
   const rSel=f.querySelector('#f_regionSel'), rOther=f.querySelector('#f_regionOther'), rHid=f.querySelector('#f_region');
   const syncReg=()=>{ rOther.hidden = rSel.value!=='__other'; rHid.value = rSel.value==='__other' ? rOther.value.trim() : rSel.value; };
   rSel.addEventListener('change',()=>{ syncReg(); if(!rOther.hidden) rOther.focus(); }); rOther.addEventListener('input',syncReg);
-  f.querySelector('#f_category').addEventListener('change',e=>{ f.querySelector('#npWrap').hidden = e.target.value!=='National Parks'; drawTagSug(); });
+  f.querySelector('#f_category').addEventListener('change',e=>{ f.querySelector('#npWrap').hidden = e.target.value!=='National Parks'; f.querySelector('#gWrap').hidden = e.target.value!=='Guide'; drawTagSug(); });
   f.querySelectorAll('.stars').forEach(g=>g.addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; const hid=f.querySelector('#f_'+g.dataset.k);
     const val = hid.value===b.dataset.n?'':b.dataset.n; hid.value=val; g.querySelectorAll('button').forEach(o=>o.setAttribute('aria-pressed', o.dataset.n===val)); }));
   const dupCheck=()=>{ const n=normN(f.querySelector('#f_name').value); const box=f.querySelector('#dupBox');
@@ -1540,6 +1590,7 @@ function openForm(v, preset){
   w.querySelector('#saveBtn').onclick=async()=>{
     syncReg(); const data = v?{id:v.id}:{}; R5_FIELDS.concat(EXTRA_FIELDS).forEach(k=>{ const el=f.querySelector('#f_'+k); data[k]= el?el.value:(x[k]||''); });
     if(data.category!=='National Parks') data.npResLink = x.npResLink||data.npResLink||'';
+    data.experience_years=String(data.experience_years||'').replace(/\D/g,'').slice(0,2); if(data.category!=='Guide' && !x.experience_years) data.experience_years='';
     const err=f.querySelector('#formErr');
     const probs=[]; if(!data.name.trim()) probs.push('Add the supplier name.'); if(!data.category) probs.push('Choose a category.');
     if(!v && dupCheck()) probs.push('This supplier is already on the list. Open it and edit it instead.');

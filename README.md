@@ -34,3 +34,9 @@ Shared vendor list for Eretz Israel Tours colleagues. Static single-page app (Gi
 - **Your most used:** supplier opens are logged as `open` in `action_log`; `my_top` ranks each person's own most used suppliers (taps count 3×, last 30 days count double) and the list opens with a "⭐ Your most used" strip. Category and region tabs are larger.
 - **Email BCC:** the Email button adds the BCC address from `app_settings.bcc_email` (set in Team tab) unless the colleague opted out (`members.bcc_opt_out`, My settings via their name). First use shows an explainer pop-up. Terms 6a (bold) describes it (version 2026-10-01d). WhatsApp and calls can't be copied.
 - **Documents with black-out:** file kinds now include Price list and Booking confirmation; uploads can be marked "only me and Eretz Israel Tours" (`vendor_files.private`). Before upload, images and PDFs open in a black-out editor (pdf.js + jsPDF from cdnjs); saved files are flattened so hidden text can't be recovered. File tiles show who uploaded.
+
+## Guide details, disclaimer, supplier updates (2026-10-01)
+- Guide category: tag suggestions Eshkol license, Owns an Eshkol vehicle, Midbari (desert guide), Carries a gun; new field `experience_years` ("Years guiding", Guide only). On the Guide tab, toggle chips filter by those details (all selected must match).
+- Every supplier page: crowdsourced / no-responsibility disclaimer at the bottom.
+- Red "Update this supplier" button under the contact buttons: Closed, Location moved, Phone or contact changed, Prices changed, Something here is wrong, Other; optional anonymous. Table `vendor_reports`; RPCs `report_vendor`, `vendor_reports_list` (admin; hides the name on anonymous reports), `vendor_report_set`. Shown in Review > Supplier updates (Open supplier / Dismiss / Done) and counted in the Review badge.
+- Terms 2026-10-01e: 3a objective feedback, opinions marked, slander = removal; 5 crowdsourced disclaimer. Everyone re-accepts.
