@@ -98,6 +98,8 @@ main{max-width:760px;margin:0 auto;padding:16px 16px 110px}
 .btn.red{background:#c0392b;color:#fff}
 .btn.upd{width:100%;margin:10px 0 4px;justify-content:center;gap:8px;flex-wrap:wrap}.btn.upd span{font-weight:400;font-size:12.5px;opacity:.9}
 .presets .mini.on{background:var(--ink,#1f3a2e);color:#fff}
+.food{border:1px solid var(--line,#ddd);border-radius:12px;padding:10px 12px;margin:0 0 16px}.food summary{cursor:pointer;font-weight:600}.food[open] summary{margin-bottom:8px}
+.food a.mini{text-decoration:none}.foodadd{display:grid;gap:6px;margin-top:10px}.foodadd input,.foodadd select{width:100%}
 .kcrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}
 .agentbox a.btn{text-decoration:none}.agentbox{border:1px solid var(--line, #ddd);border-radius:12px;padding:10px 12px;margin:10px 0}.agentbox .ah{margin-bottom:4px}.agentbox p{margin:4px 0 8px;font-size:14px;white-space:pre-wrap}
 .disclaim{font-size:12.5px;line-height:1.45;color:var(--ink-2);background:var(--warn-wash);border-radius:10px;padding:10px 12px;margin:18px 0 12px}
@@ -483,6 +485,10 @@ const DB = {
     if(!LIVE){ const d=await DB.detail(vid); (d.res_reports=d.res_reports||[]).unshift({checked,visit_date:visit||'',note:note||'',member_name:S.me.name,created_at:new Date().toISOString(),mine:true}); d.res_answered=true; return; }
     await rpc('reservation_report',{p_vendor:vid,p_checked:checked,p_visit:visit||'',p_note:note||''});
   },
+  async foodList(vid){ if(!LIVE) return (S.demo.food=S.demo.food||{})[vid]||[]; return await rpc('food_list',{p_vendor:vid}); },
+  async foodAdd(vid,name,kosher,note){ if(!LIVE){ ((S.demo.food=S.demo.food||{})[vid]=S.demo.food[vid]||[]).unshift({id:'fd'+Date.now(),name,kosher,note,mine:true,by:{name:S.me.name,role:S.me.role,admin:S.admin},created_at:new Date().toISOString()}); return; }
+    await rpc('food_add',{p_vendor:vid,p_name:name,p_kosher:kosher,p_note:note}); },
+  async foodDelete(vid,id){ if(!LIVE){ S.demo.food[vid]=S.demo.food[vid].filter(f=>f.id!==id); return; } await rpc('food_delete',{p_id:id}); },
   async setAgent(vid, link, howto){
     if(!LIVE){ Object.assign(S.vendors.find(v=>v.id===vid),{agent_link:link,agent_howto:howto}); return; }
     const r=await rpc('vendor_set_agent',{p_vendor:vid,p_link:link,p_howto:howto}); const i=S.vendors.findIndex(v=>v.id===vid); if(i>=0) S.vendors[i]=Object.assign(S.vendors[i],r); return r;
@@ -862,6 +868,23 @@ function openAgentForm(v){
     try{ await DB.setAgent(v.id, w.querySelector('#agL').value.trim(), w.querySelector('#agH').value.trim()); toast('Saved'); openDetail(v.id); }
     catch(e){ b.disabled=false; w.querySelector('#agErr').innerHTML=`<div class="msg err">${esc(e.message)}</div>`; } };
 }
+// Food nearby: short tips from colleagues, folded away until opened.
+async function drawFood(v){
+  const box=document.getElementById('foodBox'), cnt=document.getElementById('foodCount'); if(!box) return;
+  let list=[]; try{ list=await DB.foodList(v.id); }catch(e){ box.innerHTML=`<div class="msg err">${esc(e.message)}</div>`; return; }
+  if(cnt) cnt.textContent=list.length?`(${list.length})`:'';
+  const near=encodeURIComponent(' '+(v.location||v.region||''));
+  box.innerHTML=(list.length?list.map(f=>{ const onList=S.vendors.find(o=>normN(o.name)===normN(f.name)); const q=encodeURIComponent(f.name)+near;
+    return `<div class="note"><span class="meta"><b style="color:var(--ink)">${esc(f.name)}</b>${f.kosher?' · '+esc(f.kosher):''}</span>${f.note?`<p>${esc(f.note)}</p>`:''}
+      <div class="btn-row" style="margin-top:6px">${onList?`<button class="mini" data-fopen="${esc(onList.id)}" type="button">Open on list</button>`:''}<a class="mini" data-track="maps" data-v="${esc(v.id)}" href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener">Maps</a><a class="mini" data-track="waze" data-v="${esc(v.id)}" href="https://waze.com/ul?q=${q}&navigate=yes" target="_blank" rel="noopener">Waze</a>${f.mine||S.admin?`<button class="mini" data-fdel="${esc(f.id)}" type="button">Remove</button>`:''}</div>
+      ${fromBadge(f.by,f.created_at,'Tip from')}</div>`; }).join(''):'<p class="hint">No food tips yet. Where do you eat or take groups near here?</p>')
+    +`<div class="foodadd"><input id="fdName" placeholder="Place name, e.g. Shawarma Hashuk" maxlength="120"><select id="fdKos" aria-label="Kosher"><option value="">Kosher?</option>${KOSHER_OPTS.map(k=>`<option>${esc(k)}</option>`).join('')}</select>
+      <input id="fdNote" placeholder="Why it's good, price, good for groups?" maxlength="500"><button class="btn primary" id="fdAdd" type="button">Add tip</button></div>`;
+  box.querySelectorAll('[data-fopen]').forEach(b=>b.onclick=()=>openDetail(b.dataset.fopen));
+  box.querySelectorAll('[data-fdel]').forEach(b=>b.onclick=async()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again'; return; } try{ await DB.foodDelete(v.id,b.dataset.fdel); drawFood(v); }catch(e){ toast(e.message); } });
+  box.querySelector('#fdAdd').onclick=async()=>{ const n=box.querySelector('#fdName').value.trim(); if(n.length<2){ box.querySelector('#fdName').focus(); return; }
+    try{ await DB.foodAdd(v.id,n,box.querySelector('#fdKos').value,box.querySelector('#fdNote').value.trim()); toast('Food tip added'); drawFood(v); }catch(e){ toast(e.message); } };
+}
 function openReport(v){
   const body=`<p style="margin:0 0 12px;color:var(--ink-2)">Tell Eretz Israel Tours what changed at <b>${esc(v.name)}</b>. It's checked before the list is updated.</p>
     <div class="chips" role="radiogroup" aria-label="What changed" style="padding-top:0;flex-wrap:wrap">${REPORT_KINDS.map(([k,l],i)=>`<button type="button" class="chip" data-rk="${k}" aria-pressed="${i===0}">${l}</button>`).join('')}</div>
@@ -1094,6 +1117,7 @@ function openDetail(id){
     <fieldset><legend>Notes from colleagues</legend>
       <div class="addline"><textarea id="noteText" rows="1" placeholder="Add a tip, warning or update…"></textarea><button class="btn primary" id="noteAdd" type="button">Add</button></div>
       <div id="notesBox"></div></fieldset>
+    <details class="food" id="foodWrap"><summary>🍽 Food nearby <span class="hint" id="foodCount"></span></summary><div id="foodBox"><p class="hint">Loading…</p></div></details>
     <fieldset><legend>Photos, receipts and PDFs</legend><div id="filesBox"><p class="hint">Loading files…</p></div></fieldset>
     ${S.admin?'<div id="actBox"></div>':''}
     <div id="siteSettings"></div>
@@ -1114,6 +1138,7 @@ function openDetail(id){
   const ae=w.querySelector('#agentEdit'); if(ae) ae.onclick=()=>openAgentForm(v);
   drawFiles(v);
   drawExtras(v);
+  drawFood(v);
   w.querySelector('#addPrice').onclick=async()=>{ let pp=false; try{ pp=(await DB.detail(v.id)).prices_private; }catch(e){} openPriceForm(v,null,null,pp); };
   const ppt=w.querySelector('#ppToggle'); if(ppt) ppt.onchange=async()=>{ try{ await DB.setPricesPrivate(v.id, ppt.checked); toast(ppt.checked?'Prices are now private to you':'Prices are visible to colleagues'); }catch(e){ ppt.checked=!ppt.checked; toast(e.message); } };
   w.querySelector('#addQuote').onclick=()=>openQuoteForm(v,null);
