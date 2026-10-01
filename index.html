@@ -233,6 +233,11 @@ textarea.out{width:100%;min-height:160px;font-family:var(--f-mono);font-size:12p
 .presets{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 10px}
 .switch{display:flex;gap:10px;align-items:center;background:var(--wash);border-radius:10px;padding:10px 12px}
 .switch input{width:20px;height:20px}
+.terms h4{font-family:var(--f-display);font-weight:400;font-size:17px;margin:16px 0 4px}
+.terms p{margin:0 0 8px;line-height:1.5}
+.check{display:flex;gap:10px;align-items:flex-start;margin:6px 0 14px;font-size:14px}
+.check input{width:20px;height:20px;flex:none;margin-top:1px}
+.linkbtn{border:0;background:none;padding:0;color:var(--olive-2);text-decoration:underline;font:inherit;cursor:pointer}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(140px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--ground);padding:10px 16px;border-radius:999px;font-size:14px;z-index:40;max-width:calc(100% - 32px)}
 </style>
 <style>
@@ -472,8 +477,8 @@ const DB = {
     else { const key=f.quote_id||f.vendor_id; S.files[key]=(S.files[key]||[]).filter(x=>x.id!==f.id); }
     const v=S.vendors.find(x=>x.id===f.vendor_id); if(v) v._files=Math.max(0,(v._files||1)-1);
   },
-  async requestAccess(name,email,role,license,phone,note){
-    const { data, error } = await sb.rpc('request_access',{p_name:name,p_email:email,p_role:role,p_license:license,p_phone:phone,p_note:note});
+  async requestAccess(name,email,role,license,phone,note,terms){
+    const { data, error } = await sb.rpc('request_access',{p_name:name,p_email:email,p_role:role,p_license:license,p_phone:phone,p_note:note,p_terms:terms});
     if(error) throw new Error(error.message);
     S.token=data.token; try{ localStorage.setItem(TOKEN_KEY,S.token); }catch(e){}
     await DB.loadMe();
@@ -486,6 +491,8 @@ const DB = {
     if(S.me) S.me.has_proof=true;
   },
   async proofUrl(id){ if(!LIVE) return null; return (await filesApi('proof_view',{member_id:id})).url; },
+  async acceptTerms(){ if(!LIVE) return; const { error } = await sb.rpc('accept_terms',{p_token:S.token,p_version:TERMS_VERSION}); if(error) throw new Error(error.message); S.me.terms_version=TERMS_VERSION; },
+  async setPricesPrivate(vid,on){ if(!LIVE){ (await DB.detail(vid)).prices_private=on; const v=S.vendors.find(x=>x.id===vid); if(v) v.prices_private=on; return; } await rpc('vendor_set_prices_private',{p_id:vid,p_private:on}); await DB.loadVendors(); },
   async decide(id,status){
     if(!LIVE){ S.members.find(m=>m.id===id).status=status; return; }
     await rpc('member_decide',{p_id:id,p_status:status}); await DB.loadTeam();
@@ -520,6 +527,7 @@ function priceLine(v){
 function boot(){
   if(LIVE && (!S.token || !S.me)) return renderGate();
   if(LIVE && S.me.status!=='approved') return renderWaiting();
+  if(LIVE && !S.me.is_admin && S.me.terms_version!==TERMS_VERSION) return renderTermsGate();
   render();
 }
 
@@ -532,6 +540,17 @@ function linkBox(id, url){
 function wireCopy(root){ root.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>{ const i=root.querySelector('#'+b.dataset.copy); copyText(i.value,i); }); }
 
 const ROLES=['Licensed tour guide','Travel agent','Tour operator','Other'];
+const TERMS_VERSION='2026-10-01';
+const TERMS_HTML=`<p class="hint">Version ${TERMS_VERSION}. Plain-language summary. Draft: not yet reviewed by a lawyer.</p>
+<h4>1. Who runs this</h4><p>The Israel Suppliers Master List is run by Daniel Gutman (Eretz Israel Tours), who approves members and manages the list.</p>
+<h4>2. Who can join</h4><p>Licensed tour guides, travel agents, tour operators and other travel professionals Daniel approves. You confirm the details and license you submit are yours and true. Daniel can decline, pause or remove access at any time.</p>
+<h4>3. What you share</h4><p>Share supplier information you believe is accurate and that you're allowed to share. Don't post personal member codes, card or bank details, or personal details of your clients. Be fair in ratings and notes: describe your own experience.</p>
+<h4>4. How you use it</h4><p>Use the list for your own professional work. Keep your personal link to yourself, and don't copy, resell or publish the list.</p>
+<h4>5. Prices are a guide</h4><p>Prices, terms and contacts come from colleagues and can change. Always confirm with the supplier before booking. Daniel and Eretz Israel Tours aren't responsible for information shared by members or for suppliers' services.</p>
+<h4>6. Your data and privacy</h4><p>We store your name, email, phone, role, license number and license photo, what you add, and when you last used the app. Colleagues see your name next to what you add. Your license photo is visible only to Daniel.</p><p><b>Daniel can see everything in the app, including items marked "private".</b> "Private" means hidden from other colleagues, not from Daniel.</p><p>Data is stored with Supabase (servers in Frankfurt, EU) and the app is hosted on GitHub Pages. You can ask Daniel at any time to see, correct or delete your data and account.</p>
+<h4>7. Sponsored content</h4><p>If supplier offers or promotions are ever paid for, they will be clearly labelled as sponsored. Ratings and notes are never for sale.</p>
+<h4>8. Changes</h4><p>If these terms change, you'll be asked to accept the new version.</p>`;
+function openTerms(){ sheet('Terms and privacy', `<div class="terms">${TERMS_HTML}</div>`, `<button class="btn primary" id="tOk" type="button">Close</button>`).querySelector('#tOk').onclick=closeSheet; }
 function proofNeeded(){ return !S.me || !S.me.has_proof; }
 async function sendProof(file, out){
   if(!file){ return false; }
@@ -551,10 +570,12 @@ function renderGate(msg){
     <div class="f"><label for="gProof">Photo of your license or card <em>*</em></label><input id="gProof" type="file" accept="image/*,application/pdf"><span class="hint">Only Daniel can see it.</span></div>
     <div class="f"><label for="gPhone">Phone</label><input id="gPhone" type="tel" autocomplete="tel" inputmode="tel" placeholder="+972 52 000 0000"></div>
     <div class="f"><label for="gNote">Anything else? (area, company, who referred you)</label><input id="gNote" type="text" placeholder="Galilee, referred by Rachel"></div>
+    <label class="check" for="gTerms"><input id="gTerms" type="checkbox"><span>I agree to the <button type="button" class="linkbtn" id="gTermsLink">terms and privacy notice</button>, including that Daniel can see everything I add, also items I mark private.</span></label>
     <button class="btn primary" id="gSend" type="submit">Ask to join</button>
     <div id="gMsg">${msg||''}</div>
     <p class="hint" style="margin-top:18px">Already approved? Open the personal link Daniel sent you.</p>
   </form></div>`;
+  document.getElementById('gTermsLink').onclick=openTerms;
   const role=document.getElementById('gRole');
   role.onchange=()=>{ document.getElementById('licReq').hidden = !['Licensed tour guide','Travel agent'].includes(role.value); };
   document.getElementById('gateForm').addEventListener('submit', async e=>{
@@ -567,14 +588,23 @@ function renderGate(msg){
     if(!v('gRole')) probs.push('Choose what you do.');
     if(['Licensed tour guide','Travel agent'].includes(v('gRole')) && v('gLic').length<3) probs.push('Add your license number.');
     if(!file) probs.push('Add a photo of your license or card.');
+    if(!document.getElementById('gTerms').checked) probs.push('Please read and accept the terms.');
     if(probs.length){ out.innerHTML=`<div class="msg err">${probs.join(' ')}</div>`; return; }
     const b=document.getElementById('gSend'); b.disabled=true; b.textContent='Sending…';
     try{
-      await DB.requestAccess(v('gName'),v('gEmail'),v('gRole'),v('gLic'),v('gPhone'),v('gNote'));
+      await DB.requestAccess(v('gName'),v('gEmail'),v('gRole'),v('gLic'),v('gPhone'),v('gNote'),TERMS_VERSION);
       try{ await sendProof(file,out); }catch(err){ toast("Your request was sent, but the photo didn't upload. Try again on the next screen."); }
       await DB.loadMe(); boot();
     }catch(err){ b.disabled=false; b.textContent='Ask to join'; out.innerHTML=`<div class="msg err">${esc(err.message)}</div>`; }
   });
+}
+function renderTermsGate(){
+  app.innerHTML=`<div class="gate"><div class="gate-card"><h1 class="mark">Updated terms</h1><p>Please read and accept the terms to keep using the list.</p>
+    <div class="panel terms" style="max-height:50vh;overflow:auto">${TERMS_HTML}</div>
+    <label class="check" for="tAcc"><input id="tAcc" type="checkbox"><span>I agree to these terms, including that Daniel can see everything I add, also items I mark private.</span></label>
+    <button class="btn primary" id="tGo" type="button">Continue</button><div id="tMsg"></div></div></div>`;
+  document.getElementById('tGo').onclick=async()=>{ if(!document.getElementById('tAcc').checked){ document.getElementById('tMsg').innerHTML='<div class="msg err">Tick the box to continue.</div>'; return; }
+    try{ await DB.acceptTerms(); boot(); }catch(e){ document.getElementById('tMsg').innerHTML=`<div class="msg err">${esc(e.message)}</div>`; } };
 }
 function renderWaiting(){
   const st=S.me.status;
@@ -742,7 +772,7 @@ function viewTeam(){
     </section>
     <section class="panel"><h3>People with access (${active.length})</h3>
       <p>If someone loses their link, make a new one and send it to them. The old link stops working.</p>
-      ${active.map(m=>`<div class="person"><span><b>${esc(m.name)}</b>${m.is_admin?' <span class="pill approved">admin</span>':''}<br><span class="hint">${esc(m.role||'')}${m.license_no?' · '+esc(m.license_no):''}${m.role||m.license_no?'<br>':''}${esc(m.email)} · last active ${ago(m.last_seen_at)}</span><span id="nl_${m.id}"></span></span>
+      ${active.map(m=>`<div class="person"><span><b>${esc(m.name)}</b>${m.is_admin?' <span class="pill approved">admin</span>':''}<br><span class="hint">${esc(m.role||'')}${m.license_no?' · '+esc(m.license_no):''}${m.role||m.license_no?'<br>':''}${esc(m.email)} · last active ${ago(m.last_seen_at)}${m.is_admin?'':(m.terms_accepted_at?' · terms accepted '+fmtDate(m.terms_accepted_at):' · terms not yet accepted')}</span><span id="nl_${m.id}"></span></span>
         ${m.is_admin?'':`<span class="btn-row"><button class="btn soft" data-link="${m.id}">New link</button><button class="btn danger" data-rm="${m.id}">Remove</button></span>`}</div>`).join('')}
     </section>
     ${gone.length?`<section class="panel"><h3>Removed</h3>${gone.map(m=>`<div class="person"><span><b>${esc(m.name)}</b><br><span class="hint">${esc(m.email)}</span><span id="nl_${m.id}"></span></span><button class="btn soft" data-link="${m.id}">Restore with new link</button></div>`).join('')}</section>`:''}`;
@@ -819,7 +849,7 @@ function openDetail(id){
   const rating=['rateReliability','rateService','rateValue'].map((k,i)=>v[k]?`${['Reliability','Service','Value'][i]} <b class="mono">${esc(v[k])}/5</b>`:'').filter(Boolean).join(' · ');
   const sections=[
     ['Contact',rows([['Contact',esc(v.contactPerson)],['Phone',v.phone?`<span class="mono">${esc(v.phone)}</span>`:''],['WhatsApp',v.whatsapp?`<span class="mono">${esc(v.whatsapp)}</span>`:''],['Email',esc(v.email)],['Website',esc(v.website)],['Area',esc(v.location)],['Languages',esc(v.languages)],['Kosher',esc(v.kosher)],['Max capacity',v.maxCap?esc(v.maxCap)+' people':''],['Park booking',v.npResLink?`<a href="${esc(v.npResLink)}" target="_blank" rel="noopener">Reservation page</a>`:'']])],
-    ['Main price (goes to R5)',rows([['Agent price',price(v.agentPrice,v.agentPriceVatTreatment)],['Listed price',price(v.listedPrice,v.listedPriceVatTreatment)],['Basis',esc(v.priceBasis)],['Max people',esc(v.maxPax)],['Payment terms',esc(v.payTerms)]])],
+    [S.admin?(v.prices_private?'Main price (goes to R5) · private':'Main price (goes to R5)'):'Main price',rows([['Agent price',price(v.agentPrice,v.agentPriceVatTreatment)],['Listed price',price(v.listedPrice,v.listedPriceVatTreatment)],['Basis',esc(v.priceBasis)],['Max people',esc(v.maxPax)],['Payment terms',esc(v.payTerms)]])],
     ['Cancellation',rows([['Policy',esc(v.cancelPolicy)],['Notice',notice],['Penalty',esc(v.cancelPenalty)],['Checked',esc(v.cancelPolicyVerifiedDate)]])],
     ['Experience',rows([['Ratings',rating],['Strengths',esc(v.strengths)],['Weaknesses',esc(v.weaknesses)],['Summary',esc(v.notes)]])]
   ].filter(s=>s[1]);
@@ -827,7 +857,9 @@ function openDetail(id){
     ${contactBar(v)}
     <div id="reqBox"></div>
     <fieldset><div class="sec-head"><legend>Quotes</legend><button class="mini" id="addQuote" type="button">+ Add quote</button></div><div id="quotesBox"><p class="hint">Loading…</p></div></fieldset>
-    <fieldset><div class="sec-head"><legend>Standard prices</legend><button class="mini" id="addPrice" type="button">+ Add price</button></div><div id="pricesBox"><p class="hint">Loading…</p></div></fieldset>
+    <fieldset><div class="sec-head"><legend>Standard prices</legend><button class="mini" id="addPrice" type="button">+ Add price</button></div>
+      ${S.admin?`<label class="switch" for="ppToggle" style="margin-bottom:10px"><input id="ppToggle" type="checkbox" ${v.prices_private?'checked':''}><span><b>Keep this supplier's prices private</b><br><span class="hint">Colleagues still see the supplier and contacts, but no prices. You can also mark single price lines private.</span></span></label>`:''}
+      <div id="pricesBox"><p class="hint">Loading…</p></div></fieldset>
     <fieldset><div class="sec-head"><legend>Deals and discounts</legend><button class="mini" id="addDeal" type="button">+ Add deal</button></div><div id="dealsBox"><p class="hint">Loading…</p></div></fieldset>
     <fieldset><legend>Notes from colleagues</legend>
       <div class="addline"><textarea id="noteText" rows="1" placeholder="Add a tip, warning or update…"></textarea><button class="btn primary" id="noteAdd" type="button">Add</button></div>
@@ -847,6 +879,7 @@ function openDetail(id){
   drawFiles(v);
   drawExtras(v);
   w.querySelector('#addPrice').onclick=()=>openPriceForm(v,null);
+  const ppt=w.querySelector('#ppToggle'); if(ppt) ppt.onchange=async()=>{ try{ await DB.setPricesPrivate(v.id, ppt.checked); toast(ppt.checked?'Prices are now private to you':'Prices are visible to colleagues'); }catch(e){ ppt.checked=!ppt.checked; toast(e.message); } };
   w.querySelector('#addQuote').onclick=()=>openQuoteForm(v,null);
   drawQuotes(v);
   w.querySelector('#addDeal').onclick=()=>openDealForm(v);
@@ -861,9 +894,10 @@ async function drawExtras(v){
   let det; try{ det=await DB.detail(v.id); }catch(e){ const pb=document.getElementById('pricesBox'); if(pb) pb.innerHTML=`<div class="msg err">Couldn't load: ${esc(e.message)}</div>`; return; }
   const me=(S.user.email||'').toLowerCase();
   const pb=document.getElementById('pricesBox'); if(!pb) return;
+  if(!S.admin && det.prices_private){ pb.innerHTML='<p class="hint" style="margin:0 0 10px">Prices for this supplier are kept private. Contact the supplier for current rates.</p>'; return drawExtrasRest(v,det); }
   pb.innerHTML = det.prices.length ? `<div class="prices">${det.prices.map(p=>`<div class="pl">
       <span class="who3">${esc(p.label||p.audience)}</span><span class="amt">${esc(money(p.currency,p.price))}</span>
-      <span class="meta">${p.is_agent?'<span class="tag agent">Agent rate</span>':'<span class="tag">Public price</span>'}${esc(priceWho(p))} · ${esc((p.basis||'').toLowerCase())}${vatLabel(p.vat)?' · '+esc(vatLabel(p.vat).toLowerCase()):''}${p.season?' · '+esc(p.season):''}</span>
+      <span class="meta">${p.private?'<span class="tag" style="background:var(--bad-wash);color:var(--bad)">Private</span>':''}${p.is_agent?'<span class="tag agent">Agent rate</span>':'<span class="tag">Public price</span>'}${esc(priceWho(p))} · ${esc((p.basis||'').toLowerCase())}${vatLabel(p.vat)?' · '+esc(vatLabel(p.vat).toLowerCase()):''}${p.season?' · '+esc(p.season):''}</span>
       ${p.note||p.source||p.checked_on?`<span class="meta">${p.note?esc(p.note)+'<br>':''}${p.source?'Source: '+esc(p.source):''}${p.checked_on?' · checked '+esc(p.checked_on):''}</span>`:''}
       <span class="ctl"><button class="mini" data-pedit="${esc(p.id)}" type="button">${S.admin?'Edit':'Suggest change'}</button><button class="mini" data-pdel="${esc(p.id)}" type="button">${S.admin?'Remove':'Suggest removing'}</button></span></div>`).join('')}</div>`
     : `<p class="hint" style="margin:0 0 10px">No price lines yet. Add adult, child, Israeli senior or group rates as separate lines.</p>`;
@@ -872,8 +906,12 @@ async function drawExtras(v){
     if(S.admin){ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again'; return; } try{ await DB.deletePrice(v.id,b.dataset.pdel); toast('Price removed'); drawExtras(v); }catch(e){ toast(e.message); } return; }
     openReasonSheet('Suggest removing this price','Why should it be removed?', async reason=>{ await DB.deletePrice(v.id,b.dataset.pdel,reason); toast('Sent to Daniel for approval'); openDetail(v.id); });
   });
+  drawExtrasRest(v,det);
+}
+function drawExtrasRest(v,det){
+  const me=(S.user.email||'').toLowerCase();
   const exp=d=>d.valid_to && d.valid_to<today();
-  const db=document.getElementById('dealsBox');
+  const db=document.getElementById('dealsBox'); if(!db) return;
   db.innerHTML = det.deals.length ? det.deals.map(d=>`<div class="deal${exp(d)?' expired':''}">
       <b>${esc(d.title)}</b>
       <span class="meta">${esc(d.kind)}${d.provider?' · '+esc(d.provider):''}${d.valid_to?(exp(d)?' · expired '+esc(d.valid_to):' · until '+esc(d.valid_to)):''}</span>
@@ -905,13 +943,13 @@ function openFeedback(){
     <div class="chips" role="radiogroup" aria-label="Type" style="padding-top:0">${FB_KINDS.map(([k,l],i)=>`<button type="button" class="chip" data-k="${k}" aria-pressed="${i===0}">${l}</button>`).join('')}</div>
     <div class="f wide" style="margin-top:8px"><label for="fbMsg">Your message</label><textarea id="fbMsg" rows="5" placeholder="What would make this better, or what went wrong?"></textarea></div>
     <div class="f wide" style="margin-top:10px"><label for="fbFile">Screenshot (optional)</label><input id="fbFile" type="file" accept="image/*,application/pdf"></div>
-    <p class="hint" style="margin:8px 0 0">Sent with: ${esc(where)} and your phone or browser type, to help fix bugs.</p>
+    <p class="hint" style="margin:8px 0 0">Sent with: ${esc(where)} and your phone or browser type, to help fix bugs. <button type="button" class="linkbtn" id="fbTerms">Terms and privacy</button></p>
     <div id="fbErr"></div></form>
     ${mine.length?`<fieldset style="margin-top:22px"><legend>What you sent before</legend>${mine.map(f=>`<div class="note"><span class="meta">${esc(f.kind)} · ${fmtDate(f.created_at)} ${fbPill(f.status)}</span><p>${esc(f.message)}</p>${f.reply?`<p style="margin-top:6px;color:var(--ok)"><b>Daniel:</b> ${esc(f.reply)}</p>`:''}</div>`).join('')}</fieldset>`:''}`;
   const w=sheet('Feedback', body, `<button class="btn soft" id="fbC" type="button">Cancel</button><button class="btn primary" id="fbS" type="button">Send</button>`);
   let kind='Suggestion';
   w.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{ kind=b.dataset.k; w.querySelectorAll('[data-k]').forEach(o=>o.setAttribute('aria-pressed', o===b)); });
-  w.querySelector('#fbC').onclick=closeSheet;
+  w.querySelector('#fbC').onclick=closeSheet; w.querySelector('#fbTerms').onclick=openTerms;
   w.querySelector('#fbS').onclick=async()=>{
     const msg=w.querySelector('#fbMsg').value.trim(), err=w.querySelector('#fbErr'), btn=w.querySelector('#fbS');
     if(msg.length<3){ err.innerHTML='<div class="msg err">Write a few words first.</div>'; return; }
@@ -1105,7 +1143,7 @@ function openPriceForm(v, p, pre){
       <div class="f wide"><label for="pl_src">Where is this price from?</label><input id="pl_src" value="${esc(x.source)}" placeholder="Quote email, receipt, website, phone call with Moshe"></div>
       <div class="f"><label for="pl_chk">Checked on</label><input id="pl_chk" type="date" value="${esc(x.checked_on)}"></div>
       <div class="f wide"><label for="pl_note">Note</label><input id="pl_note" value="${esc(x.note)}" placeholder="Show Teudat Ezrach Vatik at the gate"></div>
-      ${S.admin?'':`<div class="f wide"><label for="pl_reason">Why are you adding or changing it? <em>*</em></label><input id="pl_reason" placeholder="New price list received by email"></div>`}
+      ${S.admin?`<label class="check f wide" for="pl_priv"><input id="pl_priv" type="checkbox" ${x.private?'checked':''}><span><b>Private:</b> only you see this price</span></label>`:`<div class="f wide"><label for="pl_reason">Why are you adding or changing it? <em>*</em></label><input id="pl_reason" placeholder="New price list received by email"></div>`}
     </div><div id="plErr"></div></form>`;
   const w=sheet(p?(S.admin?'Edit price':'Suggest a price change'):(S.admin?'Add price':'Suggest a price'), body,
     `<button class="btn soft" id="pc" type="button">Cancel</button><button class="btn primary" id="ps" type="button">${S.admin?'Save':'Send to Daniel'}</button>`);
@@ -1113,7 +1151,7 @@ function openPriceForm(v, p, pre){
   w.querySelector('#pc').onclick=()=>openDetail(v.id);
   w.querySelector('#ps').onclick=async()=>{
     const g=id=>w.querySelector('#'+id).value.trim(); const err=w.querySelector('#plErr');
-    const line={id:p?p.id:undefined,label:g('pl_label'),audience:g('pl_aud'),age_from:g('pl_af'),age_to:g('pl_at'),pax_min:g('pl_pmin'),pax_max:g('pl_pmax'),price:g('pl_price').replace(/[,₪$€\s]/g,''),currency:g('pl_cur'),vat:g('pl_vat'),basis:g('pl_basis'),is_agent:g('pl_type')==='1',season:g('pl_season'),source:g('pl_src'),checked_on:g('pl_chk'),note:g('pl_note')};
+    const line={id:p?p.id:undefined,label:g('pl_label'),audience:g('pl_aud'),age_from:g('pl_af'),age_to:g('pl_at'),pax_min:g('pl_pmin'),pax_max:g('pl_pmax'),price:g('pl_price').replace(/[,₪$€\s]/g,''),currency:g('pl_cur'),vat:g('pl_vat'),basis:g('pl_basis'),is_agent:g('pl_type')==='1',season:g('pl_season'),source:g('pl_src'),checked_on:g('pl_chk'),note:g('pl_note'),private:S.admin?w.querySelector('#pl_priv').checked:false};
     if(!/^\d+(\.\d+)?$/.test(line.price)){ err.innerHTML='<div class="msg err">Enter the price as a number, like 360.</div>'; return; }
     const reason = S.admin?'':g('pl_reason');
     if(!S.admin && reason.length<3){ err.innerHTML='<div class="msg err">Add a short reason, like where the price came from.</div>'; return; }
