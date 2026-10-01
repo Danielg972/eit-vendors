@@ -904,7 +904,7 @@ function openDetail(id){
   w.querySelector('#edit').onclick=()=>openForm(v);
   drawFiles(v);
   drawExtras(v);
-  w.querySelector('#addPrice').onclick=()=>openPriceForm(v,null);
+  w.querySelector('#addPrice').onclick=async()=>{ let pp=false; try{ pp=(await DB.detail(v.id)).prices_private; }catch(e){} openPriceForm(v,null,null,pp); };
   const ppt=w.querySelector('#ppToggle'); if(ppt) ppt.onchange=async()=>{ try{ await DB.setPricesPrivate(v.id, ppt.checked); toast(ppt.checked?'Prices are now private to you':'Prices are visible to colleagues'); }catch(e){ ppt.checked=!ppt.checked; toast(e.message); } };
   w.querySelector('#addQuote').onclick=()=>openQuoteForm(v,null);
   drawQuotes(v);
@@ -920,16 +920,16 @@ async function drawExtras(v){
   let det; try{ det=await DB.detail(v.id); }catch(e){ const pb=document.getElementById('pricesBox'); if(pb) pb.innerHTML=`<div class="msg err">Couldn't load: ${esc(e.message)}</div>`; return; }
   const me=(S.user.email||'').toLowerCase();
   const pb=document.getElementById('pricesBox'); if(!pb) return;
-  if(!S.admin && det.prices_private){ pb.innerHTML='<p class="hint" style="margin:0 0 10px">Prices for this supplier are kept private. Contact the supplier for current rates.</p>'; return drawExtrasRest(v,det); }
-  pb.innerHTML = det.prices.length ? `<div class="prices">${det.prices.map(p=>`<div class="pl">
+  const privNote = (!S.admin && det.prices_private) ? '<p class="hint" style="margin:0 0 10px">Eretz Israel Tours keeps its prices for this supplier private. You can still add your own prices: only you (and Eretz Israel Tours) see them.</p>' : '';
+  pb.innerHTML = privNote + (det.prices.length ? `<div class="prices">${det.prices.map(p=>`<div class="pl">
       <span class="who3">${esc(p.label||p.audience)}</span><span class="amt">${esc(money(p.currency,p.price))}</span>
-      <span class="meta">${p.private?'<span class="tag" style="background:var(--bad-wash);color:var(--bad)">Private</span>':''}${p.is_agent?'<span class="tag agent">Agent rate</span>':'<span class="tag">Public price</span>'}${esc(priceWho(p))} · ${esc((p.basis||'').toLowerCase())}${vatLabel(p.vat)?' · '+esc(vatLabel(p.vat).toLowerCase()):''}${p.season?' · '+esc(p.season):''}</span>
+      <span class="meta">${p.mine?'<span class="tag" style="background:var(--ochre-wash);color:var(--ochre)">Your own price</span>':(p.owner&&S.admin?`<span class="tag" style="background:var(--ochre-wash);color:var(--ochre)">${esc(p.owner_name||p.owner)}'s own</span>`:(p.private?'<span class="tag" style="background:var(--bad-wash);color:var(--bad)">Private</span>':''))}${p.is_agent?'<span class="tag agent">Agent rate</span>':'<span class="tag">Public price</span>'}${esc(priceWho(p))} · ${esc((p.basis||'').toLowerCase())}${vatLabel(p.vat)?' · '+esc(vatLabel(p.vat).toLowerCase()):''}${p.season?' · '+esc(p.season):''}</span>
       ${p.note||p.source||p.checked_on?`<span class="meta">${p.note?esc(p.note)+'<br>':''}${p.source?'Source: '+esc(p.source):''}${p.checked_on?' · checked '+esc(p.checked_on):''}</span>`:''}
-      <span class="ctl"><button class="mini" data-pedit="${esc(p.id)}" type="button">${S.admin?'Edit':'Suggest change'}</button><button class="mini" data-pdel="${esc(p.id)}" type="button">${S.admin?'Remove':'Suggest removing'}</button></span></div>`).join('')}</div>`
-    : `<p class="hint" style="margin:0 0 10px">No price lines yet. Add adult, child, Israeli senior or group rates as separate lines.</p>`;
-  pb.querySelectorAll('[data-pedit]').forEach(b=>b.onclick=()=>openPriceForm(v, det.prices.find(p=>p.id===b.dataset.pedit)));
+      <span class="ctl">${(S.admin&&!(p.owner&&!p.mine))||p.mine?`<button class="mini" data-pedit="${esc(p.id)}" type="button">Edit</button>`:(S.admin?'':`<button class="mini" data-pedit="${esc(p.id)}" type="button">Suggest change</button>`)}<button class="mini" data-pdel="${esc(p.id)}" type="button">${S.admin||p.mine?'Remove':'Suggest removing'}</button></span></div>`).join('')}</div>`
+    : (privNote?'':`<p class="hint" style="margin:0 0 10px">No price lines yet. Add adult, child, Israeli senior or group rates as separate lines.</p>`));
+  pb.querySelectorAll('[data-pedit]').forEach(b=>b.onclick=()=>openPriceForm(v, det.prices.find(p=>p.id===b.dataset.pedit), null, det.prices_private));
   pb.querySelectorAll('[data-pdel]').forEach(b=>b.onclick=async()=>{
-    if(S.admin){ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again'; return; } try{ await DB.deletePrice(v.id,b.dataset.pdel); toast('Price removed'); drawExtras(v); }catch(e){ toast(e.message); } return; }
+    if(S.admin || (det.prices.find(p=>p.id===b.dataset.pdel)||{}).mine){ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again'; return; } try{ await DB.deletePrice(v.id,b.dataset.pdel); toast('Price removed'); drawExtras(v); }catch(e){ toast(e.message); } return; }
     openReasonSheet('Suggest removing this price','Why should it be removed?', async reason=>{ await DB.deletePrice(v.id,b.dataset.pdel,reason); toast('Sent for approval'); openDetail(v.id); });
   });
   drawExtrasRest(v,det);
@@ -1209,11 +1209,14 @@ function openReasonSheet(title, prompt, onSend){
     try{ await onSend(r); }catch(e){ w.querySelector('#rsnErr').innerHTML=`<div class="msg err">${esc(e.message)}</div>`; } };
 }
 
-function openPriceForm(v, p, pre){
+function openPriceForm(v, p, pre, pp){
+  const ownOnly = !S.admin && (pp || (p && p.mine)); const canChoose = !S.admin && !p && !pp;
   const x=Object.assign({label:'',audience:'Adult',age_from:'',age_to:'',pax_min:'',pax_max:'',season:'',price:'',currency:v.currency||'ILS',vat:'',basis:v.priceBasis||'Per person',is_agent:true,source:'',checked_on:today(),note:''}, p||pre||{});
   const opt=(arr,val)=>arr.map(o=>{const [k,t]=Array.isArray(o)?o:[o,o];return `<option value="${esc(k)}"${String(val)===k?' selected':''}>${esc(t)}</option>`}).join('');
   const body=`<form id="pf" novalidate>
-    ${S.admin?'':`<div class="lockbar">🔒 Prices are checked by Eretz Israel Tours before they appear. Your suggestion is sent with your reason.</div>`}
+    ${S.admin?'':(ownOnly?`<div class="lockbar">This price is just for you. Only you and Eretz Israel Tours see it. It saves straight away.</div>`:
+      (canChoose?`<div class="chips" role="radiogroup" aria-label="Who sees it" style="padding-top:0;margin-bottom:10px"><button type="button" class="chip" data-who="me" aria-pressed="true">Just for me</button><button type="button" class="chip" data-who="all" aria-pressed="false">Suggest for everyone</button></div>
+        <div class="lockbar" id="whoNote">Only you and Eretz Israel Tours see it. It saves straight away.</div>`:`<div class="lockbar">🔒 Shared prices are checked by Eretz Israel Tours before they appear. Your suggestion is sent with your reason.</div>`))}
     <div class="grid">
       <div class="f wide"><label for="pl_label">What is it?</label><input id="pl_label" value="${esc(x.label)}" placeholder="2-hour jeep tour, entrance ticket, half board…"></div>
       <div class="f"><label for="pl_aud">For</label><select id="pl_aud">${opt(AUDIENCES,x.audience)}</select></div>
@@ -1228,19 +1231,24 @@ function openPriceForm(v, p, pre){
       <div class="f wide"><label for="pl_src">Where is this price from?</label><input id="pl_src" value="${esc(x.source)}" placeholder="Quote email, receipt, website, phone call with Moshe"></div>
       <div class="f"><label for="pl_chk">Checked on</label><input id="pl_chk" type="date" value="${esc(x.checked_on)}"></div>
       <div class="f wide"><label for="pl_note">Note</label><input id="pl_note" value="${esc(x.note)}" placeholder="Show Teudat Ezrach Vatik at the gate"></div>
-      ${S.admin?`<label class="check f wide" for="pl_priv"><input id="pl_priv" type="checkbox" ${x.private?'checked':''}><span><b>Private:</b> only you see this price</span></label>`:`<div class="f wide"><label for="pl_reason">Why are you adding or changing it? <em>*</em></label><input id="pl_reason" placeholder="New price list received by email"></div>`}
+      ${S.admin?`<label class="check f wide" for="pl_priv"><input id="pl_priv" type="checkbox" ${x.private?'checked':''}><span><b>Private:</b> only you see this price</span></label>`:(ownOnly?'':`<div class="f wide" id="reasonWrapP" ${canChoose?'hidden':''}><label for="pl_reason">Why are you adding or changing it? <em>*</em></label><input id="pl_reason" placeholder="New price list received by email"></div>`)}
     </div><div id="plErr"></div></form>`;
-  const w=sheet(p?(S.admin?'Edit price':'Suggest a price change'):(S.admin?'Add price':'Suggest a price'), body,
-    `<button class="btn soft" id="pc" type="button">Cancel</button><button class="btn primary" id="ps" type="button">${S.admin?'Save':'Send for approval'}</button>`);
+  const w=sheet(p?(S.admin||ownOnly?'Edit price':'Suggest a price change'):(S.admin?'Add price':'Add a price'), body,
+    `<button class="btn soft" id="pc" type="button">Cancel</button><button class="btn primary" id="ps" type="button">${S.admin||ownOnly||canChoose?'Save':'Send for approval'}</button>`);
+  let forMe = ownOnly || canChoose;
+  w.querySelectorAll('[data-who]').forEach(b=>b.onclick=()=>{ forMe=b.dataset.who==='me'; w.querySelectorAll('[data-who]').forEach(o=>o.setAttribute('aria-pressed',o===b));
+    w.querySelector('#whoNote').textContent = forMe?'Only you and Eretz Israel Tours see it. It saves straight away.':'🔒 Shared prices are checked by Eretz Israel Tours before they appear. Say where the price comes from.';
+    w.querySelector('#reasonWrapP').hidden = forMe; w.querySelector('#ps').textContent = forMe?'Save':'Send for approval'; });
   const aud=w.querySelector('#pl_aud'); const age=w.querySelector('#ageWrap'); const syncAge=()=>{ age.hidden = aud.value!=='Child'; }; aud.onchange=syncAge; syncAge();
   w.querySelector('#pc').onclick=()=>openDetail(v.id);
   w.querySelector('#ps').onclick=async()=>{
     const g=id=>w.querySelector('#'+id).value.trim(); const err=w.querySelector('#plErr');
     const line={id:p?p.id:undefined,label:g('pl_label'),audience:g('pl_aud'),age_from:g('pl_af'),age_to:g('pl_at'),pax_min:g('pl_pmin'),pax_max:g('pl_pmax'),price:g('pl_price').replace(/[,₪$€\s]/g,''),currency:g('pl_cur'),vat:g('pl_vat'),basis:g('pl_basis'),is_agent:g('pl_type')==='1',season:g('pl_season'),source:g('pl_src'),checked_on:g('pl_chk'),note:g('pl_note'),private:S.admin?w.querySelector('#pl_priv').checked:false};
     if(!/^\d+(\.\d+)?$/.test(line.price)){ err.innerHTML='<div class="msg err">Enter the price as a number, like 360.</div>'; return; }
-    const reason = S.admin?'':g('pl_reason');
-    if(!S.admin && reason.length<3){ err.innerHTML='<div class="msg err">Add a short reason, like where the price came from.</div>'; return; }
-    try{ const r=await DB.savePrice(v.id,line,reason); toast(r&&r.request?'Sent for approval':'Price saved'); openDetail(v.id); }
+    line.mine = !S.admin && forMe;
+    const reason = (S.admin||forMe)?'':g('pl_reason');
+    if(!S.admin && !forMe && reason.length<3){ err.innerHTML='<div class="msg err">Add a short reason, like where the price came from.</div>'; return; }
+    try{ const r=await DB.savePrice(v.id,line,reason); toast(r&&r.request?'Sent for approval':(line.mine?'Saved. Only you see this price.':'Price saved')); openDetail(v.id); }
     catch(e){ err.innerHTML=`<div class="msg err">${esc(e.message)}</div>`; }
   };
 }
