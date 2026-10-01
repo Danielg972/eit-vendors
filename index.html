@@ -60,7 +60,7 @@ main{max-width:760px;margin:0 auto;padding:16px 16px 110px}
 .search input{flex:1;min-width:0;border:0;background:transparent;padding:12px 0;outline:none;font-size:16px}
 .chips{display:flex;gap:6px;overflow-x:auto;padding:12px 0 4px;scrollbar-width:none}
 .chips::-webkit-scrollbar{display:none}
-.chip{flex:none;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 12px;font-size:13px;color:var(--ink-2)}
+.chip{flex:none;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:10px 16px;font-size:15px;font-weight:500;color:var(--ink-2);min-height:42px}
 .chip[aria-pressed="true"]{background:var(--olive);border-color:var(--olive);color:var(--on-olive)}
 .count{font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-3);margin:14px 2px 8px}
 
@@ -258,6 +258,12 @@ textarea.out{width:100%;min-height:160px;font-family:var(--f-mono);font-size:12p
 .rule{display:flex;gap:10px;align-items:flex-start;max-width:760px;margin:12px auto 0;padding:10px 14px;border-radius:10px;background:var(--bad-wash);color:var(--ink);font-size:14px}
 .rule b{color:var(--bad)}
 .rule button{margin-left:auto;flex:none}
+.favs{display:flex;gap:8px;overflow-x:auto;padding:10px 0 4px;scrollbar-width:none}
+.favs::-webkit-scrollbar{display:none}
+.fav{flex:none;width:150px;text-align:left;border:1px solid var(--line);background:var(--card);border-radius:12px;padding:10px 12px}
+.fav b{display:block;font-size:14px;line-height:1.25;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.fav span{font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--ochre);font-weight:600}
+.favs-h{font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-3);margin:14px 2px 0}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(140px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--ground);padding:10px 16px;border-radius:999px;font-size:14px;z-index:40;max-width:calc(100% - 32px)}
 </style>
 <style>
@@ -327,7 +333,7 @@ function sample(){
 }
 
 // ---------- state ----------
-const S = { reg:'All', demoQuotes:{}, feedback:[], openVendor:null, files:{}, demo:{}, demoRequests:[], requests:[], token:null, members:[], user:null, admin:false, contributor:false, vendors:[], team:[], tab:'vendors', q:'', cat:'All', busy:false };
+const S = { myTop:[], reg:'All', demoQuotes:{}, feedback:[], openVendor:null, files:{}, demo:{}, demoRequests:[], requests:[], token:null, members:[], user:null, admin:false, contributor:false, vendors:[], team:[], tab:'vendors', q:'', cat:'All', busy:false };
 let sb = null;
 
 function bump(vid,k,n){ const v=S.vendors.find(x=>x.id===vid); if(v) v[k]=Math.max(0,(v[k]||0)+n); }
@@ -369,7 +375,7 @@ const DB = {
         requests:[]};
       S.vendors.find(v=>v.id==='vendor_k3m9p2x')._prices=4; S.vendors.find(v=>v.id==='vendor_k3m9p2x')._deals=1; S.vendors.find(v=>v.id==='vendor_k3m9p2x')._notes=2;
       S.demoRequests=[{id:'r1',vendor_id:'vendor_a81qz0c',vendor_name:'Dan Panorama Jerusalem',kind:'vendor_fields',proposed:{agentPrice:'1250',phone:'+972 2 569 5000'},current:{agentPrice:'1150',phone:'+972 2 569 5695'},reason:'New group rate for 2027, and the group desk has a new number.',requested_by:'rachel.ops@gmail.com',requested_name:'Rachel Amar',created_at:dd(1)}];
-      S.requests=S.demoRequests;
+      S.requests=S.demoRequests; S.myTop=['vendor_k3m9p2x','vendor_p0lk5sd','vendor_a81qz0c'];
       S.demoQuotes['vendor_p0lk5sd']=[{id:'q1',vendor_id:'vendor_p0lk5sd',title:'Jacobs family, 6 days',date_from:'2026-10-18',date_to:'2026-10-23',pax:'13',units:'1 vehicle',received_on:'2026-09-15',valid_until:'2026-10-05',ref:'',status:'Received',currency:'ILS',vat:'not_applicable',conditions:'Price includes driver, fuel and tolls. Overtime after 10 hours ₪150/hour. Driver overnight outside Jerusalem ₪350/night.',private_note:'',shared:false,owner:OWNER,owner_name:'Eretz Israel Tours',files:1,can_edit:true,
         options:[{id:'o1',name:'35-seat midibus',note:'',lines:[{label:'Midibus with driver',kind:'Base',price:'3000',unit:'per vehicle per day',qty:'1',times:'6'},{label:'Driver overnight in the north',kind:'Extra',price:'350',unit:'flat',qty:'2',times:'1'}]},
                  {id:'o2',name:'50-seat coach',note:'More luggage room',lines:[{label:'Coach with driver',kind:'Base',price:'3800',unit:'per vehicle per day',qty:'1',times:'6'},{label:'Driver overnight in the north',kind:'Extra',price:'350',unit:'flat',qty:'2',times:'1'}]}]}];
@@ -393,7 +399,7 @@ const DB = {
     S.contributor = !!(data && data.status==='approved'); S.admin = !!(data && data.is_admin && S.contributor);
     if(S.contributor){ await DB.loadVendors(); try{ await DB.loadFeedback(); }catch(e){} if(S.admin){ await DB.loadTeam(); try{ await DB.loadRequests(); }catch(e){} } }
   },
-  async loadVendors(){ if(!LIVE) return; try{ S.vendors = await rpc('vendors_list'); }catch(e){ toast('Could not load vendors: '+e.message); } },
+  async loadVendors(){ if(!LIVE) return; try{ S.vendors = await rpc('vendors_list'); }catch(e){ toast('Could not load vendors: '+e.message); } try{ S.myTop = await rpc('my_top'); }catch(e){ S.myTop=[]; } },
   async loadTeam(){ if(!LIVE) return; S.members = await rpc('members_list'); },
   async detail(vid){
     if(!LIVE){ return S.demo[vid] || (S.demo[vid]={prices:[],deals:[],notes:[],requests:[],sites:S.vendors.filter(x=>x.parent_id===vid).map(x=>({id:x.id,name:x.name,location:x.location,reservation:x.reservation})),parent:(()=>{const v=S.vendors.find(x=>x.id===vid); const pv=v&&v.parent_id&&S.vendors.find(x=>x.id===v.parent_id); return pv?{id:pv.id,name:pv.name}:null;})(),res_reports:[],res_answered:false}); }
@@ -708,7 +714,13 @@ function viewVendors(){
     <div class="sug-list" id="sugList" role="listbox" hidden></div></div>
     <div class="chips" role="group" aria-label="Filter by category">${cats.map(c=>`<button class="chip" data-cat="${esc(c)}" aria-pressed="${S.cat===c}">${esc(c)}</button>`).join('')}</div>
     <div class="chips" role="group" aria-label="Filter by region" style="padding-top:2px">${['All',...[...new Set(REGIONS.filter(r=>S.vendors.some(v=>v.region===r)).concat(S.vendors.map(v=>v.region).filter(r=>r&&!REGIONS.includes(r))))]].map(r=>`<button class="chip" data-reg="${esc(r)}" aria-pressed="${S.reg===r}">${r==='All'?'📍 All regions':esc(r)}</button>`).join('')}</div>
+    <div id="favBox"></div>
     <div id="results"></div>`;
+  const favs=(S.myTop||[]).map(id=>S.vendors.find(v=>v.id===id)).filter(Boolean).slice(0,8);
+  const fb=document.getElementById('favBox');
+  if(favs.length && !S.q && S.cat==='All' && S.reg==='All'){
+    fb.innerHTML=`<div class="favs-h">⭐ Your most used</div><div class="favs">${favs.map(v=>`<button class="fav" type="button" data-fav="${esc(v.id)}"><span>${esc(v.category)}</span><b>${esc(v.name)}</b></button>`).join('')}</div>`;
+    fb.querySelectorAll('[data-fav]').forEach(b=>b.onclick=()=>openDetail(b.dataset.fav)); }
   const q=document.getElementById('q'), list=document.getElementById('sugList'); let hits=[], on=-1;
   const close=()=>{ list.hidden=true; q.setAttribute('aria-expanded','false'); on=-1; };
   const pick=h=>{ if(h.kind==='Region'&&REGIONS.concat(S.vendors.map(v=>v.region)).includes(h.t)){ S.reg=h.t; S.q=''; viewVendors(); return; } if(h.kind==='Category'&&CATEGORIES.includes(h.t)){ S.cat=h.t; S.q=''; viewVendors(); return; }
@@ -941,7 +953,7 @@ function openDetail(id){
       + (v.review_status!=='approved'?'<button class="btn soft" id="rej">Reject</button><button class="btn accent" id="appr">Approve</button>':'') + foot;
   }
   const w=sheet(v.name, body, foot);
-  S.openVendor=v.name;
+  S.openVendor=v.name; track(v.id,'open'); if(!S.myTop.includes(v.id)) S.myTop=[...S.myTop,v.id];
   w.querySelector('#edit').onclick=()=>openForm(v);
   drawFiles(v);
   drawExtras(v);
@@ -1250,7 +1262,7 @@ async function drawActivity(v){
   const box=document.getElementById('actBox'); if(!box || !S.admin) return;
   let a; try{ a = LIVE ? await rpc('activity',{p_vendor:v.id}) : {counts:{whatsapp:4,call:2,maps:1},recent:[{member_name:'Rachel Amar',action:'whatsapp',created_at:new Date(Date.now()-3600e3).toISOString()},{member_name:'Yossi Ben-David',action:'call',created_at:new Date(Date.now()-86400e3).toISOString()}]}; }catch(e){ return; }
   const total=Object.values(a.counts||{}).reduce((x,y)=>x+y,0);
-  box.innerHTML=`<fieldset><legend>Contact activity · only you</legend>${total?`<p style="margin:0 0 8px">${total} tap${total>1?'s':''}: ${Object.entries(a.counts).map(([k,n])=>`${esc(ACT_LABEL[k]||k)} ${n}`).join(' · ')}</p>
+  box.innerHTML=`<fieldset><legend>Contact activity · only you</legend>${a.views?`<p class="hint" style="margin:0 0 6px">Opened ${a.views} time${a.views>1?'s':''}</p>`:''}${total?`<p style="margin:0 0 8px">${total} tap${total>1?'s':''}: ${Object.entries(a.counts).map(([k,n])=>`${esc(ACT_LABEL[k]||k)} ${n}`).join(' · ')}</p>
     ${a.recent.map(r=>`<div class="note" style="margin-bottom:6px"><span class="meta"><b>${esc(r.member_name||r.member)}</b> · ${esc(ACT_LABEL[r.action]||r.action)} · ${since(r.created_at)}</span></div>`).join('')}`:'<p class="hint" style="margin:0">No one has used the contact buttons yet.</p>'}</fieldset>`;
 }
 
