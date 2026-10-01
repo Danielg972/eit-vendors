@@ -40,3 +40,5 @@ Shared vendor list for Eretz Israel Tours colleagues. Static single-page app (Gi
 - Every supplier page: crowdsourced / no-responsibility disclaimer at the bottom.
 - Red "Update this supplier" button under the contact buttons: Closed, Location moved, Phone or contact changed, Prices changed, Something here is wrong, Other; optional anonymous. Table `vendor_reports`; RPCs `report_vendor`, `vendor_reports_list` (admin; hides the name on anonymous reports), `vendor_report_set`. Shown in Review > Supplier updates (Open supplier / Dismiss / Done) and counted in the Review badge.
 - Terms 2026-10-01e: 3a objective feedback, opinions marked, slander = removal; 5 crowdsourced disclaimer. Everyone re-accepts.
+- BCC address: suppliers@eretzisraeltours.com (SiteGround forwarder → daniel@eretzisraeltours.com → Gmail), set in app_settings.bcc_email.
+- Join form: license number optional; "I can't add my license or proof right now" opt-out with a required explanation (stored in the member note as "No proof: …", flagged ⚠ in Team). A license number already used by a pending or approved member is refused (compared ignoring spaces, dashes and case).

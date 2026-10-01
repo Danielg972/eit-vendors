@@ -629,12 +629,14 @@ async function sendProof(file, out){
 function renderGate(msg){
   app.innerHTML = `<div class="gate"><form class="gate-card" id="gateForm" novalidate>
     <h1 class="mark">Israel Suppliers Master List</h1>
-    <p>A vendor list kept by colleagues, for colleagues. Guides and travel professionals share the hotels, drivers, sites and suppliers they trust, and warn each other about the ones they don't, so all of us work a little easier.</p><p>To keep it among professionals, joining needs your license. Once approved, you get your own link. No password needed.</p>
+    <p>A vendor list kept by colleagues, for colleagues. Guides and travel professionals share the hotels, drivers, sites and suppliers they trust, and warn each other about the ones they don't, so all of us work a little easier.</p><p>To keep it among professionals, joining needs proof that you work in tourism, like your license. Once approved, you get your own link. No password needed.</p>
     <div class="f"><label for="gName">Your name <em>*</em></label><input id="gName" type="text" autocomplete="name" placeholder="Yossi Cohen" required></div>
     <div class="f"><label for="gEmail">Email <em>*</em></label><input id="gEmail" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com" required></div>
     <div class="f"><label for="gRole">What do you do? <em>*</em></label><select id="gRole"><option value="">Choose…</option>${ROLES.map(r=>`<option>${r}</option>`).join('')}</select></div>
-    <div class="f"><label for="gLic">License number <em id="licReq">*</em></label><input id="gLic" type="text" placeholder="Tour guide or travel agency license no."></div>
-    <div class="f"><label for="gProof">Photo of your license or card <em>*</em></label><input id="gProof" type="file" accept="image/*,application/pdf"><span class="hint">Only Eretz Israel Tours can see it.</span></div>
+    <div class="f"><label for="gLic">License number <span class="hint">(optional)</span></label><input id="gLic" type="text" placeholder="Tour guide or travel agency license no."></div>
+    <div class="f"><label for="gProof">Photo of your license or card <em id="proofReq">*</em></label><input id="gProof" type="file" accept="image/*,application/pdf"><span class="hint">Only Eretz Israel Tours can see it.</span></div>
+    <label class="check" for="gNoProof"><input id="gNoProof" type="checkbox"><span><b>I can't add my license or proof right now</b><br><span class="hint">Ask Eretz Israel Tours to approve you without it. Approval is not guaranteed.</span></span></label>
+    <div class="f" id="npWhy" hidden><label for="gWhy">Why, and how can Eretz Israel Tours check who you are? <em>*</em></label><textarea id="gWhy" rows="3" maxlength="240" placeholder="License is being renewed. I work with Eretz Israel Tours on Galilee groups, referred by Rachel."></textarea></div>
     <div class="f"><label for="gPhone">Phone</label><input id="gPhone" type="tel" autocomplete="tel" inputmode="tel" placeholder="+972 52 000 0000"></div>
     <div class="f"><label for="gNote">Anything else? (area, company, who referred you)</label><input id="gNote" type="text" placeholder="Galilee, referred by Rachel"></div>
     <label class="check" for="gTerms"><input id="gTerms" type="checkbox"><span>I agree to the <button type="button" class="linkbtn" id="gTermsLink">terms and privacy notice</button>, including that Eretz Israel Tours can see everything I add, also items I mark private.</span></label>
@@ -644,7 +646,9 @@ function renderGate(msg){
   </form></div>`;
   document.getElementById('gTermsLink').onclick=openTerms;
   const role=document.getElementById('gRole');
-  role.onchange=()=>{ document.getElementById('licReq').hidden = !['Licensed tour guide','Travel agent'].includes(role.value); };
+  const np=document.getElementById('gNoProof');
+  const syncReq=()=>{ document.getElementById('proofReq').hidden=np.checked; document.getElementById('npWhy').hidden=!np.checked; };
+  role.onchange=syncReq; np.onchange=syncReq;
   document.getElementById('gateForm').addEventListener('submit', async e=>{
     e.preventDefault();
     const v=id=>document.getElementById(id).value.trim();
@@ -653,14 +657,16 @@ function renderGate(msg){
     if(!v('gName')) probs.push('Add your name.');
     if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v('gEmail'))) probs.push('Enter a full email address.');
     if(!v('gRole')) probs.push('Choose what you do.');
-    if(['Licensed tour guide','Travel agent'].includes(v('gRole')) && v('gLic').length<3) probs.push('Add your license number.');
-    if(!file) probs.push('Add a photo of your license or card.');
+    const noProof=np.checked;
+    if(!noProof && !file) probs.push('Add a photo of your license or card.');
+    if(noProof && v('gWhy').length<10) probs.push('Say briefly why there is no proof and how we can check who you are.');
     if(!document.getElementById('gTerms').checked) probs.push('Please read and accept the terms.');
     if(probs.length){ out.innerHTML=`<div class="msg err">${probs.join(' ')}</div>`; return; }
     const b=document.getElementById('gSend'); b.disabled=true; b.textContent='Sending…';
     try{
-      await DB.requestAccess(v('gName'),v('gEmail'),v('gRole'),v('gLic'),v('gPhone'),v('gNote'),TERMS_VERSION);
-      try{ await sendProof(file,out); }catch(err){ toast("Your request was sent, but the photo didn't upload. Try again on the next screen."); }
+      const note = noProof ? ('No proof: '+v('gWhy')+(v('gNote')?' | '+v('gNote'):'')).slice(0,300) : v('gNote');
+      await DB.requestAccess(v('gName'),v('gEmail'),v('gRole'),v('gLic'),v('gPhone'),note,TERMS_VERSION);
+      if(file) try{ await sendProof(file,out); }catch(err){ toast("Your request was sent, but the photo didn't upload. Try again on the next screen."); }
       await DB.loadMe(); boot();
     }catch(err){ b.disabled=false; b.textContent='Ask to join'; out.innerHTML=`<div class="msg err">${esc(err.message)}</div>`; }
   });
@@ -681,7 +687,7 @@ function renderWaiting(){
       : `<p>Thanks, ${esc(S.me.name.split(' ')[0])}. Eretz Israel Tours will review your request soon. This is your personal link. Save it, and use it to open the app on any phone or computer.</p>
          ${linkBox('myLink', personalLink(S.token))}
          <p class="hint">Keep it to yourself. Anyone with this link can use the app as you.</p>
-         ${S.me.has_proof?'':`<div class="dup" style="margin-top:12px">We still need a photo of your license or card.<div class="addrow" style="margin-top:8px"><input id="wProof" type="file" accept="image/*,application/pdf"><button class="btn primary" id="wSend" type="button">Upload</button></div><div id="wMsg"></div></div>`}
+         ${S.me.has_proof?'':`<div class="dup" style="margin-top:12px">If you haven't yet, add a photo of your license or card to speed up approval.<div class="addrow" style="margin-top:8px"><input id="wProof" type="file" accept="image/*,application/pdf"><button class="btn primary" id="wSend" type="button">Upload</button></div><div id="wMsg"></div></div>`}
          <button class="btn soft" id="chk" style="margin-top:10px">Check if I'm approved</button>`}
     <button class="btn soft" id="out" style="margin-top:10px">Use a different link</button></div></div>`;
   wireCopy(app);
@@ -878,7 +884,7 @@ function viewTeam(){
       <div class="addrow"><input id="bccIn" type="email" value="${esc((S.me&&S.me.bcc_email)||'')}" placeholder="suppliers@eretzisraeltours.com"><button class="btn primary" id="bccSave" type="button">Save</button></div>
     </section>
     <section class="panel"><h3>Asking to join</h3>
-      ${pend.length? pend.map(m=>`<div class="rev"><div class="who2"><b>${esc(m.name)}</b><span>${esc(m.role||'Role not given')}${m.license_no?` · license <span class="mono">${esc(m.license_no)}</span>`:''}<br>${esc(m.email)}${m.phone?' · '+esc(m.phone):''}${m.note?'<br>'+esc(m.note):''}</span></div>
+      ${pend.length? pend.map(m=>`<div class="rev"><div class="who2"><b>${esc(m.name)}</b><span>${esc(m.role||'Role not given')}${m.license_no?` · license <span class="mono">${esc(m.license_no)}</span>`:''}<br>${esc(m.email)}${m.phone?' · '+esc(m.phone):''}${m.note?'<br>'+(/^No proof:/.test(m.note)?`<b style="color:var(--warn)">⚠ Asked to join without proof.</b> ${esc(m.note.replace(/^No proof:\s*/,''))}`:esc(m.note)):''}</span></div>
         <div class="btn-row">${m.has_proof?`<button class="btn soft" data-proof="${m.id}">View proof</button>`:'<span class="pill pending">No proof yet</span>'}<button class="btn soft" data-no="${m.id}">Decline</button><button class="btn primary" data-yes="${m.id}">Approve</button></div><span id="pf_${m.id}" style="flex-basis:100%"></span></div>`).join('')
         : '<p style="margin:0">No one is waiting.</p>'}
     </section>
