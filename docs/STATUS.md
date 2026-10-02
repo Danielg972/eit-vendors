@@ -41,7 +41,7 @@
 
 - **Keep-alive:** fixed 1 Oct 2026. The old ping read a blocked table and failed with HTTP 401. It now calls the `ping` function, which was tested and returned `ok:100`. Next run is in at most 3 days, or it can be run by hand in GitHub Actions.
 - **Join alerts:** push to Eretz Israel Tours' phone via the ntfy app (no personal details in the alert). Added 1 Oct 2026.
-- **Security:** 0 table grants to anon or authenticated, 0 RLS policies. All access goes through token-checked RPCs and the `files` edge function. Colleague-privacy probe passed on 1 Oct 2026. From D-5: two functions, `booking_open` and `booking_answer`, are checked by a one-booking link key instead of a member token; they reach that booking only.
+- **Security:** 0 table grants to anon or authenticated, 0 RLS policies. All access goes through token-checked RPCs and the `files` edge function. Colleague-privacy probe passed on 1 Oct 2026. From D-5: two functions, `booking_open` and `booking_answer`, are checked by a one-booking link key instead of a member token; they reach that booking only. Since 2 Oct 2026 (issue #1, run 16:38 Israel time): anon and authenticated also have no privileges on the two identity sequences, and new tables, sequences and functions that postgres creates in `public` no longer get anon/authenticated grants automatically. New functions still get PostgreSQL's PUBLIC EXECUTE, so each one needs its own `revoke ... from public`.
 - **Change process:** changes are committed straight to `main` and deployed by GitHub Pages; there is no review gate. Schema changes must be re-exported to `supabase/schema.sql` in the same change. That rule was adopted 1 Oct 2026.
 
 ## Known risks
@@ -57,6 +57,7 @@
 9. From D-6: the 3-month use-and-add rule is in the terms but nothing measures it yet. The Team tab shows last seen only; what each member added is not counted, and no reminder is sent.
 10. From D-6: the terms now promise that members approved while the list is free never pay ("founding members"). Have the lawyer read 2a and 2b.
 11. From D-6: the name "The Inner Circle" has had no trademark search; a dating app uses "Inner Circle".
+12. From issue #1: Supabase's own `supabase_admin` role still has default privileges in `public` that grant anon and authenticated on anything it creates there; changing them is outside what postgres normally can do and was not attempted. Accepted residual. After platform changes, check table and function privileges (pg_class.relacl, pg_proc.proacl).
 
 ## Waiting for the owner
 
