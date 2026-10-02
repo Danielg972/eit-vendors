@@ -16,7 +16,11 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 2. **Drivers can be reviewed**: the bus companies' drivers and van drivers.
 3. **The phone number identifies the driver.** It is entered so colleagues can confirm it is the same driver.
 
-**Implementation choices (not owner decisions; change on request):** one driver per phone number across all suppliers, with reviews following him; reviews show the reviewer's name and role, in line with the standing "From [name]" rule (quotes are the only anonymous item, per D-2); a rating from 1 to 5 is required, tags and text optional; the author or Eretz Israel Tours can delete a review.
+4. **Bus drivers are listed under their bus company, as a sub tab** ("because some are contracted by bus company"). Owner, 13:26.
+5. **Adding a driver starts with a pop-up: van driver, or driver for a bus company?** It leads either to the independent van driver's own page or to the Drivers sub tab of the company. Owner, 13:26.
+6. **Reviews take free text as well** as the tap buttons. Owner, 13:20.
+
+**Implementation choices (not owner decisions; change on request):** an independent van driver's "own page" is a Transport supplier tagged `Independent van driver`; one driver per phone number across all suppliers, with reviews following him; reviews show the reviewer's name and role, in line with the standing "From [name]" rule (quotes are the only anonymous item, per D-2); a rating from 1 to 5 is required, tags and text optional; the author or Eretz Israel Tours can delete a review.
 
 **To check with a lawyer:** drivers are individuals who are not members. Their names, work numbers and colleagues' reviews are now stored.
 

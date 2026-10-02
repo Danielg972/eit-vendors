@@ -269,6 +269,14 @@ a.mini{display:inline-block;text-decoration:none;color:var(--ink)}
 .tg{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:8px 13px;font-size:14px;color:var(--ink-2)}
 .tg[aria-pressed="true"]{background:var(--olive);border-color:var(--olive);color:var(--on-olive)}
 .tg.bad[aria-pressed="true"]{background:var(--bad);border-color:var(--bad);color:var(--card)}
+.vtabs{margin:0 0 14px}
+.vtabs .otab{flex:1;max-width:none;font-size:15px;font-weight:500;padding:10px 12px;text-align:center}
+.sheet-body.only-drivers > :not(.keep){display:none}
+.sheet-body:not(.only-drivers) > .drv-pane{display:none}
+.choice{display:block;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px}
+.choice b{display:block;font-size:16px;margin-bottom:3px}
+.choice span{font-size:13.5px;color:var(--ink-2)}
+.choice:active{background:var(--wash)}
 .ownrow{display:flex;gap:6px;margin:0 0 14px}
 .ownrow input{flex:1;min-width:0;border:1px solid var(--line);background:var(--card);border-radius:8px;padding:9px 11px;font-size:16px}
 .qhead{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline}
@@ -379,7 +387,7 @@ const REGIONS = ['Jerusalem','Gush Etzion & Judea','Binyamin & Shomron','Dead Se
 const TAG_SUGGEST = {Adventure:['Jeep','ATV / RZR','Rappelling','Kayak & rafting','Zipline','Boat','Snorkelling','Bikes','Horse riding','Camels','Shooting'],
   Activity:['Workshop','Food & wine','Volunteering','Archaeology','Family','Shooting','Farm'],
   Hotel:['Kosher','Shabbat-friendly','Kibbutz','Boutique','Pool'],
-  Transport:['Bus','Midibus','Minibus','Van','Armoured bus','Airport transfers'],
+  Transport:['Bus','Midibus','Minibus','Van','Independent van driver','Armoured bus','Airport transfers'],
   Restaurant:['Meat','Dairy','Mehadrin','Group menus','Winery'],
   Guide:['Eshkol license','Owns an Eshkol vehicle','Midbari 4x4 vehicle','Carries a gun','Driver-guide','English','French','Spanish','Russian'],
   'Travel Agent':['Hotel bookings','Flights','Packages','Groups','Commission'],
@@ -410,6 +418,7 @@ function sample(){
     v({id:'vendor_p0lk5sd',name:'Shomron Bus Lines',category:'Transport',contactPerson:'Avi',phone:'+972 54 000 1234',location:'Ariel',maxCap:'50',agentPrice:'2400',agentPriceVatTreatment:'plus_vat',priceBasis:'Per day',payTerms:'Cash or transfer on the day',rateReliability:'3',review_status:'pending',created_by:'rachel.ops@gmail.com',updated_by:'rachel.ops@gmail.com',updated_at:d(0)}),
     v({id:'vendor_g4l1c0a',name:'Galil Buses',category:'Transport',contactPerson:'Dudu',phone:'+972 54 000 5678',location:'Tiberias',region:'Galilee',maxCap:'55',priceBasis:'Per day',tags:'Bus, Midibus'}),
     v({id:'vendor_n3g7v2t',name:'Negev & Arava Transport',category:'Transport',contactPerson:'Eli',phone:'+972 54 000 9012',location:'Beer Sheva',region:'Negev & Arava',maxCap:'53',priceBasis:'Per day',tags:'Bus, Minibus, Van'}),
+    v({id:'vendor_v4n0001',name:'Eli Dahan',category:'Transport',contactPerson:'Eli Dahan',phone:'050-000-3344',whatsapp:'050-000-3344',location:'Beer Sheva',region:'Negev & Arava',maxCap:'9',priceBasis:'Per day',tags:'Van, Independent van driver'}),
     v({id:'vendor_q9x1b7e',name:'Machane Yehuda Food Walk',category:'Activity',location:'Jerusalem',kosher:'Mixed stalls, mostly Rabbanut',agentPrice:'220',priceBasis:'Per person',maxPax:'15',rateService:'5',rateValue:'5',strengths:'Families love it'}),
     v({id:'vendor_z2c8m1v',name:'Ronit Katz',category:'Guide',phone:'+972 50 777 2211',languages:'English, Hebrew, French',agentPrice:'1600',priceBasis:'Per day',active:'Inactive',notes:'On leave until spring'})
   ];
@@ -465,7 +474,8 @@ const DB = {
           {id:'r2',rating:'4',tags:'Knows the roads',body:'',trip_month:'2026-02',vendor_id:'vendor_p0lk5sd',by:{name:'Eretz Israel Tours',role:'',admin:true},mine:true,created_at:dd(200)}]},
         {id:'d2',name:'Avi Mizrahi',phone:'052-000-1122',drives:'Bus',vendors:['vendor_p0lk5sd'],reviews:[
           {id:'r3',rating:'2',tags:'Late, On the phone while driving',body:'40 minutes late to the morning pick-up, and took calls on Road 6.',trip_month:'2026-06',vendor_id:'vendor_p0lk5sd',by:{name:'Yossi Ben-David',role:'Licensed tour guide',admin:false},mine:false,created_at:dd(90)}]},
-        {id:'d3',name:'Eli Dahan',phone:'050-000-3344',drives:'Van',vendors:['vendor_n3g7v2t'],reviews:[]}];
+        {id:'d3',name:'Eli Dahan',phone:'050-000-3344',drives:'Van',vendors:['vendor_v4n0001'],reviews:[
+          {id:'r4',rating:'5',tags:'On time, Good English, Flexible',body:'Picked up a family of six at the airport at 3am, no fuss.',trip_month:'2026-07',vendor_id:'vendor_v4n0001',by:{name:'Rachel Amar',role:'Tour operator',admin:false},mine:false,created_at:dd(70)}]}];
       const dq=(vid,o)=>{ (S.demoQuotes[vid]=S.demoQuotes[vid]||[]).push(Object.assign({vendor_id:vid,title:'',pax:'',units:'',valid_until:'',ref:'',status:'Received',currency:'ILS',vat:'not_applicable',conditions:'',private_note:'',shared:true,owner:OWNER,owner_name:'Eretz Israel Tours',owner_admin:true,files:0,can_edit:true,mine:true,created_at:dd(5),updated_at:dd(5)},o)); };
       const col=(n,r)=>({owner:n.toLowerCase().replace(/\s+/g,'.')+'@example.com',owner_name:n,owner_role:r,owner_admin:false,mine:false});
       const bus=(label,price,times)=>({label,kind:'Base',price:String(price),unit:'per vehicle per day',qty:'1',times:String(times||1)});
@@ -842,7 +852,7 @@ function renderWaiting(){
 
 function filtered(){
   const q=normN(S.q);
-  return S.vendors.filter(v=>(S.cat==='All'||catsOf(v).includes(S.cat)) && (S.reg==='All'||(v.region||'')===S.reg) && (S.cat!=='Guide'||!(S.gat||[]).length||S.gat.every(a=>String(v.tags||'').toLowerCase().split(',').map(t=>t.trim()).includes(a.toLowerCase()))) && (!q || normN([v.name,v.location,v.region,v.tags,v.contactPerson,v.category,v.notes].join(' ')).includes(q)))
+  return S.vendors.filter(v=>(S.cat==='All'||catsOf(v).includes(S.cat)) && (S.reg==='All'||(v.region||'')===S.reg) && (S.cat!=='Transport'||!S.tat||(S.tat==='van')===isIndep(v)) && (S.cat!=='Guide'||!(S.gat||[]).length||S.gat.every(a=>String(v.tags||'').toLowerCase().split(',').map(t=>t.trim()).includes(a.toLowerCase()))) && (!q || normN([v.name,v.location,v.region,v.tags,v.contactPerson,v.category,v.notes].join(' ')).includes(q)))
     .sort(S.sort==='az' ? (a,b)=>a.name.localeCompare(b.name) : (a,b)=>mixKey(a)-mixKey(b));
 }
 // Mixed order: a shuffle that is different for each person and changes every day, so no supplier sits at the top
@@ -894,6 +904,8 @@ function viewVendors(){
     <div class="chips" role="group" aria-label="Filter by category">${cats.map(c=>`<button class="chip" data-cat="${esc(c)}" aria-pressed="${S.cat===c}">${esc(c)}</button>`).join('')}</div>
     <div class="chips" role="group" aria-label="Filter by region" style="padding-top:2px">${['All',...byUse('region',[...new Set(REGIONS.filter(r=>S.vendors.some(v=>v.region===r)).concat(S.vendors.map(v=>v.region).filter(r=>r&&!REGIONS.includes(r))))])].map(r=>`<button class="chip" data-reg="${esc(r)}" aria-pressed="${S.reg===r}">${r==='All'?'📍 All regions':esc(r)}</button>`).join('')}</div>
     ${S.cat==='Guide'?`<div class="chips" role="group" aria-label="Guide details" style="padding-top:2px">${GUIDE_ATTRS.map(a=>`<button class="chip" data-gat="${esc(a)}" aria-pressed="${(S.gat||[]).includes(a)}">${(S.gat||[]).includes(a)?'✓ ':''}${esc(a)}</button>`).join('')}</div>`:''}
+    ${S.cat==='Transport'?`<div class="chips" role="group" aria-label="Kind of transport supplier" style="padding-top:2px">${[['','All transport'],['bus','Bus companies'],['van','Independent van drivers']].map(([k,l])=>`<button class="chip" data-tat="${k}" aria-pressed="${(S.tat||'')===k}">${esc(l)}</button>`).join('')}</div>
+      <button class="btn soft" id="drvStart" type="button" style="width:100%;margin-top:8px">+ Add or review a driver</button>`:''}
     <div id="favBox"></div>
     <div id="results"></div>`;
   const favs=(S.myTop||[]).map(id=>S.vendors.find(v=>v.id===id)).filter(Boolean).slice(0,8);
@@ -927,6 +939,8 @@ function viewVendors(){
   q.addEventListener('blur',()=>setTimeout(close,120));
   view.querySelectorAll('[data-cat]').forEach(c=>c.onclick=()=>{S.cat=c.dataset.cat; if(S.cat!=='All') useBump('category',S.cat); viewVendors();});
   view.querySelectorAll('[data-reg]').forEach(c=>c.onclick=()=>{S.reg=c.dataset.reg; if(S.reg!=='All') useBump('region',S.reg); viewVendors();});
+  view.querySelectorAll('[data-tat]').forEach(c=>c.onclick=()=>{ S.tat=c.dataset.tat; viewVendors(); });
+  const dst=view.querySelector('#drvStart'); if(dst) dst.onclick=()=>openDriverStart();
   view.querySelectorAll('[data-gat]').forEach(c=>c.onclick=()=>{ const a=c.dataset.gat; S.gat=(S.gat||[]).includes(a)?S.gat.filter(x=>x!==a):[...(S.gat||[]),a]; viewVendors(); });
   drawList();
 }
@@ -1240,8 +1254,10 @@ function priceWho(p){
 }
 const today=()=>new Date().toISOString().slice(0,10);
 
-function openDetail(id){
+function openDetail(id, opt){
   const v=S.vendors.find(x=>x.id===id); if(!v) return;
+  const isTr=catsOf(v).includes('Transport'), indep=isIndep(v);
+  const vtabs=isTr?`<div class="otabs vtabs keep" role="tablist"><button class="otab" type="button" role="tab" data-vt="main" aria-selected="true">${indep?'Details':'Company'}</button><button class="otab" type="button" role="tab" data-vt="drivers" aria-selected="false">${indep?'Driver reviews':'Drivers'}<span class="ot" id="drvCount"></span></button></div>`:'';
   const rows=(pairs)=>pairs.filter(p=>p[1]).map(([k,val])=>`<dt>${k}</dt><dd>${val}</dd>`).join('');
   const sign=CUR_SIGN[v.currency]||'';
   const price=(p,vat)=>p&&Number(p)===0?'<b>Free</b>':p?`<span class="mono">${esc(sign)}${esc(p)}</span>${vatLabel(vat)?` <span class="hint">${esc(vatLabel(vat))}</span>`:''}`:'';
@@ -1253,7 +1269,7 @@ function openDetail(id){
     ['Cancellation',rows([['Policy',esc(v.cancelPolicy)],['Notice',notice],['Penalty',esc(v.cancelPenalty)],['Checked',esc(v.cancelPolicyVerifiedDate)]])],
     ['Experience',rows([['Ratings',rating],['Strengths',esc(v.strengths)],['Weaknesses',esc(v.weaknesses)],['Summary',esc(v.notes)]])]
   ].filter(s=>s[1]);
-  const body=`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px"><span class="cat">${esc(v.category)}${v.also_categories?' + '+esc(v.also_categories):''}</span>${v.region||v.location?`<span class="hint">${esc(v.region||v.location)}</span>`:''}${statusPill(v)}</div>
+  const body=`${vtabs}<div class="keep" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px"><span class="cat">${esc(v.category)}${v.also_categories?' + '+esc(v.also_categories):''}</span>${v.region||v.location?`<span class="hint">${esc(v.region||v.location)}</span>`:''}${statusPill(v)}</div>
     <div id="parentBox"></div>
     ${contactBar(v)}
     <button class="btn red upd" id="upd" type="button">⚠ Update this supplier <span>closed, moved, wrong details</span></button>
@@ -1262,7 +1278,8 @@ function openDetail(id){
     <div id="reqBox"></div>
     <div id="sitesWrap"></div>
     <fieldset><div class="sec-head"><legend>Quotes</legend><button class="mini" id="addQuote" type="button">+ Add quote</button></div><div id="quotesBox"><p class="hint">Loading…</p></div></fieldset>
-    ${catsOf(v).includes('Transport')?`<fieldset><div class="sec-head"><legend>Drivers</legend><button class="mini" id="addDriver" type="button">+ Add or find a driver</button></div><div id="driversBox"><p class="hint">Loading…</p></div></fieldset>`:''}
+    ${isTr?`<fieldset class="drv-pane keep"><div class="sec-head"><legend>${indep?'Driver':'Drivers of '+esc(v.name)}</legend><button class="mini" id="addDriver" type="button">+ Add or find a driver</button></div>
+      <p class="hint" style="margin:0 0 10px">${indep?'An independent van driver. Reviews from colleagues who rode with him.':'Employed or contracted by this company. A driver keeps his reviews if he also drives for another company.'}</p><div id="driversBox"><p class="hint">Loading…</p></div></fieldset>`:''}
     <fieldset><div class="sec-head"><legend>Standard prices</legend><button class="mini" id="addPrice" type="button">+ Add price</button></div>
       ${S.admin?`<label class="switch" for="ppToggle" style="margin-bottom:10px"><input id="ppToggle" type="checkbox" ${v.prices_private?'checked':''}><span><b>Keep this supplier's prices private</b><br><span class="hint">Colleagues still see the supplier and contacts, but no prices. You can also mark single price lines private.</span></span></label>`:''}
       <div id="pricesBox"><p class="hint">Loading…</p></div></fieldset>
@@ -1297,6 +1314,8 @@ function openDetail(id){
   w.querySelector('#addQuote').onclick=()=>openQuoteForm(v,null);
   drawQuotes(v);
   const adr=w.querySelector('#addDriver'); if(adr){ adr.onclick=()=>openDriverFind(v); drawDrivers(v); }
+  const sbd=w.querySelector('.sheet-body'), setVt=t=>{ sbd.classList.toggle('only-drivers',t==='drivers'); w.querySelectorAll('[data-vt]').forEach(x=>x.setAttribute('aria-selected', x.dataset.vt===t)); sbd.scrollTop=0; };
+  w.querySelectorAll('[data-vt]').forEach(x=>x.onclick=()=>setVt(x.dataset.vt)); if(isTr&&opt&&opt.tab==='drivers') setVt('drivers');
   w.querySelector('#addDeal').onclick=()=>openDealForm(v);
   w.querySelector('#noteAdd').onclick=async()=>{ const t=w.querySelector('#noteText'); const body=t.value.trim(); if(!body){ t.focus(); return; }
     try{ await DB.addNote(v.id, body); t.value=''; toast('Note added'); drawExtras(v); }catch(e){ toast(e.message); } };
@@ -1450,12 +1469,80 @@ function driverCard(d, i, v, bare){
 async function drawDrivers(v){
   const box=document.getElementById('driversBox'); if(!box) return;
   let ds=[]; try{ ds=await DB.loadDrivers(v.id); }catch(e){ box.innerHTML=`<div class="msg err">Couldn't load drivers: ${esc(e.message)}</div>`; return; }
+  const cnt=document.getElementById('drvCount'); if(cnt) cnt.textContent=ds.length?String(ds.length):'';
+  const addB=document.getElementById('addDriver'); if(addB&&isIndep(v)) addB.hidden=ds.length>0;
   if(!ds.length){ box.innerHTML='<p class="hint" style="margin:0 0 10px">No drivers yet. Add the driver you rode with and his phone number. The number is how colleagues know it is the same driver, whichever company he is driving for.</p>'; return; }
   box.innerHTML=ds.map((d,i)=>driverCard(d,i,v)).join('');
   box.querySelectorAll('[data-drev]').forEach(b=>b.onclick=()=>openDriverReview(v, ds[+b.dataset.drev]));
   box.querySelectorAll('[data-dedit]').forEach(b=>b.onclick=()=>openDriverForm(v, ds[+b.dataset.dedit]));
   box.querySelectorAll('[data-dmore]').forEach(b=>b.onclick=()=>{ b.closest('.qcard').querySelectorAll('[data-more]').forEach(x=>x.hidden=false); b.remove(); });
   box.querySelectorAll('[data-rdel]').forEach(b=>b.onclick=async()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again'; return; } try{ await DB.deleteDriverReview(b.dataset.rdel); toast('Review deleted'); drawDrivers(v); }catch(e){ toast(e.message); } });
+}
+// A van driver who works for himself is a supplier of his own (tag "Independent van driver"); a bus driver is listed under his company.
+function isIndep(v){ return String(v&&v.tags||'').toLowerCase().split(',').map(t=>t.trim()).includes('independent van driver'); }
+function openDriverStart(){
+  const w=sheet('Add or review a driver', `<p style="margin:0 0 12px;font-size:16px">Is this a van driver, or a driver for a bus company?</p>
+    <button class="choice" id="dsVan" type="button"><b>Independent van driver</b><span>Works for himself with his own van. He gets his own page.</span></button>
+    <button class="choice" id="dsBus" type="button"><b>Driver for a bus company</b><span>Employed or contracted by the company. He is listed under the company, in its Drivers tab.</span></button>`,
+    `<button class="btn soft" id="dsc" type="button">Cancel</button>`);
+  w.querySelector('#dsc').onclick=closeSheet; w.querySelector('#dsVan').onclick=()=>openVanDriver(); w.querySelector('#dsBus').onclick=()=>openDriverCompany();
+}
+function openDriverCompany(){
+  const w=sheet('Which bus company?', `<label class="search" for="dcq">${icons.search}<input id="dcq" type="search" placeholder="Search bus company" autocomplete="off"></label>
+    <div id="dcList" style="margin-top:10px"></div>
+    <p class="hint" style="margin-top:12px">Company not on the list? Add it first with "+ Add supplier", then add its drivers.</p>`, `<button class="btn soft" id="dcb" type="button">Back</button>`);
+  const inp=w.querySelector('#dcq'), list=w.querySelector('#dcList');
+  const draw=()=>{ const n=normN(inp.value);
+    const hits=S.vendors.filter(v=>catsOf(v).includes('Transport')&&!isIndep(v)&&(!n||normN([v.name,v.region,v.location,v.tags].join(' ')).includes(n))).sort((x,y)=>x.name.localeCompare(y.name)).slice(0,40);
+    list.innerHTML=hits.length?hits.map(v=>`<button class="pick" type="button" data-v="${esc(v.id)}"><b>${esc(v.name)}</b><span>${esc(v.region||v.location||'')}</span></button>`).join(''):'<p class="hint">No bus company with that name.</p>';
+    list.querySelectorAll('[data-v]').forEach(x=>x.onclick=()=>{ const v=S.vendors.find(y=>y.id===x.dataset.v); if(v) openDriverFind(v); }); };
+  inp.addEventListener('input',draw); w.querySelector('#dcb').onclick=()=>openDriverStart(); draw(); setTimeout(()=>inp.focus(),50);
+}
+function openVanDriver(){
+  const w=sheet('Independent van driver', `<p style="margin:0 0 12px">Start with his phone number. It is how colleagues know it is the same driver.</p>
+    <div class="grid"><div class="f wide"><label for="dph">Driver's phone number</label><input id="dph" type="tel" inputmode="tel" autocomplete="off" placeholder="054 000 0000"></div></div>
+    <div class="btn-row" style="margin-top:10px"><button class="btn primary" id="dck" type="button">Check this number</button></div>
+    <div id="dres" style="margin-top:14px"></div>`, `<button class="btn soft" id="dvb" type="button">Back</button>`);
+  const g=id=>w.querySelector('#'+id), res=g('dres'); g('dvb').onclick=()=>openDriverStart();
+  const fail=e=>{ const x=res.querySelector('#derr'); if(x) x.innerHTML=`<div class="msg err">${esc(e.message)}</div>`; else toast(e.message); };
+  const go=(v,d,review)=>{ if(review) openDriverReview(v,d); else openDetail(v.id,{tab:'drivers'}); };
+  // his own page: a Transport supplier tagged as an independent van driver, with him as its driver
+  const makePage=async(name,ph,region)=>{ const dup=S.vendors.find(v=>normN(v.name)===normN(name));
+    if(dup) throw new Error(`A supplier called "${dup.name}" is already on the list. Open it, or add his town to the name.`);
+    const saved=await DB.save(Object.assign(blank(),{name,category:'Transport',active:'Active',contactPerson:name,phone:ph,whatsapp:ph,region:region||'',tags:'Van, Independent van driver',priceBasis:'Per day',currency:'ILS'}),'');
+    const id=await DB.saveDriver(saved.id,{name,phone:ph,drives:'Van'}); render(); return {v:S.vendors.find(x=>x.id===saved.id)||saved,d:{id,name,phone:ph,drives:'Van'}}; };
+  const check=async()=>{ const ph=g('dph').value.trim(), pn=phoneNorm(ph);
+    if(pn.length<7){ res.innerHTML='<div class="msg err">Enter the full phone number.</div>'; return; }
+    res.innerHTML='<p class="hint">Checking…</p>'; let d=null;
+    try{ d=await DB.findDriver(ph); }catch(e){ res.innerHTML=`<div class="msg err">${esc(e.message)}</div>`; return; }
+    if(d){ const mine=(d.vendors||[]).map(x=>S.vendors.find(v=>v.id===x.id)).filter(Boolean), home=mine.find(isIndep)||mine[0];
+      res.innerHTML=`<div class="msg ok" style="margin:0 0 10px">This number is already on the list. Is this your driver?</div>${driverCard(d,0,null,true)}
+        <div class="btn-row" style="margin-top:10px">${home?`<button class="btn primary" id="dsame" type="button">Yes, same driver · add my review</button>`:''}${mine.some(isIndep)?'':`<button class="btn soft" id="dpage" type="button">Yes · he also works for himself, give him his own page</button>`}</div>
+        <p class="hint" style="margin-top:10px">Not him? Check the number. One phone number is one driver.</p><div id="derr"></div>`;
+      const sm=res.querySelector('#dsame'); if(sm) sm.onclick=()=>go(home,d,true);
+      const pg=res.querySelector('#dpage'); if(pg) pg.onclick=async()=>{ try{ const r=await makePage(d.name,d.phone,''); go(r.v,d,false); toast('He now has his own page'); }catch(e){ fail(e); } };
+      return; }
+    const sv=S.vendors.find(v=>[v.phone,v.whatsapp].some(x=>String(x||'').split(/[;,/]/).some(y=>phoneNorm(y)===pn)));
+    if(sv&&!catsOf(sv).includes('Transport')){ res.innerHTML=`<div class="msg ok" style="margin:0 0 10px">This number belongs to <b>${esc(sv.name)}</b> (${esc(sv.category)}) on the list.</div>
+        <div class="btn-row"><button class="btn primary" id="dsvo" type="button">Open ${esc(sv.name)}</button></div>
+        <p class="hint" style="margin-top:10px">If he also drives a van for hire, edit his page and add Transport under "Also offers". Then add him as the driver there.</p>`;
+      res.querySelector('#dsvo').onclick=()=>openDetail(sv.id); return; }
+    if(sv){ res.innerHTML=`<div class="msg ok" style="margin:0 0 10px">This number belongs to a supplier on the list: <b>${esc(sv.name)}</b>. Is that him?</div>
+        <div class="btn-row"><button class="btn primary" id="dsv" type="button">Yes · review him there</button><button class="btn soft" id="dsvo" type="button">Open ${esc(sv.name)}</button></div><div id="derr"></div>`;
+      res.querySelector('#dsvo').onclick=()=>openDetail(sv.id);
+      res.querySelector('#dsv').onclick=async()=>{ try{ const name=sv.contactPerson||sv.name; const id=await DB.saveDriver(sv.id,{name,phone:ph,drives:'Van'}); go(sv,{id,name,phone:ph,drives:'Van'},true); }catch(e){ fail(e); } };
+      return; }
+    res.innerHTML=`<div class="msg ok" style="margin:0 0 10px">New number. Add him, and he gets his own page under Transport.</div>
+      <div class="grid"><div class="f wide"><label for="dname">Driver's name <em>*</em></label><input id="dname" autocomplete="off" placeholder="Moshe Cohen"></div>
+        <div class="f wide"><label for="dreg">Where is he based?</label><select id="dreg"><option value="">Choose…</option>${REGIONS.map(r=>`<option>${esc(r)}</option>`).join('')}</select></div></div>
+      <div class="btn-row" style="margin-top:12px"><button class="btn primary" id="dadd" type="button">Add him and review him</button><button class="btn soft" id="daddonly" type="button">Add him only</button></div><div id="derr"></div>`;
+    res.querySelector('#dname').focus();
+    const add=async review=>{ const name=res.querySelector('#dname').value.trim(); if(!name){ fail({message:'Enter the driver\'s name.'}); return; }
+      try{ const r=await makePage(name,ph,res.querySelector('#dreg').value); if(!review) toast(S.admin?'Van driver added':'Added. It will be reviewed.'); go(r.v,r.d,review); }catch(e){ fail(e); } };
+    res.querySelector('#dadd').onclick=()=>add(true); res.querySelector('#daddonly').onclick=()=>add(false);
+  };
+  g('dck').onclick=check; g('dph').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); check(); } });
+  setTimeout(()=>g('dph').focus(),50);
 }
 function kindsPicker(val){ const on=String(val||'').split(',').map(t=>t.trim()).filter(Boolean); return `<div class="tgs" id="dkinds" role="group" aria-label="What he drives">${DRV_KINDS.map(k=>`<button class="tg" type="button" data-k="${esc(k)}" aria-pressed="${on.includes(k)}">${esc(k)}</button>`).join('')}</div>`; }
 function wireToggles(root){ root.querySelectorAll('.tg').forEach(b=>b.onclick=()=>b.setAttribute('aria-pressed', b.getAttribute('aria-pressed')!=='true')); }
@@ -1467,7 +1554,7 @@ function openDriverFind(v){
     <div class="btn-row" style="margin-top:10px"><button class="btn primary" id="dck" type="button">Check this number</button></div>
     <div id="dres" style="margin-top:14px"></div>`, `<button class="btn soft" id="dcancel" type="button">Cancel</button>`);
   const g=id=>w.querySelector('#'+id), res=g('dres');
-  g('dcancel').onclick=()=>openDetail(v.id);
+  g('dcancel').onclick=()=>openDetail(v.id,{tab:'drivers'});
   const check=async()=>{ const ph=g('dph').value.trim();
     if(phoneNorm(ph).length<7){ res.innerHTML='<div class="msg err">Enter the full phone number.</div>'; return; }
     res.innerHTML='<p class="hint">Checking…</p>'; let d=null;
@@ -1478,7 +1565,7 @@ function openDriverFind(v){
         <p class="hint" style="margin-top:10px">Not him? Check the number. One phone number is one driver.</p><div id="derr"></div>`;
       const link=async then=>{ try{ if(!here) await DB.saveDriver(v.id,{phone:d.phone,name:d.name}); then(); }catch(e){ res.querySelector('#derr').innerHTML=`<div class="msg err">${esc(e.message)}</div>`; } };
       res.querySelector('#dsame').onclick=()=>link(()=>openDriverReview(v,d));
-      const dl=res.querySelector('#dlink'); if(dl) dl.onclick=()=>link(()=>{ toast('Driver added to this supplier'); openDetail(v.id); });
+      const dl=res.querySelector('#dlink'); if(dl) dl.onclick=()=>link(()=>{ toast('Driver added to this supplier'); openDetail(v.id,{tab:'drivers'}); });
       return; }
     res.innerHTML=`<div class="msg ok" style="margin:0 0 10px">New number. Add the driver.</div>
       <div class="grid"><div class="f wide"><label for="dname">Driver's name <em>*</em></label><input id="dname" autocomplete="off" placeholder="Moshe Cohen"></div></div>
@@ -1487,7 +1574,7 @@ function openDriverFind(v){
     wireToggles(res); res.querySelector('#dname').focus();
     const add=async review=>{ const name=res.querySelector('#dname').value.trim(); if(!name){ res.querySelector('#derr').innerHTML='<div class="msg err">Enter the driver\'s name.</div>'; return; }
       try{ const drv={name,phone:ph,drives:pressed(res,'#dkinds')}; const id=await DB.saveDriver(v.id,drv);
-        if(review) openDriverReview(v,Object.assign({id},drv)); else { toast('Driver added'); openDetail(v.id); } }
+        if(review) openDriverReview(v,Object.assign({id},drv)); else { toast('Driver added'); openDetail(v.id,{tab:'drivers'}); } }
       catch(e){ res.querySelector('#derr').innerHTML=`<div class="msg err">${esc(e.message)}</div>`; } };
     res.querySelector('#dadd').onclick=()=>add(true); res.querySelector('#daddonly').onclick=()=>add(false);
   };
@@ -1500,18 +1587,18 @@ function openDriverForm(v, d){
     <p class="hint" style="margin:12px 0 0">What does he drive?</p>${kindsPicker(d.drives)}
     ${S.admin?`<div class="btn-row"><button class="mini" id="doff" type="button">Take him off ${esc(v.name)}</button><button class="mini" id="ddel" type="button">Delete driver and all his reviews</button></div>`:''}<div id="derr"></div>`,
     `<button class="btn soft" id="dcancel" type="button">Cancel</button><button class="btn primary" id="dsave" type="button">Save</button>`);
-  const g=id=>w.querySelector('#'+id); wireToggles(w); g('dcancel').onclick=()=>openDetail(v.id);
+  const g=id=>w.querySelector('#'+id); wireToggles(w); g('dcancel').onclick=()=>openDetail(v.id,{tab:'drivers'});
   const fail=e=>{ g('derr').innerHTML=`<div class="msg err">${esc(e.message)}</div>`; };
   g('dsave').onclick=async()=>{ const name=g('dname').value.trim(), phone=g('dph').value.trim();
     if(!name||phoneNorm(phone).length<7){ fail({message:'Enter the driver\'s name and full phone number.'}); return; }
-    try{ await DB.saveDriver(v.id,{id:d.id,name,phone,drives:pressed(w,'#dkinds')}); toast('Driver saved'); openDetail(v.id); }catch(e){ fail(e); } };
-  const twice=(b,fn)=>{ if(b) b.onclick=async()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again to confirm'; return; } try{ await fn(); openDetail(v.id); }catch(e){ fail(e); } }; };
+    try{ await DB.saveDriver(v.id,{id:d.id,name,phone,drives:pressed(w,'#dkinds')}); toast('Driver saved'); openDetail(v.id,{tab:'drivers'}); }catch(e){ fail(e); } };
+  const twice=(b,fn)=>{ if(b) b.onclick=async()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again to confirm'; return; } try{ await fn(); openDetail(v.id,{tab:'drivers'}); }catch(e){ fail(e); } }; };
   twice(g('doff'),async()=>{ await DB.removeDriver(d.id,v.id); toast('Taken off this supplier'); });
   twice(g('ddel'),async()=>{ await DB.removeDriver(d.id,''); toast('Driver deleted'); });
 }
 function openDriverReview(v, d){
   const tg=(list,bad)=>list.map(k=>`<button class="tg${bad?' bad':''}" type="button" data-k="${esc(k)}" aria-pressed="false">${esc(k)}</button>`).join('');
-  const w=sheet('Review a driver', `<p style="margin:0 0 12px"><b>${esc(d.name)}</b> · <span class="mono">${esc(d.phone)}</span><br><span class="hint">Driving for ${esc(v.name)}</span></p>
+  const w=sheet('Review a driver', `<p style="margin:0 0 12px"><b>${esc(d.name)}</b> · <span class="mono">${esc(d.phone)}</span><br><span class="hint">${isIndep(v)?'Independent van driver':'Driving for '+esc(v.name)}</span></p>
     <div class="f"><label>Overall <em>*</em></label><div class="stars" id="drate">${[1,2,3,4,5].map(n=>`<button type="button" data-n="${n}" aria-pressed="false" aria-label="${n} out of 5">${n}</button>`).join('')}</div><span class="hint">1 = would not use again · 5 = ask for him by name</span></div>
     <p class="hint" style="margin:14px 0 0">What went well</p><div class="tgs" id="dgood" style="margin-bottom:6px">${tg(DRV_GOOD,false)}</div>
     <div class="ownrow"><input id="dgoodx" maxlength="40" autocomplete="off" placeholder="Something else? Type it" aria-label="Something else that went well"><button class="mini" id="dgoodadd" type="button">Add</button></div>
@@ -1529,11 +1616,11 @@ function openDriverReview(v, d){
     inp.value=''; };
   [['dgood',false],['dbad',true]].forEach(([grp,bad])=>{ g(grp+'add').onclick=()=>{ own(grp,bad); g(grp+'x').focus(); }; g(grp+'x').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); own(grp,bad); } }); });
   g('drate').querySelectorAll('button').forEach(b=>b.onclick=()=>{ rating=b.dataset.n; g('drate').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed', x===b)); });
-  g('dcancel').onclick=()=>openDetail(v.id);
+  g('dcancel').onclick=()=>openDetail(v.id,{tab:'drivers'});
   g('dsave').onclick=async()=>{ if(!rating){ g('derr').innerHTML='<div class="msg err">Give an overall rating from 1 to 5.</div>'; return; }
     own('dgood',false); own('dbad',true);
     const b=g('dsave'); b.disabled=true; b.textContent='Saving…';
-    try{ await DB.addDriverReview(d.id, v.id, {rating,tags:[pressed(w,'#dgood'),pressed(w,'#dbad')].filter(Boolean).join(', '),body:g('dbody').value.trim(),trip_month:g('dmon').value}); toast('Review added'); openDetail(v.id); }
+    try{ await DB.addDriverReview(d.id, v.id, {rating,tags:[pressed(w,'#dgood'),pressed(w,'#dbad')].filter(Boolean).join(', '),body:g('dbody').value.trim(),trip_month:g('dmon').value}); toast('Review added'); openDetail(v.id,{tab:'drivers'}); }
     catch(e){ b.disabled=false; b.textContent='Save review'; g('derr').innerHTML=`<div class="msg err">${esc(e.message)}</div>`; } };
 }
 
