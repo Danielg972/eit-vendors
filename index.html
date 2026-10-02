@@ -249,6 +249,17 @@ textarea.out{width:100%;min-height:160px;font-family:var(--f-mono);font-size:12p
 .qcond summary{cursor:pointer;color:var(--ink-2)}
 .qcond p{white-space:pre-wrap;margin:6px 0 0}
 /* ask the list */
+.ask-meter{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:0 0 14px}
+.am{margin-bottom:10px}
+.am-h{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--ink-2);margin-bottom:5px}
+.am-h span:last-child{text-align:right;font-variant-numeric:tabular-nums}
+.am-bar{height:8px;border-radius:999px;background:var(--wash);overflow:hidden}
+.am-bar i{display:block;height:100%;border-radius:999px;background:var(--olive-2)}
+.am-bar i.full{background:var(--bad)}
+.am-bal{display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid var(--line);padding-top:10px}
+.am-bal b{font-size:20px;font-weight:500}
+.am-bal b.neg{color:var(--bad)}
+a.btn{display:inline-block;text-decoration:none}
 .ask-q{margin:14px 0 6px 18%;background:var(--olive);color:var(--on-olive);border-radius:14px 14px 4px 14px;padding:10px 14px;overflow-wrap:anywhere}
 .ask-a{margin:0 6% 6px 0;background:var(--card);border:1px solid var(--line);border-radius:14px 14px 14px 4px;padding:12px 14px;line-height:1.5;overflow-wrap:anywhere}
 .ask-a.err{background:var(--bad-wash);border-color:transparent;color:var(--bad)}
@@ -514,7 +525,12 @@ const DB = {
       S.vendors.find(v=>v.id==='vendor_k3m9p2x')._prices=4; S.vendors.find(v=>v.id==='vendor_k3m9p2x')._deals=1; S.vendors.find(v=>v.id==='vendor_k3m9p2x')._notes=2;
       S.demoRequests=[{id:'r1',vendor_id:'vendor_a81qz0c',vendor_name:'Dan Panorama Jerusalem',kind:'vendor_fields',proposed:{agentPrice:'1250',phone:'+972 2 569 5000'},current:{agentPrice:'1150',phone:'+972 2 569 5695'},reason:'New group rate for 2027, and the group desk has a new number.',requested_by:'rachel.ops@gmail.com',requested_name:'Rachel Amar',created_at:dd(1)}];
       S.requests=S.demoRequests; S.myTop=['vendor_k3m9p2x','vendor_p0lk5sd','vendor_a81qz0c'];
-      S.askStatus={on:true,per_day:15,left:null,for:'admin',cap_usd:15,spent_usd:1.84,asked:63,by_person:[{name:'Rachel Amar',n:31,usd:0.92},{name:'Eretz Israel Tours',n:20,usd:0.61},{name:'Yossi Ben-David',n:12,usd:0.31}]};
+      S.askStatus={on:true,per_day:15,left:null,for:'admin',cap_usd:15,spent_usd:1.84,asked:63,by_person:[{name:'Rachel Amar',n:31,usd:0.92},{name:'Eretz Israel Tours',n:20,usd:0.61},{name:'Yossi Ben-David',n:12,usd:0.31}],
+        mine:{today:2,month:20,usd:0.61},everyone:{month:63,usd:1.84,cap_usd:15},balance_usd:18.83,ils_per_usd:3.08,avg_usd:0.029,
+        pay:{paypal:'https://example.com/paypal',paybox:'https://example.com/paybox',bit:'054-000-0000'},
+        history:[{id:'c3',name:'Yossi Ben-David',amount:40,currency:'ILS',usd:0,method:'PayBox',status:'reported',mine:false,date:dd(0)},
+          {id:'c2',name:'A colleague',amount:10,currency:'USD',usd:10,method:'PayPal',status:'confirmed',mine:false,hidden_name:true,date:dd(3)},
+          {id:'c1',name:'Rachel Amar',amount:50,currency:'ILS',usd:16.23,method:'Bit',status:'confirmed',mine:false,date:dd(6)}]};
       S.demoDrivers=[
         {id:'d1',name:'Moshe Cohen',phone:'054-000-5678',drives:'Bus, Midibus',vendors:['vendor_g4l1c0a','vendor_p0lk5sd'],reviews:[
           {id:'r1',rating:'5',tags:'On time, Safe driver, Helpful with luggage',body:'Calm on the descent to the Dead Sea and early every morning.',trip_month:'2026-08',vendor_id:'vendor_g4l1c0a',by:{name:'Rachel Amar',role:'Tour operator',admin:false},mine:false,created_at:dd(40)},
@@ -652,6 +668,18 @@ const DB = {
   async removeDriver(did, vid){
     if(!LIVE){ if(vid){ const x=S.demoDrivers.find(y=>y.id===did); x.vendors=x.vendors.filter(z=>z!==vid); } else S.demoDrivers=S.demoDrivers.filter(y=>y.id!==did); return; }
     await rpc('driver_remove',{p_driver:did,p_vendor:vid||''});
+  },
+  async askRefresh(){ if(LIVE){ try{ S.askStatus=await rpc('ask_status',{}); }catch(e){} } },
+  async contribute(d){
+    if(!LIVE){ const a=S.askStatus, usd=d.currency==='USD'?+d.amount:Math.round(d.amount/a.ils_per_usd*100)/100;
+      a.history.unshift({id:'c'+Date.now(),name:d.name||S.me.name,amount:+d.amount,currency:d.currency,usd:S.admin?usd:0,method:d.method,status:S.admin?'confirmed':'reported',mine:!d.name,date:new Date().toISOString()}); if(S.admin) a.balance_usd+=usd; return; }
+    await rpc('ask_contribute',{p_data:d}); await DB.askRefresh();
+  },
+  async contributionSet(id, action){
+    if(!LIVE){ const a=S.askStatus, c=a.history.find(x=>x.id===id); if(!c) return;
+      if(action==='confirm'){ c.status='confirmed'; c.usd=c.currency==='USD'?+c.amount:Math.round(c.amount/a.ils_per_usd*100)/100; a.balance_usd+=c.usd; }
+      else { if(c.status==='confirmed') a.balance_usd-=c.usd; a.history=a.history.filter(x=>x.id!==id); } return; }
+    await rpc('ask_contribution_set',{p_id:id,p_action:action}); await DB.askRefresh();
   },
   async ask(question, history){
     if(!LIVE){ await new Promise(r=>setTimeout(r,700)); return {answer:ASK_SAMPLE, left:S.askStatus.left==null?null:Math.max(0,S.askStatus.left-1)}; }
@@ -856,7 +884,7 @@ const TERMS_HTML=`<p class="hint">Version ${TERMS_VERSION}. Plain-language summa
 <h4>6a. Email copies</h4><p><b>When you email a supplier with the app's Email button, Eretz Israel Tours is added as a BCC to help keep prices, bookings and supplier details up to date for everyone. You can see and remove it in each email, and you can opt out at any time under My settings.</b> WhatsApp messages and calls are not copied; the app only records that you tapped the button.</p>
 <h4>6b. Quotes are shared without your name</h4><p><b>A quote you add is shared with colleagues by default, without your name.</b> They see the supplier, the dates, the prices, what was included, what cost extra and the conditions. They never see who got the quote, the client or trip, the supplier's reference, your private note or your attachments. You can switch sharing off on any quote; then only you and Eretz Israel Tours see it. Eretz Israel Tours sees who added every quote. The averages in the Quotes tab are worked out from these quotes. Don't write client names or personal details in the conditions box.</p>
 <h4>6c. Booking sheets</h4><p><b>When you send a booking sheet, the bus or van company sees your name, your phone and the job</b>: date, passengers, vehicle, pick-up, outline of the day, drop-off and your notes to them. It never sees the client, your private note or anything else in this app. Once you confirm a sheet, its price and terms are shared with colleagues in the Quotes tab without your name, like any quote (6b). You can switch that off on each sheet. Eretz Israel Tours sees every booking sheet. A booking sheet records what you and the company agreed; it is not legal advice, and Eretz Israel Tours is not a party to your booking.</p>
-<h4>6d. Ask the list (AI assistant)</h4><p><b>When you use the Ask tab, your question and the parts of the list you are allowed to see are sent to an AI service (Claude, by Anthropic) to write the answer.</b> That includes suppliers' details, prices, shared quotes, notes and driver reviews. It does not include your name, email, phone or license, drivers' phone numbers, booking sheets, attachments or private notes. Don't type client names or personal details into a question. Questions and answers are not stored here; Eretz Israel Tours sees only how many questions each member asks. <b>Answers can be wrong.</b> Open the supplier's page and confirm with the supplier before you book.</p>
+<h4>6d. Ask the list (AI assistant)</h4><p><b>When you use the Ask tab, your question and the parts of the list you are allowed to see are sent to an AI service (Claude, by Anthropic) to write the answer.</b> That includes suppliers' details, prices, shared quotes, notes and driver reviews. It does not include your name, email, phone or license, drivers' phone numbers, booking sheets, attachments or private notes. Don't type client names or personal details into a question. Questions and answers are not stored here; Eretz Israel Tours sees only how many questions each member asks; everyone sees the total. Contributing towards the assistant's cost is voluntary: if you do, your name and the amount appear in the contributions list for all members, unless you choose to leave your name off. <b>Answers can be wrong.</b> Open the supplier's page and confirm with the supplier before you book.</p>
 <h4>7. Sponsored content</h4><p>If supplier offers or promotions are ever paid for, they will be clearly labelled as sponsored. Ratings and notes are never for sale.</p>
 <h4>8. Changes</h4><p>If these terms change, you'll be asked to accept the new version.</p>`;
 function openTerms(){ sheet('Terms and privacy', `<div class="terms">${TERMS_HTML}</div>`, `<button class="btn primary" id="tOk" type="button">Close</button>`).querySelector('#tOk').onclick=closeSheet; }
@@ -1231,8 +1259,13 @@ ${S.askStatus&&S.askStatus.for?(a=>`<section class="panel"><h3>Ask the list (AI 
       <p>Colleagues type a question and an AI answers from the list. Each answer costs a few cents, charged to your Claude Console account. It stops by itself when the monthly budget is used.</p>
       <div class="grid"><div class="f"><label for="askFor">Who can use it</label><select id="askFor">${[['off','Switched off'],['admin','Only you'],['all','All colleagues']].map(([k,l])=>`<option value="${k}"${a.for===k?' selected':''}>${l}</option>`).join('')}</select></div>
         <div class="f"><label for="askDaily">Questions per person, per day</label><input id="askDaily" inputmode="numeric" value="${esc(a.per_day)}"></div>
-        <div class="f"><label for="askCap">Monthly budget, US dollars</label><input id="askCap" inputmode="decimal" value="${esc(a.cap_usd)}"></div></div>
-      <div class="btn-row" style="margin-top:10px"><button class="btn primary" id="askSave" type="button">Save</button></div>
+        <div class="f"><label for="askCap">Monthly budget, US dollars</label><input id="askCap" inputmode="decimal" value="${esc(a.cap_usd)}"></div>
+        <div class="f"><label for="askRate">Shekels per dollar</label><input id="askRate" inputmode="decimal" value="${esc(a.ils_per_usd||3.08)}"></div>
+        <div class="f wide"><label for="askPaypal">PayPal link for contributions</label><input id="askPaypal" type="url" value="${esc((a.pay||{}).paypal||'')}" placeholder="https://paypal.me/yourname"></div>
+        <div class="f wide"><label for="askPaybox">PayBox link</label><input id="askPaybox" type="url" value="${esc((a.pay||{}).paybox||'')}" placeholder="https://links.payboxapp.com/…"></div>
+        <div class="f wide"><label for="askBit">Bit: link or phone number</label><input id="askBit" value="${esc((a.pay||{}).bit||'')}" placeholder="054-000-0000"></div></div>
+      <div class="btn-row" style="margin-top:10px"><button class="btn primary" id="askSave" type="button">Save</button><button class="btn soft" id="askHist" type="button">Contributions${(n=>n?` · ${n} to confirm`:'')((a.history||[]).filter(c=>c.status==='reported').length)}</button></div>
+      <p class="hint" style="margin:10px 0 0">Balance: <b class="mono">${esc(askMoney(+a.balance_usd||0))}</b> (contributions confirmed, minus everything spent so far).</p>
       <p class="hint" style="margin:10px 0 0">This month: <b class="mono">$${Number(a.spent_usd||0).toFixed(2)}</b> of $${esc(a.cap_usd)} used, ${a.asked||0} question${a.asked===1?'':'s'}.${(a.by_person||[]).length?' '+a.by_person.map(p=>`${esc(p.name)} ${p.n}`).join(' · ')+'.':''} The questions themselves are not kept.</p>
     </section>`)(S.askStatus):''}
     <section class="panel"><h3>Asking to join</h3>
@@ -1250,12 +1283,13 @@ ${S.askStatus&&S.askStatus.for?(a=>`<section class="panel"><h3>Ask the list (AI 
   wireCopy(view);
   view.querySelector('#bccSave').onclick=async()=>{ const v=view.querySelector('#bccIn').value.trim();
     try{ if(LIVE){ const { error } = await sb.rpc('set_setting',{p_token:S.token,p_key:'bcc_email',p_value:v}); if(error) throw new Error(error.message); } S.me.bcc_email=v.toLowerCase(); toast(v?'Email copies go to '+v:'Email copies turned off'); }catch(e){ toast(e.message); } };
-  const askSave=view.querySelector('#askSave'); if(askSave) askSave.onclick=async()=>{ const a=S.askStatus, want={ask_for:view.querySelector('#askFor').value, ask_daily:view.querySelector('#askDaily').value.trim(), ask_cap_usd:view.querySelector('#askCap').value.trim().replace(/^\$/,'')};
-    const had={ask_for:a.for, ask_daily:String(a.per_day), ask_cap_usd:String(a.cap_usd)}; askSave.disabled=true;
+  const askSave=view.querySelector('#askSave'); if(askSave) askSave.onclick=async()=>{ const a=S.askStatus, gv=id=>view.querySelector(id).value.trim(), want={ask_for:gv('#askFor'), ask_daily:gv('#askDaily'), ask_cap_usd:gv('#askCap').replace(/^\$/,''), ask_ils_per_usd:gv('#askRate'), ask_paypal:gv('#askPaypal'), ask_paybox:gv('#askPaybox'), ask_bit:gv('#askBit')};
+    const pay=a.pay||{}, had={ask_for:a.for, ask_daily:String(a.per_day), ask_cap_usd:String(a.cap_usd), ask_ils_per_usd:String(a.ils_per_usd||3.08), ask_paypal:pay.paypal||'', ask_paybox:pay.paybox||'', ask_bit:pay.bit||''}; askSave.disabled=true;
     try{ for(const k of Object.keys(want)){ if(want[k]===had[k]) continue; if(LIVE){ const { error } = await sb.rpc('set_setting',{p_token:S.token,p_key:k,p_value:want[k]}); if(error) throw new Error(error.message); } }
-      if(LIVE) S.askStatus=await rpc('ask_status',{}); else Object.assign(a,{for:want.ask_for,on:want.ask_for!=='off',per_day:+want.ask_daily||a.per_day,cap_usd:+want.ask_cap_usd||a.cap_usd});
+      if(LIVE) S.askStatus=await rpc('ask_status',{}); else Object.assign(a,{for:want.ask_for,on:want.ask_for!=='off',per_day:+want.ask_daily||a.per_day,cap_usd:+want.ask_cap_usd||a.cap_usd,ils_per_usd:+want.ask_ils_per_usd||a.ils_per_usd,pay:{paypal:want.ask_paypal,paybox:want.ask_paybox,bit:want.ask_bit}});
       toast(want.ask_for==='off'?'The assistant is switched off':want.ask_for==='admin'?'The assistant is on for you only':'The assistant is on for all colleagues'); render(); }
     catch(e){ askSave.disabled=false; toast(e.message); } };
+  const askHist=view.querySelector('#askHist'); if(askHist) askHist.onclick=()=>openContribute();
   const bkAll=view.querySelector('#bkAll'); if(bkAll) bkAll.onchange=async e=>{ const on=e.target.checked;
     try{ if(LIVE){ const { error } = await sb.rpc('set_setting',{p_token:S.token,p_key:'bookings_for',p_value:on?'all':'admin'}); if(error) throw new Error(error.message); } S.me.bookings_for=on?'all':'admin'; toast(on?'Booking sheets are open to all colleagues':'Booking sheets are back to you only'); }catch(err){ e.target.checked=!on; toast(err.message); } };
   (async()=>{ const box=view.querySelector('#actAll'); if(!box) return;
@@ -1603,17 +1637,66 @@ function askLinked(text){
   return h.replace(/\u0001(\d+)\u0001/g,(m,i)=>slots[+i]||'').replace(/\n/g,'<br>');
 }
 function askTurn(t){ return `<div class="ask-q">${esc(t.q)}</div><div class="ask-a${t.err?' err':''}" ${t.busy?'aria-busy="true"':''}>${t.busy?'<span class="hint">Looking through the list…</span>':t.err?esc(t.err):askLinked(t.a)}</div>`; }
+// The assistant's cost is in dollars; colleagues think in shekels. Shown in shekels at the rate set in the Team tab.
+function askMoney(usd){ const v=usd*(+((S.askStatus||{}).ils_per_usd)||3.08); return (v<0?'−':'')+'₪'+Math.abs(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function askQs(usd){ return Math.max(0, Math.round(usd/(+((S.askStatus||{}).avg_usd)||0.03))); }
+function askMeter(){
+  const st=S.askStatus||{}; if(!st.mine) return '';
+  const bar=(label,now,max,text)=>`<div class="am"><div class="am-h"><span>${label}</span><span>${text}</span></div><div class="am-bar" role="meter" aria-label="${label}" aria-valuemin="0" aria-valuemax="${max}" aria-valuenow="${Math.min(now,max)}" aria-valuetext="${esc(text)}"><i style="width:${max>0?Math.min(100,Math.round(now/max*100)):0}%"${max>0&&now>=max?' class="full"':''}></i></div></div>`;
+  const bal=+st.balance_usd||0, e=st.everyone||{};
+  return `<section class="ask-meter" aria-label="Usage and balance">
+    ${st.left==null?`<div class="am"><div class="am-h"><span>You, this month</span><span>${st.mine.month} question${st.mine.month===1?'':'s'} · ${esc(askMoney(+st.mine.usd))}</span></div></div>`
+      :bar('You, today', +st.mine.today, +st.per_day, `${st.mine.today} of ${st.per_day} questions · ${st.mine.month} this month`)}
+    ${bar('Everyone, this month', +e.usd, +e.cap_usd, `${e.month} question${e.month===1?'':'s'} · ${esc(askMoney(+e.usd))} of ${esc(askMoney(+e.cap_usd))}`)}
+    <div class="am-bal"><div><span class="hint">Balance</span><br><b class="mono${bal<0?' neg':''}">${esc(askMoney(bal))}</b> <span class="hint">${bal>=0?`pays for about ${askQs(bal)} more questions`:`behind by about ${askQs(-bal)} questions`}</span></div><button class="btn accent" id="askPay" type="button">Contribute</button></div></section>`;
+}
+// Pay outside the app (PayPal, PayBox, Bit), then say so here. Eretz Israel Tours confirms it when the money has arrived.
+function openContribute(){
+  const st=S.askStatus||{}, pay=st.pay||{}, bal=+st.balance_usd||0, hist=st.history||[], rate=+st.ils_per_usd||3.08;
+  const link=(url,label)=>url?`<a class="btn primary" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${label}</a>`:'';
+  const bitLink=/^https:\/\//.test(pay.bit||'');
+  const btns=[link(pay.paypal,'PayPal'), link(pay.paybox,'PayBox'), pay.bit?(bitLink?link(pay.bit,'Bit'):`<button class="btn primary" id="bitCopy" type="button">Bit to ${esc(pay.bit)} · copy</button>`):''].filter(Boolean).join('');
+  const row=c=>{ const usd=c.status==='confirmed'?+c.usd:(c.currency==='USD'?+c.amount:+c.amount/rate);
+    return `<div class="note"><span class="meta"><b>${esc(c.name)}</b>${S.admin&&c.hidden_name?' (name hidden from colleagues)':''} · <span class="mono">${esc(fmtMoney(c.currency,+c.amount))}</span> by ${esc(c.method)} · ${fmtDate(c.date)}</span>
+      <p>${c.status==='confirmed'?`Paid for about ${askQs(usd)} questions.`:'<span class="pill pending">Waiting for Eretz Israel Tours to confirm</span>'}
+      ${S.admin&&c.status==='reported'?` <button class="mini" data-cok="${esc(c.id)}" type="button">Money arrived · confirm</button>`:''}${S.admin||(c.mine&&c.status==='reported')?` <button class="mini" data-crm="${esc(c.id)}" type="button">Remove</button>`:''}</p></div>`; };
+  const w=sheet('Contribute to the assistant', `<p style="margin:0 0 12px">Every answer costs a few agorot, paid by Eretz Israel Tours to the AI service. Colleagues chip in to keep it running. It is voluntary, and any amount helps.</p>
+    <div class="ask-meter" style="margin-bottom:16px"><div class="am-bal" style="border:0;padding:0"><div><span class="hint">Balance now</span><br><b class="mono${bal<0?' neg':''}">${esc(askMoney(bal))}</b> <span class="hint">${bal>=0?`about ${askQs(bal)} more questions`:`behind by about ${askQs(-bal)} questions`}</span></div></div></div>
+    <fieldset><legend>1. Pay</legend>${btns?`<div class="btn-row">${btns}</div>`:'<p class="hint" style="margin:0">Eretz Israel Tours has not added a place to pay yet.</p>'}</fieldset>
+    <fieldset><legend>${S.admin?'2. Record a contribution':'2. Tell us, so it shows in the balance'}</legend>
+      <div class="grid"><div class="f"><label for="cAmt">Amount</label><input id="cAmt" inputmode="decimal" placeholder="50"></div>
+        <div class="f"><label for="cCur">Currency</label><select id="cCur"><option value="ILS">₪ Shekels</option><option value="USD">$ Dollars</option></select></div>
+        <div class="f"><label for="cMth">Paid by</label><select id="cMth">${['Bit','PayBox','PayPal','Other'].map(x=>`<option>${x}</option>`).join('')}</select></div>
+        ${S.admin?'<div class="f wide"><label for="cName">Who paid? Leave empty if it was you</label><input id="cName" maxlength="80"></div>':''}</div>
+      ${S.admin?'':'<label class="check" for="cShow" style="margin:10px 0 0"><input id="cShow" type="checkbox" checked><span>Show my name in the list of contributions</span></label>'}
+      <div class="btn-row" style="margin-top:10px"><button class="btn accent" id="cSave" type="button">${S.admin?'Record it':'I have sent it'}</button></div><div id="cErr"></div></fieldset>
+    <fieldset><legend>Contributions</legend>${hist.length?hist.map(row).join(''):'<p class="hint" style="margin:0">None yet.</p>'}</fieldset>`,
+    `<button class="btn soft" id="cClose" type="button">Close</button>`);
+  const g=id=>w.querySelector('#'+id), back=()=>{ closeSheet(); render(); };
+  g('cClose').onclick=back;
+  const bc=g('bitCopy'); if(bc) bc.onclick=()=>copyText(pay.bit);
+  g('cSave').onclick=async()=>{ const amount=g('cAmt').value.replace(/[,₪$\s]/g,'');
+    if(!/^\d{1,5}(\.\d{1,2})?$/.test(amount)||+amount<=0){ g('cErr').innerHTML='<div class="msg err">Enter the amount as a number.</div>'; return; }
+    const d={amount,currency:g('cCur').value,method:g('cMth').value}; if(S.admin){ const n=g('cName').value.trim(); if(n) d.name=n; } else d.show_name=g('cShow').checked;
+    const b=g('cSave'); b.disabled=true;
+    try{ await DB.contribute(d); toast(S.admin?'Recorded':'Thank you. It shows in the balance once Eretz Israel Tours confirms it.'); openContribute(); }
+    catch(e){ b.disabled=false; g('cErr').innerHTML=`<div class="msg err">${esc(e.message)}</div>`; } };
+  w.querySelectorAll('[data-cok]').forEach(b=>b.onclick=async()=>{ try{ await DB.contributionSet(b.dataset.cok,'confirm'); toast('Confirmed'); openContribute(); }catch(e){ toast(e.message); } });
+  w.querySelectorAll('[data-crm]').forEach(b=>b.onclick=async()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again to remove'; return; } try{ await DB.contributionSet(b.dataset.crm,'remove'); toast('Removed'); openContribute(); }catch(e){ toast(e.message); } });
+}
 function viewAsk(){
   const view=document.getElementById('view'), st=S.askStatus||{}, log=S.askLog, busy=log.some(t=>t.busy);
   view.innerHTML=`<div class="qt-intro"><h2>Ask the list</h2><p>Ask in plain words. An AI assistant answers from what is on the list: suppliers, prices, quotes, drivers and notes.</p></div>
+    ${askMeter()}
     <div id="askLog" aria-live="polite">${log.length?log.map(askTurn).join(''):`<p class="hint" style="margin:0 0 8px">Try one of these:</p>${ASK_IDEAS.map((q,i)=>`<button class="pick" type="button" data-idea="${i}"><b style="font-weight:500">${esc(q)}</b></button>`).join('')}`}</div>
     <form id="askForm" class="askbar" novalidate><textarea id="askQ" rows="2" maxlength="600" placeholder="Type your question" aria-label="Your question"${busy?' disabled':''}></textarea><button class="btn primary" id="askGo" type="submit"${busy?' disabled':''}>Ask</button></form>
-    <p class="hint" style="margin:0">Answers come from the list and can be wrong. Open the supplier and confirm with them before you book. Don't type client names.${st.left!=null?` <b>${st.left} of ${st.per_day}</b> questions left today.`:''}</p>
+    <p class="hint" style="margin:0">Answers come from the list and can be wrong. Open the supplier and confirm with them before you book. Don't type client names.</p>
     ${log.length&&!busy?'<button class="mini" id="askNew" type="button" style="margin-top:12px">Start a new conversation</button>':''}`;
   const qEl=view.querySelector('#askQ');
   const go=async q=>{ q=String(q||'').replace(/\s+/g,' ').trim(); if(q.length<3||S.askLog.some(t=>t.busy)) return;
     const history=S.askLog.filter(t=>t.a).slice(-3).map(t=>({q:t.q,a:t.a})); const turn={q,busy:true}; S.askLog.push(turn); if(S.tab==='ask') viewAsk();
-    try{ const r=await DB.ask(q,history); turn.a=r.answer; if(S.askStatus&&r.left!==undefined&&r.left!==null) S.askStatus.left=r.left; }
+    try{ const r=await DB.ask(q,history); turn.a=r.answer; if(S.askStatus&&r.left!==undefined&&r.left!==null) S.askStatus.left=r.left;
+      if(LIVE) await DB.askRefresh(); else { const a=S.askStatus; a.mine.today++; a.mine.month++; a.everyone.month++; a.everyone.usd+=a.avg_usd; a.mine.usd+=a.avg_usd; a.balance_usd-=a.avg_usd; } }
     catch(e){ turn.err=e.message||'Something went wrong. Try again.'; }
     turn.busy=false; if(S.tab==='ask'){ viewAsk(); const last=[...document.querySelectorAll('.ask-q')].pop(); if(last) last.scrollIntoView({block:'start',behavior:'smooth'}); } };
   view.querySelector('#askForm').onsubmit=e=>{ e.preventDefault(); go(qEl.value); };
@@ -1621,6 +1704,7 @@ function viewAsk(){
   view.querySelectorAll('[data-idea]').forEach(b=>b.onclick=()=>go(ASK_IDEAS[+b.dataset.idea]));
   view.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>openDetail(b.dataset.open));
   const nw=view.querySelector('#askNew'); if(nw) nw.onclick=()=>{ S.askLog=[]; viewAsk(); };
+  const ap=view.querySelector('#askPay'); if(ap) ap.onclick=()=>openContribute();
 }
 
 // ---------- drivers: one driver per phone number, reviewed by colleagues ----------

@@ -17,11 +17,19 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 3. **Haiku, a daily limit per person and a monthly budget.**
 4. **Preview first; nothing live until he has seen it.**
 
-**Implementation choices (not owner decisions; change on request):** off by default, then "only you", then "all colleagues" (the same staged opening as booking sheets); 15 questions a person a day and $15 a month as starting values; questions and answers are not stored; members' names, drivers' phone numbers, booking sheets and private notes are never sent to the AI service; Eretz Israel Tours' own questions also read hidden suppliers and private prices.
+**Added by the owner at 16:01:**
+
+5. **A usage limit, with a meter** showing each person their own usage and the cumulative usage of all users.
+6. **A "contribute here" button** linking to PayPal, PayBox and Bit, with **a history of who contributed, how much, and how much usage it paid for**.
+7. **A live balance that can go negative.**
+
+**And at 16:02:** "Save project for next week and remind me because I can't create an account right now." Parked; reminder in his calendar for Sunday 4 October 2026.
+
+**Implementation choices (not owner decisions; change on request):** a member records his own payment and Eretz Israel Tours confirms it (the app cannot see PayPal, PayBox or Bit); a contributor may leave his name off the list; the balance is shown in shekels; a negative balance does not switch the assistant off; off by default, then "only you", then "all colleagues" (the same staged opening as booking sheets); 15 questions a person a day and $15 a month as starting values; questions and answers are not stored; members' names, drivers' phone numbers, booking sheets and private notes are never sent to the AI service; Eretz Israel Tours' own questions also read hidden suppliers and private prices.
 
 **To check with a lawyer:** suppliers' and drivers' details are sent to an outside AI service (Anthropic) to produce answers. Terms 6d says so.
 
-**Status:** built and rehearsed on branch `ask-assistant`, 2 Oct 2026. Waiting for the owner: the Console account and key, the key saved as a secret in Supabase, and the database change run. Not yet tested against the real AI service.
+**Status:** built and rehearsed on branch `ask-assistant`, 2 Oct 2026, including the meter, contributions and balance. Parked until the week of 4 October at the owner's request. Waiting for him: the Console account and key, the key saved as a secret in Supabase, the database change run, and his PayPal / PayBox / Bit details entered in the Team tab. Not yet tested against the real AI service.
 
 ---
 

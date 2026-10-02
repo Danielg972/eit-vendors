@@ -2,6 +2,7 @@
 -- supabase/schema.sql already includes everything below; this file is the step-by-step change. Safe to run twice.
 -- Then: add the secret ANTHROPIC_API_KEY to the project's edge functions and deploy supabase/functions/ask/index.ts.
 -- The assistant stays OFF until Eretz Israel Tours switches it on in the Team tab (setting ask_for: off / admin / all).
+-- Also here: the usage meters, the contribution history and the live balance (ask_status, ask_contribute, ask_contribution_set).
 
 -- One row per answered question: who, when, how many tokens, what it cost. The question itself is NOT stored.
 create table if not exists public.ask_log (
@@ -23,12 +24,37 @@ create index if not exists ask_log_created_idx on public.ask_log using btree (cr
 revoke all on table public.ask_log from public, anon, authenticated;
 grant all on table public.ask_log to service_role;
 
+-- Money colleagues chip in towards the assistant's cost. A member reports a payment made by PayPal, PayBox or Bit;
+-- Eretz Israel Tours confirms it once the money has arrived. "usd" is its value in dollars at the rate on that day.
+create table if not exists public.ask_contributions (
+  id uuid default gen_random_uuid() not null,
+  member text default ''::text not null,
+  name text not null,
+  amount numeric(10,2) not null,
+  currency text default 'ILS'::text not null,
+  usd numeric(10,2) default 0 not null,
+  method text default 'Other'::text not null,
+  show_name boolean default true not null,
+  status text default 'reported'::text not null,
+  created_at timestamp with time zone default now() not null,
+  confirmed_at timestamp with time zone,
+  constraint ask_contributions_pkey primary key (id),
+  constraint ask_contributions_amount_check check (amount > 0 and amount <= 20000),
+  constraint ask_contributions_currency_check check (currency = any (array['ILS','USD'])),
+  constraint ask_contributions_method_check check (method = any (array['PayPal','PayBox','Bit','Other'])),
+  constraint ask_contributions_name_check check (length(trim(both from name)) >= 1 and length(name) <= 80),
+  constraint ask_contributions_status_check check (status = any (array['reported','confirmed']))
+);
+alter table public.ask_contributions enable row level security;
+revoke all on table public.ask_contributions from public, anon, authenticated;
+grant all on table public.ask_contributions to service_role;
+
 -- A setting, or its default when it was never saved.
 create or replace function public._ask_setting(p_key text)
  returns text language sql stable security definer set search_path to ''
 as $function$
   select coalesce(nullif((select value from public.app_settings where key = p_key), ''),
-    case p_key when 'ask_for' then 'off' when 'ask_daily' then '15' when 'ask_cap_usd' then '15' else '' end)
+    case p_key when 'ask_for' then 'off' when 'ask_daily' then '15' when 'ask_cap_usd' then '15' when 'ask_ils_per_usd' then '3.08' else '' end)
 $function$;
 revoke all on function public._ask_setting(text) from public, anon, authenticated;
 
@@ -185,38 +211,115 @@ end $function$;
 revoke all on function public.ask_finish(text,text,integer,integer,integer,integer,numeric) from public, anon, authenticated;
 grant execute on function public.ask_finish(text,text,integer,integer,integer,integer,numeric) to service_role;
 
--- What the app needs to draw the Ask tab: is it on for this member, and how many questions are left today.
--- Eretz Israel Tours also gets the settings, this month's spend and the count per person (never the questions).
+-- What the app needs to draw the Ask tab: is it on for this member, how many questions are left today, the two
+-- meters (this member's use and everyone's), the live balance (confirmed contributions minus everything spent so
+-- far, in dollars; it can go below zero), where to pay, and the contribution history.
+-- Eretz Israel Tours also gets the settings and the count per person. Never the questions.
 create or replace function public.ask_status(p_token text)
  returns json language plpgsql security definer set search_path to ''
 as $function$
 declare m public.members; af text := public._ask_setting('ask_for'); per_day int := public._ask_setting('ask_daily')::int; cap numeric := public._ask_setting('ask_cap_usd')::numeric;
-  used int; mon timestamp := date_trunc('month', now() at time zone 'Asia/Jerusalem');
+  mon timestamp := date_trunc('month', now() at time zone 'Asia/Jerusalem'); today date := (now() at time zone 'Asia/Jerusalem')::date; used int; is_on boolean; base jsonb;
 begin
   m := public._auth(p_token);
-  select count(*) into used from public.ask_log where member = m.email and (created_at at time zone 'Asia/Jerusalem')::date = (now() at time zone 'Asia/Jerusalem')::date;
-  return json_build_object('on', af = 'all' or (af = 'admin' and m.is_admin), 'per_day', per_day,
-    'left', case when m.is_admin then null else greatest(per_day - used, 0) end)::jsonb
-    || case when m.is_admin then jsonb_build_object('for', af, 'cap_usd', cap,
-        'spent_usd', (select coalesce(sum(cost_usd),0) from public.ask_log where date_trunc('month', created_at at time zone 'Asia/Jerusalem') = mon),
-        'asked', (select count(*) from public.ask_log where date_trunc('month', created_at at time zone 'Asia/Jerusalem') = mon),
-        'by_person', coalesce((select jsonb_agg(jsonb_build_object('name', t.nm, 'n', t.n, 'usd', t.usd) order by t.n desc)
-          from (select max(member_name) nm, count(*) n, sum(cost_usd) usd from public.ask_log where date_trunc('month', created_at at time zone 'Asia/Jerusalem') = mon group by member) t), '[]'::jsonb))
-      else '{}'::jsonb end;
+  is_on := af = 'all' or (af = 'admin' and m.is_admin);
+  select count(*) into used from public.ask_log where member = m.email and (created_at at time zone 'Asia/Jerusalem')::date = today;
+  base := jsonb_build_object('on', is_on, 'per_day', per_day, 'left', case when m.is_admin then null else greatest(per_day - used, 0) end);
+  if not is_on and not m.is_admin then return base::json; end if;
+  base := base || jsonb_build_object(
+    'mine', jsonb_build_object('today', used,
+      'month', (select count(*) from public.ask_log where member = m.email and date_trunc('month', created_at at time zone 'Asia/Jerusalem') = mon),
+      'usd', (select coalesce(sum(cost_usd),0) from public.ask_log where member = m.email and date_trunc('month', created_at at time zone 'Asia/Jerusalem') = mon)),
+    'everyone', jsonb_build_object(
+      'month', (select count(*) from public.ask_log where date_trunc('month', created_at at time zone 'Asia/Jerusalem') = mon),
+      'usd', (select coalesce(sum(cost_usd),0) from public.ask_log where date_trunc('month', created_at at time zone 'Asia/Jerusalem') = mon),
+      'cap_usd', cap),
+    'balance_usd', (select coalesce(sum(usd),0) from public.ask_contributions where status = 'confirmed') - (select coalesce(sum(cost_usd),0) from public.ask_log),
+    'ils_per_usd', public._ask_setting('ask_ils_per_usd')::numeric,
+    'avg_usd', coalesce((select round(avg(cost_usd), 5) from (select cost_usd from public.ask_log order by created_at desc limit 200) t), 0),
+    'pay', jsonb_build_object('paypal', public._ask_setting('ask_paypal'), 'paybox', public._ask_setting('ask_paybox'), 'bit', public._ask_setting('ask_bit')),
+    'history', coalesce((select jsonb_agg(jsonb_build_object('id', c.id,
+          'name', case when c.show_name or m.is_admin or c.member = m.email then c.name else 'A colleague' end,
+          'amount', c.amount, 'currency', c.currency, 'usd', c.usd, 'method', c.method, 'status', c.status,
+          'mine', c.member <> '' and c.member = m.email, 'hidden_name', not c.show_name, 'date', coalesce(c.confirmed_at, c.created_at)) order by c.created_at desc)
+        from (select * from public.ask_contributions c2 where c2.status = 'confirmed' or m.is_admin or c2.member = m.email order by c2.created_at desc limit 100) c), '[]'::jsonb));
+  if m.is_admin then
+    base := base || jsonb_build_object('for', af, 'cap_usd', cap,
+      'spent_usd', (select coalesce(sum(cost_usd),0) from public.ask_log where date_trunc('month', created_at at time zone 'Asia/Jerusalem') = mon),
+      'asked', (select count(*) from public.ask_log where date_trunc('month', created_at at time zone 'Asia/Jerusalem') = mon),
+      'by_person', coalesce((select jsonb_agg(jsonb_build_object('name', t.nm, 'n', t.n, 'usd', t.usd) order by t.n desc)
+        from (select max(member_name) nm, count(*) n, sum(cost_usd) usd from public.ask_log where date_trunc('month', created_at at time zone 'Asia/Jerusalem') = mon group by member) t), '[]'::jsonb));
+  end if;
+  return base::json;
 end $function$;
 revoke all on function public.ask_status(text) from public; grant execute on function public.ask_status(text) to anon, authenticated;
 
--- set_setting: also the three assistant settings (who may use it, questions per person per day, monthly budget in US dollars).
+-- A member says "I sent this much by PayPal / PayBox / Bit": saved as reported, counted once Eretz Israel Tours confirms.
+-- Eretz Israel Tours can record a contribution directly (with any name); that one is confirmed at once.
+create or replace function public.ask_contribute(p_token text, p_data jsonb)
+ returns uuid language plpgsql security definer set search_path to ''
+as $function$
+declare m public.members; af text := public._ask_setting('ask_for'); rate numeric := public._ask_setting('ask_ils_per_usd')::numeric; amt numeric; cur text := coalesce(p_data->>'currency','ILS');
+  mth text := coalesce(p_data->>'method','Other'); nm text; cid uuid;
+begin
+  m := public._auth(p_token);
+  if not m.is_admin and af <> 'all' then raise exception 'The assistant is switched off.'; end if;
+  if coalesce(p_data->>'amount','') !~ '^\d{1,5}(\.\d{1,2})?$' then raise exception 'Enter the amount as a number.'; end if;
+  amt := (p_data->>'amount')::numeric;
+  if amt <= 0 or amt > 20000 then raise exception 'Enter an amount between 1 and 20,000.'; end if;
+  if cur not in ('ILS','USD') or mth not in ('PayPal','PayBox','Bit','Other') then raise exception 'Unknown currency or payment method.'; end if;
+  if m.is_admin then
+    nm := coalesce(nullif(trim(left(coalesce(p_data->>'name',''),80)),''), m.name);
+    insert into public.ask_contributions (member, name, amount, currency, usd, method, show_name, status, confirmed_at)
+    values (case when nm = m.name then m.email else '' end, nm, amt, cur, case when cur = 'USD' then amt else round(amt / rate, 2) end, mth, coalesce((p_data->>'show_name')::boolean, true), 'confirmed', now())
+    returning id into cid;
+  else
+    if (select count(*) from public.ask_contributions where member = m.email and status = 'reported') >= 5 then
+      raise exception 'You already have 5 payments waiting to be confirmed.'; end if;
+    insert into public.ask_contributions (member, name, amount, currency, method, show_name)
+    values (m.email, m.name, amt, cur, mth, coalesce((p_data->>'show_name')::boolean, true)) returning id into cid;
+  end if;
+  return cid;
+end $function$;
+revoke all on function public.ask_contribute(text,jsonb) from public; grant execute on function public.ask_contribute(text,jsonb) to anon, authenticated;
+
+-- Eretz Israel Tours confirms a reported payment (its dollar value is fixed at today's rate) or removes any entry.
+-- A member can remove their own entry while it is still waiting.
+create or replace function public.ask_contribution_set(p_token text, p_id uuid, p_action text)
+ returns void language plpgsql security definer set search_path to ''
+as $function$
+declare m public.members; rate numeric := public._ask_setting('ask_ils_per_usd')::numeric;
+begin
+  m := public._auth(p_token);
+  if p_action = 'confirm' then
+    if not m.is_admin then raise exception 'Only Eretz Israel Tours can do that.' using errcode = '42501'; end if;
+    update public.ask_contributions set status = 'confirmed', confirmed_at = now(), usd = case when currency = 'USD' then amount else round(amount / rate, 2) end
+    where id = p_id and status = 'reported';
+  elsif p_action = 'remove' then
+    delete from public.ask_contributions where id = p_id and (m.is_admin or (member = m.email and status = 'reported'));
+    if not found then raise exception 'Only Eretz Israel Tours can remove a confirmed contribution.'; end if;
+  else raise exception 'Unknown action'; end if;
+end $function$;
+revoke all on function public.ask_contribution_set(text,uuid,text) from public; grant execute on function public.ask_contribution_set(text,uuid,text) to anon, authenticated;
+
+-- set_setting: also the assistant's settings: who may use it, questions per person per day, monthly budget in
+-- US dollars, the three places to pay (PayPal and PayBox links, Bit link or phone number), and shekels per dollar.
 create or replace function public.set_setting(p_token text, p_key text, p_value text)
  returns void language plpgsql security definer set search_path to ''
 as $function$
+declare v text := trim(coalesce(p_value,''));
 begin
   perform public._auth(p_token, true);
-  if p_key not in ('bcc_email','bookings_for','ask_for','ask_daily','ask_cap_usd') then raise exception 'Unknown setting'; end if;
-  if p_key = 'bcc_email' and p_value <> '' and p_value !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' then raise exception 'Enter a full email address.'; end if;
-  if p_key = 'bookings_for' and lower(trim(p_value)) not in ('admin','all') then raise exception 'Unknown setting'; end if;
-  if p_key = 'ask_for' and lower(trim(p_value)) not in ('off','admin','all') then raise exception 'Unknown setting'; end if;
-  if p_key = 'ask_daily' and (trim(p_value) !~ '^\d{1,3}$' or trim(p_value)::int not between 1 and 200) then raise exception 'Questions a day: a number from 1 to 200.'; end if;
-  if p_key = 'ask_cap_usd' and (trim(p_value) !~ '^\d{1,4}(\.\d{1,2})?$' or trim(p_value)::numeric not between 1 and 1000) then raise exception 'Monthly budget: a dollar amount from 1 to 1000.'; end if;
-  insert into public.app_settings (key, value) values (p_key, lower(trim(p_value))) on conflict (key) do update set value = excluded.value;
+  if p_key not in ('bcc_email','bookings_for','ask_for','ask_daily','ask_cap_usd','ask_paypal','ask_paybox','ask_bit','ask_ils_per_usd') then raise exception 'Unknown setting'; end if;
+  if p_key = 'bcc_email' and v <> '' and v !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' then raise exception 'Enter a full email address.'; end if;
+  if p_key = 'bookings_for' and lower(v) not in ('admin','all') then raise exception 'Unknown setting'; end if;
+  if p_key = 'ask_for' and lower(v) not in ('off','admin','all') then raise exception 'Unknown setting'; end if;
+  if p_key = 'ask_daily' and (v !~ '^\d{1,3}$' or v::int not between 1 and 200) then raise exception 'Questions a day: a number from 1 to 200.'; end if;
+  if p_key = 'ask_cap_usd' and (v !~ '^\d{1,4}(\.\d{1,2})?$' or v::numeric not between 1 and 1000) then raise exception 'Monthly budget: a dollar amount from 1 to 1000.'; end if;
+  if p_key = 'ask_ils_per_usd' and (v !~ '^\d{1,2}(\.\d{1,3})?$' or v::numeric not between 1 and 20) then raise exception 'Shekels per dollar: a number like 3.08.'; end if;
+  if p_key in ('ask_paypal','ask_paybox') and v <> '' and (v !~ '^https://[^\s<>"'']+$' or length(v) > 300) then raise exception 'Paste the full payment link, starting with https://'; end if;
+  if p_key = 'ask_bit' and v <> '' and (length(v) > 300 or (v !~ '^https://[^\s<>"'']+$' and v !~ '^\+?[\d \-]{9,20}$')) then raise exception 'For Bit, paste a link starting with https:// or the phone number.'; end if;
+  -- links keep their capital letters; the other settings are stored in lower case as before
+  insert into public.app_settings (key, value) values (p_key, case when p_key in ('ask_paypal','ask_paybox','ask_bit') then v else lower(v) end)
+  on conflict (key) do update set value = excluded.value;
 end $function$;
