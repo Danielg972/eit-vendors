@@ -8,12 +8,12 @@
 
 | | |
 |---|---|
-| App | https://vendors.eretzisraeltours.com |
+| App | https://vendors.eretzisraeltours.com (and `/b/?k=…`, the one-booking page a bus or van company sees) |
 | Repo | `Danielg972/eit-vendors`, branch `main` (cite by commit SHA) |
 | Database | Supabase project `wjuqtjlrtcywjaspjpwu` (org "EIT Vendors", Frankfurt) |
 | Schema record | `supabase/schema.sql` (tables, functions, grants), plus `supabase/functions/files/index.ts` (edge function v9) |
 | Terms version | `2026-10-02a` (draft, not yet reviewed by a lawyer) |
-| Decisions | `docs/DECISIONS.md` (D-1 Cockpit boundary; D-2 quote tracker; D-3 driver reviews; D-4 transport by vehicle size) |
+| Decisions | `docs/DECISIONS.md` (D-1 Cockpit boundary; D-2 quote tracker; D-3 driver reviews; D-4 transport by vehicle size; D-5 booking sheets) |
 
 ## Integration with the Cockpit
 
@@ -39,7 +39,7 @@
 
 - **Keep-alive:** fixed 1 Oct 2026. The old ping read a blocked table and failed with HTTP 401. It now calls the `ping` function, which was tested and returned `ok:100`. Next run is in at most 3 days, or it can be run by hand in GitHub Actions.
 - **Join alerts:** push to Eretz Israel Tours' phone via the ntfy app (no personal details in the alert). Added 1 Oct 2026.
-- **Security:** 0 table grants to anon or authenticated, 0 RLS policies. All access goes through token-checked RPCs and the `files` edge function. Colleague-privacy probe passed on 1 Oct 2026.
+- **Security:** 0 table grants to anon or authenticated, 0 RLS policies. All access goes through token-checked RPCs and the `files` edge function. Colleague-privacy probe passed on 1 Oct 2026. From D-5 (once its database change is run): two functions, `booking_open` and `booking_answer`, are checked by a one-booking link key instead of a member token; they reach that booking only.
 - **Change process:** changes are committed straight to `main` and deployed by GitHub Pages; there is no review gate. Schema changes must be re-exported to `supabase/schema.sql` in the same change. That rule was adopted 1 Oct 2026.
 
 ## Known risks
@@ -50,13 +50,16 @@
 4. Lighter governance than the Cockpit: no review gate and no automated tests.
 5. Free-tier limits: Supabase 500 MB database and 1 GB storage.
 6. From D-3 (once live): personal data about drivers who are not members (name, work number, reviews). Not yet reviewed by a lawyer.
+7. From D-5: the booking sheet's closing line ("Anything not written here will not be charged") is a record of what was agreed, not a lawyer-drafted contract. The sheet also holds the name of whoever answered for the company. Have the lawyer look at both.
+8. From D-5: nobody is alerted when a company answers a booking sheet; the guide sees it when he opens the sheet.
 
-## Next, not started
+## Waiting for the owner
 
-- **Standard booking terms form for bus and van companies** (owner, 2 Oct 2026, 14:04): a form a guide sends to the company when booking, so the price can't change afterwards. To cover: hours in a day and when overtime starts and its rate; km included and the rate over it; Highway 6 / tolls; expected tip; VAT in or out; how and when payment is made. The quote form already holds most of these fields, so the booking form can be filled from a quote. Not started. It is a contract template: have a lawyer look at the wording.
+- **Booking sheets (D-5): run the database change.** The app code is on `main` and dormant. Paste `supabase/migrations/2026-10-02c_bookings.sql` into the Supabase SQL editor and run it once (safe to run twice). The approval prompt for it did not reach the owner twice on 2 Oct 2026. After it runs, booking sheets appear for Eretz Israel Tours only (Quotes tab and every Transport supplier); the Team tab has the switch that opens them to colleagues.
 
 ## Changes that would affect the Cockpit (log)
 
+- 2026-10-02: **Built, database change pending:** booking sheets for buses and vans (D-5). New table `bookings`; new page `b/index.html`; six new RPCs; `whoami` gains `phone`, `bookings`, `bookings_for`. A confirmed sheet creates an ordinary `Booked` quote. Nothing Cockpit-facing: a booking sheet carries a private trip/client label only, never a Cockpit id, and no export.
 - 2026-10-02: **Live:** driver reviews and "bus" wording (D-3), transport by vehicle size (D-4). New tables `drivers`, `driver_vendors`, `driver_reviews` (driver identity = phone number); supplier tag `Coach` became `Bus` (5 suppliers); a company's vehicles are tags (`Bus`, `Midibus`, `Van 17–20 seats`, …). Nothing Cockpit-facing.
 - 2026-10-02: **Live:** quote tracker (D-2). `quote_options` gained `service`, `seats`, `hours_incl`, `km_incl`, `fees`; `quotes.shared` defaults to true; new RPC `quotes_tracker`. Nothing Cockpit-facing. Quotes here remain reference only.
 - 2026-10-01: D-1 boundary approved and confirmed in the owner's own words (16:27). R5 export frozen; owner has no active R5 use. No integration-facing schema changes made.
