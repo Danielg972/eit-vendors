@@ -65,8 +65,8 @@
 ## Next
 
 - **Kosher value missing on 7 of 8 restaurant suppliers** (D-7): fill them in, or make the field required for restaurants. Owner to decide.
-- **Opening hours:** pulled from suppliers' websites on 2 Oct (D-9), all marked Unverified until a colleague confirms by speaking to the supplier or being there. Remaining suppliers, published prices and other details are being pulled the same way.
-- **HaGoshrim Kayaks may have closed** (old site is an unrelated blog; a ticketing site lists its route as closed permanently). Check and remove or mark inactive.
+- **Website pass done (2 Oct, D-9):** 63 suppliers have opening hours (all Unverified), 200 public price lines on 50 suppliers, contact details and notes filled in. Next step is colleagues verifying hours by phone or in person.
+- **21 supplier updates wait in Review** from the website pass (author "Website check"): a probable closure, a move, a rename, wrong regions, and suppliers that could not be identified by name.
 - **Use-and-add rule (D-6):** a Team-tab view of who used the list and who added to it in the last 3 months, and the reminder before removal. Needs a database function; not started.
 - **AI chat box for searches:** announced in the welcome tour as "in the works"; not built.
 - **Booking sheets (D-5): first real use** by the owner with a real bus company, then by colleagues.
@@ -75,6 +75,7 @@
 
 ## Changes that would affect the Cockpit (log)
 
+- 2026-10-02: **Data only (evening):** website pass wrote hours for 63 suppliers, 200 unverified public price lines (`vendor_prices.created_by` = `import from websites (2 Oct 2026)`, `checked_on` 2026-10-02), contact details and notes. A Cockpit read of `vendor_prices` must not treat these as confirmed prices: check the `note` and `created_by`.
 - 2026-10-02: **Live (about 17:40):** verified hours (`hours_verify`, `hours_verified_*`), last entry and other times (`vendors.hours_last`), source of unverified hours (`vendors.hours_source`). Migration `2026-10-02f`, applied to production. 60 callable functions. Hours for 32 suppliers written from their websites, unverified. New readable fields for the Cockpit; treat `hours` as unconfirmed unless `hours_verified_how` is set. No IDs or export formats changed.
 - 2026-10-02: **Live (about 16:50):** opening hours (`vendors.hours`, free text) and the kosher rule in `vendor_save` (non-kosher restaurants refused; "Kosher, no certificate" on a restaurant goes to Eretz Israel Tours for approval). Migration `2026-10-02e`, applied to production; terms `2026-10-02e`. New readable field for the Cockpit: `vendors.hours`. No IDs or export formats changed.
 - 2026-10-02: **Live (about 16:45):** Shomer Shabbat badge (a supplier tag, `Shomer Shabbat`), and kosher restaurants only (terms `2026-10-02d`, 3b; the form refuses a non-kosher Restaurant). Front end only, no schema change. Nothing Cockpit-facing; a Cockpit read of `vendors.tags` would see the new tag.
