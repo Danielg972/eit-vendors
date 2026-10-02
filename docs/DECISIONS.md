@@ -14,7 +14,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 **Size ranges (proposed from research, not yet confirmed by the owner):** Bus 36–60 · Midibus 21–35 · Van 17–20 · Van 11–16 · Van 9–10 · Van up to 8 · Car up to 4 passengers. His 8 / 13 / 19 / 25 fall in: up to 8, 11–16, 17–20, and midibus (a 25-seater is sold as a midibus, not a van). Sources and reasoning are in README "Transport organised by vehicle size".
 
-**Status:** built and rehearsed on branch `quote-tracker`. Goes live with D-2 and D-3.
+**Status:** live since 2 Oct 2026. Ranges still to be confirmed by the owner.
 
 ---
 
@@ -38,7 +38,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 **To check with a lawyer:** drivers are individuals who are not members. Their names, work numbers and colleagues' reviews are now stored.
 
-**Status:** built and rehearsed on branch `quote-tracker`, 2 Oct 2026. Goes live together with D-2.
+**Status:** live since 2 Oct 2026.
 
 ---
 
@@ -58,7 +58,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 **Boundary with D-1 unchanged:** these are reference quotes with no client or trip details shown to colleagues. Trip quotes for real clients stay in the Cockpit. No Cockpit-facing fields or exports were added.
 
-**Status:** built and rehearsed on branch `quote-tracker`, 2 Oct 2026. Not live: the database change needs the owner's approval in Supabase (two approval prompts were cancelled), then the branch is merged.
+**Status:** live since 2 Oct 2026. The owner ran the database change himself in the Supabase SQL editor at about 14:09, after the approval prompt failed to reach him four times.
 
 ---
 

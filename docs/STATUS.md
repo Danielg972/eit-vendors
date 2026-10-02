@@ -2,7 +2,7 @@
 
 *Short, factual status for the Cockpit Steward and other EIT projects. Updated by the Vendor Master session after any change that matters to them. The commit that last changed this file is its version.*
 
-**As of:** 1 October 2026
+**As of:** 2 October 2026
 
 ## Identity
 
@@ -11,9 +11,9 @@
 | App | https://vendors.eretzisraeltours.com |
 | Repo | `Danielg972/eit-vendors`, branch `main` (cite by commit SHA) |
 | Database | Supabase project `wjuqtjlrtcywjaspjpwu` (org "EIT Vendors", Frankfurt) |
-| Schema record | `supabase/schema.sql` (tables, functions, grants), plus `supabase/functions/files/index.ts` (edge function v8) |
-| Terms version | `2026-10-01e` (draft, not yet reviewed by a lawyer) |
-| Decisions | `docs/DECISIONS.md` (D-1: Vendor Master / Cockpit boundary, approved 1 Oct 2026) |
+| Schema record | `supabase/schema.sql` (tables, functions, grants), plus `supabase/functions/files/index.ts` (edge function v9) |
+| Terms version | `2026-10-02a` (draft, not yet reviewed by a lawyer) |
+| Decisions | `docs/DECISIONS.md` (D-1 Cockpit boundary; D-2 quote tracker; D-3 driver reviews; D-4 transport by vehicle size) |
 
 ## Integration with the Cockpit
 
@@ -51,16 +51,12 @@
 5. Free-tier limits: Supabase 500 MB database and 1 GB storage.
 6. From D-3 (once live): personal data about drivers who are not members (name, work number, reviews). Not yet reviewed by a lawyer.
 
-## Waiting on the owner
-
-- **Go-live of D-2, D-3, D-4 (2 Oct 2026):** everything is on branch `quote-tracker` and rehearsed. The live database change was cancelled at the approval prompt three times (12:55, 13:00, 14:05), so nothing is live. To finish: run `supabase/migrations/2026-10-02_GO_LIVE.sql` on the project (approve the prompt, or paste it into the Supabase SQL editor), then deploy the `files` function v9 and merge the branch into `main`.
-
 ## Next, not started
 
-- **Standard booking terms form for bus and van companies** (owner, 2 Oct 2026, 14:04): a form a guide sends to the company when booking, so the price can't change afterwards. To cover: hours in a day and when overtime starts and its rate; km included and the rate over it; Highway 6 / tolls; expected tip; VAT in or out; how and when payment is made. The quote form already holds most of these fields, so the booking form can be filled from a quote. To be done after the go-live above. It is a contract template: have a lawyer look at the wording.
+- **Standard booking terms form for bus and van companies** (owner, 2 Oct 2026, 14:04): a form a guide sends to the company when booking, so the price can't change afterwards. To cover: hours in a day and when overtime starts and its rate; km included and the rate over it; Highway 6 / tolls; expected tip; VAT in or out; how and when payment is made. The quote form already holds most of these fields, so the booking form can be filled from a quote. Not started. It is a contract template: have a lawyer look at the wording.
 
 ## Changes that would affect the Cockpit (log)
 
-- 2026-10-02: Driver reviews and "bus" wording (D-3) built on the same branch; **not live yet**. When live: new tables `drivers`, `driver_vendors`, `driver_reviews` (driver identity = phone number); supplier tag `Coach` becomes `Bus`. Nothing Cockpit-facing.
-- 2026-10-02: Quote tracker (D-2) built on branch `quote-tracker`; **not live yet** (database change awaiting the owner's approval). When live: `quote_options` gains `service`, `seats`, `hours_incl`, `km_incl`, `fees`; `quotes.shared` defaults to true; new RPC `quotes_tracker`. Nothing Cockpit-facing. Quotes here remain reference only.
+- 2026-10-02: **Live:** driver reviews and "bus" wording (D-3), transport by vehicle size (D-4). New tables `drivers`, `driver_vendors`, `driver_reviews` (driver identity = phone number); supplier tag `Coach` became `Bus` (5 suppliers); a company's vehicles are tags (`Bus`, `Midibus`, `Van 17–20 seats`, …). Nothing Cockpit-facing.
+- 2026-10-02: **Live:** quote tracker (D-2). `quote_options` gained `service`, `seats`, `hours_incl`, `km_incl`, `fees`; `quotes.shared` defaults to true; new RPC `quotes_tracker`. Nothing Cockpit-facing. Quotes here remain reference only.
 - 2026-10-01: D-1 boundary approved and confirmed in the owner's own words (16:27). R5 export frozen; owner has no active R5 use. No integration-facing schema changes made.
