@@ -338,6 +338,17 @@ a.mini{display:inline-block;text-decoration:none;color:var(--ink)}
 .red-page{position:relative;border:1px solid var(--line);border-radius:8px;overflow:hidden;touch-action:none;background:#fff}
 .red-page canvas{display:block;width:100%;height:auto}
 .red-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;position:sticky;top:0;background:var(--ground);padding:6px 0;z-index:2}
+/* booking sheets */
+button.bkcard{display:block;width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.bkban{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;background:var(--wash);border-radius:10px;padding:10px 12px;margin:0 0 10px;font-size:14px}
+.bkban span:last-child{flex:1 1 200px}
+.bkexp{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:14px 0;background:var(--card)}
+.bkexp summary{font-weight:600;cursor:pointer}
+.bkexp summary .hint{font-weight:400;display:block;margin-top:2px}
+.bkfill{background:var(--ochre-wash);border-radius:10px;padding:10px 12px;margin:0 0 12px;font-size:14px;color:var(--ink)}
+.f .lab{font-size:13px;color:var(--ink-2)}
+.f .seg{margin:0 0 4px}
+.seg .tg{border-radius:8px;min-height:42px}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(140px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--ground);padding:10px 16px;border-radius:999px;font-size:14px;z-index:40;max-width:calc(100% - 32px)}
 </style>
 <style>
@@ -447,7 +458,7 @@ function sample(){
 }
 
 // ---------- state ----------
-const S = { usage:{category:{},region:{}}, myTop:[], reg:'All', quotes:null, qt:{grp:'All',svc:'All',season:'All',q:'',sort:'new'}, demoDrivers:[], demoQuotes:{}, feedback:[], openVendor:null, files:{}, demo:{}, demoRequests:[], requests:[], token:null, members:[], user:null, admin:false, contributor:false, vendors:[], team:[], tab:'vendors', q:'', cat:'All', busy:false };
+const S = { bookings:null, qview:'tracker', demoBookings:[], usage:{category:{},region:{}}, myTop:[], reg:'All', quotes:null, qt:{grp:'All',svc:'All',season:'All',q:'',sort:'new'}, demoDrivers:[], demoQuotes:{}, feedback:[], openVendor:null, files:{}, demo:{}, demoRequests:[], requests:[], token:null, members:[], user:null, admin:false, contributor:false, vendors:[], team:[], tab:'vendors', q:'', cat:'All', busy:false };
 let sb = null;
 
 function bump(vid,k,n){ const v=S.vendors.find(x=>x.id===vid); if(v) v[k]=Math.max(0,(v[k]||0)+n); }
@@ -498,6 +509,8 @@ const DB = {
           {id:'r3',rating:'2',tags:'Late, On the phone while driving',body:'40 minutes late to the morning pick-up, and took calls on Road 6.',trip_month:'2026-06',vendor_id:'vendor_p0lk5sd',by:{name:'Yossi Ben-David',role:'Licensed tour guide',admin:false},mine:false,created_at:dd(90)}]},
         {id:'d3',name:'Eli Dahan',phone:'050-000-3344',drives:'Van',vendors:['vendor_v4n0001'],reviews:[
           {id:'r4',rating:'5',tags:'On time, Good English, Flexible',body:'Picked up a family of six at the airport at 3am, no fuss.',trip_month:'2026-07',vendor_id:'vendor_v4n0001',by:{name:'Rachel Amar',role:'Tour operator',admin:false},mine:false,created_at:dd(70)}]}];
+      S.demoBookings=[{id:'b1',vendor_id:'vendor_g4l1c0a',vendor_name:'Galil Buses',key:'demo',status:'answered',client_ref:'Jacobs family, Nov 2026',booker_name:'Eretz Israel Tours',booker_phone:'050-000-0000',date_from:'2026-11-10',date_to:'',pax:'24',service:'midibus',seats:'30',tourists:true,pickup_time:'08:00',pickup_place:'Hotel, Jerusalem',route:'Caesarea, Zichron Yaakov, back to Jerusalem',dropoff_time:'18:00',dropoff_place:'Hotel, Jerusalem',note:'Strong air conditioning',private_note:'',
+        proposed:{price:'2900',currency:'ILS',hours_incl:'10',km_incl:'250'},terms:{price:'3000',currency:'ILS',vat:'not_applicable',hours_incl:'10',km_incl:'250',hours_from:'pickup',overtime:'200',extra_km:'5',tolls:'incl',parking:'extra',cancel:'48 hours before'},terms_by:'company',answered_by:'Dudu',answered_at:dd(0),confirmed_at:null,shared:true,in_tracker:false,mine:true,owner_name:'Eretz Israel Tours',owner_admin:true,created_at:dd(1),updated_at:dd(0)}];
       const dq=(vid,o)=>{ (S.demoQuotes[vid]=S.demoQuotes[vid]||[]).push(Object.assign({vendor_id:vid,title:'',pax:'',units:'',valid_until:'',ref:'',status:'Received',currency:'ILS',vat:'not_applicable',conditions:'',private_note:'',shared:true,owner:OWNER,owner_name:'Eretz Israel Tours',owner_admin:true,files:0,can_edit:true,mine:true,created_at:dd(5),updated_at:dd(5)},o)); };
       const col=(n,r)=>({owner:n.toLowerCase().replace(/\s+/g,'.')+'@example.com',owner_name:n,owner_role:r,owner_admin:false,mine:false});
       const bus=(label,price,times)=>({label,kind:'Base',price:String(price),unit:'per vehicle per day',qty:'1',times:String(times||1)});
@@ -639,6 +652,29 @@ const DB = {
     if(!LIVE){ S.demoQuotes[vid]=(S.demoQuotes[vid]||[]).filter(x=>x.id!==id); return; }
     await rpc('quote_delete',{p_id:id});
   },
+  async loadBookings(vid){
+    if(!LIVE) return S.demoBookings.filter(b=>!vid||b.vendor_id===vid).map(b=>Object.assign({},b));
+    return await rpc('bookings_list',{p_vendor:vid||''});
+  },
+  async saveBooking(vid, b){
+    if(!LIVE){ const now=new Date().toISOString(), v=S.vendors.find(y=>y.id===vid); let x=b.id&&S.demoBookings.find(y=>y.id===b.id);
+      if(!x){ x={id:'b'+Date.now(),vendor_id:vid,vendor_name:v?v.name:'',key:'demo',status:'waiting',terms:{},terms_by:'',answered_by:'',answered_at:null,confirmed_at:null,mine:true,owner_name:S.me.name,owner_admin:true,in_tracker:false,created_at:now}; S.demoBookings.unshift(x); }
+      const job=['date_from','date_to','pax','service','seats','pickup_time','pickup_place','route','dropoff_time','dropoff_place'], before=JSON.stringify(job.map(k=>x[k]||''));
+      const keep={id:x.id,status:x.status,key:x.key,terms:x.terms,terms_by:x.terms_by,answered_by:x.answered_by,answered_at:x.answered_at};
+      Object.assign(x,b,keep,{updated_at:now});
+      if(b.terms){ Object.assign(x,{terms:b.terms,terms_by:'guide',answered_by:b.answered_by||'',answered_at:now,status:'answered'}); }
+      else if(x.status==='answered'&&x.terms_by==='company'&&before!==JSON.stringify(job.map(k=>x[k]||''))) x.status='waiting';
+      return Object.assign({},x); }
+    return await rpc('booking_save',{p_vendor:vid,p_booking:b});
+  },
+  async setBookingStatus(id, st){
+    if(!LIVE){ const x=S.demoBookings.find(y=>y.id===id);
+      if(st==='open'){ x.status=x.terms&&x.terms.price?'answered':'waiting'; x.confirmed_at=null; x.in_tracker=false; }
+      else { x.status=st; if(st==='confirmed'){ x.confirmed_at=new Date().toISOString(); x.in_tracker=true; } }
+      return Object.assign({},x); }
+    return await rpc('booking_set_status',{p_id:id,p_status:st});
+  },
+  async deleteBooking(id){ if(!LIVE){ S.demoBookings=S.demoBookings.filter(y=>y.id!==id); return; } await rpc('booking_delete',{p_id:id}); },
   async reportReservation(vid, checked, visit, note){
     if(!LIVE){ const d=await DB.detail(vid); (d.res_reports=d.res_reports||[]).unshift({checked,visit_date:visit||'',note:note||'',member_name:S.me.name,created_at:new Date().toISOString(),mine:true}); d.res_answered=true; return; }
     await rpc('reservation_report',{p_vendor:vid,p_checked:checked,p_visit:visit||'',p_note:note||''});
@@ -902,17 +938,18 @@ function render(){
     ${LIVE?'':'<div class="demo-bar">Preview with sample suppliers. Changes here aren\'t saved.</div>'}
     ${S.me&&S.me.reminder_due?`<div style="padding:0 16px"><div class="rule" role="note"><span>🔒 <b>Colleagues only.</b> Never show this list to suppliers: not the app, screenshots, prices or notes. Anyone who does loses access.</span><button class="mini" id="ruleOk" type="button">Got it</button></div></div>`:''}
     <main id="view"></main>
-    ${S.tab==='vendors'?'<button class="fab" id="add">+ Add supplier</button>':''}${S.tab==='quotes'?'<button class="fab" id="addQ">+ Add quote</button>':''}
+    ${S.tab==='vendors'?'<button class="fab" id="add">+ Add supplier</button>':''}${S.tab==='quotes'?(bookingsOn()&&S.qview==='bookings'?'<button class="fab" id="addB">+ New booking sheet</button>':'<button class="fab" id="addQ">+ Add quote</button>'):''}
     ${tabs.length>1?`<nav class="tabs">${tabs.map(([k,l,ic])=>`<button class="tab" data-tab="${k}" ${S.tab===k?'aria-current="page"':''}>${ic}${l}${k==='review'&&pending?`<span class="badge">${pending}</span>`:''}${k==='team'&&waiting?`<span class="badge">${waiting}</span>`:''}</button>`).join('')}</nav>`:''}`;
   document.getElementById('fbBtn').onclick=()=>openFeedback();
   const me=document.getElementById('meBtn'); if(me) me.onclick=()=>{ if(S.me) openMySettings(); };
   const ro=document.getElementById('ruleOk'); if(ro) ro.onclick=async()=>{ S.me.reminder_due=false; render(); if(LIVE){ try{ await sb.rpc('ack_reminder',{p_token:S.token}); }catch(e){} } };
   const so=document.getElementById('signOut'); if(so) so.onclick=()=>{ if(so.dataset.c!=='1'){ so.dataset.c='1'; so.textContent='Tap again. You\'ll need your link to return.'; return; } forgetToken(); boot(); };
-  app.querySelectorAll('.tab').forEach(t=>t.onclick=async()=>{ S.tab=t.dataset.tab; if(S.tab==='quotes') S.quotes=null; render();
+  app.querySelectorAll('.tab').forEach(t=>t.onclick=async()=>{ S.tab=t.dataset.tab; if(S.tab==='quotes'){ S.quotes=null; S.bookings=null; } render();
     if(LIVE && S.tab==='review'){ try{ await DB.loadVendors(); await DB.loadRequests(); await DB.loadFeedback(); try{ await DB.loadReports(); }catch(e){} render(); }catch(e){} }
     if(LIVE && S.tab==='team'){ try{ await DB.loadTeam(); render(); }catch(e){} } });
   const add=document.getElementById('add'); if(add) add.onclick=()=>openForm(null);
   const addQ=document.getElementById('addQ'); if(addQ) addQ.onclick=()=>openQuotePicker();
+  const addB=document.getElementById('addB'); if(addB) addB.onclick=()=>bkExplain(openBookingPicker);
   ({vendors:viewVendors, quotes:viewQuotes, review:viewReview, team:viewTeam})[S.tab]();
 }
 
@@ -1158,6 +1195,10 @@ function viewTeam(){
       <p>Supplier emails sent from the app's Email button copy this address, unless a colleague opts out. Leave empty to turn it off.</p>
       <div class="addrow"><input id="bccIn" type="email" value="${esc((S.me&&S.me.bcc_email)||'')}" placeholder="suppliers@eretzisraeltours.com"><button class="btn primary" id="bccSave" type="button">Save</button></div>
     </section>
+    ${!LIVE||(S.me&&S.me.bookings_for)?`<section class="panel"><h3>Booking sheets</h3>
+      <p>A guide sends a bus or van company the job and gets the price and terms back in writing (Quotes tab, and on every transport supplier). For now only you see it.</p>
+      <label class="switch" for="bkAll"><input id="bkAll" type="checkbox" ${S.me&&S.me.bookings_for==='all'?'checked':''}><span><b>Open booking sheets to all colleagues</b><br><span class="hint">Switch on once you have tried it yourself. You can switch it off again; sheets already made are kept.</span></span></label>
+    </section>`:''}
     <section class="panel"><h3>Asking to join</h3>
       ${pend.length? pend.map(m=>`<div class="rev"><div class="who2"><b>${esc(m.name)}</b><span>${esc(m.role||'Role not given')}${m.license_no?` · license <span class="mono">${esc(m.license_no)}</span>`:''}<br>${esc(m.email)}${m.phone?' · '+esc(m.phone):''}${m.note?'<br>'+(/^No proof:/.test(m.note)?`<b style="color:var(--warn)">⚠ Asked to join without proof.</b> ${esc(m.note.replace(/^No proof:\s*/,''))}`:esc(m.note)):''}</span></div>
         <div class="btn-row">${m.has_proof?`<button class="btn soft" data-proof="${m.id}">View proof</button>`:'<span class="pill pending">No proof yet</span>'}<button class="btn soft" data-no="${m.id}">Decline</button><button class="btn primary" data-yes="${m.id}">Approve</button></div><span id="pf_${m.id}" style="flex-basis:100%"></span></div>`).join('')
@@ -1173,6 +1214,8 @@ function viewTeam(){
   wireCopy(view);
   view.querySelector('#bccSave').onclick=async()=>{ const v=view.querySelector('#bccIn').value.trim();
     try{ if(LIVE){ const { error } = await sb.rpc('set_setting',{p_token:S.token,p_key:'bcc_email',p_value:v}); if(error) throw new Error(error.message); } S.me.bcc_email=v.toLowerCase(); toast(v?'Email copies go to '+v:'Email copies turned off'); }catch(e){ toast(e.message); } };
+  const bkAll=view.querySelector('#bkAll'); if(bkAll) bkAll.onchange=async e=>{ const on=e.target.checked;
+    try{ if(LIVE){ const { error } = await sb.rpc('set_setting',{p_token:S.token,p_key:'bookings_for',p_value:on?'all':'admin'}); if(error) throw new Error(error.message); } S.me.bookings_for=on?'all':'admin'; toast(on?'Booking sheets are open to all colleagues':'Booking sheets are back to you only'); }catch(err){ e.target.checked=!on; toast(err.message); } };
   (async()=>{ const box=view.querySelector('#actAll'); if(!box) return;
     let a; try{ a = LIVE ? await rpc('activity',{p_vendor:''}) : {recent:[],top:[],by_person:[]}; }catch(e){ box.innerHTML=`<div class="msg err">${esc(e.message)}</div>`; return; }
     if(!a.recent.length){ box.innerHTML='<p class="hint" style="margin:0">Nothing yet. It fills in as colleagues use the contact buttons.</p>'; return; }
@@ -1308,6 +1351,7 @@ function openDetail(id, opt){
     <div id="reqBox"></div>
     <div id="sitesWrap"></div>
     <fieldset><div class="sec-head"><legend>Quotes</legend><button class="mini" id="addQuote" type="button">+ Add quote</button></div><div id="quotesBox"><p class="hint">Loading…</p></div></fieldset>
+    ${isTr&&bookingsOn()?`<fieldset><div class="sec-head"><legend>Booking sheets</legend><button class="mini" id="addBooking" type="button">+ New booking sheet</button></div><div id="bookingsBox"><p class="hint">Loading…</p></div></fieldset>`:''}
     ${isTr?`<fieldset class="drv-pane keep"><div class="sec-head"><legend>${indep?'Driver':'Drivers of '+esc(v.name)}</legend><button class="mini" id="addDriver" type="button">+ Add or find a driver</button></div>
       <p class="hint" style="margin:0 0 10px">${indep?'An independent van driver. Reviews from colleagues who rode with him.':'Employed or contracted by this company. A driver keeps his reviews if he also drives for another company.'}</p><div id="driversBox"><p class="hint">Loading…</p></div></fieldset>`:''}
     <fieldset><div class="sec-head"><legend>Standard prices</legend><button class="mini" id="addPrice" type="button">+ Add price</button></div>
@@ -1343,6 +1387,7 @@ function openDetail(id, opt){
   const ppt=w.querySelector('#ppToggle'); if(ppt) ppt.onchange=async()=>{ try{ await DB.setPricesPrivate(v.id, ppt.checked); toast(ppt.checked?'Prices are now private to you':'Prices are visible to colleagues'); }catch(e){ ppt.checked=!ppt.checked; toast(e.message); } };
   w.querySelector('#addQuote').onclick=()=>openQuoteForm(v,null);
   drawQuotes(v);
+  const abk=w.querySelector('#addBooking'); if(abk){ abk.onclick=()=>bkExplain(()=>openBookingForm(v,null)); drawBookings(v); }
   const adr=w.querySelector('#addDriver'); if(adr){ adr.onclick=()=>openDriverFind(v); drawDrivers(v); }
   const sbd=w.querySelector('.sheet-body'), setVt=t=>{ sbd.classList.toggle('only-drivers',t==='drivers'); w.querySelectorAll('[data-vt]').forEach(x=>x.setAttribute('aria-selected', x.dataset.vt===t)); sbd.scrollTop=0; };
   w.querySelectorAll('[data-vt]').forEach(x=>x.onclick=()=>setVt(x.dataset.vt)); if(isTr&&opt&&opt.tab==='drivers') setVt('drivers');
@@ -1771,8 +1816,11 @@ function trackerCard(r,stats){ const q=r.q, o=r.o, old=!r.recent||['Expired','De
     ${q.conditions?`<details class="qcond"><summary>Conditions</summary><p>${esc(q.conditions)}</p></details>`:''}
     ${by}${whoLine}
     ${!r.recent?'<div class="qsub">Older than two years. Not counted in the average.</div>':''}</div>`; }
+const qviewSwitch=()=>bookingsOn()?`<div class="otabs vtabs" role="tablist" style="margin:12px 0 10px"><button class="otab" type="button" role="tab" data-qv="tracker" aria-selected="${S.qview!=='bookings'}">Quote tracker</button><button class="otab" type="button" role="tab" data-qv="bookings" aria-selected="${S.qview==='bookings'}">Booking sheets</button></div>`:'';
+function wireQview(){ document.querySelectorAll('[data-qv]').forEach(x=>x.onclick=()=>{ if(S.qview===x.dataset.qv) return; S.qview=x.dataset.qv; render(); }); }
 async function viewQuotes(){
   const view=document.getElementById('view');
+  if(bookingsOn()&&S.qview==='bookings'){ view.innerHTML=qviewSwitch()+`<div class="qt-intro"><h2>Booking sheets</h2><p>Book a bus or a van in writing. You send the job, the company fills in the price and every extra, and both sides keep the same sheet.</p></div><div id="bkBody"></div>`; wireQview(); return viewBookings(); }
   if(!S.quotes){ view.innerHTML='<p class="hint" style="padding:24px 0">Loading quotes…</p>';
     try{ const got=await DB.loadTracker(); S.quotes=got||[]; }catch(e){ if(S.tab==='quotes') view.innerHTML=`<div class="msg err">Couldn't load quotes: ${esc(e.message)}</div>`; return; }
     if(S.tab!=='quotes'||!document.getElementById('view')) return; }
@@ -1782,14 +1830,14 @@ async function viewQuotes(){
   const svcs=t.grp==='All'?[]:SERVICES.filter(x=>x[2]===t.grp&&all.some(r=>r.svc===x[0]));
   if(t.svc!=='All'&&!svcs.some(x=>x[0]===t.svc)) t.svc='All';
   const chip=(attr,val,label,on)=>`<button class="chip" data-${attr}="${esc(val)}" aria-pressed="${on}">${esc(label)}</button>`;
-  document.getElementById('view').innerHTML=`
+  document.getElementById('view').innerHTML=`${qviewSwitch()}
     <div class="qt-intro"><h2>Quote tracker</h2><p>What suppliers actually quoted: by the day, by the hour, in and out of season, with every extra they added. Shared by colleagues without names.</p></div>
     <label class="search" for="qtq">${icons.search}<input id="qtq" type="search" placeholder="Search a supplier, vehicle or region" value="${esc(t.q)}" autocomplete="off"></label>
     ${groups.length?`<div class="chips" role="group" aria-label="Filter by type">${chip('grp','All','All',t.grp==='All')}${groups.map(([k,l])=>chip('grp',k,l,t.grp===k)).join('')}</div>`:''}
     ${svcs.length>1?`<div class="chips" role="group" aria-label="Filter by kind" style="padding-top:2px">${chip('svc','All','All '+(SVC_GROUPS.find(x=>x[0]===t.grp)||['',''])[1].toLowerCase(),t.svc==='All')}${svcs.map(x=>chip('svc',x[0],x[1],t.svc===x[0])).join('')}</div>`:''}
     ${all.length?`<div class="chips" role="group" aria-label="Filter by season" style="padding-top:2px">${chip('sea','All','All dates',t.season==='All')}${chip('sea','High','High season',t.season==='High')}${chip('sea','Regular','Regular season',t.season==='Regular')}</div>`:''}
     <div id="qtBody"></div>`;
-  const v2=document.getElementById('view');
+  const v2=document.getElementById('view'); wireQview();
   v2.querySelector('#qtq').addEventListener('input',e=>{ t.q=e.target.value; drawTracker(); });
   v2.querySelectorAll('[data-grp]').forEach(c=>c.onclick=()=>{ t.grp=c.dataset.grp; t.svc='All'; viewQuotes(); });
   v2.querySelectorAll('[data-svc]').forEach(c=>c.onclick=()=>{ t.svc=c.dataset.svc; viewQuotes(); });
@@ -1964,6 +2012,383 @@ function openQuoteForm(v, q0, back){
     try{ await DB.saveQuote(v.id,out); toast(q0?'Quote saved':(out.shared?'Quote added and shared without your name.':'Quote added. Only you'+(S.admin?'':' and Eretz Israel Tours')+' can see it.')); done(); }
     catch(e){ b.disabled=false; b.textContent='Save quote'; err.innerHTML=`<div class="msg err">${esc(e.message)}</div>`; }
   };
+}
+
+// ---------- booking sheets: shared wording ----------
+// The SAME block sits in index.html (the guide's side) and b/index.html (the company's side). Change both together.
+// Hebrew first, English under it: the company reads Hebrew, many colleagues read English.
+const BK_VEH={bus:['אוטובוס','Bus'],midibus:['מידיבוס','Midibus'],van20:['מיניבוס 17–20 מקומות','Van, 17–20 seats'],van16:['מיניבוס 11–16 מקומות','Van, 11–16 seats'],van10:['ואן 9–10 מקומות','Van, 9–10 seats'],van8:['ואן עד 8 מקומות','Van, up to 8 seats'],car:['רכב פרטי','Car'],jeep_vehicle:['ג׳יפ / 4x4','Jeep / 4x4'],transfer:['העברה','Transfer']};
+const BK_SIGN={ILS:'₪',USD:'$',EUR:'€'};
+const BK_VAT={including_vat:['כולל מע״מ','incl. VAT'],plus_vat:['בתוספת מע״מ','plus VAT'],not_applicable:['ללא מע״מ, תיירים','no VAT, tourists']};
+const BK_IE={incl:['כלול במחיר','included'],extra:['בנוסף','extra']};
+const BK_STMT=['מה שלא רשום כאן לא יחויב.','Anything not written here will not be charged.'];
+const bkMoney=(t,x)=>(BK_SIGN[(t&&t.currency)||'ILS']||'₪')+Number(x).toLocaleString('en-US');
+function bkDate(iso,he){ if(!iso) return ''; const d=new Date(iso+'T12:00:00'); if(isNaN(d)) return iso;
+  try{ return he ? d.toLocaleDateString('he-IL',{weekday:'short',day:'numeric',month:'numeric',year:'numeric'}) : d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'}); }catch(e){ return iso; } }
+const bkRange=(b,he)=> b.date_to&&b.date_to!==b.date_from ? bkDate(b.date_from,he)+' – '+bkDate(b.date_to,he) : bkDate(b.date_from,he);
+function bkVehicle(b,he){ const v=BK_VEH[b.service];
+  if(!v) return b.seats?(he?b.seats+' מקומות':b.seats+' seats'):'';
+  if(b.seats&&/^(bus|midibus|van)/.test(b.service)){
+    const base = he ? ({bus:'אוטובוס',midibus:'מידיבוס'}[b.service]||(+b.seats>10?'מיניבוס':'ואן')) : ({bus:'bus',midibus:'midibus'}[b.service]||'van');
+    return he ? base+' '+b.seats+' מקומות' : b.seats+'-seat '+base; }
+  return v[he?0:1]; }
+// Rows are [Hebrew label, English label, Hebrew value, English value]. English value null = the same typed text.
+function bkJobRows(b){ return [
+  ['תאריך','Date',bkRange(b,true),bkRange(b,false)],
+  ['נוסעים','Passengers',b.pax?b.pax+(b.tourists?' · תיירים מחו״ל':''):(b.tourists?'תיירים מחו״ל':''),b.pax?b.pax+(b.tourists?' · tourists from abroad':''):(b.tourists?'tourists from abroad':'')],
+  ['רכב','Vehicle',bkVehicle(b,true),bkVehicle(b,false)],
+  ['איסוף','Pick-up',[b.pickup_time,b.pickup_place].filter(Boolean).join(', '),null],
+  ['מסלול היום','Outline of the day',b.route||'',null],
+  ['פיזור','Drop-off',[b.dropoff_time,b.dropoff_place].filter(Boolean).join(', '),null],
+  ['הערות המזמין','Notes from the guide',b.note||'',null]].filter(r=>r[2]); }
+function bkTermRows(t){ t=t||{}; const m=x=>bkMoney(t,x), vat=BK_VAT[t.vat];
+  const inc=[[t.hours_incl,'עד '+t.hours_incl+' שעות','up to '+t.hours_incl+' hours'],[t.km_incl,'עד '+t.km_incl+' ק״מ','up to '+t.km_incl+' km']].filter(x=>x[0]);
+  const ie=(k,note)=>BK_IE[t[k]]?[BK_IE[t[k]][0]+(note?' · '+note:''),BK_IE[t[k]][1]+(note?' · '+note:'')]:['',''];
+  const tip=t.tip==='none'?['לא מצופה','not expected']:t.tip==='customary'?['מקובל'+(t.tip_amt?' '+m(t.tip_amt)+' ליום':''),'customary'+(t.tip_amt?', '+m(t.tip_amt)+' a day':'')]:['',''];
+  return [
+    ['מחיר ליום','Price per day',t.price?m(t.price)+(vat?' · '+vat[0]:''):'',t.price?m(t.price)+(vat?' · '+vat[1]:''):''],
+    ['המחיר כולל','Price includes',inc.map(x=>x[1]).join(' · '),inc.map(x=>x[2]).join(' · ')],
+    ['השעות נספרות מ־','Hours counted from',({pickup:'נקודת האיסוף',depot:'היציאה מהחניון'})[t.hours_from]||'',({pickup:'the pick-up',depot:'leaving the depot'})[t.hours_from]||''],
+    ['שעה נוספת','Extra hour',t.overtime?m(t.overtime):'',t.overtime?m(t.overtime):''],
+    ['ק״מ נוסף','Extra km',t.extra_km?m(t.extra_km):'',t.extra_km?m(t.extra_km):''],
+    ['כביש 6 ואגרות','Highway 6 and tolls',...ie('tolls',t.tolls_note)],
+    ['חניה','Parking',...ie('parking')],
+    ['טיפ לנהג','Driver tip',...tip],
+    ['תוספות אחרות','Other extras',t.extras||'',null],
+    ['ביטול ללא חיוב עד','Free cancellation until',t.cancel||'',null],
+    ['תשלום','Payment',t.payment||'',null],
+    ['הערות החברה','Notes from the company',t.note||'',null]]; }
+// What a price without these still leaves open: where surprise charges come from.
+function bkMissing(t){ t=t||{}; const out=[];
+  if(!t.vat) out.push(['מע״מ','VAT']); if(!t.hours_incl) out.push(['שעות ביום','hours in a day']); if(!t.km_incl) out.push(['ק״מ כלולים','km included']);
+  if(!t.overtime) out.push(['שעה נוספת','extra hour']); if(!t.extra_km&&t.km_incl) out.push(['ק״מ נוסף','extra km']); if(!t.tolls) out.push(['כביש 6','Highway 6']); if(!t.tip) out.push(['טיפ','tip']);
+  return out; }
+function bkSheetHtml(b,t){ const has=!!(t&&t.price), comp=b.company||b.vendor_name||'';
+  const row=r=>`<div class="bks-r${r[2]?'':' ns'}"><dt>${esc(r[0])}<small dir="ltr">${esc(r[1])}</small></dt><dd dir="auto">${r[2]?esc(r[2]):'לא צוין'}${r[2]?(r[3]&&r[3]!==r[2]?`<small dir="ltr">${esc(r[3])}</small>`:''):'<small dir="ltr">not stated</small>'}</dd></div>`;
+  const terms=has?bkTermRows(t).filter((r,i)=>r[2]||i<8):[];
+  const when=iso=>{ try{ const d=new Date(iso); return d.getDate()+'.'+(d.getMonth()+1)+'.'+d.getFullYear(); }catch(e){ return ''; } };
+  const who=[['מזמין','Booked by',[b.booker_name,b.booker_phone].filter(Boolean).join(' · ')],['חברה','Company',comp],
+    has?[b.terms_by==='guide'?'נרשם ע״י המזמין':'מולא ע״י','Filled in by',b.terms_by==='guide'?'לפי תשובת החברה'+(b.answered_by?' ('+b.answered_by+')':''):[b.answered_by,b.answered_at?when(b.answered_at):''].filter(Boolean).join(' · '),b.terms_by==='guide'?'entered by the guide from the company\'s answer':null]:null,
+    b.status==='confirmed'?['אושר','Confirmed',b.confirmed_at?when(b.confirmed_at):'✓',null]:null].filter(r=>r&&r[2]);
+  return `<div class="bks" dir="rtl" lang="he">
+    <div class="bks-h"><b>דף הזמנת רכב</b><span dir="ltr">Vehicle booking sheet</span></div>
+    <dl>${who.map(row).join('')}</dl>
+    <div class="bks-sec">ההזמנה<small dir="ltr">The job</small></div>
+    <dl>${bkJobRows(b).map(row).join('')}</dl>
+    ${has?`<div class="bks-sec">מחיר ותנאים<small dir="ltr">Price and terms</small></div><dl>${terms.map(row).join('')}</dl>
+    <div class="bks-stmt">${esc(BK_STMT[0])}<small dir="ltr">${esc(BK_STMT[1])}</small></div>`:''}</div>`; }
+// Plain text for WhatsApp or email. ask = short note with the link; template = no link, blanks to fill in; summary = the filled sheet.
+function bkText(b,t,mode,link){ const L=[], comp=b.company||b.vendor_name||'';
+  const two=r=>{ if(r[3]==null||r[3]===r[2]) L.push(r[0]+' · '+r[1]+': '+r[2]); else { L.push(r[0]+': '+r[2]); L.push(r[1]+': '+r[3]); } };
+  if(mode==='ask'){
+    L.push('שלום, יש לי הזמנת רכב: '+[bkRange(b,true),bkVehicle(b,true),b.pax?b.pax+' נוסעים':''].filter(Boolean).join(', ')+'.');
+    if(b.pickup_time||b.pickup_place) L.push('איסוף: '+[b.pickup_time,b.pickup_place].filter(Boolean).join(', ')+'.');
+    L.push('נא למלא מחיר ותנאים בקישור, זה לוקח דקה:'); L.push(link); L.push('תודה, '+(b.booker_name||''));
+    L.push(''); L.push('Vehicle booking for '+bkRange(b,false)+'. Please fill in the price and terms at the link. Thanks, '+(b.booker_name||''));
+    return L.join('\n'); }
+  L.push('*דף הזמנת רכב · Vehicle booking sheet*'); if(comp) L.push(comp);
+  L.push(''); bkJobRows(b).forEach(two);
+  if(mode==='template'){
+    L.push(''); L.push('*נא למלא ולהחזיר · Please fill in and send back:*');
+    [['מחיר ליום: ₪ ____ (כולל מע״מ / בתוספת / ללא)','Price per day: ₪ ____ (incl. VAT / plus VAT / none)'],['כולל עד __ שעות ועד __ ק״מ','Includes up to __ hours and __ km'],['השעות נספרות מ: האיסוף / החניון','Hours counted from: pick-up / depot'],
+     ['שעה נוספת: ₪ ____','Extra hour: ₪ ____'],['ק״מ נוסף: ₪ ____','Extra km: ₪ ____'],['כביש 6 ואגרות: כלול / בנוסף','Highway 6 and tolls: included / extra'],['חניה: כלול / בנוסף','Parking: included / extra'],
+     ['טיפ לנהג: לא מצופה / ₪ ____ ליום','Driver tip: not expected / ₪ ____ a day'],['תוספות אחרות (לינה, לילה, שבת): ____','Other extras (overnight, night, Shabbat): ____'],['ביטול ללא חיוב עד: ____','Free cancellation until: ____'],['תשלום: ____','Payment: ____'],['הערות: ____','Notes: ____']]
+      .forEach(p=>{ L.push(p[0]); L.push(p[1]); });
+  } else if(t&&t.price){
+    L.push(''); L.push('*מחיר ותנאים · Price and terms*');
+    bkTermRows(t).forEach((r,i)=>{ if(r[2]) two(r); else if(i<8){ L.push(r[0]+': לא צוין'); L.push(r[1]+': not stated'); } });
+  }
+  L.push(''); L.push('*'+BK_STMT[0]+'*'); L.push(BK_STMT[1]);
+  L.push(''); L.push('מזמין · Booked by: '+[b.booker_name,b.booker_phone].filter(Boolean).join(', '));
+  if(mode==='summary'&&b.answered_by) L.push('מולא ע״י · Filled in by: '+b.answered_by);
+  return L.join('\n'); }
+const BKS_CSS=`.bks{background:#fff;color:#16261e;border:1px solid #cfd6cd;border-radius:10px;padding:14px 16px;font-size:15px;line-height:1.35;text-align:right}
+.bks small{display:block;font-size:12px;color:#55635a;font-weight:400;text-align:right}
+.bks-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;border-bottom:2px solid #16261e;padding-bottom:6px;margin-bottom:4px}
+.bks-h b{font-size:19px}.bks-h span{font-size:12.5px;color:#55635a}
+.bks dl{margin:0}
+.bks-r{display:flex;gap:12px;padding:6px 0;border-bottom:1px solid #e3e8e1;break-inside:avoid}
+.bks-r dt{flex:0 0 38%;font-weight:600}
+.bks-r dd{flex:1;margin:0;min-width:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.bks-r.ns dd{color:#a66a12}
+.bks-sec{margin:12px 0 2px;padding:5px 8px;background:#e8ede5;border-radius:6px;font-weight:600;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.bks-sec small{display:inline}
+.bks-stmt{margin-top:12px;border:2px solid #16261e;border-radius:6px;padding:8px 10px;font-weight:700}
+@media print{.bks{font-size:12.5px;padding:0}.bks small{font-size:10px}.bks-r{padding:3px 0}.bks-sec{margin-top:8px;padding:3px 8px}.bks-h b{font-size:17px}}`;
+
+// ---------- booking sheets: the guide's side ----------
+// A guide fills in the job, sends the bus or van company a link, and the company fills in the price and terms.
+// Open to Eretz Israel Tours only until the Team tab switch opens it to colleagues (whoami.bookings).
+(function(){ const st=document.createElement('style'); st.textContent=BKS_CSS; document.head.appendChild(st); })();
+const bookingsOn=()=>!LIVE||!!(S.me&&S.me.bookings);
+const bkLink=b=>LIVE?APP_URL+'b/?k='+encodeURIComponent(b.key):APP_URL+'b/index.html?demo=1';
+const BK_SERVICES=[...VEHICLES.map(x=>[x[0],x[1]]),['jeep_vehicle','Jeep / 4x4 with driver'],['transfer','Airport transfer']];
+const BK_STATUS={waiting:['pending','Waiting for the company'],answered:['high','Answered · check and confirm'],confirmed:['approved','Confirmed'],cancelled:['inactive','Cancelled']};
+const bkPill=b=>{ const s=BK_STATUS[b.status]||BK_STATUS.waiting; return `<span class="pill ${s[0]}">${esc(s[1])}</span>`; };
+const bkVendor=b=>S.vendors.find(v=>v.id===b.vendor_id);
+const BK_NUM=['price','hours_incl','km_incl','overtime','extra_km','tip_amt'];
+function bkCard(b, withVendor){ const t=b.terms||{};
+  return `<button class="qcard bkcard${b.status==='cancelled'?' old':''}" type="button" data-bk="${esc(b.id)}">
+    <div class="qhead"><b>${esc(withVendor?(b.vendor_name||'Supplier'):bkRange(b,false)||'No date yet')}</b>${bkPill(b)}</div>
+    <div class="qsub">${[withVendor?esc(bkRange(b,false)):'',esc(bkVehicle(b,false)),b.pax?esc(b.pax)+' people':'',b.client_ref?esc(b.client_ref):''].filter(Boolean).join(' · ')}</div>
+    ${t.price?`<div class="qrate"><span class="p">${esc(bkMoney(t,t.price))}</span><span class="u">per day${BK_VAT[t.vat]?' · '+esc(BK_VAT[t.vat][1]):''}</span></div>`:''}
+    ${!b.mine&&b.owner_name?`<div class="qsub">Sheet from ${esc(b.owner_name)}${b.owner_role?' · '+esc(b.owner_role):''}</div>`:''}</button>`; }
+function bkWireCards(root, list){ root.querySelectorAll('[data-bk]').forEach(el=>el.onclick=()=>{ const b=list.find(x=>String(x.id)===el.dataset.bk); if(b) openBookingView(b); }); }
+function bkExplain(then){
+  let seen=false; try{ seen=localStorage.getItem('eitv_bk_seen')==='1'; }catch(e){}
+  if(seen) return then();
+  const w=sheet('How booking sheets work', `<p style="margin:0 0 10px">A booking sheet puts a bus or van booking in writing, so the price can't change afterwards.</p>
+    <ol style="margin:0 0 12px;padding-left:20px;line-height:1.5"><li><b>You fill in the job</b>: date, passengers, vehicle, pick-up, outline of the day, drop-off.</li>
+    <li><b>You send the company a link</b> on WhatsApp or email. It opens that one booking and nothing else. The company never sees this list.</li>
+    <li><b>The company fills in the price and terms</b>: hours and km included, overtime, extra km, Kvish 6, parking, tip, cancellation, payment.</li>
+    <li><b>You confirm.</b> Both sides hold the same sheet, and either can save it as a PDF.</li></ol>
+    <p class="hint" style="margin:0">The company sees your name and phone and the job. It never sees the client, your private note or anything else in the app. A confirmed price and its terms are shared with colleagues in the Quotes tab without your name, unless you switch that off on the sheet.</p>`,
+    `<button class="btn primary" id="bkOk" type="button">Got it</button>`);
+  w.querySelector('#bkOk').onclick=()=>{ try{ localStorage.setItem('eitv_bk_seen','1'); }catch(e){} then(); };
+}
+async function viewBookings(){
+  const box=document.getElementById('bkBody'); if(!box) return;
+  if(!S.bookings){ box.innerHTML='<p class="hint" style="padding:24px 0">Loading booking sheets…</p>';
+    try{ S.bookings=await DB.loadBookings('')||[]; }catch(e){ box.innerHTML=`<div class="msg err">Couldn't load booking sheets: ${esc(e.message)}</div>`; return; }
+    if(!document.getElementById('bkBody')) return; }
+  const list=S.bookings, b2=document.getElementById('bkBody');
+  if(!list.length){ b2.innerHTML=`<div class="empty"><h3>No booking sheets yet</h3><p>Booking a bus or a van? Fill in the job, send the company its link, and get the price and every extra back in writing.</p><button class="btn accent" id="bkFirst" type="button">+ New booking sheet</button></div>`;
+    b2.querySelector('#bkFirst').onclick=()=>bkExplain(openBookingPicker); return; }
+  const open=list.filter(b=>b.status==='waiting'||b.status==='answered'), done=list.filter(b=>b.status==='confirmed'||b.status==='cancelled');
+  b2.innerHTML=`${open.length?`<p class="favs-h" style="margin:4px 2px 8px">Open</p>${open.map(b=>bkCard(b,true)).join('')}`:''}
+    ${done.length?`<p class="favs-h" style="margin:14px 2px 8px">Closed</p>${done.map(b=>bkCard(b,true)).join('')}`:''}`;
+  bkWireCards(b2, list);
+}
+async function drawBookings(v){
+  const box=document.getElementById('bookingsBox'); if(!box) return;
+  let list=[]; try{ list=await DB.loadBookings(v.id)||[]; }catch(e){ box.innerHTML=`<div class="msg err">Couldn't load booking sheets: ${esc(e.message)}</div>`; return; }
+  if(!document.getElementById('bookingsBox')) return;
+  if(!list.length){ box.innerHTML='<p class="hint" style="margin:0 0 10px">No booking sheets yet. Send the job, get the price and every extra back in writing: hours, km, Kvish 6, tip.</p>'; return; }
+  box.innerHTML=list.map(b=>bkCard(b,false)).join(''); bkWireCards(box, list);
+}
+function openBookingPicker(){
+  const w=sheet('New booking sheet', `<p style="margin:0 0 10px">Which bus or van company are you booking?</p>
+    <label class="search" for="bpq">${icons.search}<input id="bpq" type="search" placeholder="Search company or driver" autocomplete="off"></label>
+    <div id="bpList" style="margin-top:10px"></div>
+    <p class="hint" style="margin-top:12px">Not on the list? Add the company first, in the Suppliers tab.</p>`, `<button class="btn soft" id="bpc" type="button">Cancel</button>`);
+  const inp=w.querySelector('#bpq'), list=w.querySelector('#bpList');
+  const draw=()=>{ const n=normN(inp.value);
+    const hits=S.vendors.filter(v=>catsOf(v).includes('Transport')&&(!n||normN([v.name,v.contactPerson,v.tags,v.region,v.location].join(' ')).includes(n))).sort((a,b)=>a.name.localeCompare(b.name)).slice(0,40);
+    list.innerHTML=hits.length?hits.map(v=>`<button class="pick" type="button" data-v="${esc(v.id)}"><b>${esc(v.name)}</b><span>${esc(isIndep(v)?'Van driver':(v.region||v.location||'Transport'))}</span></button>`).join(''):'<p class="hint">No transport supplier with that name.</p>';
+    list.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{ const v=S.vendors.find(x=>x.id===b.dataset.v); if(v) openBookingForm(v,null,'quotes'); }); };
+  inp.addEventListener('input',draw); w.querySelector('#bpc').onclick=closeSheet; draw(); setTimeout(()=>inp.focus(),50);
+}
+// The price-and-terms fields, used for "terms you expect" and for typing in the company's answer.
+function bkTermsForm(t,p){ t=t||{};
+  const seg=(k,opts)=>`<div class="tgs seg" data-seg="${k}" role="group">${opts.map(([val,l])=>`<button class="tg" type="button" data-val="${val}" aria-pressed="${t[k]===val}">${esc(l)}</button>`).join('')}</div>`;
+  const inp=(k,label,ph,mode)=>`<div class="f"><label for="${p}${k}">${label}</label><input id="${p}${k}" data-t="${k}" ${mode?`inputmode="${mode}"`:''} value="${esc(t[k]||'')}" placeholder="${esc(ph||'')}"></div>`;
+  return `<div class="grid bkterms">
+    ${inp('price','Price per day','3000','decimal')}
+    <div class="f"><label for="${p}currency">Currency</label><select id="${p}currency" data-t="currency">${['ILS','USD','EUR'].map(c=>`<option value="${c}"${(t.currency||'ILS')===c?' selected':''}>${c}</option>`).join('')}</select></div>
+    <div class="f wide"><span class="lab">VAT</span>${seg('vat',[['including_vat','Including VAT'],['plus_vat','Plus VAT'],['not_applicable','No VAT (tourists)']])}</div>
+    ${inp('hours_incl','Hours included in a day','10','decimal')}
+    ${inp('km_incl','Km included in a day','250','numeric')}
+    <div class="f wide"><span class="lab">Hours counted from</span>${seg('hours_from',[['pickup','The pick-up'],['depot','Leaving the depot']])}</div>
+    ${inp('overtime','Extra hour','200','decimal')}
+    ${inp('extra_km','Extra km','5','decimal')}
+    <div class="f wide"><span class="lab">Kvish 6 and tolls</span>${seg('tolls',[['incl','Included'],['extra','Extra']])}<input data-t="tolls_note" aria-label="Kvish 6 note" value="${esc(t.tolls_note||'')}" placeholder="Note, e.g. by the bill"></div>
+    <div class="f wide"><span class="lab">Parking</span>${seg('parking',[['incl','Included'],['extra','Extra, by receipt']])}</div>
+    <div class="f wide"><span class="lab">Driver tip</span>${seg('tip',[['none','Not expected'],['customary','Customary']])}<input data-t="tip_amt" inputmode="decimal" aria-label="Customary tip a day" value="${esc(t.tip_amt||'')}" placeholder="Customary amount a day"></div>
+    <div class="f wide"><label for="${p}extras">Other extras: driver overnight, night, Shabbat</label><input id="${p}extras" data-t="extras" value="${esc(t.extras||'')}" placeholder="Driver overnight ₪350"></div>
+    <div class="f wide"><label for="${p}cancel">Free cancellation until</label><input id="${p}cancel" data-t="cancel" value="${esc(t.cancel||'')}" placeholder="48 hours before"></div>
+    <div class="f wide"><label for="${p}payment">Payment: how and when</label><input id="${p}payment" data-t="payment" value="${esc(t.payment||'')}" placeholder="Bank transfer after the trip"></div>
+    <div class="f wide"><label for="${p}note">Anything else</label><textarea id="${p}note" data-t="note" rows="2" placeholder="Free text">${esc(t.note||'')}</textarea></div>
+  </div>`; }
+function bkWireTerms(root){ root.querySelectorAll('.seg .tg').forEach(b=>b.onclick=()=>{ const on=b.getAttribute('aria-pressed')==='true'; b.parentNode.querySelectorAll('.tg').forEach(x=>x.setAttribute('aria-pressed','false')); b.setAttribute('aria-pressed',String(!on)); }); }
+function bkReadTerms(root){ const t={};
+  root.querySelectorAll('[data-t]').forEach(i=>{ let val=i.value.trim(); if(BK_NUM.includes(i.dataset.t)) val=val.replace(/[,₪$€\s]/g,''); if(val) t[i.dataset.t]=val; });
+  root.querySelectorAll('[data-seg]').forEach(s=>{ const on=s.querySelector('.tg[aria-pressed="true"]'); if(on) t[s.dataset.seg]=on.dataset.val; });
+  if(Object.keys(t).length===1&&t.currency) return {};
+  return t; }
+function bkBadTerms(t){ const bad=BK_NUM.find(k=>t[k]&&!(k==='km_incl'?/^\d{1,4}$/:k==='hours_incl'?/^\d{1,2}(\.\d)?$/:/^\d{1,7}(\.\d{1,2})?$/).test(t[k]));
+  return bad?'Check the numbers: '+({price:'price',hours_incl:'hours included',km_incl:'km included',overtime:'extra hour',extra_km:'extra km',tip_amt:'tip'})[bad]+' must be a plain number.':''; }
+// Terms a quote already holds, so the sheet can start from them.
+function bkFromQuote(q,o){ const t={}, f=o.fees||{}, base=(o.lines||[]).find(l=>l.kind==='Base'&&/per day/.test(l.unit)&&l.price!=='');
+  if(base) t.price=String(base.price); if(q.currency) t.currency=q.currency; if(q.vat) t.vat=q.vat;
+  if(o.hours_incl) t.hours_incl=o.hours_incl; if(o.km_incl) t.km_incl=o.km_incl;
+  if(f.overtime&&f.overtime.s==='extra'&&f.overtime.amt) t.overtime=f.overtime.amt; if(f.extra_km&&f.extra_km.s==='extra'&&f.extra_km.amt) t.extra_km=f.extra_km.amt;
+  if(f.tolls){ t.tolls=f.tolls.s; if(f.tolls.note) t.tolls_note=f.tolls.note; } if(f.parking) t.parking=f.parking.s;
+  return t; }
+function openBookingForm(v, b0, back){
+  const isNew=!b0;
+  const b=JSON.parse(JSON.stringify(b0||{client_ref:'',booker_name:(S.me&&S.me.name)||'',booker_phone:(S.me&&S.me.phone)||'',date_from:'',date_to:'',pax:'',service:'',seats:'',tourists:true,pickup_time:'',pickup_place:'',route:'',dropoff_time:'',dropoff_place:'',note:'',private_note:'',proposed:{},shared:!v.prices_private}));
+  const fleet=[...fleetOf(v)]; if(isNew&&fleet.length===1) b.service=fleet[0];
+  const opt=(arr,val)=>arr.map(([k,t])=>`<option value="${esc(k)}"${String(val)===k?' selected':''}>${esc(t)}</option>`).join('');
+  const places=[...new Set([...(S.bookings||[]).flatMap(x=>[x.pickup_place,x.dropoff_place]),...TOWNS].filter(Boolean))];
+  const body=`<form id="bf" novalidate>
+    <div id="bkFill"></div>
+    <fieldset><legend>The job</legend><div class="grid">
+      <div class="f"><label for="b_from">Date <em>*</em></label><input id="b_from" type="date" value="${esc(b.date_from)}"></div>
+      <div class="f"><label for="b_to">Until (more than one day)</label><input id="b_to" type="date" value="${esc(b.date_to)}"></div>
+      <div class="f"><label for="b_pax">Passengers</label><input id="b_pax" inputmode="numeric" value="${esc(b.pax)}" placeholder="24"></div>
+      <div class="f"><label for="b_seats">Seats needed</label><input id="b_seats" inputmode="numeric" value="${esc(b.seats)}" placeholder="30"></div>
+      <div class="f wide"><label for="b_svc">Vehicle <em>*</em></label><select id="b_svc">${opt([['','Choose…'],...BK_SERVICES],b.service)}</select></div>
+      <div class="f"><label for="b_ptime">Pick-up time</label><input id="b_ptime" type="time" value="${esc(b.pickup_time)}"></div>
+      <div class="f"><label for="b_pplace">Pick-up place</label><input id="b_pplace" list="bkPlaces" value="${esc(b.pickup_place)}" placeholder="Hotel, Jerusalem"></div>
+      <div class="f wide"><label for="b_route">Outline of the day</label><textarea id="b_route" rows="3" placeholder="Caesarea, Zichron Yaakov, back to Jerusalem">${esc(b.route)}</textarea></div>
+      <div class="f"><label for="b_dtime">Drop-off time, about</label><input id="b_dtime" type="time" value="${esc(b.dropoff_time)}"></div>
+      <div class="f"><label for="b_dplace">Drop-off place</label><input id="b_dplace" list="bkPlaces" value="${esc(b.dropoff_place)}" placeholder="Same as pick-up"></div>
+      <div class="f wide"><label for="b_note">Notes for the company</label><textarea id="b_note" rows="2" placeholder="Free text: strong air conditioning, luggage, child seats…">${esc(b.note)}</textarea></div>
+    </div><datalist id="bkPlaces">${places.map(p=>`<option value="${esc(p)}">`).join('')}</datalist>
+    <label class="switch" for="b_tour" style="margin-top:10px"><input id="b_tour" type="checkbox" ${b.tourists?'checked':''}><span><b>Tourists from abroad</b><br><span class="hint">Tells the company which rate and VAT apply.</span></span></label></fieldset>
+    <fieldset><legend>Booked by</legend><div class="grid">
+      <div class="f"><label for="b_name">Your name <em>*</em></label><input id="b_name" value="${esc(b.booker_name)}" autocomplete="name"></div>
+      <div class="f"><label for="b_phone">Your phone <em>*</em></label><input id="b_phone" type="tel" value="${esc(b.booker_phone)}" placeholder="050-000-0000" autocomplete="tel"></div>
+    </div><p class="hint" style="margin:6px 0 0">The company sees these, so it knows who is asking and can answer you on WhatsApp.</p></fieldset>
+    <details class="bkexp" id="bkExp"${Object.keys(b.proposed||{}).length?' open':''}><summary>Terms you expect <span class="hint">optional · the company sees them filled in and confirms or changes them</span></summary>
+      <p class="hint" id="bkExpNote" style="margin:8px 0"></p>${bkTermsForm(b.proposed,'bp_')}</details>
+    <fieldset><legend>Only for you</legend><div class="grid">
+      <div class="f wide"><label for="b_ref">For which trip or client? (private)</label><input id="b_ref" value="${esc(b.client_ref)}" placeholder="Jacobs family, Oct 2026"></div>
+      <div class="f wide"><label for="b_priv">Private note</label><textarea id="b_priv" rows="2" placeholder="Only you${S.admin?'':' and Eretz Israel Tours'} can see this">${esc(b.private_note)}</textarea></div>
+    </div>
+    <label class="switch" for="b_shared" style="margin-top:10px"><input id="b_shared" type="checkbox" ${b.shared&&!v.prices_private?'checked':''} ${v.prices_private?'disabled':''}><span><b>Share the confirmed price and terms with colleagues, without ${S.admin?'the name':'your name'}</b><br><span class="hint">${v.prices_private?'This supplier\'s prices are kept private, so nothing is shared.':'Once you confirm, it shows in the Quotes tab like any quote: supplier, dates, price and extras. Never the client, the notes or who booked.'}</span></span></label></fieldset>
+    <div id="bErr"></div></form>`;
+  const w=sheet(isNew?'New booking sheet · '+v.name:'Edit booking sheet', body, `<button class="btn soft" id="bc" type="button">Cancel</button><button class="btn primary" id="bs" type="button">${isNew?'Save and send':'Save'}</button>`);
+  const g=id=>w.querySelector('#'+id), exp=g('bkExp');
+  bkWireTerms(exp);
+  const setTerms=(t,from)=>{ exp.querySelector('.bkterms').outerHTML=bkTermsForm(t,'bp_'); bkWireTerms(exp); exp.open=true; g('bkExpNote').textContent=from?'Filled in from '+from+'. Change what is different.':''; };
+  g('b_seats').onblur=()=>{ const k=vehicleBySeats(g('b_seats').value.trim()); if(k&&(!g('b_svc').value||VEH[g('b_svc').value])) g('b_svc').value=k; };
+  // Autofill: earlier sheets with this company, and its quotes.
+  (async()=>{ const box=g('bkFill'); if(!box) return; let mine=[], quotes=[];
+    try{ mine=(await DB.loadBookings(''))||[]; }catch(e){} try{ quotes=(await DB.loadQuotes(v.id))||[]; }catch(e){}
+    if(!document.body.contains(box)) return;
+    const here=mine.filter(x=>x.vendor_id===v.id&&(!b0||x.id!==b0.id)), last=mine.find(x=>!b0||x.id!==b0.id);
+    const qopts=quotes.flatMap(q=>(q.options||[]).filter(o=>svcGroup(o.service||guessService(o.name,v)||'other')==='vehicle').map(o=>({q,o}))).slice(0,4);
+    const srcs=[];
+    here.slice(0,2).forEach(x=>srcs.push({label:'Your sheet of '+(bkDate(x.date_from,false)||'earlier'),from:'your sheet of '+(bkDate(x.date_from,false)||'earlier'),job:x,terms:Object.keys(x.terms||{}).length?x.terms:x.proposed}));
+    qopts.forEach(({q,o})=>srcs.push({label:'Quote · '+(fmtRange(q).split(' · ')[0]||'no dates')+' · '+(o.name||svcLabel(o.service)),from:'the quote for '+(fmtRange(q).split(' · ')[0]||o.name),quote:{q,o},terms:bkFromQuote(q,o)}));
+    if(isNew&&last&&!here.length) srcs.push({label:'Places from your last sheet',from:'',job:last,placesOnly:true});
+    if(isNew&&last&&!g('b_phone').value&&last.booker_phone) g('b_phone').value=last.booker_phone;
+    if(!srcs.length) return;
+    box.innerHTML=`<div class="bkfill"><b>⚡ Fill in from</b><div class="presets" style="margin:6px 0 0">${srcs.map((s,i)=>`<button class="mini" type="button" data-src="${i}">${esc(s.label)}</button>`).join('')}</div></div>`;
+    const apply=(s,quiet)=>{
+      if(s.job){ const j=s.job; const put=(id,val)=>{ if(val&&!g(id).value) g(id).value=val; };
+        put('b_ptime',j.pickup_time); put('b_pplace',j.pickup_place); put('b_dtime',j.dropoff_time); put('b_dplace',j.dropoff_place);
+        if(!s.placesOnly){ put('b_pax',j.pax); put('b_seats',j.seats); if(!g('b_svc').value&&j.service) g('b_svc').value=j.service; put('b_note',j.note); } }
+      if(s.quote){ const {q,o}=s.quote; if(!g('b_pax').value&&q.pax) g('b_pax').value=q.pax; if(!g('b_seats').value&&o.seats) g('b_seats').value=o.seats;
+        if(!g('b_svc').value&&VEH[o.service]) g('b_svc').value=o.service; if(!g('b_from').value&&q.date_from&&q.date_from>=today()){ g('b_from').value=q.date_from; g('b_to').value=q.date_to&&q.date_to!==q.date_from?q.date_to:''; }
+        if(!g('b_ref').value&&q.title) g('b_ref').value=q.title; }
+      if(s.terms&&Object.keys(s.terms).length) setTerms(s.terms,s.from);
+      if(!quiet) toast('Filled in. Check it and change what is different.'); };
+    box.querySelectorAll('[data-src]').forEach(el=>el.onclick=()=>apply(srcs[+el.dataset.src]));
+    // A new sheet starts with what this company agreed to last time (or its latest quote), so there is less to type.
+    if(isNew){ const first=srcs.find(s=>s.terms&&Object.keys(s.terms).length); if(first) setTerms(first.terms,first.from); }
+  })();
+  const done=()=>{ S.bookings=null; };
+  g('bc').onclick=()=>{ if(b0) openBookingView(b0); else if(back==='quotes') closeSheet(); else openDetail(v.id); };
+  g('bs').onclick=async()=>{ const err=g('bErr'), proposed=bkReadTerms(exp);
+    const out={id:b0?b0.id:undefined,client_ref:g('b_ref').value.trim(),booker_name:g('b_name').value.trim(),booker_phone:g('b_phone').value.trim(),date_from:g('b_from').value,date_to:g('b_to').value,pax:g('b_pax').value.trim(),service:g('b_svc').value,seats:g('b_seats').value.trim(),tourists:g('b_tour').checked,
+      pickup_time:g('b_ptime').value,pickup_place:g('b_pplace').value.trim(),route:g('b_route').value.trim(),dropoff_time:g('b_dtime').value,dropoff_place:g('b_dplace').value.trim(),note:g('b_note').value.trim(),private_note:g('b_priv').value.trim(),proposed,shared:g('b_shared').checked&&!v.prices_private};
+    const probs=[]; if(!out.date_from) probs.push('Add the date.'); if(!out.service) probs.push('Choose the vehicle.'); if(!out.booker_name) probs.push('Add your name.'); if(!out.booker_phone) probs.push('Add your phone, so the company can answer you.');
+    if(out.date_from&&out.date_to&&out.date_to<out.date_from) probs.push('The end date is before the start date.');
+    if(out.seats&&!/^\d{1,3}$/.test(out.seats)) probs.push('Seats must be a number.');
+    const bt=bkBadTerms(proposed); if(bt) probs.push(bt);
+    if(probs.length){ err.innerHTML=`<div class="msg err">${probs.map(esc).join(' ')}</div>`; err.scrollIntoView({block:'center'}); return; }
+    if(out.date_to===out.date_from) out.date_to='';
+    const btn=g('bs'); btn.disabled=true; btn.textContent='Saving…';
+    try{ const saved=await DB.saveBooking(v.id,out); done();
+      if(isNew) openBookingSend(saved); else { toast(saved.status==='waiting'&&b0.status==='answered'?'Saved. The job changed, so the company has to send its answer again.':'Saved'); openBookingView(saved); } }
+    catch(e){ btn.disabled=false; btn.textContent=isNew?'Save and send':'Save'; err.innerHTML=`<div class="msg err">${esc(e.message)}</div>`; }
+  };
+}
+function openBookingSend(b){
+  const v=bkVendor(b)||{name:b.vendor_name||'the company'}, link=bkLink(b);
+  const compNum=firstPhone(v.whatsapp)||String(v.phone||'').split(/[;,/]/).map(firstPhone).find(p=>/^0?5\d{8}$/.test(p.replace(/^\+?972/,'0')))||'';
+  const em=firstEmail(v.email);
+  const w=sheet('Send to '+v.name, `<p style="margin:0 0 12px">Send the company its link. It opens this one booking and nothing else from the app. They fill in the price and terms and tap Send.</p>
+    <div class="f"><label for="bsTo">Send on WhatsApp to</label><select id="bsTo">${compNum?`<option value="${esc(compNum)}">${esc(v.name)} · ${esc(compNum)}</option>`:''}<option value="">Choose the chat in WhatsApp</option><option value="other">Another number…</option></select></div>
+    <div class="f" id="bsOtherWrap" hidden style="margin-top:8px"><label for="bsOther">Number</label><input id="bsOther" type="tel" placeholder="054-000-0000"></div>
+    <div class="btn-row" style="margin:12px 0"><button class="btn primary" id="bsWa" type="button">WhatsApp</button>${em?'<button class="btn soft" id="bsMail" type="button">Email</button>':''}<button class="btn soft" id="bsCopy" type="button">Copy message</button><a class="btn soft" style="text-decoration:none" href="${esc(link)}" target="_blank" rel="noopener">See what they see</a></div>
+    <div class="f"><label for="bsLink">The link</label><div class="addrow"><input id="bsLink" type="text" readonly value="${esc(link)}" class="mono" style="font-size:13px"><button class="btn soft" type="button" data-copy="bsLink">Copy</button></div></div>
+    <details class="bkexp" style="margin-top:14px"><summary>No link? Send it as a plain message</summary>
+      <p class="hint" style="margin:8px 0">For a driver who won't open links: this sends the whole sheet as a WhatsApp message with blanks to fill in. When he answers, open the sheet and tap "Type in their answer".</p>
+      <div class="btn-row"><button class="btn soft" id="bsWaT" type="button">WhatsApp, plain message</button><button class="btn soft" id="bsCopyT" type="button">Copy plain message</button></div></details>`,
+    `<button class="btn primary" id="bsDone" type="button">Done</button>`);
+  const g=id=>w.querySelector('#'+id); wireCopy(w);
+  const sel=g('bsTo'); sel.onchange=()=>{ g('bsOtherWrap').hidden=sel.value!=='other'; if(sel.value==='other') g('bsOther').focus(); };
+  // The company's drivers can receive it too.
+  if(v.id) DB.loadDrivers(v.id).then(ds=>{ if(!document.body.contains(sel)) return; (ds||[]).filter(d=>d.phone).forEach(d=>{ const o=document.createElement('option'); o.value=d.phone; o.textContent=d.name+' (driver) · '+d.phone; sel.insertBefore(o, sel.querySelector('option[value=""]')); }); }).catch(()=>{});
+  const num=()=>{ const x=sel.value==='other'?g('bsOther').value:sel.value; return x?intlDigits(firstPhone(x)||x):''; };
+  const wa=text=>window.open('https://wa.me/'+num()+'?text='+encodeURIComponent(text),'_blank','noopener');
+  g('bsWa').onclick=()=>wa(bkText(b,null,'ask',link));
+  g('bsWaT').onclick=()=>wa(bkText(b,null,'template'));
+  g('bsCopy').onclick=()=>copyText(bkText(b,null,'ask',link));
+  g('bsCopyT').onclick=()=>copyText(bkText(b,null,'template'));
+  const ml=g('bsMail'); if(ml) ml.onclick=()=>{ const base=mailHref(em); location.href=base+(base.includes('?')?'&':'?')+'subject='+encodeURIComponent('הזמנת רכב · Vehicle booking · '+bkRange(b,false))+'&body='+encodeURIComponent(bkText(b,null,'ask',link)); };
+  g('bsDone').onclick=()=>bkReload(b,true);
+}
+function bkPrint(b){
+  let st=document.getElementById('bkPrintCss'); if(!st){ st=document.createElement('style'); st.id='bkPrintCss'; st.textContent='#bkPrint{display:none}@media print{body.bk-printing>*:not(#bkPrint){display:none!important}body.bk-printing #bkPrint{display:block;padding:0}body.bk-printing .bks{border:0;font-size:14px}body.bk-printing{background:#fff}@page{margin:14mm}}'; document.head.appendChild(st); }
+  let root=document.getElementById('bkPrint'); if(!root){ root=document.createElement('div'); root.id='bkPrint'; document.body.appendChild(root); }
+  root.innerHTML=bkSheetHtml(b,b.terms); document.body.classList.add('bk-printing');
+  const off=()=>{ document.body.classList.remove('bk-printing'); window.removeEventListener('afterprint',off); };
+  window.addEventListener('afterprint',off); setTimeout(()=>{ window.print(); setTimeout(off,1500); },60);
+}
+async function bkReload(b, quiet){
+  try{ const list=await DB.loadBookings(b.vendor_id)||[]; const nb=list.find(x=>String(x.id)===String(b.id)); S.bookings=null;
+    if(nb){ if(!quiet&&nb.status===b.status&&nb.updated_at===b.updated_at) toast('No answer yet.'); openBookingView(nb); return; } }
+  catch(e){ toast(e.message); return; }
+  openBookingView(b);
+}
+function openBookingView(b){
+  const v=bkVendor(b), t=b.terms||{}, p=b.proposed||{}, has=!!t.price, closed=b.status==='confirmed'||b.status==='cancelled';
+  const lab={price:'Price per day',vat:'VAT',hours_incl:'Hours included',km_incl:'Km included',hours_from:'Hours counted from',overtime:'Extra hour',extra_km:'Extra km',tolls:'Kvish 6 and tolls',parking:'Parking',tip:'Driver tip'};
+  const diff=has?Object.keys(lab).filter(k=>p[k]&&t[k]&&String(p[k])!==String(t[k])):[];
+  const miss=has?bkMissing(t):[];
+  const banner={waiting:has?'The job changed after the company answered. Send it again so they confirm their terms.':'Sent. Waiting for the company to fill in the price and terms.',
+    answered:b.terms_by==='guide'?'You typed in the company\'s answer. Check it, then confirm.':'The company answered'+(b.answered_by?' ('+esc(b.answered_by)+')':'')+'. Check the terms, then confirm.',
+    confirmed:'Confirmed. Both sides hold this sheet. To change anything, reopen it.',cancelled:'Cancelled. The company\'s link shows the booking as cancelled.'}[b.status];
+  const body=`<div class="bkban ${esc(b.status)}">${bkPill(b)}<span>${banner}</span></div>
+    ${diff.length?`<div class="msg" style="background:var(--warn-wash);color:var(--ink);margin:0 0 10px"><b>Different from what you expected:</b> ${diff.map(k=>esc(lab[k])).join(', ')}.</div>`:''}
+    ${miss.length&&!closed?`<div class="msg" style="background:var(--warn-wash);color:var(--ink);margin:0 0 10px"><b>Not stated:</b> ${miss.map(x=>esc(x[1])).join(', ')}. Ask before you confirm: this is where surprise charges come from.</div>`:''}
+    ${bkSheetHtml(b,has?t:null)}
+    ${!has&&Object.keys(p).length?`<p class="hint" style="margin:10px 2px 0">You asked them to confirm: ${esc(bkTermRows(p).filter(r=>r[2]).map(r=>r[1]+' '+(r[3]||r[2])).join(' · '))}</p>`:''}
+    <dl class="dl" style="margin-top:14px">${b.client_ref?`<dt>Trip or client</dt><dd>${esc(b.client_ref)} <span class="hint">private</span></dd>`:''}${b.private_note?`<dt>Private note</dt><dd style="white-space:pre-wrap">${esc(b.private_note)}</dd>`:''}
+      <dt>Sharing</dt><dd>${b.shared&&!(v&&v.prices_private)?(b.status==='confirmed'?'In the Quotes tab, without '+(b.mine===false?'the':'your')+' name':'Goes to the Quotes tab without '+(b.mine===false?'the':'your')+' name once confirmed'):'Private · not shared with colleagues'}</dd>
+      ${b.mine===false&&b.owner_name?`<dt>Sheet from</dt><dd>${esc(b.owner_name)}${b.owner_role?' · '+esc(b.owner_role):''}</dd>`:''}</dl>
+    <div class="btn-row" style="margin-top:14px">
+      ${b.status==='waiting'?'<button class="mini" id="bvFresh" type="button">Check for an answer</button>':''}${b.status==='waiting'||b.status==='answered'?'<button class="mini" id="bvSend" type="button">Send link again</button><button class="mini" id="bvEdit" type="button">Edit the job</button><button class="mini" id="bvType" type="button">'+(has?'Change their answer':'Type in their answer')+'</button>':''}
+      <button class="mini" id="bvPdf" type="button">Print / save PDF</button><button class="mini" id="bvShare" type="button">Copy as text</button>
+      ${b.status==='confirmed'||b.status==='cancelled'?'<button class="mini" id="bvOpen" type="button">Reopen</button>':''}
+      ${b.status!=='cancelled'?'<button class="mini" id="bvCancel" type="button">Cancel booking</button>':''}<button class="mini" id="bvDel" type="button">Delete</button></div>`;
+  const foot=b.status==='answered'?`<button class="btn soft" id="bvClose" type="button">Close</button><button class="btn accent" id="bvConfirm" type="button">Confirm booking</button>`
+    :b.status==='waiting'?`<button class="btn soft" id="bvClose" type="button">Close</button><button class="btn primary" id="bvSend2" type="button">Send to the company</button>`
+    :`<button class="btn soft" id="bvClose" type="button">Close</button>${b.status==='confirmed'?'<button class="btn primary" id="bvWa" type="button">Send copy on WhatsApp</button>':''}`;
+  const w=sheet('Booking sheet · '+(b.vendor_name||(v&&v.name)||''), body, foot);
+  const g=id=>w.querySelector('#'+id), on=(id,fn)=>{ const el=g(id); if(el) el.onclick=fn; };
+  const refresh=()=>{ S.bookings=null; S.quotes=null; if(S.tab==='quotes') render(); };
+  const act=async(el,fn,msg)=>{ el.disabled=true; try{ const nb=await fn(); refresh(); if(msg) toast(msg); if(nb) openBookingView(nb); else closeSheet(); }catch(e){ el.disabled=false; toast(e.message); } };
+  const twice=(el,txt)=>{ if(el.dataset.c!=='1'){ el.dataset.c='1'; el.textContent=txt; return false; } return true; };
+  on('bvClose',()=>{ closeSheet(); if(S.tab==='quotes') render(); });
+  on('bvSend',()=>openBookingSend(b)); on('bvSend2',()=>openBookingSend(b)); on('bvFresh',()=>bkReload(b));
+  on('bvEdit',()=>{ if(v) openBookingForm(v,b); else toast('That supplier is no longer on the list.'); });
+  on('bvType',()=>openBookingAnswer(b));
+  on('bvPdf',()=>bkPrint(b));
+  on('bvShare',()=>copyText(bkText(b,has?t:null,'summary')));
+  on('bvWa',()=>window.open('https://wa.me/?text='+encodeURIComponent(bkText(b,t,'summary')),'_blank','noopener'));
+  on('bvConfirm',()=>act(g('bvConfirm'),()=>DB.setBookingStatus(b.id,'confirmed'),b.shared&&!(v&&v.prices_private)?'Confirmed. The price and terms are in the Quotes tab, without your name.':'Confirmed.'));
+  on('bvOpen',()=>act(g('bvOpen'),()=>DB.setBookingStatus(b.id,'open'),'Reopened. The company can change its answer again.'));
+  on('bvCancel',()=>{ if(twice(g('bvCancel'),'Tap again to cancel the booking')) act(g('bvCancel'),()=>DB.setBookingStatus(b.id,'cancelled'),'Cancelled. Tell the company too.'); });
+  on('bvDel',()=>{ if(twice(g('bvDel'),'Tap again to delete')) act(g('bvDel'),async()=>{ await DB.deleteBooking(b.id); return null; },'Booking sheet deleted'); });
+}
+// The company answered by phone or in a WhatsApp message: the guide types it in.
+function openBookingAnswer(b){
+  const v=bkVendor(b); const start=Object.keys(b.terms||{}).length?b.terms:(b.proposed||{});
+  const w=sheet('Their answer · '+(b.vendor_name||''), `<p style="margin:0 0 12px">Type in what the company told you. The sheet will say it was entered by you from their answer.</p>
+    <div class="f" style="margin-bottom:10px"><label for="ba_by">Who answered</label><input id="ba_by" value="${esc(b.answered_by||'')}" placeholder="Dudu, by phone"></div>
+    <div id="baTerms">${bkTermsForm(start,'ba_')}</div><div id="baErr"></div>`, `<button class="btn soft" id="bac" type="button">Cancel</button><button class="btn primary" id="bas" type="button">Save their answer</button>`);
+  bkWireTerms(w); w.querySelector('#bac').onclick=()=>openBookingView(b);
+  w.querySelector('#bas').onclick=async()=>{ const err=w.querySelector('#baErr'), terms=bkReadTerms(w.querySelector('#baTerms'));
+    const bad=!terms.price?'Add the price they gave you.':bkBadTerms(terms); if(bad){ err.innerHTML=`<div class="msg err">${esc(bad)}</div>`; return; }
+    if(!v){ toast('That supplier is no longer on the list.'); return; }
+    const btn=w.querySelector('#bas'); btn.disabled=true;
+    try{ const nb=await DB.saveBooking(b.vendor_id,Object.assign({},b,{terms,answered_by:w.querySelector('#ba_by').value.trim()})); S.bookings=null; openBookingView(nb); }
+    catch(e){ btn.disabled=false; err.innerHTML=`<div class="msg err">${esc(e.message)}</div>`; } };
 }
 
 const RES_LABEL={required:'Reservation officially required',recommended:'Reservation recommended',not_needed:'No reservation needed'};
