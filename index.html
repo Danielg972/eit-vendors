@@ -239,7 +239,9 @@ textarea.out{width:100%;min-height:160px;font-family:var(--f-mono);font-size:12p
 .vs.eq{background:var(--wash);color:var(--ink-2)}
 .pill.high{background:var(--ochre-wash);color:var(--ink);box-shadow:inset 0 0 0 1px var(--ochre)}
 .hrs{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;margin:-6px 0 14px;font-size:14px}
-.hrs b{font-weight:500}
+.hrs b{font-weight:500;flex-basis:100%}
+.hrs .brk{flex-basis:100%;margin-top:4px}
+.hrs .hv{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center}
 .pill.shab{background:var(--ok-wash);color:var(--ok);box-shadow:inset 0 0 0 1px var(--ok)}
 .pill.reg{background:var(--wash);color:var(--ink-2)}
 .flags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
@@ -444,7 +446,7 @@ const LIVE = /(^|\.)github\.io$/.test(location.hostname) || /(^|\.)eretzisraelto
 // R5 field order (from itinerary_builder R5 saveVendor)
 const R5_FIELDS = ['name','category','active','contactPerson','phone','whatsapp','email','website','location','languages','kosher','maxCap','listedPrice','listedPriceVatTreatment','agentPrice','agentPriceVatTreatment','maxPax','priceBasis','currency','payTerms','cancelPolicy','cancelNoticeAmount','cancelNoticeUnit','cancelDayType','cancelPenalty','cancelPolicyVerifiedDate','npResLink','rateReliability','rateService','rateValue','strengths','weaknesses','notes'];
 const CATEGORIES = ['Hotel','Guide','Transport','Restaurant','Winery','Attraction / Site','Activity','Adventure','National Parks','Travel Agent','Itinerary Planner','Flight','Other'];
-const EXTRA_FIELDS = ['region','tags','experience_years','also_categories','maps_link','hours'];
+const EXTRA_FIELDS = ['region','tags','experience_years','also_categories','maps_link','hours','hours_last'];
 // Vehicle sizes, used everywhere in Transport: what a company offers (tags), what a quote is for, list filters.
 // Seat ranges follow how Israeli companies sell them: 6-8 seat vans (Vito / V-Class), 9-10, minibuses of 14-16 and 19-20
 // (19 passengers is the limit of the small-bus licence), midibuses of 25-35, buses of 50-60.
@@ -498,6 +500,8 @@ const notKosher=k=>/^\s*(not kosher|non[- ]?kosher|kosher[- ]style)/i.test(Strin
 // A restaurant that is kosher without a certificate is an exception Eretz Israel Tours approves (the database enforces it too).
 const noCert=k=>/^\s*kosher\W+(no|without)\s+(certificate|certification|teuda|teudah|hechsher)/i.test(String(k||''));
 const kosherNeedsOk=d=>catsOf(d).includes('Restaurant') && noCert(d.kosher);
+const LAST_PRESETS=['Last entry 1 hr before closing','Last entry:','Last tour starts:','Kitchen closes:'];
+const HOURS_HOW={spoke:'spoke to them',visited:'was there'};
 const HOURS_PRESETS=['Sun–Thu 9:00–17:00','Fri 9:00–13:00','Closed Shabbat','Open Shabbat','Open 24 hours','By appointment'];
 const KOSHER_OPTS = ['Rabbanut','Rabbanut Mehadrin','Badatz Eda Haredit','Badatz Beit Yosef','Badatz Rubin','Rav Landau','Kosher, no certificate','Kosher-style (not certified)','Not kosher','Not relevant'];
 const LANG_OPTS = ['English','Hebrew','French','Spanish','Russian','German','Portuguese','Italian','Yiddish','Arabic','Dutch'];
@@ -518,7 +522,7 @@ function sample(){
   const now = Date.now(), d = n => new Date(now - n*86400000).toISOString();
   const v = (o)=>Object.assign(blank(),{active:'Active',priceBasis:'Per person',currency:'ILS',review_status:'approved',created_by:'daniel@eretzisraeltours.com',updated_by:'daniel@eretzisraeltours.com',created_at:d(20),updated_at:d(3)},o);
   return [
-    v({id:'vendor_k3m9p2x',name:'Golan Heights Jeep Tours',category:'Activity',tags:'Jeep, Shomer Shabbat',hours:'Sun–Thu 8:00–17:00, Fri 8:00–13:00, closed Shabbat',contactPerson:'Moshe Levi',phone:'+972 52 555 0142',whatsapp:'+972 52 555 0142',location:'Golan Heights',languages:'English, Hebrew',maxCap:'28',listedPrice:'450',listedPriceVatTreatment:'including_vat',agentPrice:'360',agentPriceVatTreatment:'plus_vat',priceBasis:'Per person',payTerms:'Invoice after the tour',cancelPolicy:'Free cancellation up to 72 hours before',cancelNoticeAmount:'72',cancelNoticeUnit:'Hours',cancelPenalty:'Full charge inside 72h',cancelPolicyVerifiedDate:'2026-08-14',rateReliability:'5',rateService:'4',rateValue:'4',strengths:'Punctual, drivers speak good English',notes:'Book 2 weeks ahead in Sukkot'}),
+    v({id:'vendor_k3m9p2x',name:'Golan Heights Jeep Tours',category:'Activity',tags:'Jeep, Shomer Shabbat',hours:'Sun–Thu 8:00–17:00, Fri 8:00–13:00, closed Shabbat',hours_last:'Last tour starts 15:30',hours_source:'their website, 2 Oct 2026',contactPerson:'Moshe Levi',phone:'+972 52 555 0142',whatsapp:'+972 52 555 0142',location:'Golan Heights',languages:'English, Hebrew',maxCap:'28',listedPrice:'450',listedPriceVatTreatment:'including_vat',agentPrice:'360',agentPriceVatTreatment:'plus_vat',priceBasis:'Per person',payTerms:'Invoice after the tour',cancelPolicy:'Free cancellation up to 72 hours before',cancelNoticeAmount:'72',cancelNoticeUnit:'Hours',cancelPenalty:'Full charge inside 72h',cancelPolicyVerifiedDate:'2026-08-14',rateReliability:'5',rateService:'4',rateValue:'4',strengths:'Punctual, drivers speak good English',notes:'Book 2 weeks ahead in Sukkot'}),
     v({id:'vendor_a81qz0c',name:'Dan Panorama Jerusalem',category:'Hotel',contactPerson:'Group desk',phone:'+972 2 569 5695',email:'groups@example-hotel.co.il',location:'Jerusalem',kosher:'Rabbanut',maxCap:'290',agentPrice:'1150',agentPriceVatTreatment:'not_applicable',priceBasis:'Per group',currency:'USD',payTerms:'30% deposit, balance 14 days before',cancelNoticeAmount:'21',cancelNoticeUnit:'Days',cancelDayType:'Calendar days',rateReliability:'4',rateService:'4',rateValue:'3'}),
     v({id:'vendor_7tt2w4n',reservation:'required',name:'Ein Gedi Nature Reserve',category:'National Parks',location:'Dead Sea',npResLink:'https://www.parks.org.il',listedPrice:'33',listedPriceVatTreatment:'including_vat',agentPrice:'29',agentPriceVatTreatment:'including_vat',priceBasis:'Per person',review_status:'pending',created_by:'yossi.guide@gmail.com',updated_by:'yossi.guide@gmail.com',updated_at:d(1)}),
     v({id:'vendor_p0lk5sd',name:'Shomron Bus Lines',category:'Transport',contactPerson:'Avi',phone:'+972 54 000 1234',location:'Ariel',maxCap:'50',agentPrice:'2400',agentPriceVatTreatment:'plus_vat',priceBasis:'Per day',payTerms:'Cash or transfer on the day',rateReliability:'3',review_status:'pending',created_by:'rachel.ops@gmail.com',updated_by:'rachel.ops@gmail.com',updated_at:d(0)}),
@@ -759,6 +763,10 @@ const DB = {
   async foodAdd(vid,name,kosher,note){ if(!LIVE){ ((S.demo.food=S.demo.food||{})[vid]=S.demo.food[vid]||[]).unshift({id:'fd'+Date.now(),name,kosher,note,mine:true,by:{name:S.me.name,role:S.me.role,admin:S.admin},created_at:new Date().toISOString()}); return; }
     await rpc('food_add',{p_vendor:vid,p_name:name,p_kosher:kosher,p_note:note}); },
   async foodDelete(vid,id){ if(!LIVE){ S.demo.food[vid]=S.demo.food[vid].filter(f=>f.id!==id); return; } await rpc('food_delete',{p_id:id}); },
+  async verifyHours(vid, how){
+    if(!LIVE){ Object.assign(S.vendors.find(v=>v.id===vid), how?{hours_verified_how:how,hours_verified_by:(S.me&&S.me.name)||'You',hours_verified_at:new Date().toISOString()}:{hours_verified_how:'',hours_verified_by:'',hours_verified_at:null}); return; }
+    const r=await rpc('hours_verify',{p_vendor:vid,p_how:how}); const i=S.vendors.findIndex(v=>v.id===vid); if(i>=0) S.vendors[i]=Object.assign(S.vendors[i],r); return r;
+  },
   async setAgent(vid, link, howto){
     if(!LIVE){ Object.assign(S.vendors.find(v=>v.id===vid),{agent_link:link,agent_howto:howto}); return; }
     const r=await rpc('vendor_set_agent',{p_vendor:vid,p_link:link,p_howto:howto}); const i=S.vendors.findIndex(v=>v.id===vid); if(i>=0) S.vendors[i]=Object.assign(S.vendors[i],r); return r;
@@ -1370,7 +1378,7 @@ function vatLabel(x){ const f=VAT.find(p=>p[0]===x); return f&&x?f[1]:''; }
 const AUDIENCES=['Adult','Child','Israeli senior','Senior','Student','Soldier','Group','Private','Vehicle','Other'];
 const DEAL_KINDS=['Credit card club','Coupon site','Coupon code','Group trick','Other'];
 const LOCKED=['name','category','active','contactPerson','phone','whatsapp','email','website','npResLink','listedPrice','listedPriceVatTreatment','agentPrice','agentPriceVatTreatment','maxPax','priceBasis','currency','payTerms','cancelPolicy','cancelNoticeAmount','cancelNoticeUnit','cancelDayType','cancelPenalty','cancelPolicyVerifiedDate'];
-const FIELD_LABEL={kosher:'Kosher',hours:'Opening hours',name:'Name',category:'Category',active:'Status',contactPerson:'Contact person',phone:'Phone',whatsapp:'WhatsApp',email:'Email',website:'Website',npResLink:'Park booking link',listedPrice:'Listed price',listedPriceVatTreatment:'Listed price VAT',agentPrice:'Agent price',agentPriceVatTreatment:'Agent price VAT',maxPax:'Max people',priceBasis:'Price basis',currency:'Currency',payTerms:'Payment terms',cancelPolicy:'Cancellation policy',cancelNoticeAmount:'Notice',cancelNoticeUnit:'Notice unit',cancelDayType:'Counted in',cancelPenalty:'Penalty',cancelPolicyVerifiedDate:'Policy checked on',label:'Label',audience:'For',age_from:'Age from',age_to:'Age to',pax_min:'Min people',pax_max:'Max people',season:'Season / dates',price:'Price',vat:'VAT',basis:'Basis',is_agent:'Agent rate',source:'Source',checked_on:'Checked on',note:'Note'};
+const FIELD_LABEL={kosher:'Kosher',hours:'Opening hours',hours_last:'Last entry and other times',name:'Name',category:'Category',active:'Status',contactPerson:'Contact person',phone:'Phone',whatsapp:'WhatsApp',email:'Email',website:'Website',npResLink:'Park booking link',listedPrice:'Listed price',listedPriceVatTreatment:'Listed price VAT',agentPrice:'Agent price',agentPriceVatTreatment:'Agent price VAT',maxPax:'Max people',priceBasis:'Price basis',currency:'Currency',payTerms:'Payment terms',cancelPolicy:'Cancellation policy',cancelNoticeAmount:'Notice',cancelNoticeUnit:'Notice unit',cancelDayType:'Counted in',cancelPenalty:'Penalty',cancelPolicyVerifiedDate:'Policy checked on',label:'Label',audience:'For',age_from:'Age from',age_to:'Age to',pax_min:'Min people',pax_max:'Max people',season:'Season / dates',price:'Price',vat:'VAT',basis:'Basis',is_agent:'Agent rate',source:'Source',checked_on:'Checked on',note:'Note'};
 const ic = {
   call:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>',
   wa:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l1.7-5A8.5 8.5 0 1 1 8 19.3z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.5-2-1-1 1a3.5 3.5 0 0 1-2-2l1-1-1-2z"/></svg>',
@@ -1443,6 +1451,24 @@ function priceWho(p){
 }
 const today=()=>new Date().toISOString().slice(0,10);
 
+// Hours are "Unverified" until a member confirms them by speaking to the supplier or being there (not from the website).
+function hoursCheck(v){
+  if(!v.hours && !v.hours_last) return '';
+  if(v.hours_verified_how){ const mine=S.me&&v.hours_verified_by===S.me.name;
+    return `<span class="hv brk"><span class="pill approved">✓ Verified</span><span class="hint">${esc(who(v.hours_verified_by))} ${esc(HOURS_HOW[v.hours_verified_how]||'')}${v.hours_verified_at?' · '+fmtDate(v.hours_verified_at):''}</span>${S.admin||mine?'<button class="mini" id="hvUndo" type="button">Undo</button>':''}</span>`; }
+  return `<span class="hv brk"><span class="pill pending">Unverified</span><span class="hint">${v.hours_source?'From '+esc(v.hours_source):'Not yet checked with the supplier'}</span><button class="mini" id="hvDo" type="button">☐ I verified these hours</button></span>`;
+}
+function hoursVerifyPopup(v){
+  const m=document.createElement('div'); m.className='modal';
+  m.innerHTML=`<div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="hvT"><h3 id="hvT">How did you check these hours?</h3>
+    <p>Only tick this if you checked with the supplier yourself. <b>Reading their website doesn't count.</b> Your name shows next to it.</p>
+    <button class="btn primary" data-h="spoke" type="button">I spoke to them</button>
+    <button class="btn primary" data-h="visited" type="button">I was there</button>
+    <button class="btn soft" data-h="" type="button">Cancel</button></div>`;
+  document.body.appendChild(m);
+  m.querySelectorAll('[data-h]').forEach(b=>b.onclick=async()=>{ const how=b.dataset.h; m.remove(); if(!how) return;
+    try{ await DB.verifyHours(v.id, how); toast('Marked as verified. Thank you.'); openDetail(v.id); }catch(e){ toast(e.message); } });
+}
 function openDetail(id, opt){
   const v=S.vendors.find(x=>x.id===id); if(!v) return;
   const isTr=catsOf(v).includes('Transport'), indep=isIndep(v);
@@ -1459,7 +1485,9 @@ function openDetail(id, opt){
     ['Experience',rows([['Ratings',rating],['Strengths',esc(v.strengths)],['Weaknesses',esc(v.weaknesses)],['Summary',esc(v.notes)]])]
   ].filter(s=>s[1]);
   const body=`${vtabs}<div class="keep" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px"><span class="cat">${esc(v.category)}${v.also_categories?' + '+esc(v.also_categories):''}</span>${v.region||v.location?`<span class="hint">${esc(v.region||v.location)}</span>`:''}${shabPill(v)}${statusPill(v)}</div>
-    <div class="hrs"><span class="hint">Opening hours</span>${v.hours?`<b>${esc(v.hours)}</b>`:`<span class="hint">· not added yet</span><button class="mini" id="addHours" type="button">+ Add hours</button>`}</div>
+    <div class="hrs"><span class="hint">Opening hours</span>${v.hours?`<b>${esc(v.hours)}</b>`:`<span class="hint">· not added yet</span><button class="mini" id="addHours" type="button">+ Add hours</button>`}
+      ${v.hours_last?`<span class="hint brk">Last entry and other times</span><b>${esc(v.hours_last)}</b>`:''}
+      ${hoursCheck(v)}</div>
     ${isTr?`<fieldset><legend>Vehicles</legend>${(fl=>fl.length?`<div class="flags" style="margin:0 0 4px">${fl.map(x=>`<span class="flag info" style="font-size:13.5px;padding:5px 10px">${esc(x[1])}</span>`).join('')}</div>`:`<p class="hint" style="margin:0">Not marked yet. Tap Edit and choose which vehicles ${indep?'he has':'they have'}: buses, vans by size, cars.</p>`)(VEHICLES.filter(x=>fleetOf(v).has(x[0])))}</fieldset>`:''}
     <div id="parentBox"></div>
     ${contactBar(v)}
@@ -1496,6 +1524,8 @@ function openDetail(id, opt){
   S.openVendor=v.name; track(v.id,'open'); if(!S.myTop.includes(v.id)) S.myTop=[...S.myTop,v.id];
   w.querySelector('#edit').onclick=()=>openForm(v);
   w.querySelector('#upd').onclick=()=>openReport(v);
+  const hd=w.querySelector('#hvDo'); if(hd) hd.onclick=()=>hoursVerifyPopup(v);
+  const hu=w.querySelector('#hvUndo'); if(hu) hu.onclick=async()=>{ if(hu.dataset.c!=='1'){ hu.dataset.c='1'; hu.textContent='Tap again to undo'; return; } try{ await DB.verifyHours(v.id,''); openDetail(v.id); }catch(e){ toast(e.message); } };
   const ah=w.querySelector('#addHours'); if(ah) ah.onclick=()=>{ openForm(v); setTimeout(()=>{ const el=document.getElementById('f_hours'); if(el){ el.scrollIntoView({block:'center'}); el.focus(); } },80); };
   const aa=w.querySelector('#agentAsk'); if(aa) aa.onclick=()=>openAgentAsk(v);
   const ae=w.querySelector('#agentEdit'); if(ae) ae.onclick=()=>openAgentForm(v);
@@ -2862,6 +2892,7 @@ function openForm(v, preset){
       <div class="f wide" id="fleetWrap" hidden><label>Vehicles they offer</label><div class="tgs" id="fleetPick" role="group" aria-label="Vehicles they offer" style="margin:0">${VEHICLES.map(x=>`<button class="tg" type="button" data-veh="${x[0]}" aria-pressed="false">${esc(x[1])}</button>`).join('')}</div><span class="hint">Tap every size they have. Vans go by seats.</span></div>
       <div class="f wide"><label for="f_tags">Type (separate with commas)</label><input id="f_tags" value="${esc(x.tags)}" placeholder="Jeep, ATV / RZR"><div class="presets" id="tagSug" style="margin:6px 0 0"></div></div>
       <div class="f wide"><label for="f_hours">Opening hours</label><input id="f_hours" value="${esc(x.hours||'')}" maxlength="600" placeholder="Sun–Thu 9:00–17:00, Fri 9:00–13:00, closed Shabbat"><div class="presets" id="hrSug" style="margin:6px 0 0">${HOURS_PRESETS.map(h=>`<button type="button" class="mini" data-hr="${esc(h)}">+ ${esc(h)}</button>`).join('')}</div><span class="hint">Tap to add, then fix the times.</span></div>
+      <div class="f wide"><label for="f_hours_last">Last entry and other times</label><input id="f_hours_last" value="${esc(x.hours_last||'')}" maxlength="600" placeholder="Last entry 16:00. Last cable car up 16:00, last down 17:00."><div class="presets" id="hlSug" style="margin:6px 0 0">${LAST_PRESETS.map(h=>`<button type="button" class="mini" data-hl="${esc(h)}">+ ${esc(h)}</button>`).join('')}</div><span class="hint">Last entry, last cable car, when a trail opens or closes. Changing the hours marks them unverified again.</span></div>
       <div class="f wide"><label>Shabbat</label><div class="tgs" style="margin:0"><button class="tg" type="button" id="shabTg" aria-pressed="false">Shomer Shabbat</button></div><span class="hint">Tap if they keep Shabbat. It shows as a badge on the supplier.</span></div>
       <div class="f" id="gWrap" ${x.category==='Guide'?'':'hidden'}><label for="f_experience_years">Years guiding</label><input id="f_experience_years" type="number" inputmode="numeric" min="0" max="80" value="${esc(x.experience_years)}" placeholder="12"></div>
       ${sel('active','Status',['Active','Inactive'])}
@@ -2909,6 +2940,7 @@ function openForm(v, preset){
     alsoSug.querySelectorAll('[data-also]').forEach(b=>b.onclick=()=>{ const c=b.dataset.also; const cur=alsoIn.value.split(',').map(t=>t.trim()).filter(Boolean); const i=cur.indexOf(c); if(i>=0) cur.splice(i,1); else cur.push(c); alsoIn.value=cur.join(', '); syncRel(); }); };
   const showIf=(el,on)=>{ if(el) el.hidden=!on; };
   const hrIn=f.querySelector('#f_hours'); f.querySelectorAll('[data-hr]').forEach(b=>b.onclick=()=>{ const p=b.dataset.hr, cur=hrIn.value.trim().replace(/[,;]\s*$/,''); if(cur.toLowerCase().includes(p.toLowerCase())) return; hrIn.value=(cur?cur+', ':'')+p; hrIn.focus(); });
+  const hlIn=f.querySelector('#f_hours_last'); f.querySelectorAll('[data-hl]').forEach(b=>b.onclick=()=>{ const p=b.dataset.hl, cur=hlIn.value.trim(); if(cur.toLowerCase().includes(p.toLowerCase())) return; hlIn.value=(cur?cur.replace(/[.;,]\s*$/,'')+'. ':'')+p+(/:$/.test(p)?' ':''); hlIn.focus(); });
   const shabTg=f.querySelector('#shabTg'), shabDraw=()=>shabTg.setAttribute('aria-pressed', isShabbat({tags:tagsIn.value}));
   shabTg.onclick=()=>{ const on=isShabbat({tags:tagsIn.value}); const cur=tagList({tags:tagsIn.value}).filter(t=>t.toLowerCase()!==SHABBAT_TAG.toLowerCase()); if(!on) cur.push(SHABBAT_TAG); tagsIn.value=cur.join(', '); shabDraw(); };
   tagsIn.addEventListener('input',shabDraw); shabDraw();

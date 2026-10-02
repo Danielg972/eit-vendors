@@ -6,6 +6,26 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-9 · Hours pulled from websites are unverified until checked in person or by phone; last entry times (approved; live)
+
+**Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session, 2 October 2026, 16:58–17:20 Israel time.
+
+**In his words:** asked whether to look up published opening hours and fill them in marked "to verify": "Yes". Then: "I thought I'm on automatic. If you're searching the websites, I give you access to search the websites under this session. Aside from that, you should be scraping for pricing and any other relevant information." And: "mention that these are unverified and have a check box for people to verify them, but not by verifying on their website, either by speaking to them or being there. And some places have last entrance times that should be added. Masada has a last cable car up, last cable car down, earliest time to … climb the snake path, etc."
+
+**Decisions:**
+
+1. **Published hours are pulled from suppliers' websites and written into the list**, without asking him supplier by supplier.
+2. **They are shown as unverified**, with a tick for members to verify them.
+3. **Verifying means speaking to the supplier or being there.** Checking the website is not verification.
+4. **Last entry and similar times get their own place** (last cable car up and down, when the Snake Path opens, and so on).
+5. **Published prices and other relevant information are pulled the same way.**
+
+**Implementation choices (not owner decisions; change on request):** the verifier's name shows next to the tick (standing "From [name]" rule); the verifier or Eretz Israel Tours can undo; changing the hours clears the tick; when a supplier's own site has no hours a third-party listing is used and labelled as such; pulled prices are stored as public (not agent) price lines with their source and date.
+
+**Status:** live since 2 Oct 2026, about 17:40. The lookup for the remaining suppliers, prices and other details continues in the same session.
+
+---
+
 ## D-8 · Opening hours; "Kosher, no certificate" only as an approved exception (approved; live)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session, 2 October 2026, 16:36 Israel time.

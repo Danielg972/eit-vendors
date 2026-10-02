@@ -15,7 +15,7 @@
 | Database | Supabase project `wjuqtjlrtcywjaspjpwu` (org "EIT Vendors", Frankfurt) |
 | Schema record | `supabase/schema.sql` (tables, functions, grants), plus `supabase/functions/files/index.ts` (edge function v9) |
 | Terms version | `2026-10-02e` (draft, not yet reviewed by a lawyer; adds 2a use-and-add rule, 2b cost and founding members, 3b kosher restaurants only, no-certificate as an approved exception) |
-| Decisions | `docs/DECISIONS.md` (D-1 Cockpit boundary; D-2 quote tracker; D-3 driver reviews; D-4 transport by vehicle size; D-5 booking sheets; D-6 welcome tour, name, use-and-add rule; D-7 Shomer Shabbat badge, kosher restaurants only; D-8 opening hours, no-certificate needs approval) |
+| Decisions | `docs/DECISIONS.md` (D-1 Cockpit boundary; D-2 quote tracker; D-3 driver reviews; D-4 transport by vehicle size; D-5 booking sheets; D-6 welcome tour, name, use-and-add rule; D-7 Shomer Shabbat badge, kosher restaurants only; D-8 opening hours, no-certificate needs approval; D-9 verified hours, last entry, hours from websites) |
 
 ## Integration with the Cockpit
 
@@ -24,7 +24,7 @@
 | Status | **None built. Disabled.** |
 | Agreed boundary | D-1: the Vendor Master holds supplier identity and dated reference prices; the Cockpit holds trip-applied prices. Any later link is one-way, on Daniel's click, and snapshots the price into the trip. |
 | Supplier identity contract | Not written yet. It is the first integration step, after v4.97 is deployed and v4.98 is closed, and needs separate authorisation. |
-| Fields the Cockpit could later read | `vendors` (id, name, category, also_categories, contacts, region, location, maps_link, hours, tags); `vendor_prices` (label, audience, price, currency, vat, basis, is_agent, source, checked_on, updated_at, private, owner) |
+| Fields the Cockpit could later read | `vendors` (id, name, category, also_categories, contacts, region, location, maps_link, hours, hours_last, hours_source, hours_verified_at / _how, tags); `vendor_prices` (label, audience, price, currency, vat, basis, is_agent, source, checked_on, updated_at, private, owner) |
 | R5 export | Frozen, legacy backup only (owner: no active R5 use). Not round-tripped; IDs don't match R5; importing clears R5's trip view. |
 
 ## Data (counts worth watching)
@@ -65,7 +65,8 @@
 ## Next
 
 - **Kosher value missing on 7 of 8 restaurant suppliers** (D-7): fill them in, or make the field required for restaurants. Owner to decide.
-- **Opening hours:** the field exists since 2 Oct (D-8) and is empty on every supplier; hours get filled in as suppliers are edited.
+- **Opening hours:** pulled from suppliers' websites on 2 Oct (D-9), all marked Unverified until a colleague confirms by speaking to the supplier or being there. Remaining suppliers, published prices and other details are being pulled the same way.
+- **HaGoshrim Kayaks may have closed** (old site is an unrelated blog; a ticketing site lists its route as closed permanently). Check and remove or mark inactive.
 - **Use-and-add rule (D-6):** a Team-tab view of who used the list and who added to it in the last 3 months, and the reminder before removal. Needs a database function; not started.
 - **AI chat box for searches:** announced in the welcome tour as "in the works"; not built.
 - **Booking sheets (D-5): first real use** by the owner with a real bus company, then by colleagues.
@@ -74,6 +75,7 @@
 
 ## Changes that would affect the Cockpit (log)
 
+- 2026-10-02: **Live (about 17:40):** verified hours (`hours_verify`, `hours_verified_*`), last entry and other times (`vendors.hours_last`), source of unverified hours (`vendors.hours_source`). Migration `2026-10-02f`, applied to production. 60 callable functions. Hours for 32 suppliers written from their websites, unverified. New readable fields for the Cockpit; treat `hours` as unconfirmed unless `hours_verified_how` is set. No IDs or export formats changed.
 - 2026-10-02: **Live (about 16:50):** opening hours (`vendors.hours`, free text) and the kosher rule in `vendor_save` (non-kosher restaurants refused; "Kosher, no certificate" on a restaurant goes to Eretz Israel Tours for approval). Migration `2026-10-02e`, applied to production; terms `2026-10-02e`. New readable field for the Cockpit: `vendors.hours`. No IDs or export formats changed.
 - 2026-10-02: **Live (about 16:45):** Shomer Shabbat badge (a supplier tag, `Shomer Shabbat`), and kosher restaurants only (terms `2026-10-02d`, 3b; the form refuses a non-kosher Restaurant). Front end only, no schema change. Nothing Cockpit-facing; a Cockpit read of `vendors.tags` would see the new tag.
 - 2026-10-02: **Live (about 16:35):** welcome tour for first-time users, the app renamed The Inner Circle – Israel Guide, terms `2026-10-02c` (use-and-add rule, cost and founding members). Front end only, no schema change. Nothing Cockpit-facing.

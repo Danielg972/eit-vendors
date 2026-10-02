@@ -1,5 +1,5 @@
 -- Israel Suppliers Master List: database schema (public schema; storage buckets listed at the end).
--- Exported from Supabase project wjuqtjlrtcywjaspjpwu on 2026-10-01; quote tracker, driver reviews and booking sheets, then opening hours and the kosher rule in vendor_save, added 2026-10-02 (supabase/migrations/).
+-- Exported from Supabase project wjuqtjlrtcywjaspjpwu on 2026-10-01; quote tracker, driver reviews and booking sheets, then opening hours, verified hours (hours_verify) and the kosher rule in vendor_save, added 2026-10-02 (supabase/migrations/).
 -- To rebuild on an empty Supabase project: run this file, create the three PRIVATE storage buckets,
 -- then deploy supabase/functions/files/index.ts (verify_jwt = false). Data is not included.
 -- KEEP CURRENT: re-export after every schema, function or security change (README > Change rules).
@@ -535,6 +535,11 @@ create table public.vendors (
   also_categories text default ''::text not null,
   maps_link text default ''::text not null,
   hours text default ''::text not null,
+  hours_last text default ''::text not null,
+  hours_source text default ''::text not null,
+  hours_verified_at timestamp with time zone,
+  hours_verified_by text default ''::text not null,
+  hours_verified_how text default ''::text not null,
   constraint vendors_pkey PRIMARY KEY (id),
   constraint vendors_active_check CHECK ((active = ANY (ARRAY['Active'::text, 'Inactive'::text]))),
   constraint "vendors_agentPriceVatTreatment_check" CHECK (("agentPriceVatTreatment" = ANY (ARRAY[''::text, 'including_vat'::text, 'plus_vat'::text, 'not_applicable'::text]))),
@@ -547,6 +552,9 @@ create table public.vendors (
   constraint vendors_currency_check CHECK ((currency = ANY (ARRAY['USD'::text, 'ILS'::text, 'EUR'::text]))),
   constraint vendors_experience_years_check CHECK (((experience_years = ''::text) OR (experience_years ~ '^\d{1,2}$'::text))),
   constraint vendors_hours_check CHECK ((length(hours) <= 600)),
+  constraint vendors_hours_last_check CHECK ((length(hours_last) <= 600)),
+  constraint vendors_hours_source_check CHECK ((length(hours_source) <= 200)),
+  constraint vendors_hours_verified_how_check CHECK ((hours_verified_how = ANY (ARRAY[''::text, 'spoke'::text, 'visited'::text]))),
   constraint "vendors_listedPriceVatTreatment_check" CHECK (("listedPriceVatTreatment" = ANY (ARRAY[''::text, 'including_vat'::text, 'plus_vat'::text, 'not_applicable'::text]))),
   constraint vendors_maps_link_check CHECK (((maps_link = ''::text) OR (maps_link ~* '^https?://'::text))),
   constraint vendors_name_check CHECK ((length(TRIM(BOTH FROM name)) > 0)),
@@ -610,7 +618,7 @@ CREATE OR REPLACE FUNCTION public._all_fields()
  IMMUTABLE
  SET search_path TO ''
 AS $function$
-  select array['name','category','active','contactPerson','phone','whatsapp','email','website','location','languages','kosher','maxCap','listedPrice','listedPriceVatTreatment','agentPrice','agentPriceVatTreatment','maxPax','priceBasis','currency','payTerms','cancelPolicy','cancelNoticeAmount','cancelNoticeUnit','cancelDayType','cancelPenalty','cancelPolicyVerifiedDate','npResLink','rateReliability','rateService','rateValue','strengths','weaknesses','notes','region','tags','experience_years','agent_link','agent_howto','also_categories','maps_link','hours']::text[]
+  select array['name','category','active','contactPerson','phone','whatsapp','email','website','location','languages','kosher','maxCap','listedPrice','listedPriceVatTreatment','agentPrice','agentPriceVatTreatment','maxPax','priceBasis','currency','payTerms','cancelPolicy','cancelNoticeAmount','cancelNoticeUnit','cancelDayType','cancelPenalty','cancelPolicyVerifiedDate','npResLink','rateReliability','rateService','rateValue','strengths','weaknesses','notes','region','tags','experience_years','agent_link','agent_howto','also_categories','maps_link','hours','hours_last']::text[]
 $function$
 ;
 
@@ -763,13 +771,18 @@ CREATE OR REPLACE FUNCTION public._vendor_apply(p_id text, p_vals jsonb)
  SECURITY DEFINER
  SET search_path TO ''
 AS $function$
-declare r public.vendors;
+declare r public.vendors; o public.vendors;
 begin
   select * into r from public.vendors where id = p_id;
   if r.id is null then raise exception 'That supplier no longer exists.'; end if;
+  o := r;
   r := jsonb_populate_record(r, p_vals);
-  update public.vendors v set (name,category,active,"contactPerson",phone,whatsapp,email,website,location,languages,kosher,"maxCap","listedPrice","listedPriceVatTreatment","agentPrice","agentPriceVatTreatment","maxPax","priceBasis",currency,"payTerms","cancelPolicy","cancelNoticeAmount","cancelNoticeUnit","cancelDayType","cancelPenalty","cancelPolicyVerifiedDate","npResLink","rateReliability","rateService","rateValue",strengths,weaknesses,notes,region,tags,experience_years,agent_link,agent_howto,also_categories,maps_link,hours)
-    = (r.name,r.category,r.active,r."contactPerson",r.phone,r.whatsapp,r.email,r.website,r.location,r.languages,r.kosher,r."maxCap",r."listedPrice",r."listedPriceVatTreatment",r."agentPrice",r."agentPriceVatTreatment",r."maxPax",r."priceBasis",r.currency,r."payTerms",r."cancelPolicy",r."cancelNoticeAmount",r."cancelNoticeUnit",r."cancelDayType",r."cancelPenalty",r."cancelPolicyVerifiedDate",r."npResLink",r."rateReliability",r."rateService",r."rateValue",r.strengths,r.weaknesses,r.notes,r.region,r.tags,r.experience_years,r.agent_link,r.agent_howto,r.also_categories,r.maps_link,r.hours)
+  -- Changed hours are unverified again, and no longer "from their website".
+  if r.hours is distinct from o.hours or r.hours_last is distinct from o.hours_last then
+    r.hours_verified_at := null; r.hours_verified_by := ''; r.hours_verified_how := ''; r.hours_source := '';
+  end if;
+  update public.vendors v set (name,category,active,"contactPerson",phone,whatsapp,email,website,location,languages,kosher,"maxCap","listedPrice","listedPriceVatTreatment","agentPrice","agentPriceVatTreatment","maxPax","priceBasis",currency,"payTerms","cancelPolicy","cancelNoticeAmount","cancelNoticeUnit","cancelDayType","cancelPenalty","cancelPolicyVerifiedDate","npResLink","rateReliability","rateService","rateValue",strengths,weaknesses,notes,region,tags,experience_years,agent_link,agent_howto,also_categories,maps_link,hours,hours_last,hours_source,hours_verified_at,hours_verified_by,hours_verified_how)
+    = (r.name,r.category,r.active,r."contactPerson",r.phone,r.whatsapp,r.email,r.website,r.location,r.languages,r.kosher,r."maxCap",r."listedPrice",r."listedPriceVatTreatment",r."agentPrice",r."agentPriceVatTreatment",r."maxPax",r."priceBasis",r.currency,r."payTerms",r."cancelPolicy",r."cancelNoticeAmount",r."cancelNoticeUnit",r."cancelDayType",r."cancelPenalty",r."cancelPolicyVerifiedDate",r."npResLink",r."rateReliability",r."rateService",r."rateValue",r.strengths,r.weaknesses,r.notes,r.region,r.tags,r.experience_years,r.agent_link,r.agent_howto,r.also_categories,r.maps_link,r.hours,r.hours_last,r.hours_source,r.hours_verified_at,r.hours_verified_by,r.hours_verified_how)
   where v.id = p_id returning * into r;
   return r;
 end $function$
@@ -802,7 +815,7 @@ AS $function$
     (public._vendor_json(p_id)::jsonb
       || case when v.prices_private then jsonb_build_object('agentPrice','','listedPrice','','agentPriceVatTreatment','','listedPriceVatTreatment','','maxPax','') else '{}'::jsonb end)
       || jsonb_build_object('_prices', (select count(*) from public.vendor_prices p where p.vendor_id=p_id and ((p.owner <> '' and p.owner = p_email) or (p.owner = '' and not v.prices_private and not p.private))),
-                            'created_by', public._name(v.created_by), 'updated_by', public._name(v.updated_by))
+                            'created_by', public._name(v.created_by), 'updated_by', public._name(v.updated_by), 'hours_verified_by', public._name(v.hours_verified_by))
   )::json end
   from public.vendors v where v.id = p_id
 $function$
@@ -1138,6 +1151,31 @@ begin
   m := public._auth(p_token); perform public._visible(p_vendor, m.is_admin);
   return coalesce((select json_agg(json_build_object('id',f.id,'name',f.name,'kosher',f.kosher,'note',f.note,'by',public._who(f.author),'mine',f.author=m.email,'created_at',f.created_at) order by f.created_at desc)
     from public.vendor_food f where f.vendor_id = p_vendor), '[]'::json);
+end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.hours_verify(p_token text, p_vendor text, p_how text)
+ RETURNS json
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare m public.members; v public.vendors;
+begin
+  m := public._auth(p_token); perform public._visible(p_vendor, m.is_admin);
+  select * into v from public.vendors where id = p_vendor;
+  if v.id is null then raise exception 'That supplier no longer exists.'; end if;
+  if coalesce(p_how,'') = '' then
+    -- undo: the person who verified, or Eretz Israel Tours
+    if not m.is_admin and v.hours_verified_by <> m.email then raise exception 'Only the person who verified these hours, or Eretz Israel Tours, can undo that.'; end if;
+    update public.vendors set hours_verified_at = null, hours_verified_by = '', hours_verified_how = '' where id = p_vendor;
+  elsif p_how in ('spoke','visited') then
+    if v.hours = '' and v.hours_last = '' then raise exception 'Add the opening hours first.'; end if;
+    update public.vendors set hours_verified_at = now(), hours_verified_by = m.email, hours_verified_how = p_how where id = p_vendor;
+  else
+    raise exception 'Say how you checked: you spoke to them, or you were there.';
+  end if;
+  return public._vendor_view(p_vendor, m.is_admin, m.email);
 end $function$
 ;
 
@@ -1655,8 +1693,8 @@ begin
   no_cert := is_rest and (clean->>'kosher') ~* '^\s*kosher\W+(no|without)\s+(certificate|certification|teuda|teudah|hechsher)';
   if coalesce(p_data->>'id','') = '' then
     select * into r from jsonb_populate_record(null::public.vendors, clean);
-    insert into public.vendors (name,category,active,"contactPerson",phone,whatsapp,email,website,location,languages,kosher,"maxCap","listedPrice","listedPriceVatTreatment","agentPrice","agentPriceVatTreatment","maxPax","priceBasis",currency,"payTerms","cancelPolicy","cancelNoticeAmount","cancelNoticeUnit","cancelDayType","cancelPenalty","cancelPolicyVerifiedDate","npResLink","rateReliability","rateService","rateValue",strengths,weaknesses,notes,region,tags,experience_years,agent_link,agent_howto,also_categories,maps_link,hours)
-    values (r.name,r.category,r.active,r."contactPerson",r.phone,r.whatsapp,r.email,r.website,r.location,r.languages,r.kosher,r."maxCap",r."listedPrice",r."listedPriceVatTreatment",r."agentPrice",r."agentPriceVatTreatment",r."maxPax",r."priceBasis",r.currency,r."payTerms",r."cancelPolicy",r."cancelNoticeAmount",r."cancelNoticeUnit",r."cancelDayType",r."cancelPenalty",r."cancelPolicyVerifiedDate",r."npResLink",r."rateReliability",r."rateService",r."rateValue",r.strengths,r.weaknesses,r.notes,r.region,r.tags,r.experience_years,r.agent_link,r.agent_howto,r.also_categories,r.maps_link,r.hours)
+    insert into public.vendors (name,category,active,"contactPerson",phone,whatsapp,email,website,location,languages,kosher,"maxCap","listedPrice","listedPriceVatTreatment","agentPrice","agentPriceVatTreatment","maxPax","priceBasis",currency,"payTerms","cancelPolicy","cancelNoticeAmount","cancelNoticeUnit","cancelDayType","cancelPenalty","cancelPolicyVerifiedDate","npResLink","rateReliability","rateService","rateValue",strengths,weaknesses,notes,region,tags,experience_years,agent_link,agent_howto,also_categories,maps_link,hours,hours_last)
+    values (r.name,r.category,r.active,r."contactPerson",r.phone,r.whatsapp,r.email,r.website,r.location,r.languages,r.kosher,r."maxCap",r."listedPrice",r."listedPriceVatTreatment",r."agentPrice",r."agentPriceVatTreatment",r."maxPax",r."priceBasis",r.currency,r."payTerms",r."cancelPolicy",r."cancelNoticeAmount",r."cancelNoticeUnit",r."cancelDayType",r."cancelPenalty",r."cancelPolicyVerifiedDate",r."npResLink",r."rateReliability",r."rateService",r."rateValue",r.strengths,r.weaknesses,r.notes,r.region,r.tags,r.experience_years,r.agent_link,r.agent_howto,r.also_categories,r.maps_link,r.hours,r.hours_last)
     returning * into r;
     return json_build_object('vendor', public._vendor_view(r.id, m.is_admin, m.email), 'request', false);
   end if;
@@ -1664,6 +1702,7 @@ begin
   if cur is null then raise exception 'That supplier no longer exists.'; end if;
   -- An app version from before opening hours existed sends no "hours": keep what is stored.
   if not (p_data ? 'hours') then clean := clean || jsonb_build_object('hours', coalesce(cur->>'hours','')); end if;
+  if not (p_data ? 'hours_last') then clean := clean || jsonb_build_object('hours_last', coalesce(cur->>'hours_last','')); end if;
   if m.is_admin then
     r := public._vendor_apply(p_data->>'id', clean);
     return json_build_object('vendor', public._vendor_view(r.id, true), 'request', false);
@@ -2161,6 +2200,7 @@ revoke all on function set_setting(text,text,text) from public; grant execute on
 revoke all on function request_access(text,text,text,text,text,text,text) from public; grant execute on function request_access(text,text,text,text,text,text,text) to anon, authenticated;
 revoke all on function my_usage(text) from public; grant execute on function my_usage(text) to anon, authenticated;
 revoke all on function vendor_set_agent(text,text,text,text) from public; grant execute on function vendor_set_agent(text,text,text,text) to anon, authenticated;
+revoke all on function hours_verify(text,text,text) from public; grant execute on function hours_verify(text,text,text) to anon, authenticated;
 revoke all on function vendor_detail(text,text) from public; grant execute on function vendor_detail(text,text) to anon, authenticated;
 
 -- Internal helper, not an RPC: given an email it returns that member's display name, so it must not be callable
