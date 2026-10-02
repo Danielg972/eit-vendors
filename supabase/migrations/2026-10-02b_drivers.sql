@@ -2,10 +2,17 @@
 -- supabase/schema.sql already includes everything below; this file is the step-by-step change.
 -- Safe to run twice.
 
--- "Coach" is now "Bus" everywhere (owner's wording). Existing supplier tags follow.
+-- "Coach" is now "Bus" everywhere (owner's wording). Existing supplier tags follow: "Coach" / "coach" / "bus" become
+-- one "Bus" tag; every other tag is kept, in order.
 do $$ begin
   perform set_config('app.editor','system',true); perform set_config('app.admin','on',true);
-  update public.vendors set tags = regexp_replace(tags, '\mCoach\M', 'Bus', 'g') where tags ~ '\mCoach\M';
+  update public.vendors v set tags = (
+    select coalesce(string_agg(t, ', ' order by ord), '') from (
+      select distinct on (lower(t)) t, ord from (
+        select case when lower(trim(x)) in ('coach','bus') then 'Bus' else trim(x) end as t, ord
+        from regexp_split_to_table(v.tags, ',') with ordinality as s(x, ord) where trim(x) <> '') a
+      order by lower(t), ord) b)
+  where v.tags ~* '\mcoach\M';
 end $$;
 
 -- One driver = one phone number. The number is how colleagues know it is the same driver.

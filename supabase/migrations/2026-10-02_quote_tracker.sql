@@ -70,7 +70,7 @@ begin
   for o in select * from jsonb_array_elements(coalesce(p_quote->'options','[]'::jsonb)) loop
     insert into public.quote_options (quote_id, name, note, sort, service, seats, hours_incl, km_incl, fees)
     values (qid, left(coalesce(nullif(o->>'name',''),'Option'),120), left(coalesce(o->>'note',''),1000), oi,
-      case when coalesce(o->>'service','') = any (array['bus','midibus','minibus','van','car','jeep_vehicle','transfer','guide','guide_vehicle','hotel_room','apartment','rappelling','jeep_tour','atv','activity','site','meal','other']) then o->>'service' else '' end,
+      case when coalesce(o->>'service','') = any (array['bus','midibus','van20','van16','van10','van8','car','jeep_vehicle','transfer','guide','guide_vehicle','hotel_room','apartment','rappelling','jeep_tour','atv','activity','site','meal','other']) then o->>'service' else '' end,
       case when coalesce(o->>'seats','') ~ '^\d{1,3}$' then o->>'seats' else '' end,
       case when coalesce(o->>'hours_incl','') ~ '^\d{1,2}(\.\d)?$' then o->>'hours_incl' else '' end,
       case when coalesce(o->>'km_incl','') ~ '^\d{1,4}$' then o->>'km_incl' else '' end,

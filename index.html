@@ -372,6 +372,28 @@ const LIVE = /(^|\.)github\.io$/.test(location.hostname) || /(^|\.)eretzisraelto
 const R5_FIELDS = ['name','category','active','contactPerson','phone','whatsapp','email','website','location','languages','kosher','maxCap','listedPrice','listedPriceVatTreatment','agentPrice','agentPriceVatTreatment','maxPax','priceBasis','currency','payTerms','cancelPolicy','cancelNoticeAmount','cancelNoticeUnit','cancelDayType','cancelPenalty','cancelPolicyVerifiedDate','npResLink','rateReliability','rateService','rateValue','strengths','weaknesses','notes'];
 const CATEGORIES = ['Hotel','Guide','Transport','Restaurant','Winery','Attraction / Site','Activity','Adventure','National Parks','Travel Agent','Itinerary Planner','Flight','Other'];
 const EXTRA_FIELDS = ['region','tags','experience_years','also_categories','maps_link'];
+// Vehicle sizes, used everywhere in Transport: what a company offers (tags), what a quote is for, list filters.
+// Seat ranges follow how Israeli companies sell them: 6-8 seat vans (Vito / V-Class), 9-10, minibuses of 14-16 and 19-20
+// (19 passengers is the limit of the small-bus licence), midibuses of 25-35, buses of 50-60.
+const VEHICLES = [ // key, label, tag written on the supplier, seats from, seats to, family
+  ['bus','Bus (36–60 seats)','Bus',36,999,'Buses'],
+  ['midibus','Midibus (21–35 seats)','Midibus',21,35,'Buses'],
+  ['van20','Van, 17–20 seats','Van 17–20 seats',17,20,'Vans'],
+  ['van16','Van, 11–16 seats','Van 11–16 seats',11,16,'Vans'],
+  ['van10','Van, 9–10 seats','Van 9–10 seats',9,10,'Vans'],
+  ['van8','Van, up to 8 seats','Van up to 8 seats',5,8,'Vans'],
+  ['car','Car (up to 4 passengers)','Car',1,4,'Cars']];
+const VEH = Object.fromEntries(VEHICLES.map(x=>[x[0],{label:x[1],tag:x[2],from:x[3],to:x[4],family:x[5]}]));
+const vehicleBySeats = n => { n=+n; const hit=VEHICLES.find(x=>n>=x[3]&&n<=x[4]); return hit?hit[0]:''; };
+const tagKey = t => String(t||'').toLowerCase().replace(/[–—]/g,'-').replace(/\s+seats?$/,'').replace(/\s+/g,' ').trim();
+// Which vehicle sizes a supplier's tags say it has. Older tags without a size ("Minibus", "Van") count for both sizes they could mean.
+function fleetOf(v){ const out=new Set();
+  String(v&&v.tags||'').split(',').map(tagKey).filter(Boolean).forEach(t=>{
+    const exact=VEHICLES.find(x=>tagKey(x[2])===t); if(exact){ out.add(exact[0]); return; }
+    const m=t.match(/(\d{1,2})\s*-?\s*(seat|seater|pax|passenger)/); if(m&&vehicleBySeats(m[1])){ out.add(vehicleBySeats(m[1])); return; }
+    if(t==='coach'||t==='buses') out.add('bus'); else if(t==='minibus'){ out.add('van16'); out.add('van20'); } else if(t==='van'||t==='vans'){ out.add('van8'); out.add('van10'); }
+    else if(t==='cars'||t==='sedan'||t==='limousine'||t==='vip car') out.add('car'); });
+  return out; }
 const GUIDE_ATTRS = ['Eshkol license','Owns an Eshkol vehicle','Midbari 4x4 vehicle','Carries a gun'];
 // Which form fields matter for which categories. A field still shows if it already has a value.
 const REL = {
@@ -387,7 +409,7 @@ const REGIONS = ['Jerusalem','Gush Etzion & Judea','Binyamin & Shomron','Dead Se
 const TAG_SUGGEST = {Adventure:['Jeep','ATV / RZR','Rappelling','Kayak & rafting','Zipline','Boat','Snorkelling','Bikes','Horse riding','Camels','Shooting'],
   Activity:['Workshop','Food & wine','Volunteering','Archaeology','Family','Shooting','Farm'],
   Hotel:['Kosher','Shabbat-friendly','Kibbutz','Boutique','Pool'],
-  Transport:['Bus','Midibus','Minibus','Van','Independent van driver','Armoured bus','Airport transfers'],
+  Transport:['Independent van driver','Armoured bus','Airport transfers'],
   Restaurant:['Meat','Dairy','Mehadrin','Group menus','Winery'],
   Guide:['Eshkol license','Owns an Eshkol vehicle','Midbari 4x4 vehicle','Carries a gun','Driver-guide','English','French','Spanish','Russian'],
   'Travel Agent':['Hotel bookings','Flights','Packages','Groups','Commission'],
@@ -417,8 +439,8 @@ function sample(){
     v({id:'vendor_7tt2w4n',reservation:'required',name:'Ein Gedi Nature Reserve',category:'National Parks',location:'Dead Sea',npResLink:'https://www.parks.org.il',listedPrice:'33',listedPriceVatTreatment:'including_vat',agentPrice:'29',agentPriceVatTreatment:'including_vat',priceBasis:'Per person',review_status:'pending',created_by:'yossi.guide@gmail.com',updated_by:'yossi.guide@gmail.com',updated_at:d(1)}),
     v({id:'vendor_p0lk5sd',name:'Shomron Bus Lines',category:'Transport',contactPerson:'Avi',phone:'+972 54 000 1234',location:'Ariel',maxCap:'50',agentPrice:'2400',agentPriceVatTreatment:'plus_vat',priceBasis:'Per day',payTerms:'Cash or transfer on the day',rateReliability:'3',review_status:'pending',created_by:'rachel.ops@gmail.com',updated_by:'rachel.ops@gmail.com',updated_at:d(0)}),
     v({id:'vendor_g4l1c0a',name:'Galil Buses',category:'Transport',contactPerson:'Dudu',phone:'+972 54 000 5678',location:'Tiberias',region:'Galilee',maxCap:'55',priceBasis:'Per day',tags:'Bus, Midibus'}),
-    v({id:'vendor_n3g7v2t',name:'Negev & Arava Transport',category:'Transport',contactPerson:'Eli',phone:'+972 54 000 9012',location:'Beer Sheva',region:'Negev & Arava',maxCap:'53',priceBasis:'Per day',tags:'Bus, Minibus, Van'}),
-    v({id:'vendor_v4n0001',name:'Eli Dahan',category:'Transport',contactPerson:'Eli Dahan',phone:'050-000-3344',whatsapp:'050-000-3344',location:'Beer Sheva',region:'Negev & Arava',maxCap:'9',priceBasis:'Per day',tags:'Van, Independent van driver'}),
+    v({id:'vendor_n3g7v2t',name:'Negev & Arava Transport',category:'Transport',contactPerson:'Eli',phone:'+972 54 000 9012',location:'Beer Sheva',region:'Negev & Arava',maxCap:'53',priceBasis:'Per day',tags:'Bus, Van 17–20 seats, Van 9–10 seats'}),
+    v({id:'vendor_v4n0001',name:'Eli Dahan',category:'Transport',contactPerson:'Eli Dahan',phone:'050-000-3344',whatsapp:'050-000-3344',location:'Beer Sheva',region:'Negev & Arava',maxCap:'9',priceBasis:'Per day',tags:'Van 9–10 seats, Independent van driver'}),
     v({id:'vendor_q9x1b7e',name:'Machane Yehuda Food Walk',category:'Activity',location:'Jerusalem',kosher:'Mixed stalls, mostly Rabbanut',agentPrice:'220',priceBasis:'Per person',maxPax:'15',rateService:'5',rateValue:'5',strengths:'Families love it'}),
     v({id:'vendor_z2c8m1v',name:'Ronit Katz',category:'Guide',phone:'+972 50 777 2211',languages:'English, Hebrew, French',agentPrice:'1600',priceBasis:'Per day',active:'Inactive',notes:'On leave until spring'})
   ];
@@ -490,9 +512,14 @@ const DB = {
         options:[{id:'o7',name:'50-seat bus',note:'',service:'bus',seats:'50',hours_incl:'',km_incl:'',fees:{overtime:{s:'extra',amt:'180'}},lines:[bus('Bus with driver',4600,3)]}]}));
       dq('vendor_n3g7v2t',{id:'q6',date_from:'2026-11-10',date_to:'2026-11-12',pax:'40',units:'1 bus',received_on:'2026-10-01',conditions:'Fuel, tolls and parking included. Driver sleeps at his own cost.',
         options:[{id:'o8',name:'53-seat bus',note:'',service:'bus',seats:'53',hours_incl:'11',km_incl:'300',fees:{overtime:{s:'extra',amt:'140'},extra_km:{s:'incl',note:'no km limit'},tolls:{s:'incl'},overnight:{s:'incl'},parking:{s:'incl'}},lines:[bus('Bus with driver',3500,3)]},
-                 {id:'o9',name:'19-seat minibus',note:'',service:'minibus',seats:'19',hours_incl:'11',km_incl:'300',fees:{overtime:{s:'extra',amt:'120'},tolls:{s:'incl'},overnight:{s:'incl'}},lines:[bus('Minibus with driver',2200,3)]}]});
+                 {id:'o9',name:'19-seat van',note:'',service:'van20',seats:'19',hours_incl:'11',km_incl:'300',fees:{overtime:{s:'extra',amt:'120'},tolls:{s:'incl'},overnight:{s:'incl'}},lines:[bus('Van with driver',2200,3)]}]});
       dq('vendor_n3g7v2t',Object.assign({id:'q7',date_from:'2026-12-22',date_to:'2026-12-22',pax:'8',units:'1 van',received_on:'2026-10-01',vat:''},col('Yossi Ben-David','Licensed tour guide'),{
-        options:[{id:'o10',name:'9-seat van',note:'',service:'van',seats:'9',hours_incl:'',km_incl:'',fees:{},lines:[{label:'Van with driver',kind:'Base',price:'180',unit:'per hour',qty:'1',times:'8'}]}]}));
+        options:[{id:'o10',name:'9-seat van',note:'',service:'van10',seats:'9',hours_incl:'',km_incl:'',fees:{},lines:[{label:'Van with driver',kind:'Base',price:'180',unit:'per hour',qty:'1',times:'8'}]}]}));
+      dq('vendor_v4n0001',{id:'q9',date_from:'2026-11-03',date_to:'2026-11-05',pax:'8',units:'1 van',received_on:'2026-10-01',conditions:'Fuel and tolls included.',
+        options:[{id:'o12',name:'9-seat van',note:'',service:'van10',seats:'9',hours_incl:'10',km_incl:'',fees:{overtime:{s:'extra',amt:'100'},tolls:{s:'incl'},extra_km:{s:'incl',note:'no km limit'}},lines:[bus('Van with driver',1500,3)]}]});
+      dq('vendor_g4l1c0a',Object.assign({id:'q10',date_from:'2026-11-16',date_to:'2026-11-17',pax:'17',units:'1 van',received_on:'2026-10-01'},col('Rachel Amar','Tour operator'),{
+        options:[{id:'o13',name:'19-seat Sprinter',note:'',service:'van20',seats:'19',hours_incl:'10',km_incl:'250',fees:{overtime:{s:'extra',amt:'130'},extra_km:{s:'extra',amt:'4'},tolls:{s:'extra',note:'by the bill'}},lines:[bus('Van with driver',2400,2)]},
+                 {id:'o14',name:'30-seat midibus',note:'',service:'midibus',seats:'30',hours_incl:'10',km_incl:'250',fees:{overtime:{s:'extra',amt:'150'},extra_km:{s:'extra',amt:'4'},tolls:{s:'extra',note:'by the bill'}},lines:[bus('Midibus with driver',2900,2)]}]}));
       dq('vendor_z2c8m1v',{id:'q8',date_from:'2026-10-18',date_to:'2026-10-23',pax:'13',received_on:'2026-09-10',shared:false,
         options:[{id:'o11',name:'Guide, full day',note:'',service:'guide',hours_incl:'9',fees:{overtime:{s:'extra',amt:'150'},overnight:{s:'extra',amt:'300'},meals:{s:'incl'}},lines:[{label:'Guiding day',kind:'Base',price:'1700',unit:'per day',qty:'1',times:'6'}]}]});
       dq('vendor_a81qz0c',{id:'q2',title:'Bar mitzvah group',date_from:'2025-06-13',date_to:'2025-06-16',pax:'24',units:'10 rooms',received_on:'2025-04-02',valid_until:'2025-04-20',ref:'GRP-5521',status:'Booked',currency:'USD',conditions:'25% deposit, balance 14 days before arrival. Free cancellation until 21 days before.',
@@ -852,7 +879,7 @@ function renderWaiting(){
 
 function filtered(){
   const q=normN(S.q);
-  return S.vendors.filter(v=>(S.cat==='All'||catsOf(v).includes(S.cat)) && (S.reg==='All'||(v.region||'')===S.reg) && (S.cat!=='Transport'||!S.tat||(S.tat==='van')===isIndep(v)) && (S.cat!=='Guide'||!(S.gat||[]).length||S.gat.every(a=>String(v.tags||'').toLowerCase().split(',').map(t=>t.trim()).includes(a.toLowerCase()))) && (!q || normN([v.name,v.location,v.region,v.tags,v.contactPerson,v.category,v.notes].join(' ')).includes(q)))
+  return S.vendors.filter(v=>(S.cat==='All'||catsOf(v).includes(S.cat)) && (S.reg==='All'||(v.region||'')===S.reg) && (S.cat!=='Transport'||!S.tat||(S.tat==='van')===isIndep(v)) && (S.cat!=='Transport'||!S.tveh||fleetOf(v).has(S.tveh)) && (S.cat!=='Guide'||!(S.gat||[]).length||S.gat.every(a=>String(v.tags||'').toLowerCase().split(',').map(t=>t.trim()).includes(a.toLowerCase()))) && (!q || normN([v.name,v.location,v.region,v.tags,v.contactPerson,v.category,v.notes].join(' ')).includes(q)))
     .sort(S.sort==='az' ? (a,b)=>a.name.localeCompare(b.name) : (a,b)=>mixKey(a)-mixKey(b));
 }
 // Mixed order: a shuffle that is different for each person and changes every day, so no supplier sits at the top
@@ -905,6 +932,7 @@ function viewVendors(){
     <div class="chips" role="group" aria-label="Filter by region" style="padding-top:2px">${['All',...byUse('region',[...new Set(REGIONS.filter(r=>S.vendors.some(v=>v.region===r)).concat(S.vendors.map(v=>v.region).filter(r=>r&&!REGIONS.includes(r))))])].map(r=>`<button class="chip" data-reg="${esc(r)}" aria-pressed="${S.reg===r}">${r==='All'?'📍 All regions':esc(r)}</button>`).join('')}</div>
     ${S.cat==='Guide'?`<div class="chips" role="group" aria-label="Guide details" style="padding-top:2px">${GUIDE_ATTRS.map(a=>`<button class="chip" data-gat="${esc(a)}" aria-pressed="${(S.gat||[]).includes(a)}">${(S.gat||[]).includes(a)?'✓ ':''}${esc(a)}</button>`).join('')}</div>`:''}
     ${S.cat==='Transport'?`<div class="chips" role="group" aria-label="Kind of transport supplier" style="padding-top:2px">${[['','All transport'],['bus','Bus companies'],['van','Independent van drivers']].map(([k,l])=>`<button class="chip" data-tat="${k}" aria-pressed="${(S.tat||'')===k}">${esc(l)}</button>`).join('')}</div>
+      <div class="chips" role="group" aria-label="Vehicle size" style="padding-top:2px">${[['','Any vehicle'],...VEHICLES.map(x=>[x[0],x[2]])].map(([k,l])=>`<button class="chip" data-tveh="${k}" aria-pressed="${(S.tveh||'')===k}">${esc(l)}</button>`).join('')}</div>
       <button class="btn soft" id="drvStart" type="button" style="width:100%;margin-top:8px">+ Add or review a driver</button>`:''}
     <div id="favBox"></div>
     <div id="results"></div>`;
@@ -940,6 +968,7 @@ function viewVendors(){
   view.querySelectorAll('[data-cat]').forEach(c=>c.onclick=()=>{S.cat=c.dataset.cat; if(S.cat!=='All') useBump('category',S.cat); viewVendors();});
   view.querySelectorAll('[data-reg]').forEach(c=>c.onclick=()=>{S.reg=c.dataset.reg; if(S.reg!=='All') useBump('region',S.reg); viewVendors();});
   view.querySelectorAll('[data-tat]').forEach(c=>c.onclick=()=>{ S.tat=c.dataset.tat; viewVendors(); });
+  view.querySelectorAll('[data-tveh]').forEach(c=>c.onclick=()=>{ S.tveh=c.dataset.tveh; viewVendors(); });
   const dst=view.querySelector('#drvStart'); if(dst) dst.onclick=()=>openDriverStart();
   view.querySelectorAll('[data-gat]').forEach(c=>c.onclick=()=>{ const a=c.dataset.gat; S.gat=(S.gat||[]).includes(a)?S.gat.filter(x=>x!==a):[...(S.gat||[]),a]; viewVendors(); });
   drawList();
@@ -1270,6 +1299,7 @@ function openDetail(id, opt){
     ['Experience',rows([['Ratings',rating],['Strengths',esc(v.strengths)],['Weaknesses',esc(v.weaknesses)],['Summary',esc(v.notes)]])]
   ].filter(s=>s[1]);
   const body=`${vtabs}<div class="keep" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px"><span class="cat">${esc(v.category)}${v.also_categories?' + '+esc(v.also_categories):''}</span>${v.region||v.location?`<span class="hint">${esc(v.region||v.location)}</span>`:''}${statusPill(v)}</div>
+    ${isTr?`<fieldset><legend>Vehicles</legend>${(fl=>fl.length?`<div class="flags" style="margin:0 0 4px">${fl.map(x=>`<span class="flag info" style="font-size:13.5px;padding:5px 10px">${esc(x[1])}</span>`).join('')}</div>`:`<p class="hint" style="margin:0">Not marked yet. Tap Edit and choose which vehicles ${indep?'he has':'they have'}: buses, vans by size, cars.</p>`)(VEHICLES.filter(x=>fleetOf(v).has(x[0])))}</fieldset>`:''}
     <div id="parentBox"></div>
     ${contactBar(v)}
     <button class="btn red upd" id="upd" type="button">⚠ Update this supplier <span>closed, moved, wrong details</span></button>
@@ -1444,7 +1474,7 @@ function lineHow(l,cur){
 // ---------- drivers: one driver per phone number, reviewed by colleagues ----------
 const DRV_GOOD=['On time','Safe driver','Helpful with luggage','Clean vehicle','Patient with the group','Knows the roads','Good English','Flexible'];
 const DRV_BAD=['Late','Drove too fast','On the phone while driving','Impatient or rude','Smoked','Vehicle not clean','Pushed for tips','Got lost'];
-const DRV_KINDS=['Bus','Midibus','Minibus','Van','Jeep / 4x4','Car'];
+const DRV_KINDS=['Bus','Midibus','Van','Car','Jeep / 4x4'];
 function phoneNorm(p){ let d=String(p||'').replace(/\D/g,''); if(d.startsWith('00972')) d='0'+d.slice(5); else if(d.startsWith('972')&&d.length>=11) d='0'+d.slice(3); return d; }
 function drvDemo(d){ const n=d.reviews.length; return Object.assign({},d,{can_edit:true,n,avg:n?Math.round(d.reviews.reduce((a,r)=>a+(+r.rating),0)/n*10)/10:null,
   vendors:d.vendors.map(id=>S.vendors.find(v=>v.id===id)).filter(Boolean).map(v=>({id:v.id,name:v.name})),
@@ -1507,9 +1537,9 @@ function openVanDriver(){
   const fail=e=>{ const x=res.querySelector('#derr'); if(x) x.innerHTML=`<div class="msg err">${esc(e.message)}</div>`; else toast(e.message); };
   const go=(v,d,review)=>{ if(review) openDriverReview(v,d); else openDetail(v.id,{tab:'drivers'}); };
   // his own page: a Transport supplier tagged as an independent van driver, with him as its driver
-  const makePage=async(name,ph,region)=>{ const dup=S.vendors.find(v=>normN(v.name)===normN(name));
+  const makePage=async(name,ph,region,size)=>{ const dup=S.vendors.find(v=>normN(v.name)===normN(name));
     if(dup) throw new Error(`A supplier called "${dup.name}" is already on the list. Open it, or add his town to the name.`);
-    const saved=await DB.save(Object.assign(blank(),{name,category:'Transport',active:'Active',contactPerson:name,phone:ph,whatsapp:ph,region:region||'',tags:'Van, Independent van driver',priceBasis:'Per day',currency:'ILS'}),'');
+    const saved=await DB.save(Object.assign(blank(),{name,category:'Transport',active:'Active',contactPerson:name,phone:ph,whatsapp:ph,region:region||'',tags:(VEH[size]?VEH[size].tag:'Van')+', Independent van driver',priceBasis:'Per day',currency:'ILS'}),'');
     const id=await DB.saveDriver(saved.id,{name,phone:ph,drives:'Van'}); render(); return {v:S.vendors.find(x=>x.id===saved.id)||saved,d:{id,name,phone:ph,drives:'Van'}}; };
   const check=async()=>{ const ph=g('dph').value.trim(), pn=phoneNorm(ph);
     if(pn.length<7){ res.innerHTML='<div class="msg err">Enter the full phone number.</div>'; return; }
@@ -1534,11 +1564,12 @@ function openVanDriver(){
       return; }
     res.innerHTML=`<div class="msg ok" style="margin:0 0 10px">New number. Add him, and he gets his own page under Transport.</div>
       <div class="grid"><div class="f wide"><label for="dname">Driver's name <em>*</em></label><input id="dname" autocomplete="off" placeholder="Moshe Cohen"></div>
+        <div class="f wide"><label for="dvan">How many seats is his van?</label><select id="dvan"><option value="">Not sure</option>${VEHICLES.filter(x=>x[5]==='Vans').reverse().map(x=>`<option value="${x[0]}">${esc(x[1].replace('Van, ',''))}</option>`).join('')}</select></div>
         <div class="f wide"><label for="dreg">Where is he based?</label><select id="dreg"><option value="">Choose…</option>${REGIONS.map(r=>`<option>${esc(r)}</option>`).join('')}</select></div></div>
       <div class="btn-row" style="margin-top:12px"><button class="btn primary" id="dadd" type="button">Add him and review him</button><button class="btn soft" id="daddonly" type="button">Add him only</button></div><div id="derr"></div>`;
     res.querySelector('#dname').focus();
     const add=async review=>{ const name=res.querySelector('#dname').value.trim(); if(!name){ fail({message:'Enter the driver\'s name.'}); return; }
-      try{ const r=await makePage(name,ph,res.querySelector('#dreg').value); if(!review) toast(S.admin?'Van driver added':'Added. It will be reviewed.'); go(r.v,r.d,review); }catch(e){ fail(e); } };
+      try{ const r=await makePage(name,ph,res.querySelector('#dreg').value,res.querySelector('#dvan').value); if(!review) toast(S.admin?'Van driver added':'Added. It will be reviewed.'); go(r.v,r.d,review); }catch(e){ fail(e); } };
     res.querySelector('#dadd').onclick=()=>add(true); res.querySelector('#daddonly').onclick=()=>add(false);
   };
   g('dck').onclick=check; g('dph').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); check(); } });
@@ -1625,13 +1656,13 @@ function openDriverReview(v, d){
 }
 
 // ---------- quote tracker: what was quoted, what is included, what costs extra ----------
-const SERVICES=[['bus','Bus (41+ seats)','vehicle'],['midibus','Midibus (24–40 seats)','vehicle'],['minibus','Minibus (11–23 seats)','vehicle'],['van','Van (up to 10 seats)','vehicle'],['car','Car / VIP','vehicle'],['jeep_vehicle','Jeep / 4x4 with driver','vehicle'],['transfer','Airport transfer','vehicle'],
+const SERVICES=[...VEHICLES.map(x=>[x[0],x[1],'vehicle']),['jeep_vehicle','Jeep / 4x4 with driver','vehicle'],['transfer','Airport transfer','vehicle'],
   ['guide','Guide','guide'],['guide_vehicle','Guide with vehicle','guide'],
   ['hotel_room','Hotel room','stay'],['apartment','Apartment / Airbnb','stay'],
   ['rappelling','Rappelling','activity'],['jeep_tour','Jeep tour','activity'],['atv','ATV / RZR','activity'],['activity','Activity','activity'],['site','Site / entrance','activity'],
   ['meal','Meal','other'],['other','Other','other']];
 const SVC=Object.fromEntries(SERVICES.map(x=>[x[0],{label:x[1],group:x[2]}]));
-const SVC_GROUPS=[['vehicle','Buses & vans'],['guide','Guides'],['stay','Hotels & apartments'],['activity','Activities'],['other','Other']];
+const SVC_GROUPS=[['vehicle','Buses, vans & cars'],['guide','Guides'],['stay','Hotels & apartments'],['activity','Activities'],['other','Other']];
 const FEES={overtime:['Overtime','per hour'],extra_km:['Extra km','per km'],tolls:['Kvish 6 / tolls',''],overnight:['Driver / guide overnight','per night'],night:['Night or early start',''],shabbat:['Shabbat / holiday',''],parking:['Parking / entry fees',''],fuel:['Fuel',''],vehicle:["Guide's vehicle",'per day'],meals:['Meals for the guide',''],cleaning:['Cleaning fee',''],service:['Service charge',''],min_charge:['Minimum group charge',''],equipment:['Equipment',''],instructor:['Instructor / guide',''],other:['Other extra','']};
 const FEES_FOR={vehicle:['overtime','extra_km','tolls','overnight','night','shabbat','parking','fuel','other'],guide:['overtime','overnight','shabbat','vehicle','fuel','meals','parking','other'],stay:['cleaning','service','parking','shabbat','other'],activity:['min_charge','instructor','equipment','shabbat','parking','other'],other:['shabbat','parking','other']};
 const FEE_RX={overtime:/overtime|extra hour|additional hour|שעות נוספות/i,extra_km:/\bkm\b|kilomet|mileage|ק"מ/i,tolls:/toll|kvish|כביש 6/i,overnight:/overnight|לינה/i,cleaning:/clean/i};
@@ -1641,9 +1672,9 @@ function mustFees(svc){ if(svc==='transfer') return ['tolls']; if(svc==='apartme
 function seatsOf(name){ const m=String(name||'').match(/(\d{1,3})\s*[- ]?\s*(seat|seater|pax|מקומות)/i); return m?m[1]:''; }
 function guessService(name, v){
   const n=String(name||'').toLowerCase(), st=+seatsOf(n);
-  if(st) return st<=10?'van':st<=23?'minibus':st<=40?'midibus':'bus';
+  if(st) return vehicleBySeats(st)||'bus';
   const cats=v?catsOf(v):[];
-  if(/midi/.test(n)) return 'midibus'; if(/mini\s?bus|sprinter/.test(n)) return 'minibus'; if(/\bbus\b|coach|אוטובוס/.test(n)) return 'bus'; if(/\bvan\b|vito/.test(n)) return 'van';
+  if(/midi/.test(n)) return 'midibus'; if(/mini\s?bus|sprinter|\bvan\b/.test(n)) return ''; if(/\bbus\b|coach|אוטובוס/.test(n)) return 'bus'; if(/vito|v-class|minivan/.test(n)) return 'van8'; if(/sedan|\bsuv\b|limo|\bcar\b/.test(n)) return 'car';
   if(/transfer|airport/.test(n)) return 'transfer';
   if(/rappel|abseil|snappl/.test(n)) return 'rappelling'; if(/\batv\b|rzr|buggy|tomcar/.test(n)) return 'atv';
   if(/jeep|4x4/.test(n)) return cats.includes('Transport')?'jeep_vehicle':'jeep_tour';
@@ -1770,7 +1801,7 @@ function drawTracker(){
   if(!all.length){ box.innerHTML=`<div class="empty"><h3>No quotes here yet</h3><p>Add the first one: pick the supplier, enter the daily or hourly rate, and mark what was included and what cost extra. Once three quotes of the same kind are in, the average shows.</p><button class="btn accent" id="qtFirst" type="button">+ Add quote</button></div>`; box.querySelector('#qtFirst').onclick=()=>openQuotePicker(); return; }
   const n=normN(t.q);
   const typed=all.filter(r=>(t.grp==='All'||svcGroup(r.svc)===t.grp)&&(t.svc==='All'||r.svc===t.svc));
-  const rows=typed.filter(r=>(t.season==='All'||(r.season&&(t.season==='High')===r.season.high))&&(!n||normN([r.v.name,r.o.name,svcLabel(r.svc),r.v.region,r.v.location].join(' ')).includes(n)));
+  const rows=typed.filter(r=>(t.season==='All'||(r.season&&(t.season==='High')===r.season.high))&&(!n||normN([r.v.name,r.o.name,svcLabel(r.svc),({van20:'minibus sprinter',van16:'minibus sprinter',van10:'minivan',van8:'minivan vito v-class vip',car:'sedan suv vip'})[r.svc]||'',r.v.region,r.v.location].join(' ')).includes(n)));
   const market=rateStats(all), shown=Object.values(rateStats(n?rows:typed)).sort((a,b)=>b.all.length-a.all.length);
   const first=r=>r.rates.length?r.rates[0].price:null;
   const sorted=[...rows].sort((a,b)=> t.sort==='low'||t.sort==='high' ? ((first(a)==null)-(first(b)==null) || (t.sort==='low'?first(a)-first(b):first(b)-first(a))) : String(b.ref||'').localeCompare(String(a.ref||'')));
@@ -1888,7 +1919,7 @@ function openQuoteForm(v, q0, back){
       <input data-f="note" value="${esc(l.note||'')}" placeholder="Note (optional)"></div>`;
   const recalc=()=>{ readOpt(); const o=q.options[cur]; const c=lineCalc(o.lines); g('optEd').querySelectorAll('.lineed').forEach((r,i)=>{ r.querySelector('.lt').textContent=fmtMoney(g('q_cur').value,c.rows[i].amt); }); g('optTotal').textContent=fmtMoney(g('q_cur').value,c.total); drawTabs(); };
   const drawOpt=()=>{ const o=q.options[cur]; const ed=g('optEd');
-    ed.innerHTML=`<div class="grid"><div class="f"><label for="o_name">Option name</label><input id="o_name" value="${esc(o.name)}" placeholder="${isT?'50-seat bus':'Sea view rooms'}"></div><div class="f"><label for="o_note">Option note</label><input id="o_note" value="${esc(o.note)}" placeholder="More luggage room"></div>
+    ed.innerHTML=`<div class="grid"><div class="f"><label for="o_name">Option name</label><input id="o_name" value="${esc(o.name)}" placeholder="${isT?'50-seat bus, 19-seat van':'Sea view rooms'}"></div><div class="f"><label for="o_note">Option note</label><input id="o_note" value="${esc(o.note)}" placeholder="More luggage room"></div>
         <div class="f"><label for="o_svc">What is it? <em>*</em></label><select id="o_svc">${opt([['','Choose…'],...SERVICES.map(x=>[x[0],x[1]])],o.service||'')}</select></div>
         <div class="f" data-show="seats"><label for="o_seats">Seats</label><input id="o_seats" inputmode="numeric" value="${esc(o.seats||'')}" placeholder="50"></div>
         <div class="f" data-show="hours"><label for="o_hours">Hours included in a day</label><input id="o_hours" inputmode="decimal" value="${esc(o.hours_incl||'')}" placeholder="10"></div>
@@ -1905,7 +1936,8 @@ function openQuoteForm(v, q0, back){
       ed.querySelectorAll('.feerow [data-f=s]').forEach(sel=>sel.onchange=()=>{ const r=sel.closest('.feerow'); r.querySelector('[data-f=amt]').hidden=sel.value!=='extra'; r.querySelector('.fu').hidden=sel.value!=='extra'||!FEES[r.dataset.k][1]; r.querySelector('[data-f=note]').hidden=!sel.value; if(sel.value==='extra') r.querySelector('[data-f=amt]').focus(); }); };
     drawFees();
     ed.querySelector('#o_svc').onchange=()=>{ readOpt(); drawFees(); };
-    ed.querySelector('#o_name').onblur=()=>{ readOpt(); let ch=false; if(!o.service){ const gs=guessService(o.name,v); if(gs){ o.service=gs; ed.querySelector('#o_svc').value=gs; ch=true; } } if(!o.seats&&svcGroup(o.service||'')==='vehicle'){ const st=seatsOf(o.name); if(st){ o.seats=st; ed.querySelector('#o_seats').value=st; } } if(ch) drawFees(); };
+    ed.querySelector('#o_seats').onblur=()=>{ readOpt(); const k=vehicleBySeats(o.seats); if(k&&(!o.service||VEH[o.service])&&o.service!==k){ o.service=k; ed.querySelector('#o_svc').value=k; drawFees(); } };
+    ed.querySelector('#o_name').onblur=()=>{ readOpt(); let ch=false; if(!o.service){ const gs=guessService(o.name,v); if(gs){ o.service=gs; ed.querySelector('#o_svc').value=gs; ch=true; } } if(!o.seats){ const st=seatsOf(o.name); if(st&&(!o.service||svcGroup(o.service)==='vehicle')){ o.seats=st; ed.querySelector('#o_seats').value=st; if(!o.service||VEH[o.service]){ o.service=vehicleBySeats(st)||o.service; ed.querySelector('#o_svc').value=o.service; ch=true; } } } if(ch) drawFees(); };
     const wire=()=>{ ed.querySelectorAll('.lineed').forEach(r=>{ r.querySelectorAll('input,select').forEach(i=>i.oninput=recalc);
         r.querySelector('[data-f=unit]').onchange=e=>{ syncDates(); r.querySelector('[data-f=times]').value=defTimes(e.target.value,q); recalc(); };
         r.querySelector('[data-rm]').onclick=()=>{ r.remove(); recalc(); }; }); };
@@ -1922,7 +1954,7 @@ function openQuoteForm(v, q0, back){
     const out={id:q0?q0.id:undefined,title:g('q_title').value.trim(),date_from:g('q_from').value,date_to:g('q_to').value,pax:g('q_pax').value.trim(),units:g('q_units').value.trim(),received_on:g('q_rec').value,valid_until:g('q_valid').value,ref:g('q_ref').value.trim(),status:g('q_status').value,currency:g('q_cur').value,vat:g('q_vat').value,conditions:g('q_cond').value.trim(),private_note:g('q_note').value.trim(),shared:g('q_shared').checked&&!v.prices_private,
       options:q.options.map(o=>({name:o.name||(o.service?svcLabel(o.service):''),note:o.note,service:o.service||'',seats:o.seats||'',hours_incl:o.hours_incl||'',km_incl:o.km_incl||'',fees:o.fees||{},lines:o.lines.filter(l=>l.label||l.price)}))};
     const noSvc=out.options.find(o=>o.lines.length&&!o.service);
-    if(noSvc){ err.innerHTML=`<div class="msg err">Choose what "${esc(noSvc.name||'this option')}" is (bus, van, guide, room…), so it lands in the right group in the Quotes tab.</div>`; return; }
+    if(noSvc){ err.innerHTML=`<div class="msg err">Choose what "${esc(noSvc.name||'this option')}" is (bus, van size, guide, room…), so it lands in the right group in the Quotes tab.</div>`; return; }
     const badO=out.options.find(o=>(o.seats&&!/^\d{1,3}$/.test(o.seats))||(o.hours_incl&&!/^\d{1,2}(\.\d)?$/.test(o.hours_incl))||(o.km_incl&&!/^\d{1,4}$/.test(o.km_incl))||Object.values(o.fees).some(x=>x.amt&&!/^\d{1,7}(\.\d{1,2})?$/.test(x.amt)));
     if(badO){ err.innerHTML=`<div class="msg err">Check the numbers on "${esc(badO.name||'an option')}": seats, hours, km and extra amounts must be plain numbers.</div>`; return; }
     const bad=out.options.flatMap(o=>o.lines).find(l=>(l.price&&!/^\d+(\.\d+)?$/.test(l.price))||!/^\d+(\.\d+)?$/.test(l.qty)||!/^\d+(\.\d+)?$/.test(l.times));
@@ -2247,6 +2279,7 @@ function openForm(v, preset){
       <div id="dupBox" class="f wide" hidden></div>
       ${sel('category','Main category',[['','Choose…'],...byUse('category',CATEGORIES)],false,true)}
       <div class="f wide"><label>Also offers <span class="hint">(optional, e.g. a guide who also drives jeep tours)</span></label><input type="hidden" id="f_also_categories" value="${esc(x.also_categories||'')}"><div class="presets" id="alsoSug" style="margin:6px 0 0"></div></div>
+      <div class="f wide" id="fleetWrap" hidden><label>Vehicles they offer</label><div class="tgs" id="fleetPick" role="group" aria-label="Vehicles they offer" style="margin:0">${VEHICLES.map(x=>`<button class="tg" type="button" data-veh="${x[0]}" aria-pressed="false">${esc(x[1])}</button>`).join('')}</div><span class="hint">Tap every size they have. Vans go by seats.</span></div>
       <div class="f wide"><label for="f_tags">Type (separate with commas)</label><input id="f_tags" value="${esc(x.tags)}" placeholder="Jeep, ATV / RZR"><div class="presets" id="tagSug" style="margin:6px 0 0"></div></div>
       <div class="f" id="gWrap" ${x.category==='Guide'?'':'hidden'}><label for="f_experience_years">Years guiding</label><input id="f_experience_years" type="number" inputmode="numeric" min="0" max="80" value="${esc(x.experience_years)}" placeholder="12"></div>
       ${sel('active','Status',['Active','Inactive'])}
@@ -2293,7 +2326,16 @@ function openForm(v, preset){
     alsoSug.innerHTML=CATEGORIES.filter(c=>c!==main).map(c=>`<button type="button" class="mini${have.includes(c)?' on':''}" data-also="${esc(c)}">${have.includes(c)?'✓ ':'+ '}${esc(c)}</button>`).join('');
     alsoSug.querySelectorAll('[data-also]').forEach(b=>b.onclick=()=>{ const c=b.dataset.also; const cur=alsoIn.value.split(',').map(t=>t.trim()).filter(Boolean); const i=cur.indexOf(c); if(i>=0) cur.splice(i,1); else cur.push(c); alsoIn.value=cur.join(', '); syncRel(); }); };
   const showIf=(el,on)=>{ if(el) el.hidden=!on; };
+  const fleetDraw=()=>{ const have=fleetOf({tags:tagsIn.value}); f.querySelectorAll('[data-veh]').forEach(b=>b.setAttribute('aria-pressed', have.has(b.dataset.veh))); };
+  f.querySelectorAll('[data-veh]').forEach(b=>b.onclick=()=>{ const k=b.dataset.veh, on=b.getAttribute('aria-pressed')==='true';
+    let cur=tagsIn.value.split(',').map(t=>t.trim()).filter(Boolean);
+    if(on){ const keep=[]; cur=cur.filter(t=>{ const fo=fleetOf({tags:t}); if(!fo.has(k)) return true; fo.delete(k); keep.push(...fo); return false; });   // an old unsized tag like "Minibus" becomes the sizes that are left
+      keep.forEach(x=>{ if(!fleetOf({tags:cur.join(',')}).has(x)) cur.push(VEH[x].tag); }); }
+    else cur.unshift(VEH[k].tag);
+    const order=VEHICLES.map(x=>tagKey(x[2])); cur.sort((p,q)=>{ const i=order.indexOf(tagKey(p)), j=order.indexOf(tagKey(q)); return (i<0?99:i)-(j<0?99:j); });
+    tagsIn.value=cur.join(', '); fleetDraw(); drawTagSug(); });
   const syncRel=()=>{ drawAlso(); const cv=curCats(); const has=k=>!!String(x[k]||'').trim();
+    showIf(f.querySelector('#fleetWrap'), catsOf(cv).includes('Transport')); fleetDraw();
     const anyCat=!cv.category; // nothing chosen yet: show everything
     showIf(f.querySelector('#kosWrap'), anyCat||rel('kosher',cv)||has('kosher'));
     showIf(f.querySelector('#langWrap'), anyCat||rel('languages',cv)||has('languages'));
@@ -2305,7 +2347,7 @@ function openForm(v, preset){
   const drawTagSug=()=>{ const have=tagsIn.value.split(',').map(t=>t.trim().toLowerCase()).filter(Boolean); const opts=[...new Set(catsOf(curCats()).flatMap(c=>TAG_SUGGEST[c]||[]))].filter(t=>!have.includes(t.toLowerCase()));
     tagSug.innerHTML=opts.map(t=>`<button class="mini" type="button" data-t="${esc(t)}">+ ${esc(t)}</button>`).join('');
     tagSug.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{ const cur=tagsIn.value.split(',').map(t=>t.trim()).filter(Boolean); cur.push(b.dataset.t); tagsIn.value=cur.join(', '); drawTagSug(); }); };
-  tagsIn.addEventListener('input',drawTagSug);
+  tagsIn.addEventListener('input',()=>{ drawTagSug(); fleetDraw(); });
   f.querySelector('#f_location').setAttribute('list','dl_location'); f.querySelector('#f_location').setAttribute('autocomplete','off');
   const kos=f.querySelector('#f_kosher'); const kosDraw=()=>f.querySelectorAll('[data-kos]').forEach(b=>b.classList.toggle('on',kos.value===b.dataset.kos));
   f.querySelectorAll('[data-kos]').forEach(b=>b.onclick=()=>{ kos.value = kos.value===b.dataset.kos ? '' : b.dataset.kos; kosDraw(); }); kos.addEventListener('input',kosDraw); kosDraw();

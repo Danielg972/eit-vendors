@@ -4,6 +4,20 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-4 · Transport organised by vehicle size (approved in principle; ranges proposed)
+
+**Decided by:** the owner (Eretz Israel Tours), 2 October 2026, 13:53 Israel time.
+
+**In his words:** "we need to organize transportation better. A transportation company can offer buses, vans, and smaller cars. Vans should be organized by size, eight seater, nineteen, nineteen passenger, twenty five passenger, thirteen passenger. I think those are the numbers. Maybe do research about what are typical passenger numbers in vans."
+
+**Decision:** a transport company lists what it offers as buses, vans by size, and cars.
+
+**Size ranges (proposed from research, not yet confirmed by the owner):** Bus 36–60 · Midibus 21–35 · Van 17–20 · Van 11–16 · Van 9–10 · Van up to 8 · Car up to 4 passengers. His 8 / 13 / 19 / 25 fall in: up to 8, 11–16, 17–20, and midibus (a 25-seater is sold as a midibus, not a van). Sources and reasoning are in README "Transport organised by vehicle size".
+
+**Status:** built and rehearsed on branch `quote-tracker`. Goes live with D-2 and D-3.
+
+---
+
 ## D-3 · Driver reviews keyed by phone number; "bus", not "coach" (approved)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session, 2 October 2026, 13:07 Israel time.
