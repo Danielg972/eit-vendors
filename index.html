@@ -269,6 +269,8 @@ a.mini{display:inline-block;text-decoration:none;color:var(--ink)}
 .tg{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:8px 13px;font-size:14px;color:var(--ink-2)}
 .tg[aria-pressed="true"]{background:var(--olive);border-color:var(--olive);color:var(--on-olive)}
 .tg.bad[aria-pressed="true"]{background:var(--bad);border-color:var(--bad);color:var(--card)}
+.ownrow{display:flex;gap:6px;margin:0 0 14px}
+.ownrow input{flex:1;min-width:0;border:1px solid var(--line);background:var(--card);border-radius:8px;padding:9px 11px;font-size:16px}
 .qhead{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline}
 .qhead b{font-size:16px}
 .qsub{font-size:13px;color:var(--ink-2);margin-top:2px}
@@ -1433,7 +1435,7 @@ function fmtMonth(ym){ try{ return new Date(ym+'-15T12:00:00').toLocaleDateStrin
 function reviewHtml(r, v, hide, noDel){
   const tags=String(r.tags||'').split(',').map(t=>t.trim()).filter(Boolean), by=r.by||{name:'A colleague',role:''};
   return `<div class="note drvrev"${hide?' hidden data-more':''}><span class="meta"><span class="st" role="img" aria-label="${esc(r.rating)} out of 5">${starsTxt(+r.rating)}</span> · <b>${esc(by.name)}</b>${by.role?' · '+esc(by.role):''} · ${esc(r.trip_month?fmtMonth(r.trip_month):fmtDate(r.created_at))}${r.vendor_name&&(!v||r.vendor_id!==v.id)?' · with '+esc(r.vendor_name):''}${(S.admin||r.mine)&&!noDel?` · <button class="mini" style="padding:1px 8px" data-rdel="${esc(r.id)}" type="button">Delete</button>`:''}</span>
-    ${tags.length?`<div class="flags">${tags.map(t=>`<span class="flag ${DRV_BAD.includes(t)?'extra':'incl'}">${DRV_BAD.includes(t)?'⚠ ':'✓ '}${esc(t)}</span>`).join('')}</div>`:''}
+    ${tags.length?`<div class="flags">${tags.map(t=>{ const bad=t.startsWith('!')||DRV_BAD.includes(t); return `<span class="flag ${bad?'extra':'incl'}">${bad?'⚠ ':'✓ '}${esc(t.replace(/^!\s*/,''))}</span>`; }).join('')}</div>`:''}
     ${r.body?`<p>${esc(r.body)}</p>`:''}</div>`;
 }
 function driverCard(d, i, v, bare){
@@ -1511,16 +1513,25 @@ function openDriverReview(v, d){
   const tg=(list,bad)=>list.map(k=>`<button class="tg${bad?' bad':''}" type="button" data-k="${esc(k)}" aria-pressed="false">${esc(k)}</button>`).join('');
   const w=sheet('Review a driver', `<p style="margin:0 0 12px"><b>${esc(d.name)}</b> · <span class="mono">${esc(d.phone)}</span><br><span class="hint">Driving for ${esc(v.name)}</span></p>
     <div class="f"><label>Overall <em>*</em></label><div class="stars" id="drate">${[1,2,3,4,5].map(n=>`<button type="button" data-n="${n}" aria-pressed="false" aria-label="${n} out of 5">${n}</button>`).join('')}</div><span class="hint">1 = would not use again · 5 = ask for him by name</span></div>
-    <p class="hint" style="margin:14px 0 0">What went well</p><div class="tgs" id="dgood">${tg(DRV_GOOD,false)}</div>
-    <p class="hint" style="margin:0">What went wrong</p><div class="tgs" id="dbad">${tg(DRV_BAD,true)}</div>
+    <p class="hint" style="margin:14px 0 0">What went well</p><div class="tgs" id="dgood" style="margin-bottom:6px">${tg(DRV_GOOD,false)}</div>
+    <div class="ownrow"><input id="dgoodx" maxlength="40" autocomplete="off" placeholder="Something else? Type it" aria-label="Something else that went well"><button class="mini" id="dgoodadd" type="button">Add</button></div>
+    <p class="hint" style="margin:0">What went wrong</p><div class="tgs" id="dbad" style="margin-bottom:6px">${tg(DRV_BAD,true)}</div>
+    <div class="ownrow"><input id="dbadx" maxlength="40" autocomplete="off" placeholder="Something else? Type it" aria-label="Something else that went wrong"><button class="mini" id="dbadadd" type="button">Add</button></div>
     <div class="grid"><div class="f"><label for="dmon">Month of the trip</label><input id="dmon" type="month" value="${esc(today().slice(0,7))}" max="${esc(today().slice(0,7))}"></div>
-      <div class="f wide"><label for="dbody">What happened</label><textarea id="dbody" rows="3" maxlength="1500" placeholder="Facts from your trip: timing, driving, how he was with the group."></textarea></div></div>
+      <div class="f wide"><label for="dbody">In your own words</label><textarea id="dbody" rows="4" maxlength="1500" placeholder="Write anything about the trip: timing, driving, how he was with the group."></textarea></div></div>
     <p class="hint" style="margin-top:10px">Your name shows next to your review. Keep it to what happened on your trip; see "Fair, objective feedback" in the terms.</p><div id="derr"></div>`,
     `<button class="btn soft" id="dcancel" type="button">Cancel</button><button class="btn primary" id="dsave" type="button">Save review</button>`);
   const g=id=>w.querySelector('#'+id); wireToggles(w); let rating='';
+  const own=(grp,bad)=>{ const inp=g(grp+'x'), t=inp.value.replace(/[,!]/g,' ').replace(/\s+/g,' ').trim(); if(!t) return;
+    const have=[...g(grp).querySelectorAll('.tg')].find(b=>b.dataset.k.replace(/^!/,'').toLowerCase()===t.toLowerCase());
+    if(have) have.setAttribute('aria-pressed','true');
+    else { const b=document.createElement('button'); b.type='button'; b.className='tg'+(bad?' bad':''); b.dataset.k=(bad?'!':'')+t; b.textContent=t; b.setAttribute('aria-pressed','true'); b.onclick=()=>b.setAttribute('aria-pressed', b.getAttribute('aria-pressed')!=='true'); g(grp).appendChild(b); }
+    inp.value=''; };
+  [['dgood',false],['dbad',true]].forEach(([grp,bad])=>{ g(grp+'add').onclick=()=>{ own(grp,bad); g(grp+'x').focus(); }; g(grp+'x').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); own(grp,bad); } }); });
   g('drate').querySelectorAll('button').forEach(b=>b.onclick=()=>{ rating=b.dataset.n; g('drate').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed', x===b)); });
   g('dcancel').onclick=()=>openDetail(v.id);
   g('dsave').onclick=async()=>{ if(!rating){ g('derr').innerHTML='<div class="msg err">Give an overall rating from 1 to 5.</div>'; return; }
+    own('dgood',false); own('dbad',true);
     const b=g('dsave'); b.disabled=true; b.textContent='Saving…';
     try{ await DB.addDriverReview(d.id, v.id, {rating,tags:[pressed(w,'#dgood'),pressed(w,'#dbad')].filter(Boolean).join(', '),body:g('dbody').value.trim(),trip_month:g('dmon').value}); toast('Review added'); openDetail(v.id); }
     catch(e){ b.disabled=false; b.textContent='Save review'; g('derr').innerHTML=`<div class="msg err">${esc(e.message)}</div>`; } };
