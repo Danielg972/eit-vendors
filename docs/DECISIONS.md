@@ -4,6 +4,27 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-6 · Ask the list: an AI assistant answering from the list (approved to build; not live)
+
+**Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session, 2 October 2026, 15:46–15:49 Israel time.
+
+**In his words:** "How hard would it be to have AI integration such as an agent like you integrated into the page to answer questions? It would come from my account, I'm guessing, like the payment." Offered: answers only, on the cheapest model (Haiku), with a daily limit per person and a monthly cap, shown to him in preview before anything goes live. He answered: "Yes".
+
+**Decisions:**
+
+1. **An assistant inside the app that answers questions from the list.** Answers only; it changes nothing.
+2. **The owner pays**, through a separate Claude Console (API) account, not his Claude subscription.
+3. **Haiku, a daily limit per person and a monthly budget.**
+4. **Preview first; nothing live until he has seen it.**
+
+**Implementation choices (not owner decisions; change on request):** off by default, then "only you", then "all colleagues" (the same staged opening as booking sheets); 15 questions a person a day and $15 a month as starting values; questions and answers are not stored; members' names, drivers' phone numbers, booking sheets and private notes are never sent to the AI service; Eretz Israel Tours' own questions also read hidden suppliers and private prices.
+
+**To check with a lawyer:** suppliers' and drivers' details are sent to an outside AI service (Anthropic) to produce answers. Terms 6d says so.
+
+**Status:** built and rehearsed on branch `ask-assistant`, 2 Oct 2026. Waiting for the owner: the Console account and key, the key saved as a secret in Supabase, and the database change run. Not yet tested against the real AI service.
+
+---
+
 ## D-5 · Booking sheets for buses and vans (approved; live for all colleagues)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session, 2 October 2026, 14:15–14:31 Israel time.

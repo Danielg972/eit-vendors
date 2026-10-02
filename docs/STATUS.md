@@ -55,6 +55,7 @@
 
 ## Waiting for the owner
 
+- **Ask the list (D-6), built on branch `ask-assistant`, not live.** Needs from him: (1) a Claude Console account with credit and an API key; (2) that key saved in Supabase as the edge-function secret `ANTHROPIC_API_KEY`; (3) `supabase/migrations/2026-10-02e_ask.sql` run in the SQL editor. Then this session deploys the `ask` function, merges the branch, and tests one real question before he opens it to anyone. It stays switched off until he turns it on in the Team tab.
 - **Emails for booking sheets: choose how the app sends email.** Asked for 2 Oct 15:16 ("if that's easy"): a copy by email when a sheet goes out, and an email to the guide when the company answers. Not built: the app has no email-sending service. Options: (a) a Resend account with the eretzisraeltours.com domain verified (DNS records at SiteGround), the route Supabase documents; (b) an Eretz Israel Tours mailbox at SiteGround used over SMTP, not yet confirmed to work from Supabase. Either needs a secret set in Supabase by the owner.
 
 ## Next

@@ -248,6 +248,13 @@ textarea.out{width:100%;min-height:160px;font-family:var(--f-mono);font-size:12p
 .qcond{margin-top:8px;font-size:13px;color:var(--ink-2)}
 .qcond summary{cursor:pointer;color:var(--ink-2)}
 .qcond p{white-space:pre-wrap;margin:6px 0 0}
+/* ask the list */
+.ask-q{margin:14px 0 6px 18%;background:var(--olive);color:var(--on-olive);border-radius:14px 14px 4px 14px;padding:10px 14px;overflow-wrap:anywhere}
+.ask-a{margin:0 6% 6px 0;background:var(--card);border:1px solid var(--line);border-radius:14px 14px 14px 4px;padding:12px 14px;line-height:1.5;overflow-wrap:anywhere}
+.ask-a.err{background:var(--bad-wash);border-color:transparent;color:var(--bad)}
+.ask-a .vlink{font-size:inherit;display:inline}
+.askbar{display:flex;gap:8px;align-items:flex-end;margin:16px 0 8px}
+.askbar textarea{flex:1;min-width:0;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:11px 12px;font-size:16px;resize:vertical;min-height:48px}
 .pick{display:flex;align-items:baseline;justify-content:space-between;gap:10px;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:6px}
 .pick span{font-size:12px;color:var(--ink-3);flex:none}
 .feebox{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
@@ -464,7 +471,7 @@ function sample(){
 }
 
 // ---------- state ----------
-const S = { bookings:null, qview:'tracker', demoBookings:[], usage:{category:{},region:{}}, myTop:[], reg:'All', quotes:null, qt:{grp:'All',svc:'All',season:'All',q:'',sort:'new'}, demoDrivers:[], demoQuotes:{}, feedback:[], openVendor:null, files:{}, demo:{}, demoRequests:[], requests:[], token:null, members:[], user:null, admin:false, contributor:false, vendors:[], team:[], tab:'vendors', q:'', cat:'All', busy:false };
+const S = { askStatus:null, askLog:[], bookings:null, qview:'tracker', demoBookings:[], usage:{category:{},region:{}}, myTop:[], reg:'All', quotes:null, qt:{grp:'All',svc:'All',season:'All',q:'',sort:'new'}, demoDrivers:[], demoQuotes:{}, feedback:[], openVendor:null, files:{}, demo:{}, demoRequests:[], requests:[], token:null, members:[], user:null, admin:false, contributor:false, vendors:[], team:[], tab:'vendors', q:'', cat:'All', busy:false };
 let sb = null;
 
 function bump(vid,k,n){ const v=S.vendors.find(x=>x.id===vid); if(v) v[k]=Math.max(0,(v[k]||0)+n); }
@@ -507,6 +514,7 @@ const DB = {
       S.vendors.find(v=>v.id==='vendor_k3m9p2x')._prices=4; S.vendors.find(v=>v.id==='vendor_k3m9p2x')._deals=1; S.vendors.find(v=>v.id==='vendor_k3m9p2x')._notes=2;
       S.demoRequests=[{id:'r1',vendor_id:'vendor_a81qz0c',vendor_name:'Dan Panorama Jerusalem',kind:'vendor_fields',proposed:{agentPrice:'1250',phone:'+972 2 569 5000'},current:{agentPrice:'1150',phone:'+972 2 569 5695'},reason:'New group rate for 2027, and the group desk has a new number.',requested_by:'rachel.ops@gmail.com',requested_name:'Rachel Amar',created_at:dd(1)}];
       S.requests=S.demoRequests; S.myTop=['vendor_k3m9p2x','vendor_p0lk5sd','vendor_a81qz0c'];
+      S.askStatus={on:true,per_day:15,left:null,for:'admin',cap_usd:15,spent_usd:1.84,asked:63,by_person:[{name:'Rachel Amar',n:31,usd:0.92},{name:'Eretz Israel Tours',n:20,usd:0.61},{name:'Yossi Ben-David',n:12,usd:0.31}]};
       S.demoDrivers=[
         {id:'d1',name:'Moshe Cohen',phone:'054-000-5678',drives:'Bus, Midibus',vendors:['vendor_g4l1c0a','vendor_p0lk5sd'],reviews:[
           {id:'r1',rating:'5',tags:'On time, Safe driver, Helpful with luggage',body:'Calm on the descent to the Dead Sea and early every morning.',trip_month:'2026-08',vendor_id:'vendor_g4l1c0a',by:{name:'Rachel Amar',role:'Tour operator',admin:false},mine:false,created_at:dd(40)},
@@ -559,7 +567,7 @@ const DB = {
     if(error) throw new Error(error.message);
     S.me = data; S.user = data?{email:data.email}:null;
     S.contributor = !!(data && data.status==='approved'); S.admin = !!(data && data.is_admin && S.contributor);
-    if(S.contributor){ await DB.loadVendors(); try{ await DB.loadFeedback(); }catch(e){} if(S.admin){ await DB.loadTeam(); try{ await DB.loadRequests(); }catch(e){} try{ await DB.loadReports(); }catch(e){} } }
+    if(S.contributor){ await DB.loadVendors(); try{ await DB.loadFeedback(); }catch(e){} try{ S.askStatus=await rpc('ask_status',{}); }catch(e){ S.askStatus=null; } if(S.admin){ await DB.loadTeam(); try{ await DB.loadRequests(); }catch(e){} try{ await DB.loadReports(); }catch(e){} } }
   },
   async loadVendors(){ if(!LIVE) return; try{ S.vendors = await rpc('vendors_list'); }catch(e){ toast('Could not load vendors: '+e.message); } try{ S.myTop = await rpc('my_top'); }catch(e){ S.myTop=[]; } try{ S.usage = await rpc('my_usage'); }catch(e){} },
   async loadTeam(){ if(!LIVE) return; S.members = await rpc('members_list'); },
@@ -644,6 +652,12 @@ const DB = {
   async removeDriver(did, vid){
     if(!LIVE){ if(vid){ const x=S.demoDrivers.find(y=>y.id===did); x.vendors=x.vendors.filter(z=>z!==vid); } else S.demoDrivers=S.demoDrivers.filter(y=>y.id!==did); return; }
     await rpc('driver_remove',{p_driver:did,p_vendor:vid||''});
+  },
+  async ask(question, history){
+    if(!LIVE){ await new Promise(r=>setTimeout(r,700)); return {answer:ASK_SAMPLE, left:S.askStatus.left==null?null:Math.max(0,S.askStatus.left-1)}; }
+    const { data, error } = await sb.functions.invoke('ask', { body:{token:S.token, question, history} });
+    if(error){ let m=error.message; try{ const j=await error.context.json(); m=j.error||m; }catch(e){} throw new Error(m); }
+    return data;
   },
   async loadTracker(){
     if(!LIVE){ return Object.values(S.demoQuotes).flat().map(q=>Object.assign({can_edit:true},q)); }
@@ -797,6 +811,7 @@ const icons = {
   check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg>',
   people:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 14.8c1.6.8 2.6 2.6 3 5.2"/></svg>',
   search:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:var(--ink-3)"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>',
+  ask:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/><path d="M9.5 9.2a2.5 2.5 0 1 1 3.3 2.4c-.5.2-.8.6-.8 1.1M12 14.6h.01"/></svg>',
   quote:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>'
 };
 
@@ -829,7 +844,7 @@ function linkBox(id, url){
 function wireCopy(root){ root.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>{ const i=root.querySelector('#'+b.dataset.copy); copyText(i.value,i); }); }
 
 const ROLES=['Licensed tour guide','Travel agent','Tour operator','Other'];
-const TERMS_VERSION='2026-10-02b';
+const TERMS_VERSION='2026-10-02c';
 const TERMS_HTML=`<p class="hint">Version ${TERMS_VERSION}. Plain-language summary. Draft: not yet reviewed by a lawyer.</p>
 <h4>1. Who runs this</h4><p>The Israel Suppliers Master List is run by Eretz Israel Tours, which approves members and manages the list.</p>
 <h4>2. Who can join</h4><p>Licensed tour guides, travel agents, tour operators and other travel professionals approved by Eretz Israel Tours. You confirm the details and license you submit are yours and true. Eretz Israel Tours can decline, pause or remove access at any time.</p>
@@ -841,6 +856,7 @@ const TERMS_HTML=`<p class="hint">Version ${TERMS_VERSION}. Plain-language summa
 <h4>6a. Email copies</h4><p><b>When you email a supplier with the app's Email button, Eretz Israel Tours is added as a BCC to help keep prices, bookings and supplier details up to date for everyone. You can see and remove it in each email, and you can opt out at any time under My settings.</b> WhatsApp messages and calls are not copied; the app only records that you tapped the button.</p>
 <h4>6b. Quotes are shared without your name</h4><p><b>A quote you add is shared with colleagues by default, without your name.</b> They see the supplier, the dates, the prices, what was included, what cost extra and the conditions. They never see who got the quote, the client or trip, the supplier's reference, your private note or your attachments. You can switch sharing off on any quote; then only you and Eretz Israel Tours see it. Eretz Israel Tours sees who added every quote. The averages in the Quotes tab are worked out from these quotes. Don't write client names or personal details in the conditions box.</p>
 <h4>6c. Booking sheets</h4><p><b>When you send a booking sheet, the bus or van company sees your name, your phone and the job</b>: date, passengers, vehicle, pick-up, outline of the day, drop-off and your notes to them. It never sees the client, your private note or anything else in this app. Once you confirm a sheet, its price and terms are shared with colleagues in the Quotes tab without your name, like any quote (6b). You can switch that off on each sheet. Eretz Israel Tours sees every booking sheet. A booking sheet records what you and the company agreed; it is not legal advice, and Eretz Israel Tours is not a party to your booking.</p>
+<h4>6d. Ask the list (AI assistant)</h4><p><b>When you use the Ask tab, your question and the parts of the list you are allowed to see are sent to an AI service (Claude, by Anthropic) to write the answer.</b> That includes suppliers' details, prices, shared quotes, notes and driver reviews. It does not include your name, email, phone or license, drivers' phone numbers, booking sheets, attachments or private notes. Don't type client names or personal details into a question. Questions and answers are not stored here; Eretz Israel Tours sees only how many questions each member asks. <b>Answers can be wrong.</b> Open the supplier's page and confirm with the supplier before you book.</p>
 <h4>7. Sponsored content</h4><p>If supplier offers or promotions are ever paid for, they will be clearly labelled as sponsored. Ratings and notes are never for sale.</p>
 <h4>8. Changes</h4><p>If these terms change, you'll be asked to accept the new version.</p>`;
 function openTerms(){ sheet('Terms and privacy', `<div class="terms">${TERMS_HTML}</div>`, `<button class="btn primary" id="tOk" type="button">Close</button>`).querySelector('#tOk').onclick=closeSheet; }
@@ -939,7 +955,9 @@ function render(){
   const pending = S.vendors.filter(v=>v.review_status==='pending').length + (S.requests||[]).length + (S.admin?(S.feedback||[]).filter(f=>f.status==='New').length+(S.reports||[]).filter(r=>r.status==='New').length:0);
   const waiting = S.members.filter(m=>m.status==='pending').length;
   const tabs = [['vendors','Suppliers',icons.list],['quotes','Quotes',icons.quote]];
+  if(S.askStatus&&S.askStatus.on) tabs.push(['ask','Ask',icons.ask]);
   if(S.admin){ tabs.push(['review','Review',icons.check]); tabs.push(['team','Team',icons.people]); }
+  if(!tabs.some(t=>t[0]===S.tab)) S.tab='vendors';
   app.innerHTML = `
     <header class="top"><div class="top-row">
       <div class="brand">Israel Suppliers<small>Master list · shared by colleagues</small></div>
@@ -960,7 +978,7 @@ function render(){
   const add=document.getElementById('add'); if(add) add.onclick=()=>openForm(null);
   const addQ=document.getElementById('addQ'); if(addQ) addQ.onclick=()=>openQuotePicker();
   const addB=document.getElementById('addB'); if(addB) addB.onclick=()=>bkExplain(openBookingPicker);
-  ({vendors:viewVendors, quotes:viewQuotes, review:viewReview, team:viewTeam})[S.tab]();
+  ({vendors:viewVendors, quotes:viewQuotes, ask:viewAsk, review:viewReview, team:viewTeam})[S.tab]();
 }
 
 function suggestTerms(){
@@ -1209,6 +1227,14 @@ function viewTeam(){
       <p>A guide sends a bus or van company the job and gets the price and terms back in writing (Quotes tab, and on every transport supplier). For now only you see it.</p>
       <label class="switch" for="bkAll"><input id="bkAll" type="checkbox" ${S.me&&S.me.bookings_for==='all'?'checked':''}><span><b>Open booking sheets to all colleagues</b><br><span class="hint">Switch on once you have tried it yourself. You can switch it off again; sheets already made are kept.</span></span></label>
     </section>`:''}
+${S.askStatus&&S.askStatus.for?(a=>`<section class="panel"><h3>Ask the list (AI assistant)</h3>
+      <p>Colleagues type a question and an AI answers from the list. Each answer costs a few cents, charged to your Claude Console account. It stops by itself when the monthly budget is used.</p>
+      <div class="grid"><div class="f"><label for="askFor">Who can use it</label><select id="askFor">${[['off','Switched off'],['admin','Only you'],['all','All colleagues']].map(([k,l])=>`<option value="${k}"${a.for===k?' selected':''}>${l}</option>`).join('')}</select></div>
+        <div class="f"><label for="askDaily">Questions per person, per day</label><input id="askDaily" inputmode="numeric" value="${esc(a.per_day)}"></div>
+        <div class="f"><label for="askCap">Monthly budget, US dollars</label><input id="askCap" inputmode="decimal" value="${esc(a.cap_usd)}"></div></div>
+      <div class="btn-row" style="margin-top:10px"><button class="btn primary" id="askSave" type="button">Save</button></div>
+      <p class="hint" style="margin:10px 0 0">This month: <b class="mono">$${Number(a.spent_usd||0).toFixed(2)}</b> of $${esc(a.cap_usd)} used, ${a.asked||0} question${a.asked===1?'':'s'}.${(a.by_person||[]).length?' '+a.by_person.map(p=>`${esc(p.name)} ${p.n}`).join(' · ')+'.':''} The questions themselves are not kept.</p>
+    </section>`)(S.askStatus):''}
     <section class="panel"><h3>Asking to join</h3>
       ${pend.length? pend.map(m=>`<div class="rev"><div class="who2"><b>${esc(m.name)}</b><span>${esc(m.role||'Role not given')}${m.license_no?` · license <span class="mono">${esc(m.license_no)}</span>`:''}<br>${esc(m.email)}${m.phone?' · '+esc(m.phone):''}${m.note?'<br>'+(/^No proof:/.test(m.note)?`<b style="color:var(--warn)">⚠ Asked to join without proof.</b> ${esc(m.note.replace(/^No proof:\s*/,''))}`:esc(m.note)):''}</span></div>
         <div class="btn-row">${m.has_proof?`<button class="btn soft" data-proof="${m.id}">View proof</button>`:'<span class="pill pending">No proof yet</span>'}<button class="btn soft" data-no="${m.id}">Decline</button><button class="btn primary" data-yes="${m.id}">Approve</button></div><span id="pf_${m.id}" style="flex-basis:100%"></span></div>`).join('')
@@ -1224,6 +1250,12 @@ function viewTeam(){
   wireCopy(view);
   view.querySelector('#bccSave').onclick=async()=>{ const v=view.querySelector('#bccIn').value.trim();
     try{ if(LIVE){ const { error } = await sb.rpc('set_setting',{p_token:S.token,p_key:'bcc_email',p_value:v}); if(error) throw new Error(error.message); } S.me.bcc_email=v.toLowerCase(); toast(v?'Email copies go to '+v:'Email copies turned off'); }catch(e){ toast(e.message); } };
+  const askSave=view.querySelector('#askSave'); if(askSave) askSave.onclick=async()=>{ const a=S.askStatus, want={ask_for:view.querySelector('#askFor').value, ask_daily:view.querySelector('#askDaily').value.trim(), ask_cap_usd:view.querySelector('#askCap').value.trim().replace(/^\$/,'')};
+    const had={ask_for:a.for, ask_daily:String(a.per_day), ask_cap_usd:String(a.cap_usd)}; askSave.disabled=true;
+    try{ for(const k of Object.keys(want)){ if(want[k]===had[k]) continue; if(LIVE){ const { error } = await sb.rpc('set_setting',{p_token:S.token,p_key:k,p_value:want[k]}); if(error) throw new Error(error.message); } }
+      if(LIVE) S.askStatus=await rpc('ask_status',{}); else Object.assign(a,{for:want.ask_for,on:want.ask_for!=='off',per_day:+want.ask_daily||a.per_day,cap_usd:+want.ask_cap_usd||a.cap_usd});
+      toast(want.ask_for==='off'?'The assistant is switched off':want.ask_for==='admin'?'The assistant is on for you only':'The assistant is on for all colleagues'); render(); }
+    catch(e){ askSave.disabled=false; toast(e.message); } };
   const bkAll=view.querySelector('#bkAll'); if(bkAll) bkAll.onchange=async e=>{ const on=e.target.checked;
     try{ if(LIVE){ const { error } = await sb.rpc('set_setting',{p_token:S.token,p_key:'bookings_for',p_value:on?'all':'admin'}); if(error) throw new Error(error.message); } S.me.bookings_for=on?'all':'admin'; toast(on?'Booking sheets are open to all colleagues':'Booking sheets are back to you only'); }catch(err){ e.target.checked=!on; toast(err.message); } };
   (async()=>{ const box=view.querySelector('#actAll'); if(!box) return;
@@ -1491,7 +1523,7 @@ const FB_KINDS=[['Suggestion','💡 Idea'],['Bug','🐞 Something broke'],['Ques
 const FB_STATUS=['New','Planned','Done',"Won't do"];
 function fbPill(st){ const c={New:'pending',Planned:'pending',Done:'approved',"Won't do":'inactive'}[st]||'pending'; return `<span class="pill ${c}">${esc(st)}</span>`; }
 function openFeedback(){
-  const where = S.openVendor ? 'Supplier: '+S.openVendor : ({vendors:'Suppliers list',quotes:'Quotes',review:'Review',team:'Team'}[S.tab]||S.tab);
+  const where = S.openVendor ? 'Supplier: '+S.openVendor : ({vendors:'Suppliers list',quotes:'Quotes',ask:'Ask the list',review:'Review',team:'Team'}[S.tab]||S.tab);
   const mine=(S.feedback||[]).filter(f=>f.author===(S.user.email||'').toLowerCase());
   const body=`<form id="fbf" novalidate>
     <p style="margin:0 0 12px;color:var(--ink-2)">Ideas, problems, questions: everything goes straight to Eretz Israel Tours.</p>
@@ -1560,6 +1592,37 @@ function lineHow(l,cur){
   const parts=[fmtMoney(cur,parseFloat(l.price)||0)+' '+l.unit]; if(parseFloat(l.qty)!==1) parts.push('× '+l.qty); if(parseFloat(l.times)!==1) parts.push('× '+l.times+(/night/.test(l.unit)?' nights':/day/.test(l.unit)?' days':''));
   return parts.join(' ');
 }
+// ---------- ask the list: an AI answers from what this member may see (edge function "ask") ----------
+const ASK_IDEAS=['Who has a van for 17 to 20 people, and what did it cost per day?','Which bus companies charge extra for Kvish 6?','Which drivers have good reviews?','Where can a group eat kosher near the Dead Sea?'];
+const ASK_SAMPLE='Sample answer. This preview does not call the assistant.\n\n- Negev & Arava Transport: 19-seat van, 2,200 ILS per day, VAT not applicable, quoted October 2026. 11 hours and 300 km a day included. Overtime 120 ILS per hour. Kvish 6 and the driver\'s overnight are included.\n- Galil Buses: 19-seat Sprinter, 2,400 ILS per day, quoted October 2026, VAT not stated. 10 hours and 250 km a day included. Overtime 130 ILS per hour, extra km 4 ILS, Kvish 6 charged by the bill.\n\nConfirm with the supplier before booking.';
+// Escape the answer, then turn exact supplier names into links (longest names first, so one name inside another is safe).
+function askLinked(text){
+  let h=esc(text); const slots=[];
+  [...new Set(S.vendors.map(v=>v.name))].filter(n=>n.length>3).sort((a,b)=>b.length-a.length).forEach(n=>{ const e=esc(n); if(!h.includes(e)) return;
+    const v=S.vendors.find(x=>x.name===n); const i=slots.push(`<button class="vlink" type="button" data-open="${esc(v.id)}">${e}</button>`)-1; h=h.split(e).join('\u0001'+i+'\u0001'); });
+  return h.replace(/\u0001(\d+)\u0001/g,(m,i)=>slots[+i]||'').replace(/\n/g,'<br>');
+}
+function askTurn(t){ return `<div class="ask-q">${esc(t.q)}</div><div class="ask-a${t.err?' err':''}" ${t.busy?'aria-busy="true"':''}>${t.busy?'<span class="hint">Looking through the list…</span>':t.err?esc(t.err):askLinked(t.a)}</div>`; }
+function viewAsk(){
+  const view=document.getElementById('view'), st=S.askStatus||{}, log=S.askLog, busy=log.some(t=>t.busy);
+  view.innerHTML=`<div class="qt-intro"><h2>Ask the list</h2><p>Ask in plain words. An AI assistant answers from what is on the list: suppliers, prices, quotes, drivers and notes.</p></div>
+    <div id="askLog" aria-live="polite">${log.length?log.map(askTurn).join(''):`<p class="hint" style="margin:0 0 8px">Try one of these:</p>${ASK_IDEAS.map((q,i)=>`<button class="pick" type="button" data-idea="${i}"><b style="font-weight:500">${esc(q)}</b></button>`).join('')}`}</div>
+    <form id="askForm" class="askbar" novalidate><textarea id="askQ" rows="2" maxlength="600" placeholder="Type your question" aria-label="Your question"${busy?' disabled':''}></textarea><button class="btn primary" id="askGo" type="submit"${busy?' disabled':''}>Ask</button></form>
+    <p class="hint" style="margin:0">Answers come from the list and can be wrong. Open the supplier and confirm with them before you book. Don't type client names.${st.left!=null?` <b>${st.left} of ${st.per_day}</b> questions left today.`:''}</p>
+    ${log.length&&!busy?'<button class="mini" id="askNew" type="button" style="margin-top:12px">Start a new conversation</button>':''}`;
+  const qEl=view.querySelector('#askQ');
+  const go=async q=>{ q=String(q||'').replace(/\s+/g,' ').trim(); if(q.length<3||S.askLog.some(t=>t.busy)) return;
+    const history=S.askLog.filter(t=>t.a).slice(-3).map(t=>({q:t.q,a:t.a})); const turn={q,busy:true}; S.askLog.push(turn); if(S.tab==='ask') viewAsk();
+    try{ const r=await DB.ask(q,history); turn.a=r.answer; if(S.askStatus&&r.left!==undefined&&r.left!==null) S.askStatus.left=r.left; }
+    catch(e){ turn.err=e.message||'Something went wrong. Try again.'; }
+    turn.busy=false; if(S.tab==='ask'){ viewAsk(); const last=[...document.querySelectorAll('.ask-q')].pop(); if(last) last.scrollIntoView({block:'start',behavior:'smooth'}); } };
+  view.querySelector('#askForm').onsubmit=e=>{ e.preventDefault(); go(qEl.value); };
+  qEl.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); go(qEl.value); } });
+  view.querySelectorAll('[data-idea]').forEach(b=>b.onclick=()=>go(ASK_IDEAS[+b.dataset.idea]));
+  view.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>openDetail(b.dataset.open));
+  const nw=view.querySelector('#askNew'); if(nw) nw.onclick=()=>{ S.askLog=[]; viewAsk(); };
+}
+
 // ---------- drivers: one driver per phone number, reviewed by colleagues ----------
 const DRV_GOOD=['On time','Safe driver','Helpful with luggage','Clean vehicle','Patient with the group','Knows the roads','Good English','Flexible'];
 const DRV_BAD=['Late','Drove too fast','On the phone while driving','Impatient or rude','Smoked','Vehicle not clean','Pushed for tips','Got lost'];
