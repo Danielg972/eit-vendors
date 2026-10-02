@@ -259,6 +259,16 @@ textarea.out{width:100%;min-height:160px;font-family:var(--f-mono);font-size:12p
 .feerow .amt{flex:0 1 96px}
 .feerow .nt{flex:1 1 100%}
 .feerow .fu{font-size:12px;color:var(--ink-3)}
+/* drivers and their reviews */
+a.mini{display:inline-block;text-decoration:none;color:var(--ink)}
+.rate{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-weight:600}
+.st{color:var(--ochre);letter-spacing:1px}
+.drvrev{margin:10px 0 0}
+.drvrev .flags{margin-top:5px}
+.tgs{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 12px}
+.tg{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:8px 13px;font-size:14px;color:var(--ink-2)}
+.tg[aria-pressed="true"]{background:var(--olive);border-color:var(--olive);color:var(--on-olive)}
+.tg.bad[aria-pressed="true"]{background:var(--bad);border-color:var(--bad);color:var(--card)}
 .qhead{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline}
 .qhead b{font-size:16px}
 .qsub{font-size:13px;color:var(--ink-2);margin-top:2px}
@@ -367,7 +377,7 @@ const REGIONS = ['Jerusalem','Gush Etzion & Judea','Binyamin & Shomron','Dead Se
 const TAG_SUGGEST = {Adventure:['Jeep','ATV / RZR','Rappelling','Kayak & rafting','Zipline','Boat','Snorkelling','Bikes','Horse riding','Camels','Shooting'],
   Activity:['Workshop','Food & wine','Volunteering','Archaeology','Family','Shooting','Farm'],
   Hotel:['Kosher','Shabbat-friendly','Kibbutz','Boutique','Pool'],
-  Transport:['Minibus','Midibus','Coach','Armoured bus','Van','Airport transfers'],
+  Transport:['Bus','Midibus','Minibus','Van','Armoured bus','Airport transfers'],
   Restaurant:['Meat','Dairy','Mehadrin','Group menus','Winery'],
   Guide:['Eshkol license','Owns an Eshkol vehicle','Midbari 4x4 vehicle','Carries a gun','Driver-guide','English','French','Spanish','Russian'],
   'Travel Agent':['Hotel bookings','Flights','Packages','Groups','Commission'],
@@ -396,15 +406,15 @@ function sample(){
     v({id:'vendor_a81qz0c',name:'Dan Panorama Jerusalem',category:'Hotel',contactPerson:'Group desk',phone:'+972 2 569 5695',email:'groups@example-hotel.co.il',location:'Jerusalem',kosher:'Rabbanut',maxCap:'290',agentPrice:'1150',agentPriceVatTreatment:'not_applicable',priceBasis:'Per group',currency:'USD',payTerms:'30% deposit, balance 14 days before',cancelNoticeAmount:'21',cancelNoticeUnit:'Days',cancelDayType:'Calendar days',rateReliability:'4',rateService:'4',rateValue:'3'}),
     v({id:'vendor_7tt2w4n',reservation:'required',name:'Ein Gedi Nature Reserve',category:'National Parks',location:'Dead Sea',npResLink:'https://www.parks.org.il',listedPrice:'33',listedPriceVatTreatment:'including_vat',agentPrice:'29',agentPriceVatTreatment:'including_vat',priceBasis:'Per person',review_status:'pending',created_by:'yossi.guide@gmail.com',updated_by:'yossi.guide@gmail.com',updated_at:d(1)}),
     v({id:'vendor_p0lk5sd',name:'Shomron Bus Lines',category:'Transport',contactPerson:'Avi',phone:'+972 54 000 1234',location:'Ariel',maxCap:'50',agentPrice:'2400',agentPriceVatTreatment:'plus_vat',priceBasis:'Per day',payTerms:'Cash or transfer on the day',rateReliability:'3',review_status:'pending',created_by:'rachel.ops@gmail.com',updated_by:'rachel.ops@gmail.com',updated_at:d(0)}),
-    v({id:'vendor_g4l1c0a',name:'Galil Coaches',category:'Transport',contactPerson:'Dudu',phone:'+972 54 000 5678',location:'Tiberias',region:'Galilee',maxCap:'55',priceBasis:'Per day',tags:'Coach, Midibus'}),
-    v({id:'vendor_n3g7v2t',name:'Negev & Arava Transport',category:'Transport',contactPerson:'Eli',phone:'+972 54 000 9012',location:'Beer Sheva',region:'Negev & Arava',maxCap:'53',priceBasis:'Per day',tags:'Coach, Minibus, Van'}),
+    v({id:'vendor_g4l1c0a',name:'Galil Buses',category:'Transport',contactPerson:'Dudu',phone:'+972 54 000 5678',location:'Tiberias',region:'Galilee',maxCap:'55',priceBasis:'Per day',tags:'Bus, Midibus'}),
+    v({id:'vendor_n3g7v2t',name:'Negev & Arava Transport',category:'Transport',contactPerson:'Eli',phone:'+972 54 000 9012',location:'Beer Sheva',region:'Negev & Arava',maxCap:'53',priceBasis:'Per day',tags:'Bus, Minibus, Van'}),
     v({id:'vendor_q9x1b7e',name:'Machane Yehuda Food Walk',category:'Activity',location:'Jerusalem',kosher:'Mixed stalls, mostly Rabbanut',agentPrice:'220',priceBasis:'Per person',maxPax:'15',rateService:'5',rateValue:'5',strengths:'Families love it'}),
     v({id:'vendor_z2c8m1v',name:'Ronit Katz',category:'Guide',phone:'+972 50 777 2211',languages:'English, Hebrew, French',agentPrice:'1600',priceBasis:'Per day',active:'Inactive',notes:'On leave until spring'})
   ];
 }
 
 // ---------- state ----------
-const S = { usage:{category:{},region:{}}, myTop:[], reg:'All', quotes:null, qt:{grp:'All',svc:'All',season:'All',q:'',sort:'new'}, demoQuotes:{}, feedback:[], openVendor:null, files:{}, demo:{}, demoRequests:[], requests:[], token:null, members:[], user:null, admin:false, contributor:false, vendors:[], team:[], tab:'vendors', q:'', cat:'All', busy:false };
+const S = { usage:{category:{},region:{}}, myTop:[], reg:'All', quotes:null, qt:{grp:'All',svc:'All',season:'All',q:'',sort:'new'}, demoDrivers:[], demoQuotes:{}, feedback:[], openVendor:null, files:{}, demo:{}, demoRequests:[], requests:[], token:null, members:[], user:null, admin:false, contributor:false, vendors:[], team:[], tab:'vendors', q:'', cat:'All', busy:false };
 let sb = null;
 
 function bump(vid,k,n){ const v=S.vendors.find(x=>x.id===vid); if(v) v[k]=Math.max(0,(v[k]||0)+n); }
@@ -447,20 +457,27 @@ const DB = {
       S.vendors.find(v=>v.id==='vendor_k3m9p2x')._prices=4; S.vendors.find(v=>v.id==='vendor_k3m9p2x')._deals=1; S.vendors.find(v=>v.id==='vendor_k3m9p2x')._notes=2;
       S.demoRequests=[{id:'r1',vendor_id:'vendor_a81qz0c',vendor_name:'Dan Panorama Jerusalem',kind:'vendor_fields',proposed:{agentPrice:'1250',phone:'+972 2 569 5000'},current:{agentPrice:'1150',phone:'+972 2 569 5695'},reason:'New group rate for 2027, and the group desk has a new number.',requested_by:'rachel.ops@gmail.com',requested_name:'Rachel Amar',created_at:dd(1)}];
       S.requests=S.demoRequests; S.myTop=['vendor_k3m9p2x','vendor_p0lk5sd','vendor_a81qz0c'];
+      S.demoDrivers=[
+        {id:'d1',name:'Moshe Cohen',phone:'054-000-5678',drives:'Bus, Midibus',vendors:['vendor_g4l1c0a','vendor_p0lk5sd'],reviews:[
+          {id:'r1',rating:'5',tags:'On time, Safe driver, Helpful with luggage',body:'Calm on the descent to the Dead Sea and early every morning.',trip_month:'2026-08',vendor_id:'vendor_g4l1c0a',by:{name:'Rachel Amar',role:'Tour operator',admin:false},mine:false,created_at:dd(40)},
+          {id:'r2',rating:'4',tags:'Knows the roads',body:'',trip_month:'2026-02',vendor_id:'vendor_p0lk5sd',by:{name:'Eretz Israel Tours',role:'',admin:true},mine:true,created_at:dd(200)}]},
+        {id:'d2',name:'Avi Mizrahi',phone:'052-000-1122',drives:'Bus',vendors:['vendor_p0lk5sd'],reviews:[
+          {id:'r3',rating:'2',tags:'Late, On the phone while driving',body:'40 minutes late to the morning pick-up, and took calls on Road 6.',trip_month:'2026-06',vendor_id:'vendor_p0lk5sd',by:{name:'Yossi Ben-David',role:'Licensed tour guide',admin:false},mine:false,created_at:dd(90)}]},
+        {id:'d3',name:'Eli Dahan',phone:'050-000-3344',drives:'Van',vendors:['vendor_n3g7v2t'],reviews:[]}];
       const dq=(vid,o)=>{ (S.demoQuotes[vid]=S.demoQuotes[vid]||[]).push(Object.assign({vendor_id:vid,title:'',pax:'',units:'',valid_until:'',ref:'',status:'Received',currency:'ILS',vat:'not_applicable',conditions:'',private_note:'',shared:true,owner:OWNER,owner_name:'Eretz Israel Tours',owner_admin:true,files:0,can_edit:true,mine:true,created_at:dd(5),updated_at:dd(5)},o)); };
       const col=(n,r)=>({owner:n.toLowerCase().replace(/\s+/g,'.')+'@example.com',owner_name:n,owner_role:r,owner_admin:false,mine:false});
       const bus=(label,price,times)=>({label,kind:'Base',price:String(price),unit:'per vehicle per day',qty:'1',times:String(times||1)});
       dq('vendor_p0lk5sd',{id:'q1',title:'Jacobs family, 6 days',date_from:'2026-10-18',date_to:'2026-10-23',pax:'13',units:'1 vehicle',received_on:'2026-09-15',valid_until:'2026-10-25',files:1,shared:false,conditions:'Price includes driver and fuel.',
         options:[{id:'o1',name:'35-seat midibus',note:'',service:'midibus',seats:'35',hours_incl:'10',km_incl:'250',fees:{overtime:{s:'extra',amt:'150'},extra_km:{s:'extra',amt:'4'},tolls:{s:'incl'},overnight:{s:'extra',amt:'350'}},lines:[bus('Midibus with driver',3000,6),{label:'Driver overnight in the north',kind:'Extra',price:'350',unit:'flat',qty:'2',times:'1'}]},
-                 {id:'o2',name:'50-seat coach',note:'More luggage room',service:'coach',seats:'50',hours_incl:'10',km_incl:'250',fees:{overtime:{s:'extra',amt:'150'},extra_km:{s:'extra',amt:'4'},tolls:{s:'incl'},overnight:{s:'extra',amt:'350'}},lines:[bus('Coach with driver',3800,6),{label:'Driver overnight in the north',kind:'Extra',price:'350',unit:'flat',qty:'2',times:'1'}]}]});
+                 {id:'o2',name:'50-seat bus',note:'More luggage room',service:'bus',seats:'50',hours_incl:'10',km_incl:'250',fees:{overtime:{s:'extra',amt:'150'},extra_km:{s:'extra',amt:'4'},tolls:{s:'incl'},overnight:{s:'extra',amt:'350'}},lines:[bus('Bus with driver',3800,6),{label:'Driver overnight in the north',kind:'Extra',price:'350',unit:'flat',qty:'2',times:'1'}]}]});
       dq('vendor_p0lk5sd',Object.assign({id:'q3',date_from:'2026-02-10',date_to:'2026-02-12',pax:'38',units:'1 bus',received_on:'2026-01-20',status:'Booked'},col('Rachel Amar','Tour operator'),{
-        options:[{id:'o5',name:'53-seat coach',note:'',service:'coach',seats:'53',hours_incl:'10',km_incl:'',fees:{overtime:{s:'extra',amt:'150'},tolls:{s:'incl'}},lines:[bus('Coach with driver',3600,3)]}]}));
+        options:[{id:'o5',name:'53-seat bus',note:'',service:'bus',seats:'53',hours_incl:'10',km_incl:'',fees:{overtime:{s:'extra',amt:'150'},tolls:{s:'incl'}},lines:[bus('Bus with driver',3600,3)]}]}));
       dq('vendor_g4l1c0a',Object.assign({id:'q4',date_from:'2026-08-09',date_to:'2026-08-13',pax:'44',units:'1 bus',received_on:'2026-06-30',vat:'plus_vat',status:'Booked',conditions:'Kvish 6 charged by the bill at the end of the trip.'},col('Yossi Ben-David','Licensed tour guide'),{
-        options:[{id:'o6',name:'50-seat coach',note:'',service:'coach',seats:'50',hours_incl:'9',km_incl:'200',fees:{overtime:{s:'extra',amt:'180'},extra_km:{s:'extra',amt:'5'},tolls:{s:'extra',note:'by the bill'},overnight:{s:'extra',amt:'400'},shabbat:{s:'extra',amt:'600'}},lines:[bus('Coach with driver',4400,5)]}]}));
+        options:[{id:'o6',name:'50-seat bus',note:'',service:'bus',seats:'50',hours_incl:'9',km_incl:'200',fees:{overtime:{s:'extra',amt:'180'},extra_km:{s:'extra',amt:'5'},tolls:{s:'extra',note:'by the bill'},overnight:{s:'extra',amt:'400'},shabbat:{s:'extra',amt:'600'}},lines:[bus('Bus with driver',4400,5)]}]}));
       dq('vendor_g4l1c0a',Object.assign({id:'q5',date_from:'2026-09-29',date_to:'2026-10-01',pax:'48',units:'1 bus',received_on:'2026-09-02'},col('Rachel Amar','Tour operator'),{
-        options:[{id:'o7',name:'50-seat coach',note:'',service:'coach',seats:'50',hours_incl:'',km_incl:'',fees:{overtime:{s:'extra',amt:'180'}},lines:[bus('Coach with driver',4600,3)]}]}));
+        options:[{id:'o7',name:'50-seat bus',note:'',service:'bus',seats:'50',hours_incl:'',km_incl:'',fees:{overtime:{s:'extra',amt:'180'}},lines:[bus('Bus with driver',4600,3)]}]}));
       dq('vendor_n3g7v2t',{id:'q6',date_from:'2026-11-10',date_to:'2026-11-12',pax:'40',units:'1 bus',received_on:'2026-10-01',conditions:'Fuel, tolls and parking included. Driver sleeps at his own cost.',
-        options:[{id:'o8',name:'53-seat coach',note:'',service:'coach',seats:'53',hours_incl:'11',km_incl:'300',fees:{overtime:{s:'extra',amt:'140'},extra_km:{s:'incl',note:'no km limit'},tolls:{s:'incl'},overnight:{s:'incl'},parking:{s:'incl'}},lines:[bus('Coach with driver',3500,3)]},
+        options:[{id:'o8',name:'53-seat bus',note:'',service:'bus',seats:'53',hours_incl:'11',km_incl:'300',fees:{overtime:{s:'extra',amt:'140'},extra_km:{s:'incl',note:'no km limit'},tolls:{s:'incl'},overnight:{s:'incl'},parking:{s:'incl'}},lines:[bus('Bus with driver',3500,3)]},
                  {id:'o9',name:'19-seat minibus',note:'',service:'minibus',seats:'19',hours_incl:'11',km_incl:'300',fees:{overtime:{s:'extra',amt:'120'},tolls:{s:'incl'},overnight:{s:'incl'}},lines:[bus('Minibus with driver',2200,3)]}]});
       dq('vendor_n3g7v2t',Object.assign({id:'q7',date_from:'2026-12-22',date_to:'2026-12-22',pax:'8',units:'1 van',received_on:'2026-10-01',vat:''},col('Yossi Ben-David','Licensed tour guide'),{
         options:[{id:'o10',name:'9-seat van',note:'',service:'van',seats:'9',hours_incl:'',km_incl:'',fees:{},lines:[{label:'Van with driver',kind:'Base',price:'180',unit:'per hour',qty:'1',times:'8'}]}]}));
@@ -542,6 +559,33 @@ const DB = {
   async loadQuotes(vid){
     if(!LIVE){ return (S.demoQuotes[vid]||[]).map(q=>Object.assign({can_edit:true},q)); }
     return await rpc('quotes_list',{p_vendor:vid});
+  },
+  async loadDrivers(vid){
+    if(!LIVE){ return S.demoDrivers.filter(d=>d.vendors.includes(vid)).map(drvDemo).sort((a,b)=>a.name.localeCompare(b.name)); }
+    return await rpc('drivers_list',{p_vendor:vid});
+  },
+  async findDriver(phone){
+    if(!LIVE){ const d=S.demoDrivers.find(x=>phoneNorm(x.phone)===phoneNorm(phone)); return d?drvDemo(d):null; }
+    return await rpc('driver_find',{p_phone:phone});
+  },
+  async saveDriver(vid, d){
+    if(!LIVE){ let x = d.id ? S.demoDrivers.find(y=>y.id===d.id) : S.demoDrivers.find(y=>phoneNorm(y.phone)===phoneNorm(d.phone));
+      if(d.id&&x){ Object.assign(x,{name:d.name,phone:d.phone,drives:d.drives||''}); }
+      if(!x){ x={id:'d'+Date.now(),name:d.name,phone:d.phone,drives:d.drives||'',vendors:[],reviews:[]}; S.demoDrivers.push(x); }
+      if(!x.vendors.includes(vid)) x.vendors.push(vid); return x.id; }
+    return await rpc('driver_save',{p_vendor:vid,p_driver:d});
+  },
+  async addDriverReview(did, vid, r){
+    if(!LIVE){ const x=S.demoDrivers.find(y=>y.id===did); x.reviews.unshift(Object.assign({id:'r'+Date.now(),vendor_id:vid,by:{name:S.me.name,role:S.me.role||'',admin:S.admin},mine:true,created_at:new Date().toISOString()},r)); if(!x.vendors.includes(vid)) x.vendors.push(vid); return; }
+    await rpc('driver_review_add',{p_driver:did,p_vendor:vid,p_review:r});
+  },
+  async deleteDriverReview(id){
+    if(!LIVE){ S.demoDrivers.forEach(d=>d.reviews=d.reviews.filter(r=>r.id!==id)); return; }
+    await rpc('driver_review_delete',{p_id:id});
+  },
+  async removeDriver(did, vid){
+    if(!LIVE){ if(vid){ const x=S.demoDrivers.find(y=>y.id===did); x.vendors=x.vendors.filter(z=>z!==vid); } else S.demoDrivers=S.demoDrivers.filter(y=>y.id!==did); return; }
+    await rpc('driver_remove',{p_driver:did,p_vendor:vid||''});
   },
   async loadTracker(){
     if(!LIVE){ return Object.values(S.demoQuotes).flat().map(q=>Object.assign({can_edit:true},q)); }
@@ -705,8 +749,8 @@ const TERMS_VERSION='2026-10-02a';
 const TERMS_HTML=`<p class="hint">Version ${TERMS_VERSION}. Plain-language summary. Draft: not yet reviewed by a lawyer.</p>
 <h4>1. Who runs this</h4><p>The Israel Suppliers Master List is run by Eretz Israel Tours, which approves members and manages the list.</p>
 <h4>2. Who can join</h4><p>Licensed tour guides, travel agents, tour operators and other travel professionals approved by Eretz Israel Tours. You confirm the details and license you submit are yours and true. Eretz Israel Tours can decline, pause or remove access at any time.</p>
-<h4>3. What you share</h4><p>Share supplier information you believe is accurate and that you're allowed to share. Don't post personal member codes, card or bank details, or personal details of your clients. Be fair in ratings and notes: describe your own experience.</p>
-<h4>3a. Fair, objective feedback</h4><p>Feedback, ratings, notes and supplier updates must be objective and factual. When something is your personal or subjective opinion, say so clearly (for example "In my opinion…").</p><p><b>Slandering or running down a colleague, competitor, supplier or anyone else, in any form, is grounds for being removed from the service.</b> Reports sent anonymously are not shown with your name, but are kept on record so this rule can be enforced.</p>
+<h4>3. What you share</h4><p>Share supplier information you believe is accurate and that you're allowed to share. Don't post personal member codes, card or bank details, or personal details of your clients. Be fair in ratings and notes: describe your own experience. When you add a driver, add only the phone number he uses for work; it is there so colleagues can tell drivers apart.</p>
+<h4>3a. Fair, objective feedback</h4><p>Feedback, ratings, notes, supplier updates and reviews of drivers must be objective and factual. A driver review says what happened on your trip (timing, driving, service), with your name next to it. When something is your personal or subjective opinion, say so clearly (for example "In my opinion…").</p><p><b>Slandering or running down a colleague, competitor, supplier or anyone else, in any form, is grounds for being removed from the service.</b> Reports sent anonymously are not shown with your name, but are kept on record so this rule can be enforced.</p>
 <h4>4. How you use it</h4><p>Use the list for your own professional work. Keep your personal link to yourself, and don't copy, resell or publish the list.</p><p><b>Never show the list to suppliers.</b> Don't show suppliers the app, screenshots, prices, notes or ratings from it. Anyone who does will lose access immediately.</p>
 <h4>5. Crowdsourced: no responsibility for mistakes</h4><p>This is a crowdsourced list built by colleagues. Eretz Israel Tours takes no responsibility for mistakes, missing or out-of-date information. Please take great care when you add or change anything, and if you see a mistake, let us know with the <b>Update this supplier</b> button or the Feedback box. Prices, terms and contacts come from colleagues and can change. Always confirm with the supplier before booking. Eretz Israel Tours isn't responsible for information shared by members or for suppliers' services.</p>
 <h4>6. Your data and privacy</h4><p>We store your name, email, phone, role, license number and license photo, what you add, when you last used the app, and which supplier contact buttons you tap (call, WhatsApp, email, website, maps and booking links), with the time. Colleagues see your name next to what you add, except quotes (see 6b). Your license photo is visible only to Eretz Israel Tours.</p><p><b>Eretz Israel Tours can see everything in the app, including items marked "private".</b> "Private" means hidden from other colleagues, not from Eretz Israel Tours.</p><p>Data is stored with Supabase (servers in Frankfurt, EU) and the app is hosted on GitHub Pages. You can ask Eretz Israel Tours at any time to see, correct or delete your data and account.</p>
@@ -1216,6 +1260,7 @@ function openDetail(id){
     <div id="reqBox"></div>
     <div id="sitesWrap"></div>
     <fieldset><div class="sec-head"><legend>Quotes</legend><button class="mini" id="addQuote" type="button">+ Add quote</button></div><div id="quotesBox"><p class="hint">Loading…</p></div></fieldset>
+    ${catsOf(v).includes('Transport')?`<fieldset><div class="sec-head"><legend>Drivers</legend><button class="mini" id="addDriver" type="button">+ Add or find a driver</button></div><div id="driversBox"><p class="hint">Loading…</p></div></fieldset>`:''}
     <fieldset><div class="sec-head"><legend>Standard prices</legend><button class="mini" id="addPrice" type="button">+ Add price</button></div>
       ${S.admin?`<label class="switch" for="ppToggle" style="margin-bottom:10px"><input id="ppToggle" type="checkbox" ${v.prices_private?'checked':''}><span><b>Keep this supplier's prices private</b><br><span class="hint">Colleagues still see the supplier and contacts, but no prices. You can also mark single price lines private.</span></span></label>`:''}
       <div id="pricesBox"><p class="hint">Loading…</p></div></fieldset>
@@ -1249,6 +1294,7 @@ function openDetail(id){
   const ppt=w.querySelector('#ppToggle'); if(ppt) ppt.onchange=async()=>{ try{ await DB.setPricesPrivate(v.id, ppt.checked); toast(ppt.checked?'Prices are now private to you':'Prices are visible to colleagues'); }catch(e){ ppt.checked=!ppt.checked; toast(e.message); } };
   w.querySelector('#addQuote').onclick=()=>openQuoteForm(v,null);
   drawQuotes(v);
+  const adr=w.querySelector('#addDriver'); if(adr){ adr.onclick=()=>openDriverFind(v); drawDrivers(v); }
   w.querySelector('#addDeal').onclick=()=>openDealForm(v);
   w.querySelector('#noteAdd').onclick=async()=>{ const t=w.querySelector('#noteText'); const body=t.value.trim(); if(!body){ t.focus(); return; }
     try{ await DB.addNote(v.id, body); t.value=''; toast('Note added'); drawExtras(v); }catch(e){ toast(e.message); } };
@@ -1374,8 +1420,114 @@ function lineHow(l,cur){
   const parts=[fmtMoney(cur,parseFloat(l.price)||0)+' '+l.unit]; if(parseFloat(l.qty)!==1) parts.push('× '+l.qty); if(parseFloat(l.times)!==1) parts.push('× '+l.times+(/night/.test(l.unit)?' nights':/day/.test(l.unit)?' days':''));
   return parts.join(' ');
 }
+// ---------- drivers: one driver per phone number, reviewed by colleagues ----------
+const DRV_GOOD=['On time','Safe driver','Helpful with luggage','Clean vehicle','Patient with the group','Knows the roads','Good English','Flexible'];
+const DRV_BAD=['Late','Drove too fast','On the phone while driving','Impatient or rude','Smoked','Vehicle not clean','Pushed for tips','Got lost'];
+const DRV_KINDS=['Bus','Midibus','Minibus','Van','Jeep / 4x4','Car'];
+function phoneNorm(p){ let d=String(p||'').replace(/\D/g,''); if(d.startsWith('00972')) d='0'+d.slice(5); else if(d.startsWith('972')&&d.length>=11) d='0'+d.slice(3); return d; }
+function drvDemo(d){ const n=d.reviews.length; return Object.assign({},d,{can_edit:true,n,avg:n?Math.round(d.reviews.reduce((a,r)=>a+(+r.rating),0)/n*10)/10:null,
+  vendors:d.vendors.map(id=>S.vendors.find(v=>v.id===id)).filter(Boolean).map(v=>({id:v.id,name:v.name})),
+  reviews:d.reviews.map(r=>Object.assign({},r,{vendor_name:(S.vendors.find(v=>v.id===r.vendor_id)||{}).name||null}))}); }
+function starsTxt(n){ n=Math.max(0,Math.min(5,Math.round(n))); return '★★★★★'.slice(0,n)+'☆☆☆☆☆'.slice(0,5-n); }
+function fmtMonth(ym){ try{ return new Date(ym+'-15T12:00:00').toLocaleDateString('en-GB',{month:'short',year:'numeric'}); }catch(e){ return ym; } }
+function reviewHtml(r, v, hide, noDel){
+  const tags=String(r.tags||'').split(',').map(t=>t.trim()).filter(Boolean), by=r.by||{name:'A colleague',role:''};
+  return `<div class="note drvrev"${hide?' hidden data-more':''}><span class="meta"><span class="st" role="img" aria-label="${esc(r.rating)} out of 5">${starsTxt(+r.rating)}</span> · <b>${esc(by.name)}</b>${by.role?' · '+esc(by.role):''} · ${esc(r.trip_month?fmtMonth(r.trip_month):fmtDate(r.created_at))}${r.vendor_name&&(!v||r.vendor_id!==v.id)?' · with '+esc(r.vendor_name):''}${(S.admin||r.mine)&&!noDel?` · <button class="mini" style="padding:1px 8px" data-rdel="${esc(r.id)}" type="button">Delete</button>`:''}</span>
+    ${tags.length?`<div class="flags">${tags.map(t=>`<span class="flag ${DRV_BAD.includes(t)?'extra':'incl'}">${DRV_BAD.includes(t)?'⚠ ':'✓ '}${esc(t)}</span>`).join('')}</div>`:''}
+    ${r.body?`<p>${esc(r.body)}</p>`:''}</div>`;
+}
+function driverCard(d, i, v, bare){
+  const others=(d.vendors||[]).filter(x=>!v||bare||x.id!==v.id).map(x=>x.name), revs=d.reviews||[];
+  return `<div class="qcard">
+    <div class="qhead"><b>${esc(d.name)}</b>${d.n?`<span class="rate"><span class="st" aria-hidden="true">★</span> ${esc(Number(d.avg).toFixed(1))}</span><span class="hint">${d.n} review${d.n>1?'s':''}</span>`:'<span class="hint">No reviews yet</span>'}</div>
+    <div class="qsub"><span class="mono">${esc(d.phone)}</span>${d.drives?' · '+esc(d.drives):''}${others.length?' · '+(bare?'drives for ':'also drives for ')+esc(others.join(', ')):''}</div>
+    ${bare?'':`<div class="btn-row" style="margin-top:8px"><a class="mini" href="tel:${esc(d.phone)}">Call</a><a class="mini" href="https://wa.me/${esc(intlDigits(d.phone))}" target="_blank" rel="noopener">WhatsApp</a><button class="mini" data-drev="${i}" type="button">+ Review</button>${d.can_edit?`<button class="mini" data-dedit="${i}" type="button">Edit</button>`:''}</div>`}
+    ${revs.map((r,ri)=>reviewHtml(r, bare?null:v, !bare&&ri>=3, bare)).join('')}
+    ${!bare&&revs.length>3?`<button class="mini" data-dmore type="button" style="margin-top:8px">Show all ${revs.length} reviews</button>`:''}</div>`;
+}
+async function drawDrivers(v){
+  const box=document.getElementById('driversBox'); if(!box) return;
+  let ds=[]; try{ ds=await DB.loadDrivers(v.id); }catch(e){ box.innerHTML=`<div class="msg err">Couldn't load drivers: ${esc(e.message)}</div>`; return; }
+  if(!ds.length){ box.innerHTML='<p class="hint" style="margin:0 0 10px">No drivers yet. Add the driver you rode with and his phone number. The number is how colleagues know it is the same driver, whichever company he is driving for.</p>'; return; }
+  box.innerHTML=ds.map((d,i)=>driverCard(d,i,v)).join('');
+  box.querySelectorAll('[data-drev]').forEach(b=>b.onclick=()=>openDriverReview(v, ds[+b.dataset.drev]));
+  box.querySelectorAll('[data-dedit]').forEach(b=>b.onclick=()=>openDriverForm(v, ds[+b.dataset.dedit]));
+  box.querySelectorAll('[data-dmore]').forEach(b=>b.onclick=()=>{ b.closest('.qcard').querySelectorAll('[data-more]').forEach(x=>x.hidden=false); b.remove(); });
+  box.querySelectorAll('[data-rdel]').forEach(b=>b.onclick=async()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again'; return; } try{ await DB.deleteDriverReview(b.dataset.rdel); toast('Review deleted'); drawDrivers(v); }catch(e){ toast(e.message); } });
+}
+function kindsPicker(val){ const on=String(val||'').split(',').map(t=>t.trim()).filter(Boolean); return `<div class="tgs" id="dkinds" role="group" aria-label="What he drives">${DRV_KINDS.map(k=>`<button class="tg" type="button" data-k="${esc(k)}" aria-pressed="${on.includes(k)}">${esc(k)}</button>`).join('')}</div>`; }
+function wireToggles(root){ root.querySelectorAll('.tg').forEach(b=>b.onclick=()=>b.setAttribute('aria-pressed', b.getAttribute('aria-pressed')!=='true')); }
+const pressed=(root,sel)=>[...root.querySelectorAll(sel+' .tg[aria-pressed="true"]')].map(b=>b.dataset.k).join(', ');
+// Step 1 is always the phone number: if he is already on the list, the review goes to the same driver.
+function openDriverFind(v){
+  const w=sheet('Add or find a driver', `<p style="margin:0 0 12px">Start with the driver's phone number. It is how colleagues know it is the same driver, whichever company he is driving for.</p>
+    <div class="grid"><div class="f wide"><label for="dph">Driver's phone number</label><input id="dph" type="tel" inputmode="tel" autocomplete="off" placeholder="054 000 0000"></div></div>
+    <div class="btn-row" style="margin-top:10px"><button class="btn primary" id="dck" type="button">Check this number</button></div>
+    <div id="dres" style="margin-top:14px"></div>`, `<button class="btn soft" id="dcancel" type="button">Cancel</button>`);
+  const g=id=>w.querySelector('#'+id), res=g('dres');
+  g('dcancel').onclick=()=>openDetail(v.id);
+  const check=async()=>{ const ph=g('dph').value.trim();
+    if(phoneNorm(ph).length<7){ res.innerHTML='<div class="msg err">Enter the full phone number.</div>'; return; }
+    res.innerHTML='<p class="hint">Checking…</p>'; let d=null;
+    try{ d=await DB.findDriver(ph); }catch(e){ res.innerHTML=`<div class="msg err">${esc(e.message)}</div>`; return; }
+    if(d){ const here=(d.vendors||[]).some(x=>x.id===v.id);
+      res.innerHTML=`<div class="msg ok" style="margin:0 0 10px">This number is already on the list. Is this your driver?</div>${driverCard(d,0,v,true)}
+        <div class="btn-row" style="margin-top:10px"><button class="btn primary" id="dsame" type="button">Yes, same driver · add my review</button>${here?'':`<button class="btn soft" id="dlink" type="button">Yes · just add him to ${esc(v.name)}</button>`}</div>
+        <p class="hint" style="margin-top:10px">Not him? Check the number. One phone number is one driver.</p><div id="derr"></div>`;
+      const link=async then=>{ try{ if(!here) await DB.saveDriver(v.id,{phone:d.phone,name:d.name}); then(); }catch(e){ res.querySelector('#derr').innerHTML=`<div class="msg err">${esc(e.message)}</div>`; } };
+      res.querySelector('#dsame').onclick=()=>link(()=>openDriverReview(v,d));
+      const dl=res.querySelector('#dlink'); if(dl) dl.onclick=()=>link(()=>{ toast('Driver added to this supplier'); openDetail(v.id); });
+      return; }
+    res.innerHTML=`<div class="msg ok" style="margin:0 0 10px">New number. Add the driver.</div>
+      <div class="grid"><div class="f wide"><label for="dname">Driver's name <em>*</em></label><input id="dname" autocomplete="off" placeholder="Moshe Cohen"></div></div>
+      <p class="hint" style="margin:12px 0 0">What does he drive?</p>${kindsPicker(/van/i.test(v.tags||'')&&!/bus/i.test(v.tags||'')?'Van':'')}
+      <div class="btn-row"><button class="btn primary" id="dadd" type="button">Add driver and review him</button><button class="btn soft" id="daddonly" type="button">Add driver only</button></div><div id="derr"></div>`;
+    wireToggles(res); res.querySelector('#dname').focus();
+    const add=async review=>{ const name=res.querySelector('#dname').value.trim(); if(!name){ res.querySelector('#derr').innerHTML='<div class="msg err">Enter the driver\'s name.</div>'; return; }
+      try{ const drv={name,phone:ph,drives:pressed(res,'#dkinds')}; const id=await DB.saveDriver(v.id,drv);
+        if(review) openDriverReview(v,Object.assign({id},drv)); else { toast('Driver added'); openDetail(v.id); } }
+      catch(e){ res.querySelector('#derr').innerHTML=`<div class="msg err">${esc(e.message)}</div>`; } };
+    res.querySelector('#dadd').onclick=()=>add(true); res.querySelector('#daddonly').onclick=()=>add(false);
+  };
+  g('dck').onclick=check; g('dph').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); check(); } });
+  setTimeout(()=>g('dph').focus(),50);
+}
+function openDriverForm(v, d){
+  const w=sheet('Edit driver', `<div class="grid"><div class="f wide"><label for="dname">Driver's name <em>*</em></label><input id="dname" value="${esc(d.name)}"></div>
+      <div class="f wide"><label for="dph">Phone number <em>*</em></label><input id="dph" type="tel" inputmode="tel" value="${esc(d.phone)}"></div></div>
+    <p class="hint" style="margin:12px 0 0">What does he drive?</p>${kindsPicker(d.drives)}
+    ${S.admin?`<div class="btn-row"><button class="mini" id="doff" type="button">Take him off ${esc(v.name)}</button><button class="mini" id="ddel" type="button">Delete driver and all his reviews</button></div>`:''}<div id="derr"></div>`,
+    `<button class="btn soft" id="dcancel" type="button">Cancel</button><button class="btn primary" id="dsave" type="button">Save</button>`);
+  const g=id=>w.querySelector('#'+id); wireToggles(w); g('dcancel').onclick=()=>openDetail(v.id);
+  const fail=e=>{ g('derr').innerHTML=`<div class="msg err">${esc(e.message)}</div>`; };
+  g('dsave').onclick=async()=>{ const name=g('dname').value.trim(), phone=g('dph').value.trim();
+    if(!name||phoneNorm(phone).length<7){ fail({message:'Enter the driver\'s name and full phone number.'}); return; }
+    try{ await DB.saveDriver(v.id,{id:d.id,name,phone,drives:pressed(w,'#dkinds')}); toast('Driver saved'); openDetail(v.id); }catch(e){ fail(e); } };
+  const twice=(b,fn)=>{ if(b) b.onclick=async()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again to confirm'; return; } try{ await fn(); openDetail(v.id); }catch(e){ fail(e); } }; };
+  twice(g('doff'),async()=>{ await DB.removeDriver(d.id,v.id); toast('Taken off this supplier'); });
+  twice(g('ddel'),async()=>{ await DB.removeDriver(d.id,''); toast('Driver deleted'); });
+}
+function openDriverReview(v, d){
+  const tg=(list,bad)=>list.map(k=>`<button class="tg${bad?' bad':''}" type="button" data-k="${esc(k)}" aria-pressed="false">${esc(k)}</button>`).join('');
+  const w=sheet('Review a driver', `<p style="margin:0 0 12px"><b>${esc(d.name)}</b> · <span class="mono">${esc(d.phone)}</span><br><span class="hint">Driving for ${esc(v.name)}</span></p>
+    <div class="f"><label>Overall <em>*</em></label><div class="stars" id="drate">${[1,2,3,4,5].map(n=>`<button type="button" data-n="${n}" aria-pressed="false" aria-label="${n} out of 5">${n}</button>`).join('')}</div><span class="hint">1 = would not use again · 5 = ask for him by name</span></div>
+    <p class="hint" style="margin:14px 0 0">What went well</p><div class="tgs" id="dgood">${tg(DRV_GOOD,false)}</div>
+    <p class="hint" style="margin:0">What went wrong</p><div class="tgs" id="dbad">${tg(DRV_BAD,true)}</div>
+    <div class="grid"><div class="f"><label for="dmon">Month of the trip</label><input id="dmon" type="month" value="${esc(today().slice(0,7))}" max="${esc(today().slice(0,7))}"></div>
+      <div class="f wide"><label for="dbody">What happened</label><textarea id="dbody" rows="3" maxlength="1500" placeholder="Facts from your trip: timing, driving, how he was with the group."></textarea></div></div>
+    <p class="hint" style="margin-top:10px">Your name shows next to your review. Keep it to what happened on your trip; see "Fair, objective feedback" in the terms.</p><div id="derr"></div>`,
+    `<button class="btn soft" id="dcancel" type="button">Cancel</button><button class="btn primary" id="dsave" type="button">Save review</button>`);
+  const g=id=>w.querySelector('#'+id); wireToggles(w); let rating='';
+  g('drate').querySelectorAll('button').forEach(b=>b.onclick=()=>{ rating=b.dataset.n; g('drate').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed', x===b)); });
+  g('dcancel').onclick=()=>openDetail(v.id);
+  g('dsave').onclick=async()=>{ if(!rating){ g('derr').innerHTML='<div class="msg err">Give an overall rating from 1 to 5.</div>'; return; }
+    const b=g('dsave'); b.disabled=true; b.textContent='Saving…';
+    try{ await DB.addDriverReview(d.id, v.id, {rating,tags:[pressed(w,'#dgood'),pressed(w,'#dbad')].filter(Boolean).join(', '),body:g('dbody').value.trim(),trip_month:g('dmon').value}); toast('Review added'); openDetail(v.id); }
+    catch(e){ b.disabled=false; b.textContent='Save review'; g('derr').innerHTML=`<div class="msg err">${esc(e.message)}</div>`; } };
+}
+
 // ---------- quote tracker: what was quoted, what is included, what costs extra ----------
-const SERVICES=[['coach','Coach (41+ seats)','vehicle'],['midibus','Midibus (24–40 seats)','vehicle'],['minibus','Minibus (11–23 seats)','vehicle'],['van','Van (up to 10 seats)','vehicle'],['car','Car / VIP','vehicle'],['jeep_vehicle','Jeep / 4x4 with driver','vehicle'],['transfer','Airport transfer','vehicle'],
+const SERVICES=[['bus','Bus (41+ seats)','vehicle'],['midibus','Midibus (24–40 seats)','vehicle'],['minibus','Minibus (11–23 seats)','vehicle'],['van','Van (up to 10 seats)','vehicle'],['car','Car / VIP','vehicle'],['jeep_vehicle','Jeep / 4x4 with driver','vehicle'],['transfer','Airport transfer','vehicle'],
   ['guide','Guide','guide'],['guide_vehicle','Guide with vehicle','guide'],
   ['hotel_room','Hotel room','stay'],['apartment','Apartment / Airbnb','stay'],
   ['rappelling','Rappelling','activity'],['jeep_tour','Jeep tour','activity'],['atv','ATV / RZR','activity'],['activity','Activity','activity'],['site','Site / entrance','activity'],
@@ -1391,9 +1543,9 @@ function mustFees(svc){ if(svc==='transfer') return ['tolls']; if(svc==='apartme
 function seatsOf(name){ const m=String(name||'').match(/(\d{1,3})\s*[- ]?\s*(seat|seater|pax|מקומות)/i); return m?m[1]:''; }
 function guessService(name, v){
   const n=String(name||'').toLowerCase(), st=+seatsOf(n);
-  if(st) return st<=10?'van':st<=23?'minibus':st<=40?'midibus':'coach';
+  if(st) return st<=10?'van':st<=23?'minibus':st<=40?'midibus':'bus';
   const cats=v?catsOf(v):[];
-  if(/midi/.test(n)) return 'midibus'; if(/mini\s?bus|sprinter/.test(n)) return 'minibus'; if(/coach|\bbus\b/.test(n)) return 'coach'; if(/\bvan\b|vito/.test(n)) return 'van';
+  if(/midi/.test(n)) return 'midibus'; if(/mini\s?bus|sprinter/.test(n)) return 'minibus'; if(/\bbus\b|coach|אוטובוס/.test(n)) return 'bus'; if(/\bvan\b|vito/.test(n)) return 'van';
   if(/transfer|airport/.test(n)) return 'transfer';
   if(/rappel|abseil|snappl/.test(n)) return 'rappelling'; if(/\batv\b|rzr|buggy|tomcar/.test(n)) return 'atv';
   if(/jeep|4x4/.test(n)) return cats.includes('Transport')?'jeep_vehicle':'jeep_tour';
@@ -1638,7 +1790,7 @@ function openQuoteForm(v, q0, back){
       <input data-f="note" value="${esc(l.note||'')}" placeholder="Note (optional)"></div>`;
   const recalc=()=>{ readOpt(); const o=q.options[cur]; const c=lineCalc(o.lines); g('optEd').querySelectorAll('.lineed').forEach((r,i)=>{ r.querySelector('.lt').textContent=fmtMoney(g('q_cur').value,c.rows[i].amt); }); g('optTotal').textContent=fmtMoney(g('q_cur').value,c.total); drawTabs(); };
   const drawOpt=()=>{ const o=q.options[cur]; const ed=g('optEd');
-    ed.innerHTML=`<div class="grid"><div class="f"><label for="o_name">Option name</label><input id="o_name" value="${esc(o.name)}" placeholder="${isT?'50-seat coach':'Sea view rooms'}"></div><div class="f"><label for="o_note">Option note</label><input id="o_note" value="${esc(o.note)}" placeholder="More luggage room"></div>
+    ed.innerHTML=`<div class="grid"><div class="f"><label for="o_name">Option name</label><input id="o_name" value="${esc(o.name)}" placeholder="${isT?'50-seat bus':'Sea view rooms'}"></div><div class="f"><label for="o_note">Option note</label><input id="o_note" value="${esc(o.note)}" placeholder="More luggage room"></div>
         <div class="f"><label for="o_svc">What is it? <em>*</em></label><select id="o_svc">${opt([['','Choose…'],...SERVICES.map(x=>[x[0],x[1]])],o.service||'')}</select></div>
         <div class="f" data-show="seats"><label for="o_seats">Seats</label><input id="o_seats" inputmode="numeric" value="${esc(o.seats||'')}" placeholder="50"></div>
         <div class="f" data-show="hours"><label for="o_hours">Hours included in a day</label><input id="o_hours" inputmode="decimal" value="${esc(o.hours_incl||'')}" placeholder="10"></div>
@@ -1672,7 +1824,7 @@ function openQuoteForm(v, q0, back){
     const out={id:q0?q0.id:undefined,title:g('q_title').value.trim(),date_from:g('q_from').value,date_to:g('q_to').value,pax:g('q_pax').value.trim(),units:g('q_units').value.trim(),received_on:g('q_rec').value,valid_until:g('q_valid').value,ref:g('q_ref').value.trim(),status:g('q_status').value,currency:g('q_cur').value,vat:g('q_vat').value,conditions:g('q_cond').value.trim(),private_note:g('q_note').value.trim(),shared:g('q_shared').checked&&!v.prices_private,
       options:q.options.map(o=>({name:o.name||(o.service?svcLabel(o.service):''),note:o.note,service:o.service||'',seats:o.seats||'',hours_incl:o.hours_incl||'',km_incl:o.km_incl||'',fees:o.fees||{},lines:o.lines.filter(l=>l.label||l.price)}))};
     const noSvc=out.options.find(o=>o.lines.length&&!o.service);
-    if(noSvc){ err.innerHTML=`<div class="msg err">Choose what "${esc(noSvc.name||'this option')}" is (coach, van, guide, room…), so it lands in the right group in the Quotes tab.</div>`; return; }
+    if(noSvc){ err.innerHTML=`<div class="msg err">Choose what "${esc(noSvc.name||'this option')}" is (bus, van, guide, room…), so it lands in the right group in the Quotes tab.</div>`; return; }
     const badO=out.options.find(o=>(o.seats&&!/^\d{1,3}$/.test(o.seats))||(o.hours_incl&&!/^\d{1,2}(\.\d)?$/.test(o.hours_incl))||(o.km_incl&&!/^\d{1,4}$/.test(o.km_incl))||Object.values(o.fees).some(x=>x.amt&&!/^\d{1,7}(\.\d{1,2})?$/.test(x.amt)));
     if(badO){ err.innerHTML=`<div class="msg err">Check the numbers on "${esc(badO.name||'an option')}": seats, hours, km and extra amounts must be plain numbers.</div>`; return; }
     const bad=out.options.flatMap(o=>o.lines).find(l=>(l.price&&!/^\d+(\.\d+)?$/.test(l.price))||!/^\d+(\.\d+)?$/.test(l.qty)||!/^\d+(\.\d+)?$/.test(l.times));

@@ -4,6 +4,26 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-3 · Driver reviews keyed by phone number; "bus", not "coach" (approved)
+
+**Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session, 2 October 2026, 13:07 Israel time.
+
+**In his words:** "Call them busses not coaches. Have reviews for drivers with phone numbers to add to confirm same driver. Drivers of busses for the companies and van drivers."
+
+**Decisions:**
+
+1. The app says **bus**, not coach.
+2. **Drivers can be reviewed**: the bus companies' drivers and van drivers.
+3. **The phone number identifies the driver.** It is entered so colleagues can confirm it is the same driver.
+
+**Implementation choices (not owner decisions; change on request):** one driver per phone number across all suppliers, with reviews following him; reviews show the reviewer's name and role, in line with the standing "From [name]" rule (quotes are the only anonymous item, per D-2); a rating from 1 to 5 is required, tags and text optional; the author or Eretz Israel Tours can delete a review.
+
+**To check with a lawyer:** drivers are individuals who are not members. Their names, work numbers and colleagues' reviews are now stored.
+
+**Status:** built and rehearsed on branch `quote-tracker`, 2 Oct 2026. Goes live together with D-2.
+
+---
+
 ## D-2 · Quote tracker: quotes shared without names (approved)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session, 2 October 2026, about 12:50 Israel time.

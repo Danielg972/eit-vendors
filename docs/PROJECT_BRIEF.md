@@ -79,7 +79,7 @@ EIT's own records have the same problem. Supplier facts are spread across Gmail,
 - **Opening the app.** It opens on that person's most-used suppliers. Category and region buttons are ordered by what *they* use most, and the list is shuffled daily so no supplier always comes first.
 - **A supplier page** shows:
   - one-tap Call, WhatsApp, Email, Website, Waze and Maps buttons;
-  - prices (adult, child, Israeli senior, group, Free) and quotes with options (room types, midibus vs coach);
+  - prices (adult, child, Israeli senior, group, Free) and quotes with options (room types, midibus vs bus);
   - deals (Cal, Cuponofesh), colleague notes, photos, receipts and price lists (with a black-out tool for private details), and a kosher certificate;
   - an **Agent prices** box with a sign-up link and a ready message asking the supplier for agent rates;
   - a **Food nearby** section;

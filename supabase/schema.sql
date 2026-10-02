@@ -1,5 +1,5 @@
 -- Israel Suppliers Master List: database schema (public schema; storage buckets listed at the end).
--- Exported from Supabase project wjuqtjlrtcywjaspjpwu on 2026-10-01; quote tracker added 2026-10-02 (supabase/migrations/2026-10-02_quote_tracker.sql).
+-- Exported from Supabase project wjuqtjlrtcywjaspjpwu on 2026-10-01; quote tracker and driver reviews added 2026-10-02 (supabase/migrations/).
 -- To rebuild on an empty Supabase project: run this file, create the three PRIVATE storage buckets,
 -- then deploy supabase/functions/files/index.ts (verify_jwt = false). Data is not included.
 -- KEEP CURRENT: re-export after every schema, function or security change (README > Change rules).
@@ -74,6 +74,54 @@ create table public.contributors (
   constraint contributors_email_check CHECK ((email = lower(email)))
 );
 alter table public.contributors enable row level security;
+
+create table public.driver_reviews (
+  id uuid default gen_random_uuid() not null,
+  driver_id uuid not null,
+  vendor_id text,
+  rating text not null,
+  tags text default ''::text not null,
+  body text default ''::text not null,
+  trip_month text default ''::text not null,
+  author text not null,
+  author_name text default ''::text not null,
+  created_at timestamp with time zone default now() not null,
+  constraint driver_reviews_pkey PRIMARY KEY (id),
+  constraint driver_reviews_body_check CHECK ((length(body) <= 1500)),
+  constraint driver_reviews_rating_check CHECK ((rating = ANY (ARRAY['1'::text, '2'::text, '3'::text, '4'::text, '5'::text]))),
+  constraint driver_reviews_tags_check CHECK ((length(tags) <= 300)),
+  constraint driver_reviews_trip_month_check CHECK (((trip_month = ''::text) OR (trip_month ~ '^\d{4}-\d{2}$'::text)))
+);
+alter table public.driver_reviews enable row level security;
+CREATE INDEX driver_reviews_driver_idx ON public.driver_reviews USING btree (driver_id);
+
+create table public.driver_vendors (
+  driver_id uuid not null,
+  vendor_id text not null,
+  added_by text not null,
+  created_at timestamp with time zone default now() not null,
+  constraint driver_vendors_pkey PRIMARY KEY (driver_id, vendor_id)
+);
+alter table public.driver_vendors enable row level security;
+CREATE INDEX driver_vendors_vendor_idx ON public.driver_vendors USING btree (vendor_id);
+
+create table public.drivers (
+  id uuid default gen_random_uuid() not null,
+  name text not null,
+  phone text not null,
+  phone_norm text not null,
+  drives text default ''::text not null,
+  created_by text not null,
+  created_at timestamp with time zone default now() not null,
+  updated_at timestamp with time zone default now() not null,
+  constraint drivers_pkey PRIMARY KEY (id),
+  constraint drivers_phone_norm_key UNIQUE (phone_norm),
+  constraint drivers_drives_check CHECK ((length(drives) <= 120)),
+  constraint drivers_name_check CHECK (((length(TRIM(BOTH FROM name)) >= 1) AND (length(TRIM(BOTH FROM name)) <= 80))),
+  constraint drivers_phone_check CHECK ((length(phone) <= 40)),
+  constraint drivers_phone_norm_check CHECK ((phone_norm ~ '^\d{7,15}$'::text))
+);
+alter table public.drivers enable row level security;
 
 create table public.feedback (
   id uuid default gen_random_uuid() not null,
@@ -459,6 +507,10 @@ CREATE INDEX vendors_category_idx ON public.vendors USING btree (category);
 
 
 -- ===== Foreign keys =====
+alter table public.driver_reviews add constraint driver_reviews_driver_id_fkey FOREIGN KEY (driver_id) REFERENCES drivers(id) ON DELETE CASCADE;
+alter table public.driver_reviews add constraint driver_reviews_vendor_id_fkey FOREIGN KEY (vendor_id) REFERENCES vendors(id) ON DELETE SET NULL;
+alter table public.driver_vendors add constraint driver_vendors_driver_id_fkey FOREIGN KEY (driver_id) REFERENCES drivers(id) ON DELETE CASCADE;
+alter table public.driver_vendors add constraint driver_vendors_vendor_id_fkey FOREIGN KEY (vendor_id) REFERENCES vendors(id) ON DELETE CASCADE;
 
 alter table public.action_log add constraint action_log_vendor_id_fkey FOREIGN KEY (vendor_id) REFERENCES vendors(id) ON DELETE CASCADE;
 
@@ -555,6 +607,17 @@ CREATE OR REPLACE FUNCTION public._new_token()
  LANGUAGE sql
  SET search_path TO ''
 AS $function$ select encode(extensions.gen_random_bytes(24),'hex') $function$
+;
+
+CREATE OR REPLACE FUNCTION public._phone_norm(p text)
+ RETURNS text
+ LANGUAGE sql
+ IMMUTABLE
+ SET search_path TO ''
+AS $function$
+  select case when d like '00972%' then '0' || substr(d, 6) when d like '972%' and length(d) >= 11 then '0' || substr(d, 4) else d end
+  from (select regexp_replace(coalesce(p,''), '\D', '', 'g') d) x
+$function$
 ;
 
 CREATE OR REPLACE FUNCTION public._price_clean(p jsonb)
@@ -708,6 +771,26 @@ AS $function$
 $function$
 ;
 
+CREATE OR REPLACE FUNCTION public._driver_json(d drivers, p_email text, p_admin boolean)
+ RETURNS json
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+  select json_build_object('id',d.id,'name',d.name,'phone',d.phone,'drives',d.drives,
+    'can_edit', p_admin or d.created_by = p_email,
+    'n',(select count(*) from public.driver_reviews r where r.driver_id = d.id),
+    'avg',(select round(avg(r.rating::int)::numeric, 1) from public.driver_reviews r where r.driver_id = d.id),
+    'vendors',coalesce((select json_agg(json_build_object('id',v.id,'name',v.name) order by v.name)
+        from public.driver_vendors dv join public.vendors v on v.id = dv.vendor_id where dv.driver_id = d.id and (p_admin or not v.hidden)),'[]'::json),
+    'reviews',coalesce((select json_agg(json_build_object('id',r.id,'rating',r.rating,'tags',r.tags,'body',r.body,'trip_month',r.trip_month,
+          'vendor_id',case when v.id is not null and (p_admin or not v.hidden) then v.id end,
+          'vendor_name',case when v.id is not null and (p_admin or not v.hidden) then v.name end,
+          'by',public._who(r.author),'mine',r.author = p_email,'created_at',r.created_at) order by r.created_at desc)
+        from public.driver_reviews r left join public.vendors v on v.id = r.vendor_id where r.driver_id = d.id),'[]'::json))
+$function$
+;
+
 CREATE OR REPLACE FUNCTION public.accept_terms(p_token text, p_version text)
  RETURNS void
  LANGUAGE plpgsql
@@ -793,6 +876,123 @@ declare m public.members;
 begin
   m := public._auth(p_token);
   delete from public.vendor_deals where id = p_id and (m.is_admin or reported_by = m.email);
+end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.driver_find(p_token text, p_phone text)
+ RETURNS json
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare m public.members; d public.drivers;
+begin
+  m := public._auth(p_token);
+  select * into d from public.drivers where phone_norm = public._phone_norm(p_phone);
+  if d.id is null then return null; end if;
+  return public._driver_json(d, m.email, m.is_admin);
+end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.driver_remove(p_token text, p_driver uuid, p_vendor text)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare m public.members;
+begin
+  m := public._auth(p_token);
+  if coalesce(p_vendor,'') = '' then
+    if not m.is_admin then raise exception 'Only Eretz Israel Tours can do that.' using errcode = '42501'; end if;
+    delete from public.drivers where id = p_driver;
+  else
+    delete from public.driver_vendors where driver_id = p_driver and vendor_id = p_vendor and (m.is_admin or added_by = m.email);
+    if not found then raise exception 'Only Eretz Israel Tours, or the person who added him here, can take a driver off this supplier.'; end if;
+  end if;
+end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.driver_review_add(p_token text, p_driver uuid, p_vendor text, p_review jsonb)
+ RETURNS uuid
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare m public.members; rid uuid; vid text := nullif(p_vendor,'');
+begin
+  m := public._auth(p_token);
+  if not exists (select 1 from public.drivers where id = p_driver) then raise exception 'That driver is no longer on the list.'; end if;
+  if coalesce(p_review->>'rating','') !~ '^[1-5]$' then raise exception 'Give a rating from 1 to 5.'; end if;
+  if vid is not null then
+    perform public._visible(vid, m.is_admin);
+    if not exists (select 1 from public.vendors where id = vid) then raise exception 'That supplier no longer exists.'; end if;
+    insert into public.driver_vendors (driver_id, vendor_id, added_by) values (p_driver, vid, m.email) on conflict do nothing;
+  end if;
+  insert into public.driver_reviews (driver_id, vendor_id, rating, tags, body, trip_month, author, author_name)
+  values (p_driver, vid, p_review->>'rating', left(trim(coalesce(p_review->>'tags','')),300), left(trim(coalesce(p_review->>'body','')),1500),
+    case when coalesce(p_review->>'trip_month','') ~ '^\d{4}-\d{2}$' then p_review->>'trip_month' else '' end, m.email, m.name)
+  returning id into rid;
+  return rid;
+end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.driver_review_delete(p_token text, p_id uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare m public.members;
+begin
+  m := public._auth(p_token);
+  delete from public.driver_reviews where id = p_id and (author = m.email or m.is_admin);
+end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.driver_save(p_token text, p_vendor text, p_driver jsonb)
+ RETURNS uuid
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare m public.members; d public.drivers; did uuid := nullif(p_driver->>'id','')::uuid;
+  nm text := trim(left(coalesce(p_driver->>'name',''),80)); ph text := trim(left(coalesce(p_driver->>'phone',''),40));
+  pn text := public._phone_norm(p_driver->>'phone'); dr text := trim(left(coalesce(p_driver->>'drives',''),120));
+begin
+  m := public._auth(p_token); perform public._visible(p_vendor, m.is_admin);
+  if not exists (select 1 from public.vendors where id = p_vendor) then raise exception 'That supplier no longer exists.'; end if;
+  if pn !~ '^\d{7,15}$' then raise exception 'Enter the driver''s phone number. It is how colleagues know it is the same driver.'; end if;
+  if did is not null then
+    select * into d from public.drivers where id = did;
+    if d.id is null then raise exception 'That driver is no longer on the list.'; end if;
+    if not (m.is_admin or d.created_by = m.email) then raise exception 'Only the person who added this driver, or Eretz Israel Tours, can change his details.'; end if;
+    if nm = '' then raise exception 'Enter the driver''s name.'; end if;
+    if exists (select 1 from public.drivers where phone_norm = pn and id <> did) then raise exception 'That phone number already belongs to another driver on the list.'; end if;
+    update public.drivers set name = nm, phone = ph, phone_norm = pn, drives = dr, updated_at = now() where id = did;
+  else
+    select id into did from public.drivers where phone_norm = pn;
+    if did is null then
+      if nm = '' then raise exception 'Enter the driver''s name.'; end if;
+      insert into public.drivers (name, phone, phone_norm, drives, created_by) values (nm, ph, pn, dr, m.email) returning id into did;
+    end if;
+  end if;
+  insert into public.driver_vendors (driver_id, vendor_id, added_by) values (did, p_vendor, m.email) on conflict do nothing;
+  return did;
+end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.drivers_list(p_token text, p_vendor text)
+ RETURNS json
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare m public.members;
+begin
+  m := public._auth(p_token); perform public._visible(p_vendor, m.is_admin);
+  return coalesce((select json_agg(public._driver_json(d, m.email, m.is_admin) order by d.name)
+    from public.drivers d join public.driver_vendors dv on dv.driver_id = d.id where dv.vendor_id = p_vendor), '[]'::json);
 end $function$
 ;
 
@@ -1129,7 +1329,7 @@ begin
   for o in select * from jsonb_array_elements(coalesce(p_quote->'options','[]'::jsonb)) loop
     insert into public.quote_options (quote_id, name, note, sort, service, seats, hours_incl, km_incl, fees)
     values (qid, left(coalesce(nullif(o->>'name',''),'Option'),120), left(coalesce(o->>'note',''),1000), oi,
-      case when coalesce(o->>'service','') = any (array['coach','midibus','minibus','van','car','jeep_vehicle','transfer','guide','guide_vehicle','hotel_room','apartment','rappelling','jeep_tour','atv','activity','site','meal','other']) then o->>'service' else '' end,
+      case when coalesce(o->>'service','') = any (array['bus','midibus','minibus','van','car','jeep_vehicle','transfer','guide','guide_vehicle','hotel_room','apartment','rappelling','jeep_tour','atv','activity','site','meal','other']) then o->>'service' else '' end,
       case when coalesce(o->>'seats','') ~ '^\d{1,3}$' then o->>'seats' else '' end,
       case when coalesce(o->>'hours_incl','') ~ '^\d{1,2}(\.\d)?$' then o->>'hours_incl' else '' end,
       case when coalesce(o->>'km_incl','') ~ '^\d{1,4}$' then o->>'km_incl' else '' end,
@@ -1562,6 +1762,14 @@ revoke all on function quote_save(text,text,jsonb) from public; grant execute on
 revoke all on function quotes_list(text,text) from public; grant execute on function quotes_list(text,text) to anon, authenticated;
 revoke all on function quotes_tracker(text) from public; grant execute on function quotes_tracker(text) to anon, authenticated;
 revoke all on function _fees_clean(jsonb) from public, anon, authenticated;
+revoke all on function _phone_norm(text) from public, anon, authenticated;
+revoke all on function _driver_json(drivers,text,boolean) from public, anon, authenticated;
+revoke all on function drivers_list(text,text) from public; grant execute on function drivers_list(text,text) to anon, authenticated;
+revoke all on function driver_find(text,text) from public; grant execute on function driver_find(text,text) to anon, authenticated;
+revoke all on function driver_save(text,text,jsonb) from public; grant execute on function driver_save(text,text,jsonb) to anon, authenticated;
+revoke all on function driver_review_add(text,uuid,text,jsonb) from public; grant execute on function driver_review_add(text,uuid,text,jsonb) to anon, authenticated;
+revoke all on function driver_review_delete(text,uuid) from public; grant execute on function driver_review_delete(text,uuid) to anon, authenticated;
+revoke all on function driver_remove(text,uuid,text) from public; grant execute on function driver_remove(text,uuid,text) to anon, authenticated;
 revoke all on function vendor_set_status(text,text,text) from public; grant execute on function vendor_set_status(text,text,text) to anon, authenticated;
 revoke all on function vendor_set_prices_private(text,text,boolean) from public; grant execute on function vendor_set_prices_private(text,text,boolean) to anon, authenticated;
 revoke all on function accept_terms(text,text) from public; grant execute on function accept_terms(text,text) to anon, authenticated;

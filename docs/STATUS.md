@@ -49,8 +49,10 @@
 3. "Current price" has no freshness policy yet; each line only carries its checked date.
 4. Lighter governance than the Cockpit: no review gate and no automated tests.
 5. Free-tier limits: Supabase 500 MB database and 1 GB storage.
+6. From D-3 (once live): personal data about drivers who are not members (name, work number, reviews). Not yet reviewed by a lawyer.
 
 ## Changes that would affect the Cockpit (log)
 
+- 2026-10-02: Driver reviews and "bus" wording (D-3) built on the same branch; **not live yet**. When live: new tables `drivers`, `driver_vendors`, `driver_reviews` (driver identity = phone number); supplier tag `Coach` becomes `Bus`. Nothing Cockpit-facing.
 - 2026-10-02: Quote tracker (D-2) built on branch `quote-tracker`; **not live yet** (database change awaiting the owner's approval). When live: `quote_options` gains `service`, `seats`, `hours_incl`, `km_incl`, `fees`; `quotes.shared` defaults to true; new RPC `quotes_tracker`. Nothing Cockpit-facing. Quotes here remain reference only.
 - 2026-10-01: D-1 boundary approved and confirmed in the owner's own words (16:27). R5 export frozen; owner has no active R5 use. No integration-facing schema changes made.
