@@ -6,6 +6,25 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-7 · Shomer Shabbat badge; kosher restaurants only (approved; live)
+
+**Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session, 2 October 2026, 16:28 Israel time.
+
+**In his words:** "I want a button on a vendor if they are Shomer Shabbat. And in the terms, we do not accept non-kosher restaurants."
+
+**Decisions:**
+
+1. **A supplier can be marked Shomer Shabbat**, and it shows on the supplier.
+2. **The terms say the list does not accept non-kosher restaurants.**
+
+**Implementation choices (not owner decisions; change on request):** Shomer Shabbat is a supplier tag any colleague can set, with a badge in the list and on the page; the form refuses a Restaurant marked "Not kosher" or "Kosher-style (not certified)" ("Kosher, no certificate" is still accepted); the rule also covers Food nearby tips; a restaurant with no kosher value is still accepted.
+
+**Also asked, not decided:** whether suppliers have opening hours. They do not; no field exists.
+
+**Status:** live since 2 Oct 2026, about 16:45. Front end only.
+
+---
+
 ## D-6 · Welcome tour, the name "The Inner Circle – Israel Guide", and the use-and-add rule (approved; live)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session, 2 October 2026, 15:45–16:20 Israel time.

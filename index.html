@@ -238,6 +238,7 @@ textarea.out{width:100%;min-height:160px;font-family:var(--f-mono);font-size:12p
 .vs.down{background:var(--ok-wash);color:var(--ok)}
 .vs.eq{background:var(--wash);color:var(--ink-2)}
 .pill.high{background:var(--ochre-wash);color:var(--ink);box-shadow:inset 0 0 0 1px var(--ochre)}
+.pill.shab{background:var(--ok-wash);color:var(--ok);box-shadow:inset 0 0 0 1px var(--ok)}
 .pill.reg{background:var(--wash);color:var(--ink-2)}
 .flags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
 .flag{font-size:12.5px;border-radius:6px;padding:3px 8px;line-height:1.35}
@@ -485,6 +486,13 @@ const TAG_SUGGEST = {Adventure:['Jeep','ATV / RZR','Rappelling','Kayak & rafting
   'Travel Agent':['Hotel bookings','Flights','Packages','Groups','Commission'],
   'Itinerary Planner':['Full trip planning','Day trips','Groups','Families','Bar/bat mitzvah'],
   Winery:['Tasting','Tour','Restaurant','Boutique','Free bottle for guide','Group menus']};
+// Shomer Shabbat is a tag on the supplier (no database change); the kosher rule: no non-kosher restaurants on the list.
+const SHABBAT_TAG='Shomer Shabbat';
+const tagList=v=>String(v&&v.tags||'').split(',').map(t=>t.trim()).filter(Boolean);
+const isShabbat=v=>tagList(v).some(t=>t.toLowerCase()===SHABBAT_TAG.toLowerCase());
+const tagsNoShab=v=>tagList(v).filter(t=>t.toLowerCase()!==SHABBAT_TAG.toLowerCase()).join(', ');
+const shabPill=v=>isShabbat(v)?'<span class="pill shab">Shomer Shabbat</span>':'';
+const notKosher=k=>/^\s*(not kosher|non[- ]?kosher|kosher[- ]style)/i.test(String(k||''));
 const KOSHER_OPTS = ['Rabbanut','Rabbanut Mehadrin','Badatz Eda Haredit','Badatz Beit Yosef','Badatz Rubin','Rav Landau','Kosher, no certificate','Kosher-style (not certified)','Not kosher','Not relevant'];
 const LANG_OPTS = ['English','Hebrew','French','Spanish','Russian','German','Portuguese','Italian','Yiddish','Arabic','Dutch'];
 const TOWNS = ['Jerusalem','Tel Aviv','Haifa','Eilat','Tiberias','Safed (Tzfat)','Netanya','Herzliya','Caesarea','Akko','Nazareth','Rosh Pina','Katzrin','Metula','Mitzpe Ramon','Arad','Beer Sheva','Ein Gedi','Masada','Ein Bokek','Dead Sea','Modiin','Beit Shemesh','Efrat','Gush Etzion','Ariel','Shilo','Kfar Adumim','Mishor Adumim','Zichron Yaakov','Rehovot','Ashkelon','Ashdod','Jaffa','Bethlehem','Even Yehuda','Ra\'anana','Kfar Saba','Hod Hasharon','Ben Gurion Airport'];
@@ -504,7 +512,7 @@ function sample(){
   const now = Date.now(), d = n => new Date(now - n*86400000).toISOString();
   const v = (o)=>Object.assign(blank(),{active:'Active',priceBasis:'Per person',currency:'ILS',review_status:'approved',created_by:'daniel@eretzisraeltours.com',updated_by:'daniel@eretzisraeltours.com',created_at:d(20),updated_at:d(3)},o);
   return [
-    v({id:'vendor_k3m9p2x',name:'Golan Heights Jeep Tours',category:'Activity',contactPerson:'Moshe Levi',phone:'+972 52 555 0142',whatsapp:'+972 52 555 0142',location:'Golan Heights',languages:'English, Hebrew',maxCap:'28',listedPrice:'450',listedPriceVatTreatment:'including_vat',agentPrice:'360',agentPriceVatTreatment:'plus_vat',priceBasis:'Per person',payTerms:'Invoice after the tour',cancelPolicy:'Free cancellation up to 72 hours before',cancelNoticeAmount:'72',cancelNoticeUnit:'Hours',cancelPenalty:'Full charge inside 72h',cancelPolicyVerifiedDate:'2026-08-14',rateReliability:'5',rateService:'4',rateValue:'4',strengths:'Punctual, drivers speak good English',notes:'Book 2 weeks ahead in Sukkot'}),
+    v({id:'vendor_k3m9p2x',name:'Golan Heights Jeep Tours',category:'Activity',tags:'Jeep, Shomer Shabbat',contactPerson:'Moshe Levi',phone:'+972 52 555 0142',whatsapp:'+972 52 555 0142',location:'Golan Heights',languages:'English, Hebrew',maxCap:'28',listedPrice:'450',listedPriceVatTreatment:'including_vat',agentPrice:'360',agentPriceVatTreatment:'plus_vat',priceBasis:'Per person',payTerms:'Invoice after the tour',cancelPolicy:'Free cancellation up to 72 hours before',cancelNoticeAmount:'72',cancelNoticeUnit:'Hours',cancelPenalty:'Full charge inside 72h',cancelPolicyVerifiedDate:'2026-08-14',rateReliability:'5',rateService:'4',rateValue:'4',strengths:'Punctual, drivers speak good English',notes:'Book 2 weeks ahead in Sukkot'}),
     v({id:'vendor_a81qz0c',name:'Dan Panorama Jerusalem',category:'Hotel',contactPerson:'Group desk',phone:'+972 2 569 5695',email:'groups@example-hotel.co.il',location:'Jerusalem',kosher:'Rabbanut',maxCap:'290',agentPrice:'1150',agentPriceVatTreatment:'not_applicable',priceBasis:'Per group',currency:'USD',payTerms:'30% deposit, balance 14 days before',cancelNoticeAmount:'21',cancelNoticeUnit:'Days',cancelDayType:'Calendar days',rateReliability:'4',rateService:'4',rateValue:'3'}),
     v({id:'vendor_7tt2w4n',reservation:'required',name:'Ein Gedi Nature Reserve',category:'National Parks',location:'Dead Sea',npResLink:'https://www.parks.org.il',listedPrice:'33',listedPriceVatTreatment:'including_vat',agentPrice:'29',agentPriceVatTreatment:'including_vat',priceBasis:'Per person',review_status:'pending',created_by:'yossi.guide@gmail.com',updated_by:'yossi.guide@gmail.com',updated_at:d(1)}),
     v({id:'vendor_p0lk5sd',name:'Shomron Bus Lines',category:'Transport',contactPerson:'Avi',phone:'+972 54 000 1234',location:'Ariel',maxCap:'50',agentPrice:'2400',agentPriceVatTreatment:'plus_vat',priceBasis:'Per day',payTerms:'Cash or transfer on the day',rateReliability:'3',review_status:'pending',created_by:'rachel.ops@gmail.com',updated_by:'rachel.ops@gmail.com',updated_at:d(0)}),
@@ -883,7 +891,7 @@ function linkBox(id, url){
 function wireCopy(root){ root.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>{ const i=root.querySelector('#'+b.dataset.copy); copyText(i.value,i); }); }
 
 const ROLES=['Licensed tour guide','Travel agent','Tour operator','Other'];
-const TERMS_VERSION='2026-10-02c';
+const TERMS_VERSION='2026-10-02d';
 const TERMS_HTML=`<p class="hint">Version ${TERMS_VERSION}. Plain-language summary. Draft: not yet reviewed by a lawyer.</p>
 <h4>1. Who runs this</h4><p>The Inner Circle – Israel Guide (until October 2026 called the Israel Suppliers Master List) is run by Eretz Israel Tours, which approves members and manages the list.</p>
 <h4>2. Who can join</h4><p>Licensed tour guides, travel agents, tour operators and other travel professionals approved by Eretz Israel Tours. You confirm the details and license you submit are yours and true. Eretz Israel Tours can decline, pause or remove access at any time.</p>
@@ -891,6 +899,7 @@ const TERMS_HTML=`<p class="hint">Version ${TERMS_VERSION}. Plain-language summa
 <h4>2b. Cost</h4><p><b>As of now, nobody pays to join, and you will not be asked to pay in the future.</b> If Eretz Israel Tours ever decides the costs are not worth bearing and a fee is introduced, founding members stay free. A founding member is anyone approved while the list is still free.</p>
 <h4>3. What you share</h4><p>Share supplier information you believe is accurate and that you're allowed to share. Don't post personal member codes, card or bank details, or personal details of your clients. Be fair in ratings and notes: describe your own experience. When you add a driver, add only the phone number he uses for work; it is there so colleagues can tell drivers apart.</p>
 <h4>3a. Fair, objective feedback</h4><p>Feedback, ratings, notes, supplier updates and reviews of drivers must be objective and factual. A driver review says what happened on your trip (timing, driving, service), with your name next to it. When something is your personal or subjective opinion, say so clearly (for example "In my opinion…").</p><p><b>Slandering or running down a colleague, competitor, supplier or anyone else, in any form, is grounds for being removed from the service.</b> Reports sent anonymously are not shown with your name, but are kept on record so this rule can be enforced.</p>
+<h4>3b. Kosher restaurants only</h4><p><b>The list does not accept non-kosher restaurants.</b> Do not add one, as a supplier or as a food tip. Any that are found are removed.</p>
 <h4>4. How you use it</h4><p>Use the list for your own professional work. Keep your personal link to yourself, and don't copy, resell or publish the list.</p><p><b>Never show the list to suppliers.</b> Don't show suppliers the app, screenshots, prices, notes or ratings from it. Anyone who does will lose access immediately.</p>
 <h4>5. Crowdsourced: no responsibility for mistakes</h4><p>This is a crowdsourced list built by colleagues. Eretz Israel Tours takes no responsibility for mistakes, missing or out-of-date information. Please take great care when you add or change anything, and if you see a mistake, let us know with the <b>Update this supplier</b> button or the Feedback box. Prices, terms and contacts come from colleagues and can change. Always confirm with the supplier before booking. Eretz Israel Tours isn't responsible for information shared by members or for suppliers' services.</p>
 <h4>6. Your data and privacy</h4><p>We store your name, email, phone, role, license number and license photo, what you add, when you last used the app, and which supplier contact buttons you tap (call, WhatsApp, email, website, maps and booking links), with the time. Colleagues see your name next to what you add, except quotes (see 6b). Your license photo is visible only to Eretz Israel Tours.</p><p><b>Eretz Israel Tours can see everything in the app, including items marked "private".</b> "Private" means hidden from other colleagues, not from Eretz Israel Tours.</p><p>Data is stored with Supabase (servers in Frankfurt, EU) and the app is hosted on GitHub Pages. You can ask Eretz Israel Tours at any time to see, correct or delete your data and account.</p>
@@ -1086,7 +1095,7 @@ function drawList(){
     <button class="row" data-id="${esc(v.id)}">
       <span class="row-name">${esc(v.name)}</span>
       <span class="row-price">${priceLine(v)}</span>
-      <span class="row-meta"><span class="cat">${esc(v.category)}${v.also_categories?' + '+esc(v.also_categories):''}</span>${v.region||v.location?`<span>${esc(v.region||v.location)}</span>`:''}${v.tags?`<span class="hint">${esc(v.tags)}</span>`:''}${v.category==='Guide'&&v.experience_years?`<span class="hint">${esc(v.experience_years)} yrs</span>`:''}${v.reservation==='required'?'<span class="clip">📅 Reserve ahead</span>':''}${statusPill(v)}${v._prices?`<span class="clip">${v._prices} price${v._prices>1?'s':''}</span>`:''}${v._deals?`<span class="clip">🏷 ${v._deals} deal${v._deals>1?'s':''}</span>`:''}${v._notes?`<span class="clip">💬 ${v._notes}</span>`:''}${v._files?`<span class="clip">📎 ${v._files}</span>`:''}</span>
+      <span class="row-meta"><span class="cat">${esc(v.category)}${v.also_categories?' + '+esc(v.also_categories):''}</span>${v.region||v.location?`<span>${esc(v.region||v.location)}</span>`:''}${tagsNoShab(v)?`<span class="hint">${esc(tagsNoShab(v))}</span>`:''}${shabPill(v)}${v.category==='Guide'&&v.experience_years?`<span class="hint">${esc(v.experience_years)} yrs</span>`:''}${v.reservation==='required'?'<span class="clip">📅 Reserve ahead</span>':''}${statusPill(v)}${v._prices?`<span class="clip">${v._prices} price${v._prices>1?'s':''}</span>`:''}${v._deals?`<span class="clip">🏷 ${v._deals} deal${v._deals>1?'s':''}</span>`:''}${v._notes?`<span class="clip">💬 ${v._notes}</span>`:''}${v._files?`<span class="clip">📎 ${v._files}</span>`:''}</span>
     </button>`).join('')}</div>` : `<div class="list"><div class="empty"><h3>Nothing matches</h3>Try a shorter search or pick “All”.</div></div>`);
   box.querySelectorAll('.row').forEach(r=>r.onclick=()=>openDetail(r.dataset.id));
 }
@@ -1151,8 +1160,8 @@ async function drawFood(v){
   box.innerHTML=(list.length?list.map(f=>{ const onList=S.vendors.find(o=>normN(o.name)===normN(f.name)); const q=encodeURIComponent(f.name)+near;
     return `<div class="note"><span class="meta"><b style="color:var(--ink)">${esc(f.name)}</b>${f.kosher?' · '+esc(f.kosher):''}</span>${f.note?`<p>${esc(f.note)}</p>`:''}
       <div class="btn-row" style="margin-top:6px">${onList?`<button class="mini" data-fopen="${esc(onList.id)}" type="button">Open on list</button>`:''}<a class="mini" data-track="maps" data-v="${esc(v.id)}" href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener">Maps</a><a class="mini" data-track="waze" data-v="${esc(v.id)}" href="https://waze.com/ul?q=${q}&navigate=yes" target="_blank" rel="noopener">Waze</a>${f.mine||S.admin?`<button class="mini" data-fdel="${esc(f.id)}" type="button">Remove</button>`:''}</div>
-      ${fromBadge(f.by,f.created_at,'Tip from')}</div>`; }).join(''):'<p class="hint">No food tips yet. Where do you eat or take groups near here?</p>')
-    +`<div class="foodadd"><input id="fdName" placeholder="Place name, e.g. Shawarma Hashuk" maxlength="120"><select id="fdKos" aria-label="Kosher"><option value="">Kosher?</option>${KOSHER_OPTS.map(k=>`<option>${esc(k)}</option>`).join('')}</select>
+      ${fromBadge(f.by,f.created_at,'Tip from')}</div>`; }).join(''):'<p class="hint">No food tips yet. Where do you eat or take groups near here? Kosher places only.</p>')
+    +`<div class="foodadd"><input id="fdName" placeholder="Place name, e.g. Shawarma Hashuk" maxlength="120"><select id="fdKos" aria-label="Kosher"><option value="">Kosher?</option>${KOSHER_OPTS.filter(k=>!notKosher(k)&&k!=='Not relevant').map(k=>`<option>${esc(k)}</option>`).join('')}</select>
       <input id="fdNote" placeholder="Why it's good, price, good for groups?" maxlength="500"><button class="btn primary" id="fdAdd" type="button">Add tip</button></div>`;
   box.querySelectorAll('[data-fopen]').forEach(b=>b.onclick=()=>openDetail(b.dataset.fopen));
   box.querySelectorAll('[data-fdel]').forEach(b=>b.onclick=async()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again'; return; } try{ await DB.foodDelete(v.id,b.dataset.fdel); drawFood(v); }catch(e){ toast(e.message); } });
@@ -1443,7 +1452,7 @@ function openDetail(id, opt){
     ['Cancellation',rows([['Policy',esc(v.cancelPolicy)],['Notice',notice],['Penalty',esc(v.cancelPenalty)],['Checked',esc(ilDate(v.cancelPolicyVerifiedDate))]])],
     ['Experience',rows([['Ratings',rating],['Strengths',esc(v.strengths)],['Weaknesses',esc(v.weaknesses)],['Summary',esc(v.notes)]])]
   ].filter(s=>s[1]);
-  const body=`${vtabs}<div class="keep" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px"><span class="cat">${esc(v.category)}${v.also_categories?' + '+esc(v.also_categories):''}</span>${v.region||v.location?`<span class="hint">${esc(v.region||v.location)}</span>`:''}${statusPill(v)}</div>
+  const body=`${vtabs}<div class="keep" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px"><span class="cat">${esc(v.category)}${v.also_categories?' + '+esc(v.also_categories):''}</span>${v.region||v.location?`<span class="hint">${esc(v.region||v.location)}</span>`:''}${shabPill(v)}${statusPill(v)}</div>
     ${isTr?`<fieldset><legend>Vehicles</legend>${(fl=>fl.length?`<div class="flags" style="margin:0 0 4px">${fl.map(x=>`<span class="flag info" style="font-size:13.5px;padding:5px 10px">${esc(x[1])}</span>`).join('')}</div>`:`<p class="hint" style="margin:0">Not marked yet. Tap Edit and choose which vehicles ${indep?'he has':'they have'}: buses, vans by size, cars.</p>`)(VEHICLES.filter(x=>fleetOf(v).has(x[0])))}</fieldset>`:''}
     <div id="parentBox"></div>
     ${contactBar(v)}
@@ -2844,6 +2853,7 @@ function openForm(v, preset){
       <div class="f wide"><label>Also offers <span class="hint">(optional, e.g. a guide who also drives jeep tours)</span></label><input type="hidden" id="f_also_categories" value="${esc(x.also_categories||'')}"><div class="presets" id="alsoSug" style="margin:6px 0 0"></div></div>
       <div class="f wide" id="fleetWrap" hidden><label>Vehicles they offer</label><div class="tgs" id="fleetPick" role="group" aria-label="Vehicles they offer" style="margin:0">${VEHICLES.map(x=>`<button class="tg" type="button" data-veh="${x[0]}" aria-pressed="false">${esc(x[1])}</button>`).join('')}</div><span class="hint">Tap every size they have. Vans go by seats.</span></div>
       <div class="f wide"><label for="f_tags">Type (separate with commas)</label><input id="f_tags" value="${esc(x.tags)}" placeholder="Jeep, ATV / RZR"><div class="presets" id="tagSug" style="margin:6px 0 0"></div></div>
+      <div class="f wide"><label>Shabbat</label><div class="tgs" style="margin:0"><button class="tg" type="button" id="shabTg" aria-pressed="false">Shomer Shabbat</button></div><span class="hint">Tap if they keep Shabbat. It shows as a badge on the supplier.</span></div>
       <div class="f" id="gWrap" ${x.category==='Guide'?'':'hidden'}><label for="f_experience_years">Years guiding</label><input id="f_experience_years" type="number" inputmode="numeric" min="0" max="80" value="${esc(x.experience_years)}" placeholder="12"></div>
       ${sel('active','Status',['Active','Inactive'])}
       <div class="f wide" id="npWrap" ${x.category==='National Parks'?'':'hidden'}><label for="f_npResLink">National park booking link</label><input id="f_npResLink" name="npResLink" type="url" value="${esc(x.npResLink)}" placeholder="https://booking.parks.org.il/…"></div>
@@ -2889,6 +2899,9 @@ function openForm(v, preset){
     alsoSug.innerHTML=CATEGORIES.filter(c=>c!==main).map(c=>`<button type="button" class="mini${have.includes(c)?' on':''}" data-also="${esc(c)}">${have.includes(c)?'✓ ':'+ '}${esc(c)}</button>`).join('');
     alsoSug.querySelectorAll('[data-also]').forEach(b=>b.onclick=()=>{ const c=b.dataset.also; const cur=alsoIn.value.split(',').map(t=>t.trim()).filter(Boolean); const i=cur.indexOf(c); if(i>=0) cur.splice(i,1); else cur.push(c); alsoIn.value=cur.join(', '); syncRel(); }); };
   const showIf=(el,on)=>{ if(el) el.hidden=!on; };
+  const shabTg=f.querySelector('#shabTg'), shabDraw=()=>shabTg.setAttribute('aria-pressed', isShabbat({tags:tagsIn.value}));
+  shabTg.onclick=()=>{ const on=isShabbat({tags:tagsIn.value}); const cur=tagList({tags:tagsIn.value}).filter(t=>t.toLowerCase()!==SHABBAT_TAG.toLowerCase()); if(!on) cur.push(SHABBAT_TAG); tagsIn.value=cur.join(', '); shabDraw(); };
+  tagsIn.addEventListener('input',shabDraw); shabDraw();
   const fleetDraw=()=>{ const have=fleetOf({tags:tagsIn.value}); f.querySelectorAll('[data-veh]').forEach(b=>b.setAttribute('aria-pressed', have.has(b.dataset.veh))); };
   f.querySelectorAll('[data-veh]').forEach(b=>b.onclick=()=>{ const k=b.dataset.veh, on=b.getAttribute('aria-pressed')==='true';
     let cur=tagsIn.value.split(',').map(t=>t.trim()).filter(Boolean);
@@ -2943,7 +2956,8 @@ function openForm(v, preset){
     data.maps_link=String(data.maps_link||'').trim(); if(data.maps_link && !/^https?:\/\//i.test(data.maps_link)) data.maps_link='https://'+data.maps_link;
     data.experience_years=String(data.experience_years||'').replace(/\D/g,'').slice(0,2); if(!catsOf(data).includes('Guide') && !x.experience_years) data.experience_years='';
     const err=f.querySelector('#formErr');
-    const probs=[]; if(!data.name.trim()) probs.push('Add the supplier name.'); if(!data.category) probs.push('Choose a category.');
+    const probs=[]; if(!data.name.trim()) probs.push('Add the supplier name.');
+    if(catsOf(data).includes('Restaurant') && notKosher(data.kosher)) probs.push('The list does not accept non-kosher restaurants.'); if(!data.category) probs.push('Choose a category.');
     if(!v && dupCheck()) probs.push('This supplier is already on the list. Open it and edit it instead.');
     let reason=''; if(guarded){ const changed=LOCKED.filter(k=>String(data[k]||'').trim()!==String(v[k]||'').trim()); reason=f.querySelector('#f_reason').value.trim();
       if(changed.length && reason.length<3) probs.push('You changed '+changed.map(k=>FIELD_LABEL[k]||k).join(', ')+'. Say briefly why, at the bottom.'); }

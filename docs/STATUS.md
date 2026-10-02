@@ -14,8 +14,8 @@
 | Repo | `Danielg972/eit-vendors`, branch `main` (cite by commit SHA) |
 | Database | Supabase project `wjuqtjlrtcywjaspjpwu` (org "EIT Vendors", Frankfurt) |
 | Schema record | `supabase/schema.sql` (tables, functions, grants), plus `supabase/functions/files/index.ts` (edge function v9) |
-| Terms version | `2026-10-02c` (draft, not yet reviewed by a lawyer; adds 2a use-and-add rule, 2b cost and founding members) |
-| Decisions | `docs/DECISIONS.md` (D-1 Cockpit boundary; D-2 quote tracker; D-3 driver reviews; D-4 transport by vehicle size; D-5 booking sheets; D-6 welcome tour, name, use-and-add rule) |
+| Terms version | `2026-10-02d` (draft, not yet reviewed by a lawyer; adds 2a use-and-add rule, 2b cost and founding members, 3b kosher restaurants only) |
+| Decisions | `docs/DECISIONS.md` (D-1 Cockpit boundary; D-2 quote tracker; D-3 driver reviews; D-4 transport by vehicle size; D-5 booking sheets; D-6 welcome tour, name, use-and-add rule; D-7 Shomer Shabbat badge, kosher restaurants only) |
 
 ## Integration with the Cockpit
 
@@ -64,6 +64,8 @@
 
 ## Next
 
+- **Kosher value missing on 7 of 8 restaurant suppliers** (D-7): fill them in, or make the field required for restaurants. Owner to decide.
+- **Opening hours per supplier:** no field exists; the owner asked on 2 Oct. Needs a database column.
 - **Use-and-add rule (D-6):** a Team-tab view of who used the list and who added to it in the last 3 months, and the reminder before removal. Needs a database function; not started.
 - **AI chat box for searches:** announced in the welcome tour as "in the works"; not built.
 - **Booking sheets (D-5): first real use** by the owner with a real bus company, then by colleagues.
@@ -72,6 +74,7 @@
 
 ## Changes that would affect the Cockpit (log)
 
+- 2026-10-02: **Live (about 16:45):** Shomer Shabbat badge (a supplier tag, `Shomer Shabbat`), and kosher restaurants only (terms `2026-10-02d`, 3b; the form refuses a non-kosher Restaurant). Front end only, no schema change. Nothing Cockpit-facing; a Cockpit read of `vendors.tags` would see the new tag.
 - 2026-10-02: **Live (about 16:35):** welcome tour for first-time users, the app renamed The Inner Circle – Israel Guide, terms `2026-10-02c` (use-and-add rule, cost and founding members). Front end only, no schema change. Nothing Cockpit-facing.
 - 2026-10-02: **Live for all approved colleagues (about 15:40):** booking sheets, second step: both sides accept, changes return in red, cancellation-policy box, open to all colleagues (`2026-10-02d`). `bookings` gains `guide_ok_at`, `company_ok_at`, `company_ok_via`, `seen_guide`, `seen_company`; new RPC `booking_accept`. Dates are entered and shown day/month/year across the app. Nothing Cockpit-facing.
 - 2026-10-02: **Live (Eretz Israel Tours only):** booking sheets for buses and vans (D-5). New table `bookings`; new page `b/index.html`; six new RPCs; `whoami` gains `phone`, `bookings`, `bookings_for`. A confirmed sheet creates an ordinary `Booked` quote. Nothing Cockpit-facing: a booking sheet carries a private trip/client label only, never a Cockpit id, and no export.
