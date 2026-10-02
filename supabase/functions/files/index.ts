@@ -1,5 +1,5 @@
 // Vendor files, quote attachments, join proofs and feedback screenshots: checks the caller's personal link token, then signs uploads/downloads with the service key.
-// Deployed as Supabase edge function "files" (verify_jwt = false). Version 8, 1 Oct 2026. Keep this file identical to the deployed source.
+// Deployed as Supabase edge function "files" (verify_jwt = false). Version 9, 2 Oct 2026. Keep this file identical to the deployed source.
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 
 const cors = {
@@ -31,12 +31,12 @@ Deno.serve(async (req) => {
   const { data: m } = await db.from("members").select("id,email,name,is_admin,status,proof_path").eq("token_hash", await sha256(token)).maybeSingle();
   if (!m || m.status === "revoked") return json({ error: NOT_ACTIVE }, 401);
 
-  // a quote's files are visible to its owner, the admin, and everyone once the quote is shared
-  const quoteAccess = async (qid: string, needEdit: boolean) => {
+  // a quote's files are visible only to its owner and the admin. Quotes are shared with colleagues without the
+  // owner's name (v9), and an attached email or PDF would give away who got the quote and for which client.
+  const quoteAccess = async (qid: string, _needEdit: boolean) => {
     const { data: q } = await db.from("quotes").select("id,vendor_id,owner,shared").eq("id", qid).maybeSingle();
     if (!q) return null;
-    const canEdit = m.is_admin || q.owner === m.email;
-    if (needEdit ? !canEdit : !(canEdit || q.shared)) return null;
+    if (!(m.is_admin || q.owner === m.email)) return null;
     return q;
   };
   // colleagues never receive each other's email addresses

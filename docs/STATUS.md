@@ -52,4 +52,5 @@
 
 ## Changes that would affect the Cockpit (log)
 
+- 2026-10-02: Quote tracker (D-2) built on branch `quote-tracker`; **not live yet** (database change awaiting the owner's approval). When live: `quote_options` gains `service`, `seats`, `hours_incl`, `km_incl`, `fees`; `quotes.shared` defaults to true; new RPC `quotes_tracker`. Nothing Cockpit-facing. Quotes here remain reference only.
 - 2026-10-01: D-1 boundary approved and confirmed in the owner's own words (16:27). R5 export frozen; owner has no active R5 use. No integration-facing schema changes made.

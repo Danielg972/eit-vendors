@@ -1,5 +1,5 @@
 -- Israel Suppliers Master List: database schema (public schema; storage buckets listed at the end).
--- Exported from Supabase project wjuqtjlrtcywjaspjpwu on 2026-10-01.
+-- Exported from Supabase project wjuqtjlrtcywjaspjpwu on 2026-10-01; quote tracker added 2026-10-02 (supabase/migrations/2026-10-02_quote_tracker.sql).
 -- To rebuild on an empty Supabase project: run this file, create the three PRIVATE storage buckets,
 -- then deploy supabase/functions/files/index.ts (verify_jwt = false). Data is not included.
 -- KEEP CURRENT: re-export after every schema, function or security change (README > Change rules).
@@ -169,9 +169,18 @@ create table public.quote_options (
   name text default 'Option A'::text not null,
   note text default ''::text not null,
   sort integer default 0 not null,
+  service text default ''::text not null,
+  seats text default ''::text not null,
+  hours_incl text default ''::text not null,
+  km_incl text default ''::text not null,
+  fees jsonb default '{}'::jsonb not null,
   constraint quote_options_pkey PRIMARY KEY (id),
+  constraint quote_options_hours_incl_check CHECK (((hours_incl = ''::text) OR (hours_incl ~ '^\d{1,2}(\.\d)?$'::text))),
+  constraint quote_options_km_incl_check CHECK (((km_incl = ''::text) OR (km_incl ~ '^\d{1,4}$'::text))),
   constraint quote_options_name_check CHECK ((length(name) <= 120)),
-  constraint quote_options_note_check CHECK ((length(note) <= 1000))
+  constraint quote_options_note_check CHECK ((length(note) <= 1000)),
+  constraint quote_options_seats_check CHECK (((seats = ''::text) OR (seats ~ '^\d{1,3}$'::text))),
+  constraint quote_options_service_check CHECK ((length(service) <= 40))
 );
 alter table public.quote_options enable row level security;
 
@@ -191,7 +200,7 @@ create table public.quotes (
   vat text default ''::text not null,
   conditions text default ''::text not null,
   private_note text default ''::text not null,
-  shared boolean default false not null,
+  shared boolean default true not null,
   owner text not null,
   owner_name text default ''::text not null,
   created_at timestamp with time zone default now() not null,
@@ -586,6 +595,22 @@ begin
 end $function$
 ;
 
+CREATE OR REPLACE FUNCTION public._fees_clean(p jsonb)
+ RETURNS jsonb
+ LANGUAGE sql
+ IMMUTABLE
+ SET search_path TO ''
+AS $function$
+  select coalesce(jsonb_object_agg(k, jsonb_strip_nulls(jsonb_build_object(
+      's', v->>'s',
+      'amt', case when v->>'s' = 'extra' and coalesce(v->>'amt','') ~ '^\d{1,7}(\.\d{1,2})?$' then v->>'amt' end,
+      'note', nullif(left(trim(coalesce(v->>'note','')),80),'')))), '{}'::jsonb)
+  from jsonb_each(case when jsonb_typeof(p) = 'object' then p else '{}'::jsonb end) e(k, v)
+  where k = any (array['overtime','extra_km','tolls','overnight','night','shabbat','parking','fuel','vehicle','meals','cleaning','service','min_charge','equipment','instructor','other'])
+    and jsonb_typeof(v) = 'object' and v->>'s' in ('incl','extra')
+$function$
+;
+
 CREATE OR REPLACE FUNCTION public._quote_json(q quotes, p_full boolean)
  RETURNS json
  LANGUAGE sql
@@ -595,10 +620,15 @@ AS $function$
   select json_build_object('id',q.id,'vendor_id',q.vendor_id,'title',case when p_full then q.title else '' end,
     'date_from',q.date_from,'date_to',q.date_to,'pax',q.pax,'units',q.units,'received_on',q.received_on,'valid_until',q.valid_until,
     'ref',case when p_full then q.ref else '' end,'status',q.status,'currency',q.currency,'vat',q.vat,'conditions',q.conditions,
-    'private_note',case when p_full then q.private_note else '' end,'shared',q.shared,'owner',q.owner,'owner_name',q.owner_name,'owner_role',(select mm.role from public.members mm where mm.email = q.owner limit 1),'owner_admin',(select mm.is_admin from public.members mm where mm.email = q.owner limit 1),
+    'private_note',case when p_full then q.private_note else '' end,'shared',q.shared,
+    'mine', q.owner = coalesce(current_setting('app.editor', true),''),
+    'owner',case when p_full then q.owner else '' end,'owner_name',case when p_full then q.owner_name else '' end,
+    'owner_role',case when p_full then (select mm.role from public.members mm where mm.email = q.owner limit 1) else '' end,
+    'owner_admin',case when p_full then (select mm.is_admin from public.members mm where mm.email = q.owner limit 1) end,
     'can_edit',p_full,'created_at',q.created_at,'updated_at',q.updated_at,
-    'files',(select count(*) from public.vendor_files f where f.quote_id = q.id),
+    'files',case when p_full then (select count(*) from public.vendor_files f where f.quote_id = q.id) else 0 end,
     'options',coalesce((select json_agg(json_build_object('id',o.id,'name',o.name,'note',o.note,
+        'service',o.service,'seats',o.seats,'hours_incl',o.hours_incl,'km_incl',o.km_incl,'fees',o.fees,
         'lines',coalesce((select json_agg(l order by l.sort) from public.quote_lines l where l.option_id = o.id),'[]'::json)) order by o.sort)
       from public.quote_options o where o.quote_id = q.id),'[]'::json))
 $function$
@@ -1093,11 +1123,18 @@ begin
     pax=left(coalesce(p_quote->>'pax',''),20), units=left(coalesce(p_quote->>'units',''),60), received_on=coalesce(p_quote->>'received_on',''),
     valid_until=coalesce(p_quote->>'valid_until',''), ref=left(coalesce(p_quote->>'ref',''),80), status=coalesce(nullif(p_quote->>'status',''),'Received'),
     currency=coalesce(nullif(p_quote->>'currency',''),'ILS'), vat=coalesce(p_quote->>'vat',''), conditions=left(coalesce(p_quote->>'conditions',''),3000),
-    private_note=left(coalesce(p_quote->>'private_note',''),3000), shared=coalesce((p_quote->>'shared')::boolean,false), updated_at=now()
+    private_note=left(coalesce(p_quote->>'private_note',''),3000), shared=coalesce((p_quote->>'shared')::boolean,true), updated_at=now()
   where id = qid;
   delete from public.quote_options where quote_id = qid;
   for o in select * from jsonb_array_elements(coalesce(p_quote->'options','[]'::jsonb)) loop
-    insert into public.quote_options (quote_id, name, note, sort) values (qid, left(coalesce(nullif(o->>'name',''),'Option'),120), left(coalesce(o->>'note',''),1000), oi) returning id into oid;
+    insert into public.quote_options (quote_id, name, note, sort, service, seats, hours_incl, km_incl, fees)
+    values (qid, left(coalesce(nullif(o->>'name',''),'Option'),120), left(coalesce(o->>'note',''),1000), oi,
+      case when coalesce(o->>'service','') = any (array['coach','midibus','minibus','van','car','jeep_vehicle','transfer','guide','guide_vehicle','hotel_room','apartment','rappelling','jeep_tour','atv','activity','site','meal','other']) then o->>'service' else '' end,
+      case when coalesce(o->>'seats','') ~ '^\d{1,3}$' then o->>'seats' else '' end,
+      case when coalesce(o->>'hours_incl','') ~ '^\d{1,2}(\.\d)?$' then o->>'hours_incl' else '' end,
+      case when coalesce(o->>'km_incl','') ~ '^\d{1,4}$' then o->>'km_incl' else '' end,
+      public._fees_clean(o->'fees'))
+    returning id into oid;
     oi := oi + 1; li := 0;
     for l in select * from jsonb_array_elements(coalesce(o->'lines','[]'::jsonb)) loop
       if coalesce(l->>'label','') = '' and coalesce(l->>'price','') = '' then continue; end if;
@@ -1122,7 +1159,23 @@ begin
   m := public._auth(p_token); perform public._visible(p_vendor, m.is_admin);
   return coalesce((select json_agg(public._quote_json(q, m.is_admin or q.owner = m.email)
       order by (q.status in ('Expired','Declined')), coalesce(nullif(q.date_from,''),'9999') desc, q.created_at desc)
-    from public.quotes q where q.vendor_id = p_vendor and (q.shared or q.owner = m.email or m.is_admin)), '[]'::json);
+    from public.quotes q join public.vendors v on v.id = q.vendor_id
+    where q.vendor_id = p_vendor and (m.is_admin or q.owner = m.email or (q.shared and not v.prices_private))), '[]'::json);
+end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.quotes_tracker(p_token text)
+ RETURNS json
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare m public.members;
+begin
+  m := public._auth(p_token);
+  return coalesce((select json_agg(public._quote_json(q, m.is_admin or q.owner = m.email) order by q.created_at desc)
+    from public.quotes q join public.vendors v on v.id = q.vendor_id
+    where m.is_admin or (not v.hidden and (q.owner = m.email or (q.shared and not v.prices_private)))), '[]'::json);
 end $function$
 ;
 
@@ -1507,6 +1560,8 @@ revoke all on function log_filter(text,text,text) from public; grant execute on 
 revoke all on function members_list(text) from public; grant execute on function members_list(text) to anon, authenticated;
 revoke all on function quote_save(text,text,jsonb) from public; grant execute on function quote_save(text,text,jsonb) to anon, authenticated;
 revoke all on function quotes_list(text,text) from public; grant execute on function quotes_list(text,text) to anon, authenticated;
+revoke all on function quotes_tracker(text) from public; grant execute on function quotes_tracker(text) to anon, authenticated;
+revoke all on function _fees_clean(jsonb) from public, anon, authenticated;
 revoke all on function vendor_set_status(text,text,text) from public; grant execute on function vendor_set_status(text,text,text) to anon, authenticated;
 revoke all on function vendor_set_prices_private(text,text,boolean) from public; grant execute on function vendor_set_prices_private(text,text,boolean) to anon, authenticated;
 revoke all on function accept_terms(text,text) from public; grant execute on function accept_terms(text,text) to anon, authenticated;
