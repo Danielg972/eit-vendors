@@ -1485,7 +1485,8 @@ CREATE TRIGGER vendor_files_stamp BEFORE INSERT ON public.vendor_files FOR EACH 
 -- so without these lines a rebuild lets anon run `truncate public.members cascade`. Strip every table and sequence
 -- privilege from PUBLIC, anon and authenticated; all app access goes through the token RPCs below. service_role keeps
 -- full access (the files edge function reads and writes members, quotes, vendors, vendor_files and feedback with the
--- service key); the owner keeps everything. Read-only catalog check, 2 Oct 2026: production tables have this same ACL, but
+-- service key); the owner keeps everything. Read-only catalog check, 2 Oct 2026 (table-level privileges via relacl and
+-- has_table_privilege; column-level grants were not checked): production tables have this same table ACL, but
 -- production's two identity sequences (action_log_id_seq, filter_log_id_seq) still grant anon/authenticated rwU. That was reported, not changed here.
 revoke all on all tables in schema public from public, anon, authenticated;
 revoke all on all sequences in schema public from public, anon, authenticated;
@@ -1587,11 +1588,13 @@ revoke all on function public.ping() from public; grant execute on function publ
 -- pg_net was enabled during testing (create extension pg_net with schema extensions) but is not used: ntfy.sh rate-limits Supabase's shared IP.
 
 -- ===== Default privileges for objects created later (2 Oct 2026) =====
--- Runs last, so it changes nothing created above. It stops tables, sequences and functions that postgres creates in
--- public later (migrations, SQL editor) from being granted to anon/authenticated automatically: a new table stays
--- closed and a new RPC needs its own explicit `grant execute ... to anon, authenticated` line, like those above.
--- service_role and the owner keep their defaults. PUBLIC's built-in EXECUTE on new functions is a global default that a
--- per-schema rule cannot remove, so new functions still need `revoke all ... from public` as above.
+-- Runs last, so it changes nothing created above. For tables, sequences and functions that postgres creates in public
+-- later (migrations, SQL editor), it removes the direct anon/authenticated default grants that Supabase sets up, so a
+-- new table or sequence stays closed. service_role and the owner keep their defaults.
+-- Functions are NOT closed by this rule alone: PostgreSQL's built-in PUBLIC EXECUTE default on new functions remains
+-- (a schema-scoped rule cannot remove it), and anon/authenticated inherit it through PUBLIC. So every newly added
+-- function still needs an explicit `revoke ... from public`: helpers and trigger functions as in the helper section
+-- above, and RPCs `revoke all ... from public` followed by an explicit `grant execute ... to anon, authenticated`.
 -- supabase_admin has the same public-schema defaults, which postgres cannot change (only a member of supabase_admin can;
 -- that membership was not checked on production). Those defaults only apply to objects
 -- supabase_admin itself creates; everything in this file is created (and owned) by the role running it, normally postgres,
