@@ -51,6 +51,14 @@
 5. Free-tier limits: Supabase 500 MB database and 1 GB storage.
 6. From D-3 (once live): personal data about drivers who are not members (name, work number, reviews). Not yet reviewed by a lawyer.
 
+## Waiting on the owner
+
+- **Go-live of D-2, D-3, D-4 (2 Oct 2026):** everything is on branch `quote-tracker` and rehearsed. The live database change was cancelled at the approval prompt three times (12:55, 13:00, 14:05), so nothing is live. To finish: run `supabase/migrations/2026-10-02_GO_LIVE.sql` on the project (approve the prompt, or paste it into the Supabase SQL editor), then deploy the `files` function v9 and merge the branch into `main`.
+
+## Next, not started
+
+- **Standard booking terms form for bus and van companies** (owner, 2 Oct 2026, 14:04): a form a guide sends to the company when booking, so the price can't change afterwards. To cover: hours in a day and when overtime starts and its rate; km included and the rate over it; Highway 6 / tolls; expected tip; VAT in or out; how and when payment is made. The quote form already holds most of these fields, so the booking form can be filled from a quote. To be done after the go-live above. It is a contract template: have a lawyer look at the wording.
+
 ## Changes that would affect the Cockpit (log)
 
 - 2026-10-02: Driver reviews and "bus" wording (D-3) built on the same branch; **not live yet**. When live: new tables `drivers`, `driver_vendors`, `driver_reviews` (driver identity = phone number); supplier tag `Coach` becomes `Bus`. Nothing Cockpit-facing.
