@@ -1526,6 +1526,11 @@ revoke all on function my_usage(text) from public; grant execute on function my_
 revoke all on function vendor_set_agent(text,text,text,text) from public; grant execute on function vendor_set_agent(text,text,text,text) to anon, authenticated;
 revoke all on function vendor_detail(text,text) from public; grant execute on function vendor_detail(text,text) to anon, authenticated;
 
+-- Internal helper, not an RPC: given an email it returns that member's display name, so it must not be callable
+-- by anon or authenticated (Supabase's default privileges grant both on new public functions). It still runs inside
+-- the SECURITY DEFINER RPCs above (_vendor_view, vendor_detail), which call it as the function owner. Matches the live lock.
+revoke all on function public._name(text) from public, anon, authenticated;
+
 
 -- ===== Storage buckets (create as private) =====
 
