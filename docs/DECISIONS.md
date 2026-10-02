@@ -6,6 +6,24 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-8 · Opening hours; "Kosher, no certificate" only as an approved exception (approved; live)
+
+**Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session, 2 October 2026, 16:36 Israel time.
+
+**In his words** (answers to three questions): should the kosher field be required for restaurants: "No". Is "Kosher, no certificate" acceptable: "No, with some exceptions. Needs review from admin". Opening hours added: "Yes".
+
+**Decisions:**
+
+1. **Suppliers get opening hours.**
+2. **A restaurant that is kosher without a certificate is not accepted, except as an exception that Eretz Israel Tours reviews.**
+3. **The kosher field stays optional for restaurants.**
+
+**Implementation choices (not owner decisions; change on request):** hours are free text with tap-to-add buttons, editable by any member without approval; the kosher rule is enforced in the database as well as the form; a colleague's "Kosher, no certificate" on an existing restaurant becomes a change request; the rule covers a supplier whose main or extra category is Restaurant, not hotels or wineries without that category.
+
+**Status:** live since 2 Oct 2026, about 16:50. Database change applied to production through the Supabase connector (the owner's "Yes" to opening hours, after being told it needs a new database field).
+
+---
+
 ## D-7 · Shomer Shabbat badge; kosher restaurants only (approved; live)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session, 2 October 2026, 16:28 Israel time.
