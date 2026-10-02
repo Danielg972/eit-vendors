@@ -1531,6 +1531,29 @@ revoke all on function vendor_detail(text,text) from public; grant execute on fu
 -- the SECURITY DEFINER RPCs above (_vendor_view, vendor_detail), which call it as the function owner. Matches the live lock.
 revoke all on function public._name(text) from public, anon, authenticated;
 
+-- The other internal helpers, trigger functions and the vendors.id default are not RPCs either. Without these lines a
+-- rebuild leaves them executable by PUBLIC, anon and authenticated (e.g. _price_write / _vendor_apply would write prices
+-- and supplier fields with no token check). They are only reached from the SECURITY DEFINER RPCs above, the two triggers
+-- and the column default, which run as the owner; postgres and service_role (files edge function) keep access. Matches live.
+revoke execute on function public._all_fields() from public, anon, authenticated;
+revoke execute on function public._auth(text,boolean) from public, anon, authenticated;
+revoke execute on function public._hash(text) from public, anon, authenticated;
+revoke execute on function public._locked_fields() from public, anon, authenticated;
+revoke execute on function public._new_token() from public, anon, authenticated;
+revoke execute on function public._price_clean(jsonb) from public, anon, authenticated;
+revoke execute on function public._price_write(text,uuid,jsonb,text) from public, anon, authenticated;
+revoke execute on function public._quote_json(public.quotes,boolean) from public, anon, authenticated;
+revoke execute on function public._vendor_apply(text,jsonb) from public, anon, authenticated;
+revoke execute on function public._vendor_json(text) from public, anon, authenticated;
+revoke execute on function public._vendor_view(text,boolean,text) from public, anon, authenticated;
+revoke execute on function public._visible(text,boolean) from public, anon, authenticated;
+revoke execute on function public._who(text) from public, anon, authenticated;
+revoke execute on function public.is_admin() from public, anon, authenticated;
+revoke execute on function public.is_contributor() from public, anon, authenticated;
+revoke execute on function public.gen_vendor_id() from public, anon, authenticated;
+revoke execute on function public.vendor_files_stamp() from public, anon, authenticated;
+revoke execute on function public.vendors_before_write() from public, anon, authenticated;
+
 
 -- ===== Storage buckets (create as private) =====
 
