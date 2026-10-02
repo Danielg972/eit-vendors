@@ -4,7 +4,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
-## D-5 · Booking sheets for buses and vans (approved; built, database change pending)
+## D-5 · Booking sheets for buses and vans (approved; live for Eretz Israel Tours only)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session, 2 October 2026, 14:15–14:31 Israel time.
 
@@ -26,7 +26,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 **Boundary with D-1 unchanged:** a booking sheet is between a guide and a supplier. It carries a private trip label, no Cockpit id, and nothing is exported.
 
-**Status:** built and on `main` 2 Oct 2026; dormant until the owner runs `supabase/migrations/2026-10-02c_bookings.sql`.
+**Status:** live since 2 Oct 2026, about 15:09, for Eretz Israel Tours only. The owner ran the database change himself in the Supabase SQL editor after the approval prompt failed to reach him twice. Opening it to colleagues is his switch in the Team tab.
 
 ---
 

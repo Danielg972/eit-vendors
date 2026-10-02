@@ -39,7 +39,7 @@
 
 - **Keep-alive:** fixed 1 Oct 2026. The old ping read a blocked table and failed with HTTP 401. It now calls the `ping` function, which was tested and returned `ok:100`. Next run is in at most 3 days, or it can be run by hand in GitHub Actions.
 - **Join alerts:** push to Eretz Israel Tours' phone via the ntfy app (no personal details in the alert). Added 1 Oct 2026.
-- **Security:** 0 table grants to anon or authenticated, 0 RLS policies. All access goes through token-checked RPCs and the `files` edge function. Colleague-privacy probe passed on 1 Oct 2026. From D-5 (once its database change is run): two functions, `booking_open` and `booking_answer`, are checked by a one-booking link key instead of a member token; they reach that booking only.
+- **Security:** 0 table grants to anon or authenticated, 0 RLS policies. All access goes through token-checked RPCs and the `files` edge function. Colleague-privacy probe passed on 1 Oct 2026. From D-5: two functions, `booking_open` and `booking_answer`, are checked by a one-booking link key instead of a member token; they reach that booking only.
 - **Change process:** changes are committed straight to `main` and deployed by GitHub Pages; there is no review gate. Schema changes must be re-exported to `supabase/schema.sql` in the same change. That rule was adopted 1 Oct 2026.
 
 ## Known risks
@@ -53,13 +53,13 @@
 7. From D-5: the booking sheet's closing line ("Anything not written here will not be charged") is a record of what was agreed, not a lawyer-drafted contract. The sheet also holds the name of whoever answered for the company. Have the lawyer look at both.
 8. From D-5: nobody is alerted when a company answers a booking sheet; the guide sees it when he opens the sheet.
 
-## Waiting for the owner
+## Next
 
-- **Booking sheets (D-5): run the database change.** The app code is on `main` and dormant. Paste `supabase/migrations/2026-10-02c_bookings.sql` into the Supabase SQL editor and run it once (safe to run twice). The approval prompt for it did not reach the owner twice on 2 Oct 2026. After it runs, booking sheets appear for Eretz Israel Tours only (Quotes tab and every Transport supplier); the Team tab has the switch that opens them to colleagues.
+- **Booking sheets (D-5): first real use.** Live for Eretz Israel Tours only since 2 Oct 2026. To do: the owner sends one real sheet to a bus company and confirms it; then decides whether to open it to colleagues (Team tab switch). Before or soon after opening: a line in terms section 6b, and the lawyer's look at the closing line.
 
 ## Changes that would affect the Cockpit (log)
 
-- 2026-10-02: **Built, database change pending:** booking sheets for buses and vans (D-5). New table `bookings`; new page `b/index.html`; six new RPCs; `whoami` gains `phone`, `bookings`, `bookings_for`. A confirmed sheet creates an ordinary `Booked` quote. Nothing Cockpit-facing: a booking sheet carries a private trip/client label only, never a Cockpit id, and no export.
+- 2026-10-02: **Live (Eretz Israel Tours only):** booking sheets for buses and vans (D-5). New table `bookings`; new page `b/index.html`; six new RPCs; `whoami` gains `phone`, `bookings`, `bookings_for`. A confirmed sheet creates an ordinary `Booked` quote. Nothing Cockpit-facing: a booking sheet carries a private trip/client label only, never a Cockpit id, and no export.
 - 2026-10-02: **Live:** driver reviews and "bus" wording (D-3), transport by vehicle size (D-4). New tables `drivers`, `driver_vendors`, `driver_reviews` (driver identity = phone number); supplier tag `Coach` became `Bus` (5 suppliers); a company's vehicles are tags (`Bus`, `Midibus`, `Van 17–20 seats`, …). Nothing Cockpit-facing.
 - 2026-10-02: **Live:** quote tracker (D-2). `quote_options` gained `service`, `seats`, `hours_incl`, `km_incl`, `fees`; `quotes.shared` defaults to true; new RPC `quotes_tracker`. Nothing Cockpit-facing. Quotes here remain reference only.
 - 2026-10-01: D-1 boundary approved and confirmed in the owner's own words (16:27). R5 export frozen; owner has no active R5 use. No integration-facing schema changes made.
