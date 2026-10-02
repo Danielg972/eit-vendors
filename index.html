@@ -238,6 +238,8 @@ textarea.out{width:100%;min-height:160px;font-family:var(--f-mono);font-size:12p
 .vs.down{background:var(--ok-wash);color:var(--ok)}
 .vs.eq{background:var(--wash);color:var(--ink-2)}
 .pill.high{background:var(--ochre-wash);color:var(--ink);box-shadow:inset 0 0 0 1px var(--ochre)}
+.hrs{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;margin:-6px 0 14px;font-size:14px}
+.hrs b{font-weight:500}
 .pill.shab{background:var(--ok-wash);color:var(--ok);box-shadow:inset 0 0 0 1px var(--ok)}
 .pill.reg{background:var(--wash);color:var(--ink-2)}
 .flags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
@@ -1451,12 +1453,13 @@ function openDetail(id, opt){
   const notice=v.cancelNoticeAmount?`${esc(v.cancelNoticeAmount)} ${esc((v.cancelNoticeUnit||'').toLowerCase())}${v.cancelDayType?' ('+esc(v.cancelDayType.toLowerCase())+')':''}`:'';
   const rating=['rateReliability','rateService','rateValue'].map((k,i)=>v[k]?`${['Reliability','Service','Value'][i]} <b class="mono">${esc(v[k])}/5</b>`:'').filter(Boolean).join(' · ');
   const sections=[
-    ['Contact',rows([['Contact',esc(v.contactPerson)],['Phone',v.phone?`<span class="mono">${esc(v.phone)}</span>`:''],['WhatsApp',v.whatsapp?`<span class="mono">${esc(v.whatsapp)}</span>`:''],['Email',esc(v.email)],['Website',esc(v.website)],['Region',esc(v.region)],[v.category==='Guide'?'Guide details':'Type',esc(v.tags)],['Years guiding',v.category==='Guide'&&v.experience_years?esc(v.experience_years)+' years':''],['Area',esc(v.location)],['Opening hours',esc(v.hours||'')],['Map pin',v.maps_link?`<a data-track="maps" data-v="${esc(v.id)}" href="${esc(v.maps_link)}" target="_blank" rel="noopener">Open map pin</a>`:''],['Languages',esc(v.languages)],['Kosher',(v.kosher||rel('kosher',v))?(v.kosher?esc(v.kosher):'<span class="hint">Not added</span>')+`<span id="kcert"></span>`:''],['Max capacity',v.maxCap?esc(v.maxCap)+' people':''],['Park booking',v.npResLink?`<a data-track="booking" data-v="${esc(v.id)}" href="${esc(v.npResLink)}" target="_blank" rel="noopener">Reservation page</a>`:'']])],
+    ['Contact',rows([['Contact',esc(v.contactPerson)],['Phone',v.phone?`<span class="mono">${esc(v.phone)}</span>`:''],['WhatsApp',v.whatsapp?`<span class="mono">${esc(v.whatsapp)}</span>`:''],['Email',esc(v.email)],['Website',esc(v.website)],['Region',esc(v.region)],[v.category==='Guide'?'Guide details':'Type',esc(v.tags)],['Years guiding',v.category==='Guide'&&v.experience_years?esc(v.experience_years)+' years':''],['Area',esc(v.location)],['Map pin',v.maps_link?`<a data-track="maps" data-v="${esc(v.id)}" href="${esc(v.maps_link)}" target="_blank" rel="noopener">Open map pin</a>`:''],['Languages',esc(v.languages)],['Kosher',(v.kosher||rel('kosher',v))?(v.kosher?esc(v.kosher):'<span class="hint">Not added</span>')+`<span id="kcert"></span>`:''],['Max capacity',v.maxCap?esc(v.maxCap)+' people':''],['Park booking',v.npResLink?`<a data-track="booking" data-v="${esc(v.id)}" href="${esc(v.npResLink)}" target="_blank" rel="noopener">Reservation page</a>`:'']])],
     [S.admin?(v.prices_private?'Main price (goes to R5) · private':'Main price (goes to R5)'):'Main price',rows([['Agent price',price(v.agentPrice,v.agentPriceVatTreatment)],['Listed price',price(v.listedPrice,v.listedPriceVatTreatment)],['Basis',esc(v.priceBasis)],['Max people',esc(v.maxPax)],['Payment terms',esc(v.payTerms)]])],
     ['Cancellation',rows([['Policy',esc(v.cancelPolicy)],['Notice',notice],['Penalty',esc(v.cancelPenalty)],['Checked',esc(ilDate(v.cancelPolicyVerifiedDate))]])],
     ['Experience',rows([['Ratings',rating],['Strengths',esc(v.strengths)],['Weaknesses',esc(v.weaknesses)],['Summary',esc(v.notes)]])]
   ].filter(s=>s[1]);
   const body=`${vtabs}<div class="keep" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px"><span class="cat">${esc(v.category)}${v.also_categories?' + '+esc(v.also_categories):''}</span>${v.region||v.location?`<span class="hint">${esc(v.region||v.location)}</span>`:''}${shabPill(v)}${statusPill(v)}</div>
+    <div class="hrs"><span class="hint">Opening hours</span>${v.hours?`<b>${esc(v.hours)}</b>`:`<span class="hint">· not added yet</span><button class="mini" id="addHours" type="button">+ Add hours</button>`}</div>
     ${isTr?`<fieldset><legend>Vehicles</legend>${(fl=>fl.length?`<div class="flags" style="margin:0 0 4px">${fl.map(x=>`<span class="flag info" style="font-size:13.5px;padding:5px 10px">${esc(x[1])}</span>`).join('')}</div>`:`<p class="hint" style="margin:0">Not marked yet. Tap Edit and choose which vehicles ${indep?'he has':'they have'}: buses, vans by size, cars.</p>`)(VEHICLES.filter(x=>fleetOf(v).has(x[0])))}</fieldset>`:''}
     <div id="parentBox"></div>
     ${contactBar(v)}
@@ -1493,6 +1496,7 @@ function openDetail(id, opt){
   S.openVendor=v.name; track(v.id,'open'); if(!S.myTop.includes(v.id)) S.myTop=[...S.myTop,v.id];
   w.querySelector('#edit').onclick=()=>openForm(v);
   w.querySelector('#upd').onclick=()=>openReport(v);
+  const ah=w.querySelector('#addHours'); if(ah) ah.onclick=()=>{ openForm(v); setTimeout(()=>{ const el=document.getElementById('f_hours'); if(el){ el.scrollIntoView({block:'center'}); el.focus(); } },80); };
   const aa=w.querySelector('#agentAsk'); if(aa) aa.onclick=()=>openAgentAsk(v);
   const ae=w.querySelector('#agentEdit'); if(ae) ae.onclick=()=>openAgentForm(v);
   drawFiles(v);
