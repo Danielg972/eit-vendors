@@ -1528,13 +1528,14 @@ revoke all on function vendor_detail(text,text) from public; grant execute on fu
 
 -- Internal helper, not an RPC: given an email it returns that member's display name, so it must not be callable
 -- by anon or authenticated (Supabase's default privileges grant both on new public functions). It still runs inside
--- the SECURITY DEFINER RPCs above (_vendor_view, vendor_detail), which call it as the function owner. Matches the live lock.
+-- the SECURITY DEFINER RPCs above (_vendor_view, vendor_detail), which call it as the function owner. Production has the same ACL (read-only catalog check, 2 Oct 2026).
 revoke all on function public._name(text) from public, anon, authenticated;
 
 -- The other internal helpers, trigger functions and the vendors.id default are not RPCs either. Without these lines a
 -- rebuild leaves them executable by PUBLIC, anon and authenticated (e.g. _price_write / _vendor_apply would write prices
 -- and supplier fields with no token check). They are only reached from the SECURITY DEFINER RPCs above, the two triggers
--- and the column default, which run as the owner; postgres and service_role (files edge function) keep access. Matches live.
+-- and the column default, which run as the owner; postgres and service_role (files edge function) keep access. Production has the
+-- same ACL on all 19 helpers (read-only catalog check, 2 Oct 2026).
 revoke execute on function public._all_fields() from public, anon, authenticated;
 revoke execute on function public._auth(text,boolean) from public, anon, authenticated;
 revoke execute on function public._hash(text) from public, anon, authenticated;
