@@ -1526,6 +1526,35 @@ revoke all on function my_usage(text) from public; grant execute on function my_
 revoke all on function vendor_set_agent(text,text,text,text) from public; grant execute on function vendor_set_agent(text,text,text,text) to anon, authenticated;
 revoke all on function vendor_detail(text,text) from public; grant execute on function vendor_detail(text,text) to anon, authenticated;
 
+-- Internal helper, not an RPC: given an email it returns that member's display name, so it must not be callable
+-- by anon or authenticated (Supabase's default privileges grant both on new public functions). It still runs inside
+-- the SECURITY DEFINER RPCs above (_vendor_view, vendor_detail), which call it as the function owner. Production has the same ACL (read-only catalog check, 2 Oct 2026).
+revoke all on function public._name(text) from public, anon, authenticated;
+
+-- The other internal helpers, trigger functions and the vendors.id default are not RPCs either. Without these lines a
+-- rebuild leaves them executable by PUBLIC, anon and authenticated (e.g. _price_write / _vendor_apply would write prices
+-- and supplier fields with no token check). They are only reached from the SECURITY DEFINER RPCs above, the two triggers
+-- and the column default, which run as the owner; postgres and service_role (files edge function) keep access. Production has the
+-- same ACL on all 19 helpers (read-only catalog check, 2 Oct 2026).
+revoke execute on function public._all_fields() from public, anon, authenticated;
+revoke execute on function public._auth(text,boolean) from public, anon, authenticated;
+revoke execute on function public._hash(text) from public, anon, authenticated;
+revoke execute on function public._locked_fields() from public, anon, authenticated;
+revoke execute on function public._new_token() from public, anon, authenticated;
+revoke execute on function public._price_clean(jsonb) from public, anon, authenticated;
+revoke execute on function public._price_write(text,uuid,jsonb,text) from public, anon, authenticated;
+revoke execute on function public._quote_json(public.quotes,boolean) from public, anon, authenticated;
+revoke execute on function public._vendor_apply(text,jsonb) from public, anon, authenticated;
+revoke execute on function public._vendor_json(text) from public, anon, authenticated;
+revoke execute on function public._vendor_view(text,boolean,text) from public, anon, authenticated;
+revoke execute on function public._visible(text,boolean) from public, anon, authenticated;
+revoke execute on function public._who(text) from public, anon, authenticated;
+revoke execute on function public.is_admin() from public, anon, authenticated;
+revoke execute on function public.is_contributor() from public, anon, authenticated;
+revoke execute on function public.gen_vendor_id() from public, anon, authenticated;
+revoke execute on function public.vendor_files_stamp() from public, anon, authenticated;
+revoke execute on function public.vendors_before_write() from public, anon, authenticated;
+
 
 -- ===== Storage buckets (create as private) =====
 
