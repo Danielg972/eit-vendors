@@ -18,6 +18,16 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 4. **Sent through the site or WhatsApp**, and a **printable PDF**.
 5. **A free-text box** on both halves.
 
+**Added by the owner the same afternoon (15:16 and 15:20):**
+
+6. **Dates in Israeli order**, day / month / year.
+7. **Open to everybody now**: "I think a live version for everybody is fine right now."
+8. **An accept button for both sides.**
+9. **A cancellation policy** the company can copy and paste into a text box; **a warning if it opts out** of filling it in.
+10. **Anything either side changes before acceptance comes back in red for approval.**
+11. **Emails**, "if that's easy to create": a copy by email when the sheet goes out to the driver, and an email to the guide when they respond. Not built yet: it needs an email-sending service the owner has to choose and set up.
+12. **For the future, not now:** the guide or tour agency can put in its own terms, "such as if driver is late, if bus is dirty".
+
 **Offered as choices and not picked by the owner, so the recommended defaults were used (his to change):** the company answers through a one-booking link (a plain WhatsApp message with blanks is the fallback); a confirmed sheet feeds the Quotes tab without the guide's name, the same rule as D-2.
 
 **What follows from it (implementation choices, not owner decisions):** visible to Eretz Israel Tours only until he opens it to colleagues in the Team tab; the company's link key is stored readable so the same link can be re-sent; the sheet locks on confirmation; the closing line "Anything not written here will not be charged"; no terms change yet (a first-use explainer instead).
@@ -26,7 +36,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 **Boundary with D-1 unchanged:** a booking sheet is between a guide and a supplier. It carries a private trip label, no Cockpit id, and nothing is exported.
 
-**Status:** live since 2 Oct 2026, about 15:09, for Eretz Israel Tours only. The owner ran the database change himself in the Supabase SQL editor after the approval prompt failed to reach him twice. Opening it to colleagues is his switch in the Team tab.
+**Status:** first step live since 2 Oct 2026, about 15:09 (the owner ran the database change himself in the Supabase SQL editor after the approval prompt failed to reach him twice). Items 6–10 are built and on `main`; items 7–10 take effect when `supabase/migrations/2026-10-02d_bookings_accept.sql` is run. Item 11 waits for his choice of email service. Item 12 is parked.
 
 ---
 

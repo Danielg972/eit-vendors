@@ -338,6 +338,12 @@ a.mini{display:inline-block;text-decoration:none;color:var(--ink)}
 .red-page{position:relative;border:1px solid var(--line);border-radius:8px;overflow:hidden;touch-action:none;background:#fff}
 .red-page canvas{display:block;width:100%;height:auto}
 .red-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;position:sticky;top:0;background:var(--ground);padding:6px 0;z-index:2}
+/* date fields, day/month/year */
+.ildate{position:relative;display:flex;gap:6px}
+.ildate input[type=text]{flex:1;min-width:0}
+.ildate input.bad{border-color:var(--bad);background:var(--bad-wash)}
+.ildate .ilpick{flex:none;width:44px;border:1px solid var(--line);background:var(--card);border-radius:8px;color:var(--ink-2);display:flex;align-items:center;justify-content:center;padding:0}
+.ildate input.ilnative{position:absolute;left:0;bottom:0;width:1px;height:1px;padding:0;border:0;opacity:0;pointer-events:none}
 /* booking sheets */
 button.bkcard{display:block;width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer}
 .bkban{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;background:var(--wash);border-radius:10px;padding:10px 12px;margin:0 0 10px;font-size:14px}
@@ -510,7 +516,7 @@ const DB = {
         {id:'d3',name:'Eli Dahan',phone:'050-000-3344',drives:'Van',vendors:['vendor_v4n0001'],reviews:[
           {id:'r4',rating:'5',tags:'On time, Good English, Flexible',body:'Picked up a family of six at the airport at 3am, no fuss.',trip_month:'2026-07',vendor_id:'vendor_v4n0001',by:{name:'Rachel Amar',role:'Tour operator',admin:false},mine:false,created_at:dd(70)}]}];
       S.demoBookings=[{id:'b1',vendor_id:'vendor_g4l1c0a',vendor_name:'Galil Buses',key:'demo',status:'answered',client_ref:'Jacobs family, Nov 2026',booker_name:'Eretz Israel Tours',booker_phone:'050-000-0000',date_from:'2026-11-10',date_to:'',pax:'24',service:'midibus',seats:'30',tourists:true,pickup_time:'08:00',pickup_place:'Hotel, Jerusalem',route:'Caesarea, Zichron Yaakov, back to Jerusalem',dropoff_time:'18:00',dropoff_place:'Hotel, Jerusalem',note:'Strong air conditioning',private_note:'',
-        proposed:{price:'2900',currency:'ILS',hours_incl:'10',km_incl:'250'},terms:{price:'3000',currency:'ILS',vat:'not_applicable',hours_incl:'10',km_incl:'250',hours_from:'pickup',overtime:'200',extra_km:'5',tolls:'incl',parking:'extra',cancel:'48 hours before'},terms_by:'company',answered_by:'Dudu',answered_at:dd(0),confirmed_at:null,shared:true,in_tracker:false,mine:true,owner_name:'Eretz Israel Tours',owner_admin:true,created_at:dd(1),updated_at:dd(0)}];
+        proposed:{price:'2900',currency:'ILS',hours_incl:'10',km_incl:'250'},terms:{price:'3000',currency:'ILS',vat:'not_applicable',hours_incl:'10',km_incl:'250',hours_from:'pickup',overtime:'200',extra_km:'5',tolls:'incl',parking:'extra',cancel:'48 hours before'},terms_by:'company',answered_by:'Dudu',answered_at:dd(0),confirmed_at:null,guide_ok_at:null,company_ok_at:dd(0),company_ok_via:'link',seen:null,shared:true,in_tracker:false,mine:true,owner_name:'Eretz Israel Tours',owner_admin:true,created_at:dd(1),updated_at:dd(0)}];
       const dq=(vid,o)=>{ (S.demoQuotes[vid]=S.demoQuotes[vid]||[]).push(Object.assign({vendor_id:vid,title:'',pax:'',units:'',valid_until:'',ref:'',status:'Received',currency:'ILS',vat:'not_applicable',conditions:'',private_note:'',shared:true,owner:OWNER,owner_name:'Eretz Israel Tours',owner_admin:true,files:0,can_edit:true,mine:true,created_at:dd(5),updated_at:dd(5)},o)); };
       const col=(n,r)=>({owner:n.toLowerCase().replace(/\s+/g,'.')+'@example.com',owner_name:n,owner_role:r,owner_admin:false,mine:false});
       const bus=(label,price,times)=>({label,kind:'Base',price:String(price),unit:'per vehicle per day',qty:'1',times:String(times||1)});
@@ -658,19 +664,22 @@ const DB = {
   },
   async saveBooking(vid, b){
     if(!LIVE){ const now=new Date().toISOString(), v=S.vendors.find(y=>y.id===vid); let x=b.id&&S.demoBookings.find(y=>y.id===b.id);
-      if(!x){ x={id:'b'+Date.now(),vendor_id:vid,vendor_name:v?v.name:'',key:'demo',status:'waiting',terms:{},terms_by:'',answered_by:'',answered_at:null,confirmed_at:null,mine:true,owner_name:S.me.name,owner_admin:true,in_tracker:false,created_at:now}; S.demoBookings.unshift(x); }
-      const job=['date_from','date_to','pax','service','seats','pickup_time','pickup_place','route','dropoff_time','dropoff_place'], before=JSON.stringify(job.map(k=>x[k]||''));
-      const keep={id:x.id,status:x.status,key:x.key,terms:x.terms,terms_by:x.terms_by,answered_by:x.answered_by,answered_at:x.answered_at};
-      Object.assign(x,b,keep,{updated_at:now});
-      if(b.terms){ Object.assign(x,{terms:b.terms,terms_by:'guide',answered_by:b.answered_by||'',answered_at:now,status:'answered'}); }
-      else if(x.status==='answered'&&x.terms_by==='company'&&before!==JSON.stringify(job.map(k=>x[k]||''))) x.status='waiting';
+      const job=['date_from','date_to','pax','service','seats','tourists','pickup_time','pickup_place','route','dropoff_time','dropoff_place','note'];
+      const content=y=>JSON.parse(JSON.stringify(Object.assign(Object.fromEntries(job.map(k=>[k,y[k]===undefined?'':y[k]])),{terms:y.terms||{}})));
+      if(!x){ x={id:'b'+Date.now(),vendor_id:vid,vendor_name:v?v.name:'',key:'demo',status:'waiting',terms:{},terms_by:'',answered_by:'',answered_at:null,confirmed_at:null,guide_ok_at:now,company_ok_at:null,company_ok_via:'',seen:null,mine:true,owner_name:S.me.name,owner_admin:true,in_tracker:false,created_at:now}; S.demoBookings.unshift(x); }
+      const before=JSON.stringify(content(x)), was=x.status;
+      const keep={id:x.id,status:x.status,key:x.key,terms:x.terms,terms_by:x.terms_by,answered_by:x.answered_by,answered_at:x.answered_at,guide_ok_at:x.guide_ok_at,company_ok_at:x.company_ok_at,company_ok_via:x.company_ok_via,seen:x.seen,confirmed_at:x.confirmed_at};
+      Object.assign(x,b,keep,{updated_at:now}); delete x.company_agreed;
+      if(b.terms){ const ok=!!b.company_agreed; Object.assign(x,{terms:b.terms,terms_by:'guide',status:ok?'answered':'waiting',company_ok_at:ok?now:null,company_ok_via:ok?'guide':''}); if(ok) Object.assign(x,{answered_by:b.answered_by||'',answered_at:now}); }
+      else if(was==='answered'&&before!==JSON.stringify(content(x))) Object.assign(x,{status:'waiting',company_ok_at:null,company_ok_via:''});
+      x.seen=content(x); if(x.status==='waiting') x.guide_ok_at=now;
       return Object.assign({},x); }
     return await rpc('booking_save',{p_vendor:vid,p_booking:b});
   },
   async setBookingStatus(id, st){
-    if(!LIVE){ const x=S.demoBookings.find(y=>y.id===id);
-      if(st==='open'){ x.status=x.terms&&x.terms.price?'answered':'waiting'; x.confirmed_at=null; x.in_tracker=false; }
-      else { x.status=st; if(st==='confirmed'){ x.confirmed_at=new Date().toISOString(); x.in_tracker=true; } }
+    if(!LIVE){ const x=S.demoBookings.find(y=>y.id===id), now=new Date().toISOString();
+      if(st==='open'){ const back=!!(x.terms&&x.terms.price&&x.company_ok_at); x.status=back?'answered':'waiting'; x.guide_ok_at=back?null:now; x.confirmed_at=null; x.in_tracker=false; }
+      else { x.status=st; if(st==='confirmed'){ x.confirmed_at=now; x.guide_ok_at=now; x.in_tracker=true; } }
       return Object.assign({},x); }
     return await rpc('booking_set_status',{p_id:id,p_status:st});
   },
@@ -820,7 +829,7 @@ function linkBox(id, url){
 function wireCopy(root){ root.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>{ const i=root.querySelector('#'+b.dataset.copy); copyText(i.value,i); }); }
 
 const ROLES=['Licensed tour guide','Travel agent','Tour operator','Other'];
-const TERMS_VERSION='2026-10-02a';
+const TERMS_VERSION='2026-10-02b';
 const TERMS_HTML=`<p class="hint">Version ${TERMS_VERSION}. Plain-language summary. Draft: not yet reviewed by a lawyer.</p>
 <h4>1. Who runs this</h4><p>The Israel Suppliers Master List is run by Eretz Israel Tours, which approves members and manages the list.</p>
 <h4>2. Who can join</h4><p>Licensed tour guides, travel agents, tour operators and other travel professionals approved by Eretz Israel Tours. You confirm the details and license you submit are yours and true. Eretz Israel Tours can decline, pause or remove access at any time.</p>
@@ -831,6 +840,7 @@ const TERMS_HTML=`<p class="hint">Version ${TERMS_VERSION}. Plain-language summa
 <h4>6. Your data and privacy</h4><p>We store your name, email, phone, role, license number and license photo, what you add, when you last used the app, and which supplier contact buttons you tap (call, WhatsApp, email, website, maps and booking links), with the time. Colleagues see your name next to what you add, except quotes (see 6b). Your license photo is visible only to Eretz Israel Tours.</p><p><b>Eretz Israel Tours can see everything in the app, including items marked "private".</b> "Private" means hidden from other colleagues, not from Eretz Israel Tours.</p><p>Data is stored with Supabase (servers in Frankfurt, EU) and the app is hosted on GitHub Pages. You can ask Eretz Israel Tours at any time to see, correct or delete your data and account.</p>
 <h4>6a. Email copies</h4><p><b>When you email a supplier with the app's Email button, Eretz Israel Tours is added as a BCC to help keep prices, bookings and supplier details up to date for everyone. You can see and remove it in each email, and you can opt out at any time under My settings.</b> WhatsApp messages and calls are not copied; the app only records that you tapped the button.</p>
 <h4>6b. Quotes are shared without your name</h4><p><b>A quote you add is shared with colleagues by default, without your name.</b> They see the supplier, the dates, the prices, what was included, what cost extra and the conditions. They never see who got the quote, the client or trip, the supplier's reference, your private note or your attachments. You can switch sharing off on any quote; then only you and Eretz Israel Tours see it. Eretz Israel Tours sees who added every quote. The averages in the Quotes tab are worked out from these quotes. Don't write client names or personal details in the conditions box.</p>
+<h4>6c. Booking sheets</h4><p><b>When you send a booking sheet, the bus or van company sees your name, your phone and the job</b>: date, passengers, vehicle, pick-up, outline of the day, drop-off and your notes to them. It never sees the client, your private note or anything else in this app. Once you confirm a sheet, its price and terms are shared with colleagues in the Quotes tab without your name, like any quote (6b). You can switch that off on each sheet. Eretz Israel Tours sees every booking sheet. A booking sheet records what you and the company agreed; it is not legal advice, and Eretz Israel Tours is not a party to your booking.</p>
 <h4>7. Sponsored content</h4><p>If supplier offers or promotions are ever paid for, they will be clearly labelled as sponsored. Ratings and notes are never for sale.</p>
 <h4>8. Changes</h4><p>If these terms change, you'll be asked to accept the new version.</p>`;
 function openTerms(){ sheet('Terms and privacy', `<div class="terms">${TERMS_HTML}</div>`, `<button class="btn primary" id="tOk" type="button">Close</button>`).querySelector('#tOk').onclick=closeSheet; }
@@ -1236,6 +1246,40 @@ function viewTeam(){
     }catch(e){ toast(e.message); } });
 }
 
+// ---------- dates: day / month / year ----------
+// A browser shows <input type="date"> in the device's own order (month first on a US-set phone). So every date field
+// becomes a dd/mm/yyyy box. The real date input stays behind it, hidden, and the rest of the code keeps reading and
+// writing yyyy-mm-dd through it. The calendar button opens the device's own picker.
+const ilDate=iso=>{ const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso||'')); return m?m[3]+'/'+m[2]+'/'+m[1]:String(iso||''); };
+function parseIlDate(txt){
+  let t=String(txt||'').trim(); if(/^\d{8}$/.test(t)) t=t.slice(0,2)+'/'+t.slice(2,4)+'/'+t.slice(4); else if(/^\d{6}$/.test(t)) t=t.slice(0,2)+'/'+t.slice(2,4)+'/'+t.slice(4);
+  const m=/^(\d{1,2})[\/.\-\s](\d{1,2})(?:[\/.\-\s](\d{2}|\d{4}))?$/.exec(t); if(!m) return '';
+  let d=+m[1], mo=+m[2], y=m[3]?+m[3]:new Date().getFullYear(); if(y<100) y+=2000;
+  const dt=new Date(y,mo-1,d); if(dt.getFullYear()!==y||dt.getMonth()!==mo-1||dt.getDate()!==d) return '';
+  return y+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0'); }
+const _valDesc=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value');
+function ilDateField(inp){
+  if(inp.dataset.il) return; inp.dataset.il='1';
+  const raw=()=>_valDesc.get.call(inp), wrap=document.createElement('div'), txt=document.createElement('input'), btn=document.createElement('button');
+  wrap.className='ildate'; txt.type='text'; txt.inputMode='numeric'; txt.placeholder='dd/mm/yyyy'; txt.autocomplete='off'; txt.maxLength=10; txt.value=ilDate(raw());
+  btn.type='button'; btn.className='ilpick'; btn.setAttribute('aria-label','Choose from a calendar');
+  btn.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>';
+  inp.parentNode.insertBefore(wrap,inp); wrap.appendChild(txt); wrap.appendChild(btn); wrap.appendChild(inp);
+  if(inp.id){ txt.id=inp.id+'_il'; const lab=wrap.parentNode.querySelector('label[for="'+inp.id+'"]'); if(lab) lab.htmlFor=txt.id; }
+  inp.classList.add('ilnative'); inp.tabIndex=-1; inp.setAttribute('aria-hidden','true');
+  let syncing=false;
+  Object.defineProperty(inp,'value',{configurable:true,get(){ return raw(); },set(val){ _valDesc.set.call(inp,val); txt.value=ilDate(raw()); txt.classList.remove('bad'); }});
+  txt.addEventListener('input',e=>{ let t=txt.value;
+    if(e.inputType&&e.inputType.indexOf('insert')===0&&/^(\d{2}|\d{2}\/\d{2})$/.test(t)) txt.value=t=t+'/';
+    const iso=parseIlDate(t); if(iso||!t.trim()){ _valDesc.set.call(inp,iso); txt.classList.remove('bad'); } else _valDesc.set.call(inp,''); });
+  txt.addEventListener('blur',()=>{ const t=txt.value.trim(), iso=parseIlDate(t);
+    if(iso) txt.value=ilDate(iso); txt.classList.toggle('bad',!!t&&!iso); _valDesc.set.call(inp,iso);
+    syncing=true; inp.dispatchEvent(new Event('change',{bubbles:true})); syncing=false; });
+  inp.addEventListener('change',()=>{ if(syncing) return; txt.value=ilDate(raw()); txt.classList.remove('bad'); });
+  btn.onclick=()=>{ try{ inp.showPicker(); }catch(e){ try{ inp.focus(); inp.click(); }catch(e2){} } };
+}
+new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>{ if(n.nodeType!==1) return; if(n.matches&&n.matches('input[type="date"]')) ilDateField(n); else if(n.querySelectorAll) n.querySelectorAll('input[type="date"]').forEach(ilDateField); }))).observe(document.body,{childList:true,subtree:true});
+
 // ---------- sheets ----------
 function sheet(title, body, foot){
   closeSheet();
@@ -1338,7 +1382,7 @@ function openDetail(id, opt){
   const sections=[
     ['Contact',rows([['Contact',esc(v.contactPerson)],['Phone',v.phone?`<span class="mono">${esc(v.phone)}</span>`:''],['WhatsApp',v.whatsapp?`<span class="mono">${esc(v.whatsapp)}</span>`:''],['Email',esc(v.email)],['Website',esc(v.website)],['Region',esc(v.region)],[v.category==='Guide'?'Guide details':'Type',esc(v.tags)],['Years guiding',v.category==='Guide'&&v.experience_years?esc(v.experience_years)+' years':''],['Area',esc(v.location)],['Map pin',v.maps_link?`<a data-track="maps" data-v="${esc(v.id)}" href="${esc(v.maps_link)}" target="_blank" rel="noopener">Open map pin</a>`:''],['Languages',esc(v.languages)],['Kosher',(v.kosher||rel('kosher',v))?(v.kosher?esc(v.kosher):'<span class="hint">Not added</span>')+`<span id="kcert"></span>`:''],['Max capacity',v.maxCap?esc(v.maxCap)+' people':''],['Park booking',v.npResLink?`<a data-track="booking" data-v="${esc(v.id)}" href="${esc(v.npResLink)}" target="_blank" rel="noopener">Reservation page</a>`:'']])],
     [S.admin?(v.prices_private?'Main price (goes to R5) · private':'Main price (goes to R5)'):'Main price',rows([['Agent price',price(v.agentPrice,v.agentPriceVatTreatment)],['Listed price',price(v.listedPrice,v.listedPriceVatTreatment)],['Basis',esc(v.priceBasis)],['Max people',esc(v.maxPax)],['Payment terms',esc(v.payTerms)]])],
-    ['Cancellation',rows([['Policy',esc(v.cancelPolicy)],['Notice',notice],['Penalty',esc(v.cancelPenalty)],['Checked',esc(v.cancelPolicyVerifiedDate)]])],
+    ['Cancellation',rows([['Policy',esc(v.cancelPolicy)],['Notice',notice],['Penalty',esc(v.cancelPenalty)],['Checked',esc(ilDate(v.cancelPolicyVerifiedDate))]])],
     ['Experience',rows([['Ratings',rating],['Strengths',esc(v.strengths)],['Weaknesses',esc(v.weaknesses)],['Summary',esc(v.notes)]])]
   ].filter(s=>s[1]);
   const body=`${vtabs}<div class="keep" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px"><span class="cat">${esc(v.category)}${v.also_categories?' + '+esc(v.also_categories):''}</span>${v.region||v.location?`<span class="hint">${esc(v.region||v.location)}</span>`:''}${statusPill(v)}</div>
@@ -1407,7 +1451,7 @@ async function drawExtras(v){
   pb.innerHTML = privNote + (det.prices.length ? `<div class="prices">${det.prices.map(p=>`<div class="pl${p.by&&!p.by.admin?' colleague':''}">${fromBadge(p.by,p.by_date,p.owner?(p.mine?'Your own price ·':'Own price from'):'From')}
       <span class="who3">${esc(p.label||p.audience)}</span><span class="amt">${p.price?esc(money(p.currency,p.price)):'<span class="hint">Price to confirm</span>'}</span>
       <span class="meta">${p.owner?'<span class="tag" style="background:var(--ochre-wash);color:var(--ochre)">Only '+(p.mine?'you':'them')+' and Eretz Israel Tours see this</span>':(p.private?'<span class="tag" style="background:var(--bad-wash);color:var(--bad)">Private</span>':'')}${p.is_agent?'<span class="tag agent">Agent rate</span>':'<span class="tag">Public price</span>'}${esc(priceWho(p))} · ${esc((p.basis||'').toLowerCase())}${vatLabel(p.vat)?' · '+esc(vatLabel(p.vat).toLowerCase()):''}${p.season?' · '+esc(p.season):''}</span>
-      ${p.note||p.source||p.checked_on?`<span class="meta">${p.note?esc(p.note)+'<br>':''}${p.source?'Source: '+esc(p.source):''}${p.checked_on?' · checked '+esc(p.checked_on):''}</span>`:''}
+      ${p.note||p.source||p.checked_on?`<span class="meta">${p.note?esc(p.note)+'<br>':''}${p.source?'Source: '+esc(p.source):''}${p.checked_on?' · checked '+esc(ilDate(p.checked_on)):''}</span>`:''}
       <span class="ctl">${(S.admin&&!(p.owner&&!p.mine))||p.mine?`<button class="mini" data-pedit="${esc(p.id)}" type="button">Edit</button>`:(S.admin?'':`<button class="mini" data-pedit="${esc(p.id)}" type="button">Suggest change</button>`)}<button class="mini" data-pdel="${esc(p.id)}" type="button">${S.admin||p.mine?'Remove':'Suggest removing'}</button></span></div>`).join('')}</div>`
     : (privNote?'':`<p class="hint" style="margin:0 0 10px">No price lines yet. Add adult, child, Israeli senior or group rates as separate lines.</p>`));
   pb.querySelectorAll('[data-pedit]').forEach(b=>b.onclick=()=>openPriceForm(v, det.prices.find(p=>p.id===b.dataset.pedit), null, det.prices_private));
@@ -1423,7 +1467,7 @@ function drawExtrasRest(v,det){
   const db=document.getElementById('dealsBox'); if(!db) return;
   db.innerHTML = det.deals.length ? det.deals.map(d=>`<div class="deal${exp(d)?' expired':''}">
       <b>${esc(d.title)}</b>
-      <span class="meta">${esc(d.kind)}${d.provider?' · '+esc(d.provider):''}${d.valid_to?(exp(d)?' · expired '+esc(d.valid_to):' · until '+esc(d.valid_to)):''}</span>
+      <span class="meta">${esc(d.kind)}${d.provider?' · '+esc(d.provider):''}${d.valid_to?(exp(d)?' · expired '+esc(ilDate(d.valid_to)):' · until '+esc(ilDate(d.valid_to))):''}</span>
       ${d.details?`<p style="margin:4px 0 0">${esc(d.details)}</p>`:''}
       ${d.code?`<p style="margin:4px 0 0">Code: <span class="code">${esc(d.code)}</span></p>`:''}
       ${d.link?`<p style="margin:4px 0 0"><a data-track="deal" data-v="${esc(v.id)}" href="${esc(d.link)}" target="_blank" rel="noopener">Open deal</a></p>`:''}
@@ -1887,7 +1931,7 @@ async function drawQuotes(v){
     const who = quoteWho(q, v);
     return `<div class="qcard${old?' old':''}" data-q="${qi}">
       <div class="qhead"><b>${esc(fmtRange(q))}</b>${qStatusPill(q.status)}${seasonPill(q)}</div>
-      <div class="qsub">${[q.title&&q.can_edit?esc(q.title):'',q.pax?esc(q.pax)+' people':'',esc(q.units||''),q.valid_until?(q.valid_until<today()&&q.status!=='Booked'?'<span style="color:var(--bad)">expired '+esc(q.valid_until)+'</span>':'valid until '+esc(q.valid_until)):'',q.ref&&q.can_edit?'ref '+esc(q.ref):''].filter(Boolean).join(' · ')}</div>
+      <div class="qsub">${[q.title&&q.can_edit?esc(q.title):'',q.pax?esc(q.pax)+' people':'',esc(q.units||''),q.valid_until?(q.valid_until<today()&&q.status!=='Booked'?'<span style="color:var(--bad)">expired '+esc(ilDate(q.valid_until))+'</span>':'valid until '+esc(ilDate(q.valid_until))):'',q.ref&&q.can_edit?'ref '+esc(q.ref):''].filter(Boolean).join(' · ')}</div>
       ${q.owner_admin===false&&q.owner_name?fromBadge({name:q.owner_name,role:q.owner_role||'',admin:false},q.updated_at,quoteMine(q)?'Your quote ·':'Quote from'):''}
       <div class="qsub">${esc(who)}${vatLabel(q.vat)?' · '+esc(vatLabel(q.vat).toLowerCase()):''}</div>
       <div class="otabs" role="tablist">${q.options.map((o,oi)=>`<button class="otab" role="tab" type="button" data-o="${oi}" aria-selected="${oi===0}">${esc(o.name)}<span class="ot">${esc(fmtMoney(q.currency,lineCalc(o.lines).total))}</span></button>`).join('')}</div>
@@ -1905,7 +1949,7 @@ async function drawQuotes(v){
       pane.querySelectorAll('[data-std]').forEach(b=>b.onclick=()=>{ const [a,bb]=b.dataset.std.split(':').map(Number); const l=q.options[a].lines[bb];
         const aud=/per vehicle/.test(l.unit)?'Vehicle':/room/.test(l.unit)?'Other':(l.kind==='Meal'?'Adult':'Adult');
         const basis={'per room per night':'Custom','per person':'Per person','per person per night':'Per person','per vehicle per day':'Per day','per day':'Per day','per hour':'Per hour','per group':'Per group','flat':'Flat rate'}[l.unit]||'Custom';
-        openPriceForm(v,null,{label:`${l.label}${l.unit==='per room per night'?' (per room per night)':''} · ${q.options[a].name}`,audience:aud,price:l.price,currency:q.currency,vat:q.vat,basis,is_agent:true,season:fmtRange(q).split(' · ')[0],source:`Quote${q.ref&&q.can_edit?' '+q.ref:''}, received ${q.received_on||''}`.trim(),checked_on:q.received_on||today(),note:l.note||''}); });
+        openPriceForm(v,null,{label:`${l.label}${l.unit==='per room per night'?' (per room per night)':''} · ${q.options[a].name}`,audience:aud,price:l.price,currency:q.currency,vat:q.vat,basis,is_agent:true,season:fmtRange(q).split(' · ')[0],source:`Quote${q.ref&&q.can_edit?' '+q.ref:''}, received ${ilDate(q.received_on||'')}`.trim(),checked_on:q.received_on||today(),note:l.note||''}); });
     };
     card.querySelectorAll('.otab').forEach(t=>t.onclick=()=>show(+t.dataset.o)); show(0);
   });
@@ -2033,14 +2077,14 @@ function bkVehicle(b,he){ const v=BK_VEH[b.service];
     return he ? base+' '+b.seats+' מקומות' : b.seats+'-seat '+base; }
   return v[he?0:1]; }
 // Rows are [Hebrew label, English label, Hebrew value, English value]. English value null = the same typed text.
-function bkJobRows(b){ return [
+function bkJobRows(b,all){ return [
   ['תאריך','Date',bkRange(b,true),bkRange(b,false)],
   ['נוסעים','Passengers',b.pax?b.pax+(b.tourists?' · תיירים מחו״ל':''):(b.tourists?'תיירים מחו״ל':''),b.pax?b.pax+(b.tourists?' · tourists from abroad':''):(b.tourists?'tourists from abroad':'')],
   ['רכב','Vehicle',bkVehicle(b,true),bkVehicle(b,false)],
   ['איסוף','Pick-up',[b.pickup_time,b.pickup_place].filter(Boolean).join(', '),null],
   ['מסלול היום','Outline of the day',b.route||'',null],
   ['פיזור','Drop-off',[b.dropoff_time,b.dropoff_place].filter(Boolean).join(', '),null],
-  ['הערות המזמין','Notes from the guide',b.note||'',null]].filter(r=>r[2]); }
+  ['הערות המזמין','Notes from the guide',b.note||'',null]].filter(r=>all||r[2]); }
 function bkTermRows(t){ t=t||{}; const m=x=>bkMoney(t,x), vat=BK_VAT[t.vat];
   const inc=[[t.hours_incl,'עד '+t.hours_incl+' שעות','up to '+t.hours_incl+' hours'],[t.km_incl,'עד '+t.km_incl+' ק״מ','up to '+t.km_incl+' km']].filter(x=>x[0]);
   const ie=(k,note)=>BK_IE[t[k]]?[BK_IE[t[k]][0]+(note?' · '+note:''),BK_IE[t[k]][1]+(note?' · '+note:'')]:['',''];
@@ -2054,29 +2098,50 @@ function bkTermRows(t){ t=t||{}; const m=x=>bkMoney(t,x), vat=BK_VAT[t.vat];
     ['כביש 6 ואגרות','Highway 6 and tolls',...ie('tolls',t.tolls_note)],
     ['חניה','Parking',...ie('parking')],
     ['טיפ לנהג','Driver tip',...tip],
+    ['מדיניות ביטול','Cancellation policy',t.cancel||'',null],
     ['תוספות אחרות','Other extras',t.extras||'',null],
-    ['ביטול ללא חיוב עד','Free cancellation until',t.cancel||'',null],
     ['תשלום','Payment',t.payment||'',null],
     ['הערות החברה','Notes from the company',t.note||'',null]]; }
 // What a price without these still leaves open: where surprise charges come from.
 function bkMissing(t){ t=t||{}; const out=[];
   if(!t.vat) out.push(['מע״מ','VAT']); if(!t.hours_incl) out.push(['שעות ביום','hours in a day']); if(!t.km_incl) out.push(['ק״מ כלולים','km included']);
-  if(!t.overtime) out.push(['שעה נוספת','extra hour']); if(!t.extra_km&&t.km_incl) out.push(['ק״מ נוסף','extra km']); if(!t.tolls) out.push(['כביש 6','Highway 6']); if(!t.tip) out.push(['טיפ','tip']);
+  if(!t.overtime) out.push(['שעה נוספת','extra hour']); if(!t.extra_km&&t.km_incl) out.push(['ק״מ נוסף','extra km']); if(!t.tolls) out.push(['כביש 6','Highway 6']); if(!t.tip) out.push(['טיפ','tip']); if(!t.cancel) out.push(['מדיניות ביטול','cancellation policy']);
   return out; }
-function bkSheetHtml(b,t){ const has=!!(t&&t.price), comp=b.company||b.vendor_name||'';
-  const row=r=>`<div class="bks-r${r[2]?'':' ns'}"><dt>${esc(r[0])}<small dir="ltr">${esc(r[1])}</small></dt><dd dir="auto">${r[2]?esc(r[2]):'לא צוין'}${r[2]?(r[3]&&r[3]!==r[2]?`<small dir="ltr">${esc(r[3])}</small>`:''):'<small dir="ltr">not stated</small>'}</dd></div>`;
-  const terms=has?bkTermRows(t).filter((r,i)=>r[2]||i<8):[];
-  const when=iso=>{ try{ const d=new Date(iso); return d.getDate()+'.'+(d.getMonth()+1)+'.'+d.getFullYear(); }catch(e){ return ''; } };
+const BK_MUST=9; // the first rows of bkTermRows always show, "not stated" when empty
+const bkWhen=iso=>{ try{ const d=new Date(iso); return d.getDate()+'.'+(d.getMonth()+1)+'.'+d.getFullYear(); }catch(e){ return ''; } };
+// Who has accepted this version. [Hebrew label, English label, Hebrew value, English value, accepted?]
+function bkOkRows(b){
+  if(b.guide_ok_at===undefined&&b.company_ok_at===undefined) return null; // database without the acceptance step
+  const g=b.guide_ok_at?bkWhen(b.guide_ok_at):'', c=b.company_ok_at?bkWhen(b.company_ok_at):'', by=b.answered_by||'', via=b.company_ok_via==='guide';
+  return [['אישור המזמין','Accepted by the guide',g?'✓ '+g:'ממתין לאישור',g?'✓ '+g:'waiting',!!g],
+    ['אישור החברה','Accepted by the company',c?'✓ '+(via?c+' · נמסר למזמין'+(by?' ('+by+')':''):[by,c].filter(Boolean).join(' · ')):'ממתין לאישור',
+      c?'✓ '+(via?c+' · told to the guide'+(by?' ('+by+')':''):[by,c].filter(Boolean).join(' · ')):'waiting',!!c]]; }
+// o.seen = the version this reader last sent or accepted: rows the other side changed since are marked red, with the
+// earlier value. o.loose = compare only rows the earlier version had filled in (the guide's "terms you expect").
+function bkSheetHtml(b,t,o){ o=o||{}; const has=!!(t&&t.price), comp=b.company||b.vendor_name||'', seen=o.seen||null;
+  const oldJob=seen&&('date_from' in seen)?Object.fromEntries(bkJobRows(seen,true).map(r=>[r[1],r[2]])):null;
+  const st=seen&&seen.terms, oldTerm=st&&Object.keys(st).length?Object.fromEntries(bkTermRows(st).map(r=>[r[1],r[2]])):null;
+  const was=(old,r)=>{ if(!old) return null; const prev=old[r[1]]||''; if(prev===(r[2]||'')) return null; if(o.loose&&!prev) return null; return prev||'—'; };
+  const row=(r,old,cls)=>{ const w=was(old,r);
+    return `<div class="bks-r${r[2]?'':' ns'}${w!=null?' chg':''}${cls||''}"><dt>${esc(r[0])}<small dir="ltr">${esc(r[1])}</small></dt><dd dir="auto">${r[2]?esc(r[2]):'לא צוין'}${r[2]?(r[3]&&r[3]!==r[2]?`<small dir="ltr">${esc(r[3])}</small>`:''):'<small dir="ltr">not stated</small>'}${w!=null?`<small class="was" dir="auto">קודם · was: ${esc(w)}</small>`:''}</dd></div>`; };
+  const jobs=bkJobRows(b,true).filter(r=>r[2]||was(oldJob,r)!=null);
+  const terms=has?bkTermRows(t).filter((r,i)=>r[2]||i<BK_MUST||was(oldTerm,r)!=null):[];
+  const ok=has?bkOkRows(b):null;
   const who=[['מזמין','Booked by',[b.booker_name,b.booker_phone].filter(Boolean).join(' · ')],['חברה','Company',comp],
-    has?[b.terms_by==='guide'?'נרשם ע״י המזמין':'מולא ע״י','Filled in by',b.terms_by==='guide'?'לפי תשובת החברה'+(b.answered_by?' ('+b.answered_by+')':''):[b.answered_by,b.answered_at?when(b.answered_at):''].filter(Boolean).join(' · '),b.terms_by==='guide'?'entered by the guide from the company\'s answer':null]:null,
-    b.status==='confirmed'?['אושר','Confirmed',b.confirmed_at?when(b.confirmed_at):'✓',null]:null].filter(r=>r&&r[2]);
+    has&&!ok?[b.terms_by==='guide'?'נרשם ע״י המזמין':'מולא ע״י','Filled in by',b.terms_by==='guide'?'לפי תשובת החברה'+(b.answered_by?' ('+b.answered_by+')':''):[b.answered_by,b.answered_at?bkWhen(b.answered_at):''].filter(Boolean).join(' · '),b.terms_by==='guide'?'entered by the guide from the company\'s answer':null]:null,
+    has&&!ok&&b.status==='confirmed'?['אושר','Confirmed',b.confirmed_at?bkWhen(b.confirmed_at):'✓',null]:null].filter(r=>r&&r[2]);
   return `<div class="bks" dir="rtl" lang="he">
     <div class="bks-h"><b>דף הזמנת רכב</b><span dir="ltr">Vehicle booking sheet</span></div>
-    <dl>${who.map(row).join('')}</dl>
+    <dl>${who.map(r=>row(r)).join('')}${ok?ok.map(r=>row(r,null,r[4]?' okd':' ns')).join(''):''}</dl>
     <div class="bks-sec">ההזמנה<small dir="ltr">The job</small></div>
-    <dl>${bkJobRows(b).map(row).join('')}</dl>
-    ${has?`<div class="bks-sec">מחיר ותנאים<small dir="ltr">Price and terms</small></div><dl>${terms.map(row).join('')}</dl>
+    <dl>${jobs.map(r=>row(r,oldJob)).join('')}</dl>
+    ${has?`<div class="bks-sec">מחיר ותנאים<small dir="ltr">Price and terms</small></div><dl>${terms.map(r=>row(r,oldTerm)).join('')}</dl>
     <div class="bks-stmt">${esc(BK_STMT[0])}<small dir="ltr">${esc(BK_STMT[1])}</small></div>`:''}</div>`; }
+// How many rows the other side changed (same rule as the red rows above).
+function bkChanged(b,t,seen,loose){ if(!seen) return 0; let n=0;
+  if('date_from' in seen){ const o=Object.fromEntries(bkJobRows(seen,true).map(r=>[r[1],r[2]])); bkJobRows(b,true).forEach(r=>{ if((o[r[1]]||'')!==(r[2]||'')) n++; }); }
+  const st=seen.terms; if(st&&Object.keys(st).length&&t){ const o=Object.fromEntries(bkTermRows(st).map(r=>[r[1],r[2]])); bkTermRows(t).forEach(r=>{ const p=o[r[1]]||''; if(p!==(r[2]||'')&&!(loose&&!p)) n++; }); }
+  return n; }
 // Plain text for WhatsApp or email. ask = short note with the link; template = no link, blanks to fill in; summary = the filled sheet.
 function bkText(b,t,mode,link){ const L=[], comp=b.company||b.vendor_name||'';
   const two=r=>{ if(r[3]==null||r[3]===r[2]) L.push(r[0]+' · '+r[1]+': '+r[2]); else { L.push(r[0]+': '+r[2]); L.push(r[1]+': '+r[3]); } };
@@ -2092,15 +2157,16 @@ function bkText(b,t,mode,link){ const L=[], comp=b.company||b.vendor_name||'';
     L.push(''); L.push('*נא למלא ולהחזיר · Please fill in and send back:*');
     [['מחיר ליום: ₪ ____ (כולל מע״מ / בתוספת / ללא)','Price per day: ₪ ____ (incl. VAT / plus VAT / none)'],['כולל עד __ שעות ועד __ ק״מ','Includes up to __ hours and __ km'],['השעות נספרות מ: האיסוף / החניון','Hours counted from: pick-up / depot'],
      ['שעה נוספת: ₪ ____','Extra hour: ₪ ____'],['ק״מ נוסף: ₪ ____','Extra km: ₪ ____'],['כביש 6 ואגרות: כלול / בנוסף','Highway 6 and tolls: included / extra'],['חניה: כלול / בנוסף','Parking: included / extra'],
-     ['טיפ לנהג: לא מצופה / ₪ ____ ליום','Driver tip: not expected / ₪ ____ a day'],['תוספות אחרות (לינה, לילה, שבת): ____','Other extras (overnight, night, Shabbat): ____'],['ביטול ללא חיוב עד: ____','Free cancellation until: ____'],['תשלום: ____','Payment: ____'],['הערות: ____','Notes: ____']]
+     ['טיפ לנהג: לא מצופה / ₪ ____ ליום','Driver tip: not expected / ₪ ____ a day'],['תוספות אחרות (לינה, לילה, שבת): ____','Other extras (overnight, night, Shabbat): ____'],['מדיניות ביטול: ____','Cancellation policy: ____'],['תשלום: ____','Payment: ____'],['הערות: ____','Notes: ____']]
       .forEach(p=>{ L.push(p[0]); L.push(p[1]); });
   } else if(t&&t.price){
     L.push(''); L.push('*מחיר ותנאים · Price and terms*');
-    bkTermRows(t).forEach((r,i)=>{ if(r[2]) two(r); else if(i<8){ L.push(r[0]+': לא צוין'); L.push(r[1]+': not stated'); } });
+    bkTermRows(t).forEach((r,i)=>{ if(r[2]) two(r); else if(i<BK_MUST){ L.push(r[0]+': לא צוין'); L.push(r[1]+': not stated'); } });
   }
   L.push(''); L.push('*'+BK_STMT[0]+'*'); L.push(BK_STMT[1]);
   L.push(''); L.push('מזמין · Booked by: '+[b.booker_name,b.booker_phone].filter(Boolean).join(', '));
-  if(mode==='summary'&&b.answered_by) L.push('מולא ע״י · Filled in by: '+b.answered_by);
+  const ok=mode==='summary'&&t&&t.price?bkOkRows(b):null;
+  if(ok) ok.forEach(r=>{ L.push(r[0]+': '+r[2]); L.push(r[1]+': '+r[3]); }); else if(mode==='summary'&&b.answered_by) L.push('מולא ע״י · Filled in by: '+b.answered_by);
   return L.join('\n'); }
 const BKS_CSS=`.bks{background:#fff;color:#16261e;border:1px solid #cfd6cd;border-radius:10px;padding:14px 16px;font-size:15px;line-height:1.35;text-align:right}
 .bks small{display:block;font-size:12px;color:#55635a;font-weight:400;text-align:right}
@@ -2111,6 +2177,10 @@ const BKS_CSS=`.bks{background:#fff;color:#16261e;border:1px solid #cfd6cd;borde
 .bks-r dt{flex:0 0 38%;font-weight:600}
 .bks-r dd{flex:1;margin:0;min-width:0;white-space:pre-wrap;overflow-wrap:anywhere}
 .bks-r.ns dd{color:#a66a12}
+.bks-r.okd dd{color:#1f6b3f;font-weight:600}
+.bks-r.chg{background:#f8e3df;box-shadow:-6px 0 0 #f8e3df,6px 0 0 #f8e3df}
+.bks-r.chg dd{color:#a63b2e;font-weight:600}
+.bks .was{color:#a63b2e;font-weight:400}
 .bks-sec{margin:12px 0 2px;padding:5px 8px;background:#e8ede5;border-radius:6px;font-weight:600;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .bks-sec small{display:inline}
 .bks-stmt{margin-top:12px;border:2px solid #16261e;border-radius:6px;padding:8px 10px;font-weight:700}
@@ -2123,7 +2193,7 @@ const BKS_CSS=`.bks{background:#fff;color:#16261e;border:1px solid #cfd6cd;borde
 const bookingsOn=()=>!LIVE||!!(S.me&&S.me.bookings);
 const bkLink=b=>LIVE?APP_URL+'b/?k='+encodeURIComponent(b.key):APP_URL+'b/index.html?demo=1';
 const BK_SERVICES=[...VEHICLES.map(x=>[x[0],x[1]]),['jeep_vehicle','Jeep / 4x4 with driver'],['transfer','Airport transfer']];
-const BK_STATUS={waiting:['pending','Waiting for the company'],answered:['high','Answered · check and confirm'],confirmed:['approved','Confirmed'],cancelled:['inactive','Cancelled']};
+const BK_STATUS={waiting:['pending','Waiting for the company'],answered:['high','Your turn · check and accept'],confirmed:['approved','Accepted by both sides'],cancelled:['inactive','Cancelled']};
 const bkPill=b=>{ const s=BK_STATUS[b.status]||BK_STATUS.waiting; return `<span class="pill ${s[0]}">${esc(s[1])}</span>`; };
 const bkVendor=b=>S.vendors.find(v=>v.id===b.vendor_id);
 const BK_NUM=['price','hours_incl','km_incl','overtime','extra_km','tip_amt'];
@@ -2133,7 +2203,10 @@ function bkCard(b, withVendor){ const t=b.terms||{};
     <div class="qsub">${[withVendor?esc(bkRange(b,false)):'',esc(bkVehicle(b,false)),b.pax?esc(b.pax)+' people':'',b.client_ref?esc(b.client_ref):''].filter(Boolean).join(' · ')}</div>
     ${t.price?`<div class="qrate"><span class="p">${esc(bkMoney(t,t.price))}</span><span class="u">per day${BK_VAT[t.vat]?' · '+esc(BK_VAT[t.vat][1]):''}</span></div>`:''}
     ${!b.mine&&b.owner_name?`<div class="qsub">Sheet from ${esc(b.owner_name)}${b.owner_role?' · '+esc(b.owner_role):''}</div>`:''}</button>`; }
-function bkWireCards(root, list){ root.querySelectorAll('[data-bk]').forEach(el=>el.onclick=()=>{ const b=list.find(x=>String(x.id)===el.dataset.bk); if(b) openBookingView(b); }); }
+// Open the sheet from the list at once, then swap in the server's copy if the company has acted since the list loaded.
+function bkWireCards(root, list){ root.querySelectorAll('[data-bk]').forEach(el=>el.onclick=()=>{ const b=list.find(x=>String(x.id)===el.dataset.bk); if(!b) return; openBookingView(b);
+  if(LIVE) DB.loadBookings(b.vendor_id).then(fresh=>{ const nb=(fresh||[]).find(x=>String(x.id)===String(b.id));
+    if(nb&&nb.updated_at!==b.updated_at&&S.viewingBk===String(b.id)&&document.getElementById('bvClose')){ S.bookings=null; openBookingView(nb); } }).catch(()=>{}); }); }
 function bkExplain(then){
   let seen=false; try{ seen=localStorage.getItem('eitv_bk_seen')==='1'; }catch(e){}
   if(seen) return then();
@@ -2141,7 +2214,8 @@ function bkExplain(then){
     <ol style="margin:0 0 12px;padding-left:20px;line-height:1.5"><li><b>You fill in the job</b>: date, passengers, vehicle, pick-up, outline of the day, drop-off.</li>
     <li><b>You send the company a link</b> on WhatsApp or email. It opens that one booking and nothing else. The company never sees this list.</li>
     <li><b>The company fills in the price and terms</b>: hours and km included, overtime, extra km, Kvish 6, parking, tip, cancellation, payment.</li>
-    <li><b>You confirm.</b> Both sides hold the same sheet, and either can save it as a PDF.</li></ol>
+    <li><b>Both sides accept.</b> The company accepts by sending its terms; you accept by tapping Accept. Then the sheet locks, and either side can save it as a PDF.</li>
+    <li><b>A change goes back for approval.</b> If you or the company change anything before both have accepted, it shows in red on the other side, who has to accept again.</li></ol>
     <p class="hint" style="margin:0">The company sees your name and phone and the job. It never sees the client, your private note or anything else in the app. A confirmed price and its terms are shared with colleagues in the Quotes tab without your name, unless you switch that off on the sheet.</p>`,
     `<button class="btn primary" id="bkOk" type="button">Got it</button>`);
   w.querySelector('#bkOk').onclick=()=>{ try{ localStorage.setItem('eitv_bk_seen','1'); }catch(e){} then(); };
@@ -2194,8 +2268,8 @@ function bkTermsForm(t,p){ t=t||{};
     <div class="f wide"><span class="lab">Kvish 6 and tolls</span>${seg('tolls',[['incl','Included'],['extra','Extra']])}<input data-t="tolls_note" aria-label="Kvish 6 note" value="${esc(t.tolls_note||'')}" placeholder="Note, e.g. by the bill"></div>
     <div class="f wide"><span class="lab">Parking</span>${seg('parking',[['incl','Included'],['extra','Extra, by receipt']])}</div>
     <div class="f wide"><span class="lab">Driver tip</span>${seg('tip',[['none','Not expected'],['customary','Customary']])}<input data-t="tip_amt" inputmode="decimal" aria-label="Customary tip a day" value="${esc(t.tip_amt||'')}" placeholder="Customary amount a day"></div>
+    <div class="f wide"><label for="${p}cancel">Cancellation policy</label><textarea id="${p}cancel" data-t="cancel" rows="3" maxlength="1500" placeholder="Paste the company's cancellation policy, e.g. free until 48 hours before, then 50%">${esc(t.cancel||'')}</textarea></div>
     <div class="f wide"><label for="${p}extras">Other extras: driver overnight, night, Shabbat</label><input id="${p}extras" data-t="extras" value="${esc(t.extras||'')}" placeholder="Driver overnight ₪350"></div>
-    <div class="f wide"><label for="${p}cancel">Free cancellation until</label><input id="${p}cancel" data-t="cancel" value="${esc(t.cancel||'')}" placeholder="48 hours before"></div>
     <div class="f wide"><label for="${p}payment">Payment: how and when</label><input id="${p}payment" data-t="payment" value="${esc(t.payment||'')}" placeholder="Bank transfer after the trip"></div>
     <div class="f wide"><label for="${p}note">Anything else</label><textarea id="${p}note" data-t="note" rows="2" placeholder="Free text">${esc(t.note||'')}</textarea></div>
   </div>`; }
@@ -2292,7 +2366,7 @@ function openBookingForm(v, b0, back){
     if(out.date_to===out.date_from) out.date_to='';
     const btn=g('bs'); btn.disabled=true; btn.textContent='Saving…';
     try{ const saved=await DB.saveBooking(v.id,out); done();
-      if(isNew) openBookingSend(saved); else { toast(saved.status==='waiting'&&b0.status==='answered'?'Saved. The job changed, so the company has to send its answer again.':'Saved'); openBookingView(saved); } }
+      if(isNew) openBookingSend(saved); else { toast(saved.status==='waiting'&&b0.status==='answered'?'Saved. The job changed, so the company has to accept again. Send it the link.':'Saved'); openBookingView(saved); } }
     catch(e){ btn.disabled=false; btn.textContent=isNew?'Save and send':'Save'; err.innerHTML=`<div class="msg err">${esc(e.message)}</div>`; }
   };
 }
@@ -2337,29 +2411,31 @@ async function bkReload(b, quiet){
 }
 function openBookingView(b){
   const v=bkVendor(b), t=b.terms||{}, p=b.proposed||{}, has=!!t.price, closed=b.status==='confirmed'||b.status==='cancelled';
-  const lab={price:'Price per day',vat:'VAT',hours_incl:'Hours included',km_incl:'Km included',hours_from:'Hours counted from',overtime:'Extra hour',extra_km:'Extra km',tolls:'Kvish 6 and tolls',parking:'Parking',tip:'Driver tip'};
-  const diff=has?Object.keys(lab).filter(k=>p[k]&&t[k]&&String(p[k])!==String(t[k])):[];
   const miss=has?bkMissing(t):[];
-  const banner={waiting:has?'The job changed after the company answered. Send it again so they confirm their terms.':'Sent. Waiting for the company to fill in the price and terms.',
-    answered:b.terms_by==='guide'?'You typed in the company\'s answer. Check it, then confirm.':'The company answered'+(b.answered_by?' ('+esc(b.answered_by)+')':'')+'. Check the terms, then confirm.',
-    confirmed:'Confirmed. Both sides hold this sheet. To change anything, reopen it.',cancelled:'Cancelled. The company\'s link shows the booking as cancelled.'}[b.status];
+  // On the guide's turn: mark what the company changed since the version he last saw, or (first answer) what differs from the terms he expected.
+  const full=!!(b.seen&&b.seen.terms&&b.seen.terms.price), seen=b.status==='answered'?(full?b.seen:(Object.keys(p).length?{terms:p}:null)):null, loose=!full;
+  const nChg=seen?bkChanged(b,t,seen,loose):0;
+  const banner={waiting:has?'You changed the sheet. Waiting for the company to accept; the changes are marked in red on its page.':'Sent. Waiting for the company to fill in the price and terms.',
+    answered:b.company_ok_via==='guide'||(b.company_ok_via===undefined&&b.terms_by==='guide')?'You typed in what the company agreed to. Check it, then accept.':'The company accepted these terms'+(b.answered_by?' ('+esc(b.answered_by)+')':'')+'. Check them, then accept.',
+    confirmed:'Both sides accepted. To change anything, reopen it.',cancelled:'Cancelled. The company\'s link shows the booking as cancelled.'}[b.status];
   const body=`<div class="bkban ${esc(b.status)}">${bkPill(b)}<span>${banner}</span></div>
-    ${diff.length?`<div class="msg" style="background:var(--warn-wash);color:var(--ink);margin:0 0 10px"><b>Different from what you expected:</b> ${diff.map(k=>esc(lab[k])).join(', ')}.</div>`:''}
-    ${miss.length&&!closed?`<div class="msg" style="background:var(--warn-wash);color:var(--ink);margin:0 0 10px"><b>Not stated:</b> ${miss.map(x=>esc(x[1])).join(', ')}. Ask before you confirm: this is where surprise charges come from.</div>`:''}
-    ${bkSheetHtml(b,has?t:null)}
+    ${nChg?`<div class="msg" style="background:var(--bad-wash);color:var(--ink);margin:0 0 10px"><b>Marked in red:</b> ${full?'what the company changed since the version you last saw.':'what differs from the terms you expected.'}</div>`:''}
+    ${miss.length&&!closed?`<div class="msg" style="background:var(--warn-wash);color:var(--ink);margin:0 0 10px"><b>Not stated:</b> ${miss.map(x=>esc(x[1])).join(', ')}. Ask before you accept: this is where surprise charges come from.</div>`:''}
+    ${bkSheetHtml(b,has?t:null,{seen,loose})}
     ${!has&&Object.keys(p).length?`<p class="hint" style="margin:10px 2px 0">You asked them to confirm: ${esc(bkTermRows(p).filter(r=>r[2]).map(r=>r[1]+' '+(r[3]||r[2])).join(' · '))}</p>`:''}
     <dl class="dl" style="margin-top:14px">${b.client_ref?`<dt>Trip or client</dt><dd>${esc(b.client_ref)} <span class="hint">private</span></dd>`:''}${b.private_note?`<dt>Private note</dt><dd style="white-space:pre-wrap">${esc(b.private_note)}</dd>`:''}
-      <dt>Sharing</dt><dd>${b.shared&&!(v&&v.prices_private)?(b.status==='confirmed'?'In the Quotes tab, without '+(b.mine===false?'the':'your')+' name':'Goes to the Quotes tab without '+(b.mine===false?'the':'your')+' name once confirmed'):'Private · not shared with colleagues'}</dd>
+      <dt>Sharing</dt><dd>${b.shared&&!(v&&v.prices_private)?(b.status==='confirmed'?'In the Quotes tab, without '+(b.mine===false?'the':'your')+' name':'Goes to the Quotes tab without '+(b.mine===false?'the':'your')+' name once both sides accept'):'Private · not shared with colleagues'}</dd>
       ${b.mine===false&&b.owner_name?`<dt>Sheet from</dt><dd>${esc(b.owner_name)}${b.owner_role?' · '+esc(b.owner_role):''}</dd>`:''}</dl>
     <div class="btn-row" style="margin-top:14px">
-      ${b.status==='waiting'?'<button class="mini" id="bvFresh" type="button">Check for an answer</button>':''}${b.status==='waiting'||b.status==='answered'?'<button class="mini" id="bvSend" type="button">Send link again</button><button class="mini" id="bvEdit" type="button">Edit the job</button><button class="mini" id="bvType" type="button">'+(has?'Change their answer':'Type in their answer')+'</button>':''}
+      ${b.status==='waiting'?'<button class="mini" id="bvFresh" type="button">Check for an answer</button>':''}${b.status==='waiting'||b.status==='answered'?'<button class="mini" id="bvSend" type="button">Send link again</button><button class="mini" id="bvEdit" type="button">Edit the job</button><button class="mini" id="bvType" type="button">'+(has?'Change the terms':'Type in their answer')+'</button>':''}
       <button class="mini" id="bvPdf" type="button">Print / save PDF</button><button class="mini" id="bvShare" type="button">Copy as text</button>
       ${b.status==='confirmed'||b.status==='cancelled'?'<button class="mini" id="bvOpen" type="button">Reopen</button>':''}
       ${b.status!=='cancelled'?'<button class="mini" id="bvCancel" type="button">Cancel booking</button>':''}<button class="mini" id="bvDel" type="button">Delete</button></div>`;
-  const foot=b.status==='answered'?`<button class="btn soft" id="bvClose" type="button">Close</button><button class="btn accent" id="bvConfirm" type="button">Confirm booking</button>`
+  const foot=b.status==='answered'?`<button class="btn soft" id="bvClose" type="button">Close</button><button class="btn accent" id="bvConfirm" type="button">Accept</button>`
     :b.status==='waiting'?`<button class="btn soft" id="bvClose" type="button">Close</button><button class="btn primary" id="bvSend2" type="button">Send to the company</button>`
     :`<button class="btn soft" id="bvClose" type="button">Close</button>${b.status==='confirmed'?'<button class="btn primary" id="bvWa" type="button">Send copy on WhatsApp</button>':''}`;
   const w=sheet('Booking sheet · '+(b.vendor_name||(v&&v.name)||''), body, foot);
+  S.viewingBk=String(b.id);
   const g=id=>w.querySelector('#'+id), on=(id,fn)=>{ const el=g(id); if(el) el.onclick=fn; };
   const refresh=()=>{ S.bookings=null; S.quotes=null; if(S.tab==='quotes') render(); };
   const act=async(el,fn,msg)=>{ el.disabled=true; try{ const nb=await fn(); refresh(); if(msg) toast(msg); if(nb) openBookingView(nb); else closeSheet(); }catch(e){ el.disabled=false; toast(e.message); } };
@@ -2371,23 +2447,27 @@ function openBookingView(b){
   on('bvPdf',()=>bkPrint(b));
   on('bvShare',()=>copyText(bkText(b,has?t:null,'summary')));
   on('bvWa',()=>window.open('https://wa.me/?text='+encodeURIComponent(bkText(b,t,'summary')),'_blank','noopener'));
-  on('bvConfirm',()=>act(g('bvConfirm'),()=>DB.setBookingStatus(b.id,'confirmed'),b.shared&&!(v&&v.prices_private)?'Confirmed. The price and terms are in the Quotes tab, without your name.':'Confirmed.'));
+  on('bvConfirm',()=>act(g('bvConfirm'),()=>DB.setBookingStatus(b.id,'confirmed'),b.shared&&!(v&&v.prices_private)?'Accepted by both sides. The price and terms are in the Quotes tab, without your name.':'Accepted by both sides.'));
   on('bvOpen',()=>act(g('bvOpen'),()=>DB.setBookingStatus(b.id,'open'),'Reopened. The company can change its answer again.'));
   on('bvCancel',()=>{ if(twice(g('bvCancel'),'Tap again to cancel the booking')) act(g('bvCancel'),()=>DB.setBookingStatus(b.id,'cancelled'),'Cancelled. Tell the company too.'); });
   on('bvDel',()=>{ if(twice(g('bvDel'),'Tap again to delete')) act(g('bvDel'),async()=>{ await DB.deleteBooking(b.id); return null; },'Booking sheet deleted'); });
 }
-// The company answered by phone or in a WhatsApp message: the guide types it in.
+// The guide writes the terms himself: either what the company told him by phone or WhatsApp (it has agreed), or
+// different terms he proposes, which go back to the company for approval.
 function openBookingAnswer(b){
-  const v=bkVendor(b); const start=Object.keys(b.terms||{}).length?b.terms:(b.proposed||{});
-  const w=sheet('Their answer · '+(b.vendor_name||''), `<p style="margin:0 0 12px">Type in what the company told you. The sheet will say it was entered by you from their answer.</p>
-    <div class="f" style="margin-bottom:10px"><label for="ba_by">Who answered</label><input id="ba_by" value="${esc(b.answered_by||'')}" placeholder="Dudu, by phone"></div>
-    <div id="baTerms">${bkTermsForm(start,'ba_')}</div><div id="baErr"></div>`, `<button class="btn soft" id="bac" type="button">Cancel</button><button class="btn primary" id="bas" type="button">Save their answer</button>`);
+  const v=bkVendor(b), had=!!(b.terms&&b.terms.price); const start=had?b.terms:(b.proposed||{});
+  const w=sheet((had?'Change the terms · ':'Their answer · ')+(b.vendor_name||''), `<label class="switch" for="ba_ok" style="margin-bottom:12px"><input id="ba_ok" type="checkbox" ${had?'':'checked'}><span><b>The company already agreed to this, by phone or WhatsApp</b><br><span class="hint" id="ba_hint"></span></span></label>
+    <div class="f" id="ba_byWrap" style="margin-bottom:10px"><label for="ba_by">Who agreed</label><input id="ba_by" value="${esc(b.answered_by||'')}" placeholder="Dudu, by phone"></div>
+    <div id="baTerms">${bkTermsForm(start,'ba_')}</div><div id="baErr"></div>`, `<button class="btn soft" id="bac" type="button">Cancel</button><button class="btn primary" id="bas" type="button">Save</button>`);
+  const ok=w.querySelector('#ba_ok'), sync=()=>{ w.querySelector('#ba_hint').textContent=ok.checked?'The sheet will say the company\'s acceptance was told to you. Then you accept, and it locks.':'These terms go back to the company. It sees what you changed in red and has to accept.'; w.querySelector('#ba_byWrap').hidden=!ok.checked; };
+  ok.onchange=sync; sync();
   bkWireTerms(w); w.querySelector('#bac').onclick=()=>openBookingView(b);
   w.querySelector('#bas').onclick=async()=>{ const err=w.querySelector('#baErr'), terms=bkReadTerms(w.querySelector('#baTerms'));
-    const bad=!terms.price?'Add the price they gave you.':bkBadTerms(terms); if(bad){ err.innerHTML=`<div class="msg err">${esc(bad)}</div>`; return; }
+    const bad=!terms.price?'Add the price.':bkBadTerms(terms); if(bad){ err.innerHTML=`<div class="msg err">${esc(bad)}</div>`; return; }
     if(!v){ toast('That supplier is no longer on the list.'); return; }
     const btn=w.querySelector('#bas'); btn.disabled=true;
-    try{ const nb=await DB.saveBooking(b.vendor_id,Object.assign({},b,{terms,answered_by:w.querySelector('#ba_by').value.trim()})); S.bookings=null; openBookingView(nb); }
+    try{ const nb=await DB.saveBooking(b.vendor_id,Object.assign({},b,{terms,company_agreed:ok.checked,answered_by:w.querySelector('#ba_by').value.trim()})); S.bookings=null;
+      if(!ok.checked) toast('Saved. Send the link again so the company can accept the change.'); openBookingView(nb); }
     catch(e){ btn.disabled=false; err.innerHTML=`<div class="msg err">${esc(e.message)}</div>`; } };
 }
 
@@ -2395,7 +2475,7 @@ const RES_LABEL={required:'Reservation officially required',recommended:'Reserva
 function resSummary(reps){
   const real=reps.filter(r=>r.checked!=='unsure'); if(!real.length) return 'No one has reported yet.';
   const yes=real.filter(r=>r.checked==='yes').length, no=real.length-yes, last=real[0];
-  return `Colleagues reported: ${yes} checked, ${no} not checked. Last: ${last.visit_date||fmtDate(last.created_at)}, ${esc(last.member_name||'a colleague')}: ${last.checked==='yes'?'they checked':'not checked'}.`;
+  return `Colleagues reported: ${yes} checked, ${no} not checked. Last: ${last.visit_date?esc(ilDate(last.visit_date)):fmtDate(last.created_at)}, ${esc(last.member_name||'a colleague')}: ${last.checked==='yes'?'they checked':'not checked'}.`;
 }
 function drawSiteBits(v,det){
   const pb=document.getElementById('parentBox');

@@ -52,6 +52,7 @@ legend{padding:0}
 .ban{margin:16px 16px 0;border-radius:8px;padding:12px 14px;font-weight:600}
 .ban.ok{background:var(--ok-wash);color:var(--ok)}
 .ban.warn{background:var(--warn-wash)}
+.ban p .en{font-weight:400}
 .ban.bad{background:var(--bad-wash);color:var(--bad)}
 .ban .en{color:inherit;opacity:.85}
 .err{margin:12px 16px 0;background:var(--bad-wash);color:var(--bad);border-radius:8px;padding:10px 12px;font-size:15px}
@@ -97,14 +98,14 @@ function bkVehicle(b,he){ const v=BK_VEH[b.service];
     return he ? base+' '+b.seats+' מקומות' : b.seats+'-seat '+base; }
   return v[he?0:1]; }
 // Rows are [Hebrew label, English label, Hebrew value, English value]. English value null = the same typed text.
-function bkJobRows(b){ return [
+function bkJobRows(b,all){ return [
   ['תאריך','Date',bkRange(b,true),bkRange(b,false)],
   ['נוסעים','Passengers',b.pax?b.pax+(b.tourists?' · תיירים מחו״ל':''):(b.tourists?'תיירים מחו״ל':''),b.pax?b.pax+(b.tourists?' · tourists from abroad':''):(b.tourists?'tourists from abroad':'')],
   ['רכב','Vehicle',bkVehicle(b,true),bkVehicle(b,false)],
   ['איסוף','Pick-up',[b.pickup_time,b.pickup_place].filter(Boolean).join(', '),null],
   ['מסלול היום','Outline of the day',b.route||'',null],
   ['פיזור','Drop-off',[b.dropoff_time,b.dropoff_place].filter(Boolean).join(', '),null],
-  ['הערות המזמין','Notes from the guide',b.note||'',null]].filter(r=>r[2]); }
+  ['הערות המזמין','Notes from the guide',b.note||'',null]].filter(r=>all||r[2]); }
 function bkTermRows(t){ t=t||{}; const m=x=>bkMoney(t,x), vat=BK_VAT[t.vat];
   const inc=[[t.hours_incl,'עד '+t.hours_incl+' שעות','up to '+t.hours_incl+' hours'],[t.km_incl,'עד '+t.km_incl+' ק״מ','up to '+t.km_incl+' km']].filter(x=>x[0]);
   const ie=(k,note)=>BK_IE[t[k]]?[BK_IE[t[k]][0]+(note?' · '+note:''),BK_IE[t[k]][1]+(note?' · '+note:'')]:['',''];
@@ -118,29 +119,50 @@ function bkTermRows(t){ t=t||{}; const m=x=>bkMoney(t,x), vat=BK_VAT[t.vat];
     ['כביש 6 ואגרות','Highway 6 and tolls',...ie('tolls',t.tolls_note)],
     ['חניה','Parking',...ie('parking')],
     ['טיפ לנהג','Driver tip',...tip],
+    ['מדיניות ביטול','Cancellation policy',t.cancel||'',null],
     ['תוספות אחרות','Other extras',t.extras||'',null],
-    ['ביטול ללא חיוב עד','Free cancellation until',t.cancel||'',null],
     ['תשלום','Payment',t.payment||'',null],
     ['הערות החברה','Notes from the company',t.note||'',null]]; }
 // What a price without these still leaves open: where surprise charges come from.
 function bkMissing(t){ t=t||{}; const out=[];
   if(!t.vat) out.push(['מע״מ','VAT']); if(!t.hours_incl) out.push(['שעות ביום','hours in a day']); if(!t.km_incl) out.push(['ק״מ כלולים','km included']);
-  if(!t.overtime) out.push(['שעה נוספת','extra hour']); if(!t.extra_km&&t.km_incl) out.push(['ק״מ נוסף','extra km']); if(!t.tolls) out.push(['כביש 6','Highway 6']); if(!t.tip) out.push(['טיפ','tip']);
+  if(!t.overtime) out.push(['שעה נוספת','extra hour']); if(!t.extra_km&&t.km_incl) out.push(['ק״מ נוסף','extra km']); if(!t.tolls) out.push(['כביש 6','Highway 6']); if(!t.tip) out.push(['טיפ','tip']); if(!t.cancel) out.push(['מדיניות ביטול','cancellation policy']);
   return out; }
-function bkSheetHtml(b,t){ const has=!!(t&&t.price), comp=b.company||b.vendor_name||'';
-  const row=r=>`<div class="bks-r${r[2]?'':' ns'}"><dt>${esc(r[0])}<small dir="ltr">${esc(r[1])}</small></dt><dd dir="auto">${r[2]?esc(r[2]):'לא צוין'}${r[2]?(r[3]&&r[3]!==r[2]?`<small dir="ltr">${esc(r[3])}</small>`:''):'<small dir="ltr">not stated</small>'}</dd></div>`;
-  const terms=has?bkTermRows(t).filter((r,i)=>r[2]||i<8):[];
-  const when=iso=>{ try{ const d=new Date(iso); return d.getDate()+'.'+(d.getMonth()+1)+'.'+d.getFullYear(); }catch(e){ return ''; } };
+const BK_MUST=9; // the first rows of bkTermRows always show, "not stated" when empty
+const bkWhen=iso=>{ try{ const d=new Date(iso); return d.getDate()+'.'+(d.getMonth()+1)+'.'+d.getFullYear(); }catch(e){ return ''; } };
+// Who has accepted this version. [Hebrew label, English label, Hebrew value, English value, accepted?]
+function bkOkRows(b){
+  if(b.guide_ok_at===undefined&&b.company_ok_at===undefined) return null; // database without the acceptance step
+  const g=b.guide_ok_at?bkWhen(b.guide_ok_at):'', c=b.company_ok_at?bkWhen(b.company_ok_at):'', by=b.answered_by||'', via=b.company_ok_via==='guide';
+  return [['אישור המזמין','Accepted by the guide',g?'✓ '+g:'ממתין לאישור',g?'✓ '+g:'waiting',!!g],
+    ['אישור החברה','Accepted by the company',c?'✓ '+(via?c+' · נמסר למזמין'+(by?' ('+by+')':''):[by,c].filter(Boolean).join(' · ')):'ממתין לאישור',
+      c?'✓ '+(via?c+' · told to the guide'+(by?' ('+by+')':''):[by,c].filter(Boolean).join(' · ')):'waiting',!!c]]; }
+// o.seen = the version this reader last sent or accepted: rows the other side changed since are marked red, with the
+// earlier value. o.loose = compare only rows the earlier version had filled in (the guide's "terms you expect").
+function bkSheetHtml(b,t,o){ o=o||{}; const has=!!(t&&t.price), comp=b.company||b.vendor_name||'', seen=o.seen||null;
+  const oldJob=seen&&('date_from' in seen)?Object.fromEntries(bkJobRows(seen,true).map(r=>[r[1],r[2]])):null;
+  const st=seen&&seen.terms, oldTerm=st&&Object.keys(st).length?Object.fromEntries(bkTermRows(st).map(r=>[r[1],r[2]])):null;
+  const was=(old,r)=>{ if(!old) return null; const prev=old[r[1]]||''; if(prev===(r[2]||'')) return null; if(o.loose&&!prev) return null; return prev||'—'; };
+  const row=(r,old,cls)=>{ const w=was(old,r);
+    return `<div class="bks-r${r[2]?'':' ns'}${w!=null?' chg':''}${cls||''}"><dt>${esc(r[0])}<small dir="ltr">${esc(r[1])}</small></dt><dd dir="auto">${r[2]?esc(r[2]):'לא צוין'}${r[2]?(r[3]&&r[3]!==r[2]?`<small dir="ltr">${esc(r[3])}</small>`:''):'<small dir="ltr">not stated</small>'}${w!=null?`<small class="was" dir="auto">קודם · was: ${esc(w)}</small>`:''}</dd></div>`; };
+  const jobs=bkJobRows(b,true).filter(r=>r[2]||was(oldJob,r)!=null);
+  const terms=has?bkTermRows(t).filter((r,i)=>r[2]||i<BK_MUST||was(oldTerm,r)!=null):[];
+  const ok=has?bkOkRows(b):null;
   const who=[['מזמין','Booked by',[b.booker_name,b.booker_phone].filter(Boolean).join(' · ')],['חברה','Company',comp],
-    has?[b.terms_by==='guide'?'נרשם ע״י המזמין':'מולא ע״י','Filled in by',b.terms_by==='guide'?'לפי תשובת החברה'+(b.answered_by?' ('+b.answered_by+')':''):[b.answered_by,b.answered_at?when(b.answered_at):''].filter(Boolean).join(' · '),b.terms_by==='guide'?'entered by the guide from the company\'s answer':null]:null,
-    b.status==='confirmed'?['אושר','Confirmed',b.confirmed_at?when(b.confirmed_at):'✓',null]:null].filter(r=>r&&r[2]);
+    has&&!ok?[b.terms_by==='guide'?'נרשם ע״י המזמין':'מולא ע״י','Filled in by',b.terms_by==='guide'?'לפי תשובת החברה'+(b.answered_by?' ('+b.answered_by+')':''):[b.answered_by,b.answered_at?bkWhen(b.answered_at):''].filter(Boolean).join(' · '),b.terms_by==='guide'?'entered by the guide from the company\'s answer':null]:null,
+    has&&!ok&&b.status==='confirmed'?['אושר','Confirmed',b.confirmed_at?bkWhen(b.confirmed_at):'✓',null]:null].filter(r=>r&&r[2]);
   return `<div class="bks" dir="rtl" lang="he">
     <div class="bks-h"><b>דף הזמנת רכב</b><span dir="ltr">Vehicle booking sheet</span></div>
-    <dl>${who.map(row).join('')}</dl>
+    <dl>${who.map(r=>row(r)).join('')}${ok?ok.map(r=>row(r,null,r[4]?' okd':' ns')).join(''):''}</dl>
     <div class="bks-sec">ההזמנה<small dir="ltr">The job</small></div>
-    <dl>${bkJobRows(b).map(row).join('')}</dl>
-    ${has?`<div class="bks-sec">מחיר ותנאים<small dir="ltr">Price and terms</small></div><dl>${terms.map(row).join('')}</dl>
+    <dl>${jobs.map(r=>row(r,oldJob)).join('')}</dl>
+    ${has?`<div class="bks-sec">מחיר ותנאים<small dir="ltr">Price and terms</small></div><dl>${terms.map(r=>row(r,oldTerm)).join('')}</dl>
     <div class="bks-stmt">${esc(BK_STMT[0])}<small dir="ltr">${esc(BK_STMT[1])}</small></div>`:''}</div>`; }
+// How many rows the other side changed (same rule as the red rows above).
+function bkChanged(b,t,seen,loose){ if(!seen) return 0; let n=0;
+  if('date_from' in seen){ const o=Object.fromEntries(bkJobRows(seen,true).map(r=>[r[1],r[2]])); bkJobRows(b,true).forEach(r=>{ if((o[r[1]]||'')!==(r[2]||'')) n++; }); }
+  const st=seen.terms; if(st&&Object.keys(st).length&&t){ const o=Object.fromEntries(bkTermRows(st).map(r=>[r[1],r[2]])); bkTermRows(t).forEach(r=>{ const p=o[r[1]]||''; if(p!==(r[2]||'')&&!(loose&&!p)) n++; }); }
+  return n; }
 // Plain text for WhatsApp or email. ask = short note with the link; template = no link, blanks to fill in; summary = the filled sheet.
 function bkText(b,t,mode,link){ const L=[], comp=b.company||b.vendor_name||'';
   const two=r=>{ if(r[3]==null||r[3]===r[2]) L.push(r[0]+' · '+r[1]+': '+r[2]); else { L.push(r[0]+': '+r[2]); L.push(r[1]+': '+r[3]); } };
@@ -156,15 +178,16 @@ function bkText(b,t,mode,link){ const L=[], comp=b.company||b.vendor_name||'';
     L.push(''); L.push('*נא למלא ולהחזיר · Please fill in and send back:*');
     [['מחיר ליום: ₪ ____ (כולל מע״מ / בתוספת / ללא)','Price per day: ₪ ____ (incl. VAT / plus VAT / none)'],['כולל עד __ שעות ועד __ ק״מ','Includes up to __ hours and __ km'],['השעות נספרות מ: האיסוף / החניון','Hours counted from: pick-up / depot'],
      ['שעה נוספת: ₪ ____','Extra hour: ₪ ____'],['ק״מ נוסף: ₪ ____','Extra km: ₪ ____'],['כביש 6 ואגרות: כלול / בנוסף','Highway 6 and tolls: included / extra'],['חניה: כלול / בנוסף','Parking: included / extra'],
-     ['טיפ לנהג: לא מצופה / ₪ ____ ליום','Driver tip: not expected / ₪ ____ a day'],['תוספות אחרות (לינה, לילה, שבת): ____','Other extras (overnight, night, Shabbat): ____'],['ביטול ללא חיוב עד: ____','Free cancellation until: ____'],['תשלום: ____','Payment: ____'],['הערות: ____','Notes: ____']]
+     ['טיפ לנהג: לא מצופה / ₪ ____ ליום','Driver tip: not expected / ₪ ____ a day'],['תוספות אחרות (לינה, לילה, שבת): ____','Other extras (overnight, night, Shabbat): ____'],['מדיניות ביטול: ____','Cancellation policy: ____'],['תשלום: ____','Payment: ____'],['הערות: ____','Notes: ____']]
       .forEach(p=>{ L.push(p[0]); L.push(p[1]); });
   } else if(t&&t.price){
     L.push(''); L.push('*מחיר ותנאים · Price and terms*');
-    bkTermRows(t).forEach((r,i)=>{ if(r[2]) two(r); else if(i<8){ L.push(r[0]+': לא צוין'); L.push(r[1]+': not stated'); } });
+    bkTermRows(t).forEach((r,i)=>{ if(r[2]) two(r); else if(i<BK_MUST){ L.push(r[0]+': לא צוין'); L.push(r[1]+': not stated'); } });
   }
   L.push(''); L.push('*'+BK_STMT[0]+'*'); L.push(BK_STMT[1]);
   L.push(''); L.push('מזמין · Booked by: '+[b.booker_name,b.booker_phone].filter(Boolean).join(', '));
-  if(mode==='summary'&&b.answered_by) L.push('מולא ע״י · Filled in by: '+b.answered_by);
+  const ok=mode==='summary'&&t&&t.price?bkOkRows(b):null;
+  if(ok) ok.forEach(r=>{ L.push(r[0]+': '+r[2]); L.push(r[1]+': '+r[3]); }); else if(mode==='summary'&&b.answered_by) L.push('מולא ע״י · Filled in by: '+b.answered_by);
   return L.join('\n'); }
 const BKS_CSS=`.bks{background:#fff;color:#16261e;border:1px solid #cfd6cd;border-radius:10px;padding:14px 16px;font-size:15px;line-height:1.35;text-align:right}
 .bks small{display:block;font-size:12px;color:#55635a;font-weight:400;text-align:right}
@@ -175,6 +198,10 @@ const BKS_CSS=`.bks{background:#fff;color:#16261e;border:1px solid #cfd6cd;borde
 .bks-r dt{flex:0 0 38%;font-weight:600}
 .bks-r dd{flex:1;margin:0;min-width:0;white-space:pre-wrap;overflow-wrap:anywhere}
 .bks-r.ns dd{color:#a66a12}
+.bks-r.okd dd{color:#1f6b3f;font-weight:600}
+.bks-r.chg{background:#f8e3df;box-shadow:-6px 0 0 #f8e3df,6px 0 0 #f8e3df}
+.bks-r.chg dd{color:#a63b2e;font-weight:600}
+.bks .was{color:#a63b2e;font-weight:400}
 .bks-sec{margin:12px 0 2px;padding:5px 8px;background:#e8ede5;border-radius:6px;font-weight:600;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .bks-sec small{display:inline}
 .bks-stmt{margin-top:12px;border:2px solid #16261e;border-radius:6px;padding:8px 10px;font-weight:700}
@@ -189,10 +216,15 @@ const intlDigits = ph => { let d=String(ph||'').replace(/[^\d+]/g,''); if(d.star
 // ---------- the only two calls this page can make ----------
 let demo = {status:'waiting',company:'Galil Buses',booker_name:'Yael Levi',booker_role:'Licensed tour guide',booker_phone:'050-000-0000',date_from:'2026-11-10',date_to:'',pax:'24',service:'midibus',seats:'30',tourists:true,
   pickup_time:'08:00',pickup_place:'מלון בירושלים',route:'קיסריה ← זכרון יעקב ← חזרה לירושלים',dropoff_time:'18:00',dropoff_place:'מלון בירושלים',note:'מזגן חזק',
-  proposed:{price:'3000',currency:'ILS',vat:'not_applicable',hours_incl:'10',km_incl:'250',overtime:'200',tolls:'incl'},terms:{},terms_by:'',answered_by:'',answered_at:null,confirmed_at:null};
+  proposed:{price:'3000',currency:'ILS',vat:'not_applicable',hours_incl:'10',km_incl:'250',overtime:'200',tolls:'incl'},terms:{},terms_by:'',answered_by:'',answered_at:null,confirmed_at:null,guide_ok_at:new Date().toISOString(),company_ok_at:null,company_ok_via:'',seen:null};
+// ?demo=changed shows the page after the guide changed the job: red rows and the Accept button
+if(qs.get('demo')==='changed'){ const t={price:'3000',currency:'ILS',vat:'not_applicable',hours_incl:'10',km_incl:'250',overtime:'200',tolls:'incl',tip:'none'};
+  const was=Object.assign({},demo,{terms:t}); demo=Object.assign({},demo,{terms:t,terms_by:'company',answered_by:'דודו',answered_at:new Date().toISOString(),pickup_time:'07:00',pax:'28',seen:was}); }
 async function api(fn, args){
   if(DEMO){ await new Promise(r=>setTimeout(r,150));
-    if(fn==='booking_answer') demo=Object.assign({},demo,{terms:args.p_terms,terms_by:'company',answered_by:args.p_name,answered_at:new Date().toISOString(),status:'answered'});
+    const now=new Date().toISOString(), snap=d=>JSON.parse(JSON.stringify(Object.assign({},d,{seen:undefined})));
+    if(fn==='booking_answer'){ demo=Object.assign({},demo,{terms:args.p_terms,terms_by:'company',answered_by:args.p_name,answered_at:now,status:'answered',company_ok_at:now,company_ok_via:'link',guide_ok_at:null}); demo.seen=snap(demo); }
+    if(fn==='booking_accept'){ demo=Object.assign({},demo,{status:'confirmed',company_ok_at:now,company_ok_via:'link',confirmed_at:now}); demo.seen=snap(demo); }
     return JSON.parse(JSON.stringify(demo)); }
   let r; try{ r=await fetch(SUPABASE_URL+'/rest/v1/rpc/'+fn,{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY},body:JSON.stringify(args)}); }
   catch(e){ throw new Error('אין חיבור לאינטרנט. נסו שוב. · No connection. Try again.'); }
@@ -209,12 +241,12 @@ function header(){
   return `<div class="top"><h1>דף הזמנת רכב<span class="en">Vehicle booking sheet</span></h1>
     ${who?`<p>${two('מאת: '+who,'From: '+who+(B.booker_role?' · '+B.booker_role:''))}</p>`:''}</div>`;
 }
-function jobCard(){ return `<div class="sheetbox">${bkSheetHtml(B, B.terms&&B.terms.price&&!editing?B.terms:null)}</div>`; }
+function jobCard(withTerms){ return `<div class="sheetbox">${bkSheetHtml(B, withTerms&&B.terms&&B.terms.price?B.terms:null, {seen:B.seen})}</div>`; }
 function seg(k, opts, t, cols){ return `<div class="seg ${cols===3?'three':'two'}" data-seg="${k}">${opts.map(o=>`<button type="button" data-val="${o[0]}" aria-pressed="${t[k]===o[0]}">${esc(o[1])}<small>${esc(o[2])}</small></button>`).join('')}</div>`; }
 function field(k, he, en, t, mode, ph){ return `<div><label for="t_${k}">${two(he,en)}</label><input id="t_${k}" data-t="${k}" type="text" ${mode?`inputmode="${mode}"`:''} dir="auto" value="${esc(t[k]||'')}" placeholder="${esc(ph||'')}" autocomplete="off"></div>`; }
 function formView(){
   const answered=!!(B.terms&&B.terms.price), t=answered?B.terms:(B.proposed||{}), pre=!answered&&Object.keys(t).length>0;
-  app.innerHTML=`${header()}${jobCard()}
+  app.innerHTML=`${header()}${jobCard(false)}
     <div class="sec"><h2>מחיר ותנאים<span class="en">Price and terms · filled in by the bus company</span></h2>
     ${pre?`<p class="note sub">${two('חלק מהשדות מולאו מראש לפי מה שהמזמין מצפה. שנו מה שצריך.','Some fields are filled in with what the guide expects. Change anything that is different.')}</p>`:''}
     <form id="f" class="fields" novalidate>
@@ -230,32 +262,43 @@ function formView(){
       <fieldset><legend class="lab">${two('חניה','Parking')}</legend>${seg('parking',[['incl','כלול במחיר','included'],['extra','בנוסף, לפי קבלה','extra, by receipt']],t)}</fieldset>
       <fieldset><legend class="lab">${two('טיפ לנהג','Driver tip')}</legend>${seg('tip',[['none','לא מצופה','not expected'],['customary','מקובל','customary']],t)}
         <input class="sub" data-t="tip_amt" type="text" inputmode="decimal" aria-label="סכום מקובל ליום · Customary amount a day" value="${esc(t.tip_amt||'')}" placeholder="סכום מקובל ליום · amount a day"></fieldset>
+      <div><label for="t_cancel">${two('מדיניות ביטול','Cancellation policy')}</label>
+        <textarea id="t_cancel" data-t="cancel" dir="auto" maxlength="1500" placeholder="אפשר להדביק כאן את מדיניות הביטול שלכם · Paste your cancellation policy here">${esc(t.cancel||'')}</textarea></div>
       ${field('extras','תוספות אחרות: לינה, לילה, שבת','Other extras: overnight, night, Shabbat',t,'','')}
-      ${field('cancel','ביטול ללא חיוב עד','Free cancellation until',t,'','48 שעות לפני')}
       ${field('payment','תשלום: איך ומתי','Payment: how and when',t,'','העברה בנקאית אחרי הנסיעה')}
       <div><label for="t_note">${two('הערות','Anything else · free text')}</label><textarea id="t_note" data-t="note" dir="auto">${esc(t.note||'')}</textarea></div>
       <div><label for="by">${two('השם שלך','Your name')}</label><input id="by" type="text" dir="auto" value="${esc(B.answered_by||'')}" autocomplete="name"></div>
     </form></div>
     <div class="stmt">${two(BK_STMT[0],BK_STMT[1])}</div>
     <div id="err"></div>
-    <div class="acts"><button class="big" id="send" type="button">שליחה למזמין<small>Send to the guide</small></button>
-      ${answered&&B.status==='answered'?'<button class="big soft" id="back" type="button">ביטול<small>Cancel</small></button>':''}</div>
+    <div class="acts"><button class="big" id="send" type="button">שליחה ואישור<small>Send and accept</small></button>
+      ${answered?'<button class="big soft" id="back" type="button">חזרה בלי לשנות<small>Back without changing</small></button>':''}</div>
     <p class="foot">${two('הדף הזה מציג הזמנה אחת בלבד.','This page shows this one booking only.')}</p>`;
   app.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{ const on=b.getAttribute('aria-pressed')==='true'; b.parentNode.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed','false')); b.setAttribute('aria-pressed',String(!on)); });
-  const back=app.querySelector('#back'); if(back) back.onclick=()=>{ editing=false; draw(); };
-  app.querySelector('#send').onclick=send;
+  const back=app.querySelector('#back'); if(back) back.onclick=()=>{ editing=false; draw(); window.scrollTo(0,0); };
+  app.querySelector('#send').onclick=()=>send(false);
+}
+// No cancellation policy: say what that means before it goes out. goOn sends anyway; back returns to fill it in.
+function noCancelWarn(goOn, back, goLabel){
+  const err=app.querySelector('#err');
+  err.innerHTML=`<div class="ban warn" style="margin-top:12px">${two('לא מילאתם מדיניות ביטול.','You left the cancellation policy empty.')}
+    <p style="font-weight:400;margin:8px 0 0">${two('בדף כתוב: מה שלא רשום כאן לא יחויב. בלי מדיניות ביטול כתובה, לא יהיו דמי ביטול.','This sheet says anything not written here is not charged. With no written cancellation policy, there is no cancellation fee.')}</p></div>
+    <div class="acts"><button class="big" id="ncBack" type="button">חזרה למילוי מדיניות ביטול<small>Go back and add a cancellation policy</small></button>
+    <button class="big soft" id="ncGo" type="button">${esc(goLabel[0])}<small>${esc(goLabel[1])}</small></button></div>`;
+  err.querySelector('#ncBack').onclick=back; err.querySelector('#ncGo').onclick=goOn; err.scrollIntoView({block:'center'});
 }
 function readTerms(){ const t={};
   app.querySelectorAll('[data-t]').forEach(i=>{ let v=i.value.trim(); if(BK_NUM.includes(i.dataset.t)) v=v.replace(/[,₪$€\s]/g,''); if(v) t[i.dataset.t]=v; });
   app.querySelectorAll('[data-seg]').forEach(s=>{ const on=s.querySelector('button[aria-pressed="true"]'); if(on) t[s.dataset.seg]=on.dataset.val; });
   return t; }
-async function send(){
+async function send(noPolicyOk){
   const err=app.querySelector('#err'), t=readTerms(), btn=app.querySelector('#send');
   const fail=(he,en,id)=>{ err.innerHTML=`<div class="err">${two(he,en)}</div>`; const el=id&&app.querySelector('#'+id); if(el) el.focus(); err.scrollIntoView({block:'center'}); };
   if(!t.price) return fail('נא למלא מחיר ליום.','Fill in the price per day.','t_price');
   const pat={price:/^\d{1,7}(\.\d{1,2})?$/,hours_incl:/^\d{1,2}(\.\d)?$/,km_incl:/^\d{1,4}$/,overtime:/^\d{1,7}(\.\d{1,2})?$/,extra_km:/^\d{1,7}(\.\d{1,2})?$/,tip_amt:/^\d{1,7}(\.\d{1,2})?$/};
   const bad=BK_NUM.find(k=>t[k]&&!pat[k].test(t[k]));
   if(bad) return fail('בשדות המחיר, השעות והק״מ יש לכתוב מספר בלבד.','Price, hours and km fields take a number only.', bad==='tip_amt'?null:'t_'+bad);
+  if(!t.cancel&&!noPolicyOk) return noCancelWarn(()=>send(true), ()=>{ err.innerHTML=''; const c=app.querySelector('#t_cancel'); c.scrollIntoView({block:'center'}); c.focus(); }, ['שליחה בלי מדיניות ביטול','Send without a cancellation policy']);
   btn.disabled=true; err.innerHTML='';
   try{ B=await api('booking_answer',{p_key:KEY,p_terms:t,p_name:app.querySelector('#by').value.trim()}); editing=false; draw(true); window.scrollTo(0,0); }
   catch(e){ btn.disabled=false; err.innerHTML=`<div class="err">${esc(e.message)}</div>`; }
@@ -263,22 +306,44 @@ async function send(){
 function doneView(justSent){
   const conf=B.status==='confirmed', wa='https://wa.me/'+(B.booker_phone?intlDigits(B.booker_phone):'')+'?text='+encodeURIComponent(bkText(B,B.terms,'summary'));
   app.innerHTML=`${header()}
-    <div class="ban ${conf?'ok':'ok'}">${conf?two('ההזמנה אושרה ע״י המזמין. אלה התנאים שסוכמו.','The guide confirmed this booking. These are the agreed terms.'):two(justSent?'נשלח. המזמין רואה את התשובה שלך.':'התשובה שלך נשלחה.',justSent?'Sent. The guide can see your answer.':'Your answer was sent.')}</div>
-    ${jobCard()}
+    <div class="ban ok">${conf?two('שני הצדדים אישרו. אלה התנאים שסוכמו.','Both sides accepted. These are the agreed terms.'):two((justSent?'נשלח ואושר מצדכם.':'אישרתם את התנאים.')+' ממתין לאישור המזמין.',(justSent?'Sent and accepted on your side.':'You accepted these terms.')+' Waiting for the guide to accept.')}</div>
+    ${jobCard(true)}
     <div class="acts">
       <a class="big" id="wa" href="${esc(wa)}" target="_blank" rel="noopener">שליחת עותק בוואטסאפ למזמין<small>Send a copy on WhatsApp${B.booker_name?' to '+esc(B.booker_name):''}</small></a>
       <button class="big soft" id="print" type="button">הדפסה / שמירה כ-PDF<small>Print / save as PDF</small></button>
       ${conf?'':'<button class="big soft" id="change" type="button">תיקון התשובה<small>Change my answer</small></button>'}
     </div>
-    <p class="foot">${conf?two('לשינוי אחרי אישור, פנו למזמין.','To change anything after confirmation, contact the guide.'):two('אפשר לתקן עד שהמזמין מאשר.','You can change your answer until the guide confirms.')}</p>`;
+    <p class="foot">${conf?two('לשינוי אחרי אישור שני הצדדים, פנו למזמין.','To change anything after both sides accepted, contact the guide.'):two('אפשר לתקן עד שהמזמין מאשר. כל שינוי חוזר אליו לאישור.','You can change your answer until the guide accepts. Any change goes back to him for approval.')}</p>`;
   app.querySelector('#print').onclick=()=>window.print();
   const ch=app.querySelector('#change'); if(ch) ch.onclick=()=>{ editing=true; draw(); window.scrollTo(0,0); };
 }
+// The guide changed the job or proposed other terms after the company answered: the company sees what changed, in red,
+// and accepts or changes the terms.
+function reviewView(){
+  const n=bkChanged(B,B.terms,B.seen);
+  app.innerHTML=`${header()}
+    <div class="ban warn">${n?two('המזמין שינה את ההזמנה. השינויים מסומנים באדום.','The guide changed the booking. The changes are marked in red.'):two('המזמין שלח את ההזמנה לאישורכם.','The guide sent this booking for you to accept.')}</div>
+    ${jobCard(true)}
+    <div id="err"></div>
+    <div class="acts"><button class="big" id="accept" type="button">אישור<small>Accept</small></button>
+      <button class="big soft" id="change" type="button">שינוי התנאים<small>Change the terms</small></button></div>
+    <p class="foot">${two('אחרי אישור שני הצדדים הדף ננעל.','Once both sides accept, the sheet is locked.')}</p>`;
+  const toForm=()=>{ editing=true; draw(); window.scrollTo(0,0); };
+  const accept=async(noPolicyOk)=>{ const err=app.querySelector('#err'), btn=app.querySelector('#accept');
+    if(!(B.terms&&B.terms.cancel)&&!noPolicyOk) return noCancelWarn(()=>accept(true), toForm, ['אישור בלי מדיניות ביטול','Accept without a cancellation policy']);
+    btn.disabled=true; err.innerHTML='';
+    try{ B=await api('booking_accept',{p_key:KEY,p_name:B.answered_by||''}); draw(true); window.scrollTo(0,0); }
+    catch(e){ btn.disabled=false; err.innerHTML=`<div class="err">${esc(e.message)}</div>`; } };
+  app.querySelector('#accept').onclick=()=>accept(false);
+  app.querySelector('#change').onclick=toForm;
+}
 function draw(justSent){
-  if(B.status==='cancelled'){ app.innerHTML=`${header()}<div class="ban bad">${two('ההזמנה בוטלה.','This booking was cancelled.')}</div>${jobCard()}`; return; }
+  if(B.status==='cancelled'){ app.innerHTML=`${header()}<div class="ban bad">${two('ההזמנה בוטלה.','This booking was cancelled.')}</div>${jobCard(false)}`; return; }
   const answered=!!(B.terms&&B.terms.price);
-  if(B.status==='confirmed'||(answered&&B.status==='answered'&&!editing)) return doneView(justSent);
-  editing=true; formView();
+  if(B.status==='confirmed') return doneView(justSent);
+  if(editing||!answered) return formView();
+  if(B.status==='answered') return doneView(justSent);
+  reviewView();
 }
 (async()=>{
   if(!KEY&&!DEMO){ app.innerHTML=`<div class="top"><h1>דף הזמנת רכב<span class="en">Vehicle booking sheet</span></h1></div><div class="ban bad">${two('הקישור אינו שלם. בקשו מהמזמין לשלוח אותו שוב.','This link is incomplete. Ask the person who sent it to send it again.')}</div>`; return; }

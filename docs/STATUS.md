@@ -12,7 +12,7 @@
 | Repo | `Danielg972/eit-vendors`, branch `main` (cite by commit SHA) |
 | Database | Supabase project `wjuqtjlrtcywjaspjpwu` (org "EIT Vendors", Frankfurt) |
 | Schema record | `supabase/schema.sql` (tables, functions, grants), plus `supabase/functions/files/index.ts` (edge function v9) |
-| Terms version | `2026-10-02a` (draft, not yet reviewed by a lawyer) |
+| Terms version | `2026-10-02b` (draft, not yet reviewed by a lawyer; adds 6c, booking sheets) |
 | Decisions | `docs/DECISIONS.md` (D-1 Cockpit boundary; D-2 quote tracker; D-3 driver reviews; D-4 transport by vehicle size; D-5 booking sheets) |
 
 ## Integration with the Cockpit
@@ -53,12 +53,20 @@
 7. From D-5: the booking sheet's closing line ("Anything not written here will not be charged") is a record of what was agreed, not a lawyer-drafted contract. The sheet also holds the name of whoever answered for the company. Have the lawyer look at both.
 8. From D-5: nobody is alerted when a company answers a booking sheet; the guide sees it when he opens the sheet.
 
+## Waiting for the owner
+
+- **Run `supabase/migrations/2026-10-02d_bookings_accept.sql`** in the Supabase SQL editor (safe to run twice). It adds the two-sided accept step, the red marking of changes and the longer cancellation-policy box, and opens booking sheets to all colleagues. The app code for it is on `main` and works with the database as it is; until the script runs, the company's Accept button and the red rows are missing and booking sheets stay with Eretz Israel Tours only.
+- **Emails for booking sheets: choose how the app sends email.** Asked for 2 Oct 15:16 ("if that's easy"): a copy by email when a sheet goes out, and an email to the guide when the company answers. Not built: the app has no email-sending service. Options: (a) a Resend account with the eretzisraeltours.com domain verified (DNS records at SiteGround), the route Supabase documents; (b) an Eretz Israel Tours mailbox at SiteGround used over SMTP, not yet confirmed to work from Supabase. Either needs a secret set in Supabase by the owner.
+
 ## Next
 
-- **Booking sheets (D-5): first real use.** Live for Eretz Israel Tours only since 2 Oct 2026. To do: the owner sends one real sheet to a bus company and confirms it; then decides whether to open it to colleagues (Team tab switch). Before or soon after opening: a line in terms section 6b, and the lawyer's look at the closing line.
+- **Booking sheets (D-5): first real use** by the owner with a real bus company, then by colleagues.
+- **Lawyer:** terms 6c, the closing line of the sheet, and the cancellation-policy warning wording.
+- **Later, not now (owner, 2 Oct 15:20):** the guide or agency adds its own terms to a booking sheet (driver late, bus dirty).
 
 ## Changes that would affect the Cockpit (log)
 
+- 2026-10-02: **Built, database change pending:** booking sheets, second step: both sides accept, changes return in red, cancellation-policy box, open to all colleagues (`2026-10-02d`). `bookings` gains `guide_ok_at`, `company_ok_at`, `company_ok_via`, `seen_guide`, `seen_company`; new RPC `booking_accept`. Dates are entered and shown day/month/year across the app. Nothing Cockpit-facing.
 - 2026-10-02: **Live (Eretz Israel Tours only):** booking sheets for buses and vans (D-5). New table `bookings`; new page `b/index.html`; six new RPCs; `whoami` gains `phone`, `bookings`, `bookings_for`. A confirmed sheet creates an ordinary `Booked` quote. Nothing Cockpit-facing: a booking sheet carries a private trip/client label only, never a Cockpit id, and no export.
 - 2026-10-02: **Live:** driver reviews and "bus" wording (D-3), transport by vehicle size (D-4). New tables `drivers`, `driver_vendors`, `driver_reviews` (driver identity = phone number); supplier tag `Coach` became `Bus` (5 suppliers); a company's vehicles are tags (`Bus`, `Midibus`, `Van 17–20 seats`, …). Nothing Cockpit-facing.
 - 2026-10-02: **Live:** quote tracker (D-2). `quote_options` gained `service`, `seats`, `hours_incl`, `km_incl`, `fees`; `quotes.shared` defaults to true; new RPC `quotes_tracker`. Nothing Cockpit-facing. Quotes here remain reference only.
