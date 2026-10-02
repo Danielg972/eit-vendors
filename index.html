@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Israel Suppliers Master List</title>
+<title>The Inner Circle – Israel Guide</title>
 <meta name="theme-color" content="#1f3a2e">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Suppliers List">
+<meta name="apple-mobile-web-app-title" content="Inner Circle">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -355,6 +355,59 @@ button.bkcard{display:block;width:100%;text-align:left;font:inherit;color:inheri
 .f .lab{font-size:13px;color:var(--ink-2)}
 .f .seg{margin:0 0 4px}
 .seg .tg{border-radius:8px;min-height:42px}
+/* welcome tour (first open) */
+.tour{position:fixed;inset:0;z-index:15;background:var(--ground);display:flex;justify-content:center}
+.tour-in{width:100%;max-width:480px;display:flex;flex-direction:column;min-height:0;padding-top:env(safe-area-inset-top,0px)}
+.tour-top{display:flex;align-items:center;gap:12px;padding:6px 8px 0 20px;min-height:50px}
+.tour-n{font-family:var(--f-mono);font-size:12px;color:var(--ink-2)}
+.tour-bar{flex:1;display:flex;gap:4px}
+.tour-bar i{flex:1;height:4px;border-radius:2px;background:var(--line)}
+.tour-bar i.on{background:var(--tab-on)}
+.tour-skip{border:0;background:none;min-height:44px;padding:0 12px;font-size:14px;color:var(--tab-on);text-decoration:underline}
+.tour-body{flex:1;min-height:0;overflow-y:auto;padding:8px 20px 18px}
+.tour-body h2{font-family:var(--f-display);font-weight:400;font-size:27px;line-height:1.15;margin:18px 0 10px}
+.tour-body p{margin:0 0 10px;color:var(--ink-2)}
+.tour-body p b{color:var(--ink);font-weight:600}
+.tour-body .linkbtn{color:var(--tab-on);min-height:44px}
+.tour-ex{background:var(--ground);border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:6px}
+.tour-ex .chips{padding:8px 0 0;overflow:hidden}
+.tour-ex .chip{padding:7px 14px;min-height:0;font-size:14px}
+.tour-ex .actions{margin:10px 0 0;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.tour-ex .act{font-size:11.5px;padding:9px 2px}
+.tour-ex .qcard,.tour-ex .qstat{margin:0 0 10px}
+.tour-ex .favs-h{margin-top:10px}
+.tour-ex .list{margin-top:8px}
+.tour-cap{font-size:12px;color:var(--ink-2);margin-top:8px}
+.tour-foot{display:flex;gap:10px;padding:12px 20px calc(14px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);background:var(--card)}
+.tour-foot .btn{min-height:50px;font-size:16px}
+.tour-foot .go{flex:1}
+.tour-hero{background:var(--olive);color:var(--on-olive);margin:-8px -20px 0;padding:30px 24px 26px}
+.tour-hero b{display:block;font-family:var(--f-display);font-weight:400;font-size:32px;line-height:1.05}
+.tour-hero small{display:block;font-size:12px;letter-spacing:1.2px;text-transform:uppercase;opacity:.8;margin-top:8px}
+.tour-kick{font-size:12px;letter-spacing:1.2px;text-transform:uppercase;font-weight:600;color:var(--ochre);margin-top:22px}
+.tour-row{display:flex;gap:12px;align-items:flex-start;margin:14px 0 0}
+.tour-row .ti{flex:none;width:40px;height:40px;border-radius:10px;background:var(--wash);color:var(--tab-on);display:flex;align-items:center;justify-content:center}
+.tour-row .ti svg{width:22px;height:22px}
+.tour-row b{display:block;font-size:16px;font-weight:600}
+.tour-row span{font-size:14px;color:var(--ink-2)}
+.tour-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:2px 14px 14px;margin:10px 0 0}
+.tour-card.warn{background:var(--warn-wash);border-color:transparent;padding:12px 14px}
+.tour-card.bad{background:var(--bad-wash);border-color:transparent;padding:12px 14px}
+.tour-card.warn b,.tour-card.bad b{display:block;font-size:16px;font-weight:600}
+.tour-card.bad b{color:var(--bad)}
+.tour-card.warn span,.tour-card.bad span{font-size:14px}
+.tour-num{font-family:var(--f-mono);font-size:13px;background:var(--olive-2)!important;color:var(--on-olive)!important;border-radius:999px!important;width:28px!important;height:28px!important}
+.tour-sheet{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:13px}
+.tour-sheet .hd{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.tour-sheet .hd b{font-size:15px}
+.tour-sheet .sec{display:flex;gap:6px;align-items:baseline;font-size:11px;letter-spacing:1px;text-transform:uppercase;font-weight:600;color:var(--ochre);padding:8px 0 2px}
+.tour-sheet .sec em{margin-left:auto;font-style:normal;text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-2)}
+.tour-sheet .r{display:flex;justify-content:space-between;gap:10px;padding:3px 0;border-bottom:1px solid var(--wash)}
+.tour-sheet .r span span{color:var(--ink-2)}
+.tour-sheet .r .x2{color:var(--bad);font-weight:500}
+.tour-sheet .stmt{margin-top:8px;background:var(--wash);border-radius:8px;padding:7px 10px}
+.tour-sheet .stmt span{color:var(--ink-2)}
+.tour-sheet .ft{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(140px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--ground);padding:10px 16px;border-radius:999px;font-size:14px;z-index:40;max-width:calc(100% - 32px)}
 </style>
 <style>
@@ -766,7 +819,7 @@ const DB = {
     if(error) throw new Error(error.message);
     S.token=data.token; try{ localStorage.setItem(TOKEN_KEY,S.token); }catch(e){}
     // Push alert to Eretz Israel Tours' phone (ntfy). Sent from this browser; carries no personal details.
-    if(data.alert){ try{ fetch('https://ntfy.sh/',{method:'POST',keepalive:true,body:JSON.stringify({topic:data.alert,title:'Israel Suppliers: new join request',
+    if(data.alert){ try{ fetch('https://ntfy.sh/',{method:'POST',keepalive:true,body:JSON.stringify({topic:data.alert,title:'The Inner Circle: new join request',
       message:'Someone asked to join'+(role?' ('+role+')':'')+(/^No proof:/.test(note||'')?', without proof':'')+'. Open the Team tab to review.',click:'https://vendors.eretzisraeltours.com/',tags:['bust_in_silhouette'],priority:4})}).catch(()=>{}); }catch(e){} }
     await DB.loadMe();
   },
@@ -818,6 +871,7 @@ function boot(){
   if(LIVE && S.me.status!=='approved') return renderWaiting();
   if(LIVE && !S.me.is_admin && S.me.terms_version!==TERMS_VERSION) return renderTermsGate();
   render();
+  if(!tourSeen()) openTour();
 }
 
 function copyText(text, el){
@@ -829,10 +883,12 @@ function linkBox(id, url){
 function wireCopy(root){ root.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>{ const i=root.querySelector('#'+b.dataset.copy); copyText(i.value,i); }); }
 
 const ROLES=['Licensed tour guide','Travel agent','Tour operator','Other'];
-const TERMS_VERSION='2026-10-02b';
+const TERMS_VERSION='2026-10-02c';
 const TERMS_HTML=`<p class="hint">Version ${TERMS_VERSION}. Plain-language summary. Draft: not yet reviewed by a lawyer.</p>
-<h4>1. Who runs this</h4><p>The Israel Suppliers Master List is run by Eretz Israel Tours, which approves members and manages the list.</p>
+<h4>1. Who runs this</h4><p>The Inner Circle – Israel Guide (until October 2026 called the Israel Suppliers Master List) is run by Eretz Israel Tours, which approves members and manages the list.</p>
 <h4>2. Who can join</h4><p>Licensed tour guides, travel agents, tour operators and other travel professionals approved by Eretz Israel Tours. You confirm the details and license you submit are yours and true. Eretz Israel Tours can decline, pause or remove access at any time.</p>
+<h4>2a. Use it and add to it</h4><p>This list is meant to help everyone, and it works only if everyone takes part. <b>Every member has to both use the list and add to it</b>: a supplier, a price, a quote, a note, a deal, a driver review or a correction. A member who has not done both for 3 months gets a reminder, and is removed if that does not change.</p>
+<h4>2b. Cost</h4><p><b>As of now, nobody pays to join, and you will not be asked to pay in the future.</b> If Eretz Israel Tours ever decides the costs are not worth bearing and a fee is introduced, founding members stay free. A founding member is anyone approved while the list is still free.</p>
 <h4>3. What you share</h4><p>Share supplier information you believe is accurate and that you're allowed to share. Don't post personal member codes, card or bank details, or personal details of your clients. Be fair in ratings and notes: describe your own experience. When you add a driver, add only the phone number he uses for work; it is there so colleagues can tell drivers apart.</p>
 <h4>3a. Fair, objective feedback</h4><p>Feedback, ratings, notes, supplier updates and reviews of drivers must be objective and factual. A driver review says what happened on your trip (timing, driving, service), with your name next to it. When something is your personal or subjective opinion, say so clearly (for example "In my opinion…").</p><p><b>Slandering or running down a colleague, competitor, supplier or anyone else, in any form, is grounds for being removed from the service.</b> Reports sent anonymously are not shown with your name, but are kept on record so this rule can be enforced.</p>
 <h4>4. How you use it</h4><p>Use the list for your own professional work. Keep your personal link to yourself, and don't copy, resell or publish the list.</p><p><b>Never show the list to suppliers.</b> Don't show suppliers the app, screenshots, prices, notes or ratings from it. Anyone who does will lose access immediately.</p>
@@ -854,7 +910,8 @@ async function sendProof(file, out){
 }
 function renderGate(msg){
   app.innerHTML = `<div class="gate"><form class="gate-card" id="gateForm" novalidate>
-    <h1 class="mark">Israel Suppliers Master List</h1>
+    <h1 class="mark">The Inner Circle</h1>
+    <div class="cat" style="margin:0 0 12px;font-size:13px">Israel Guide</div>
     <p>A vendor list kept by colleagues, for colleagues. Guides and travel professionals share the hotels, drivers, sites and suppliers they trust, and warn each other about the ones they don't, so all of us work a little easier.</p><p>To keep it among professionals, joining needs proof that you work in tourism, like your license. Once approved, you get your own link. No password needed.</p>
     <div class="f"><label for="gName">Your name <em>*</em></label><input id="gName" type="text" autocomplete="name" placeholder="Yossi Cohen" required></div>
     <div class="f"><label for="gEmail">Email <em>*</em></label><input id="gEmail" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com" required></div>
@@ -942,7 +999,7 @@ function render(){
   if(S.admin){ tabs.push(['review','Review',icons.check]); tabs.push(['team','Team',icons.people]); }
   app.innerHTML = `
     <header class="top"><div class="top-row">
-      <div class="brand">Israel Suppliers<small>Master list · shared by colleagues</small></div>
+      <div class="brand">The Inner Circle<small>Israel Guide · shared by colleagues</small></div>
       <div class="who"><button class="ghost-btn" id="fbBtn" type="button">Feedback</button><button class="ghost-btn" id="meBtn" type="button" style="border:0;max-width:40vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(S.me?S.me.name:S.user.email)} ⚙</button>${LIVE?'<button class="ghost-btn" id="signOut">Sign out</button>':''}</div>
     </div></header>
     ${LIVE?'':'<div class="demo-bar">Preview with sample suppliers. Changes here aren\'t saved.</div>'}
@@ -1130,8 +1187,8 @@ function reportsPanel(){
 function welcomeText(m, lang){
   const first=String(m.name||'').trim().split(/\s+/)[0]||'';
   return lang==='he'
-    ? `שלום ${first}, אושרת לרשימת הספקים של Eretz Israel Tours (Israel Suppliers Master List). פתח/י את vendors.eretzisraeltours.com בטלפון שממנו נרשמת, או את הקישור האישי שקיבלת בהרשמה. אם הקישור אבד, כתוב/כתבי לי ואשלח חדש. תזכורת: הרשימה לעמיתים בלבד, אין להציג אותה לספקים. בהצלחה!`
-    : `Hi ${first}, you've been approved for the Israel Suppliers Master List by Eretz Israel Tours. Open vendors.eretzisraeltours.com on the phone you signed up with, or use the personal link you got when you joined. If you've lost it, reply and I'll send a new one. Reminder: the list is for colleagues only, never show it to suppliers. Welcome!`;
+    ? `שלום ${first}, אושרת לרשימת הספקים של Eretz Israel Tours (The Inner Circle – Israel Guide). פתח/י את vendors.eretzisraeltours.com בטלפון שממנו נרשמת, או את הקישור האישי שקיבלת בהרשמה. אם הקישור אבד, כתוב/כתבי לי ואשלח חדש. תזכורת: הרשימה לעמיתים בלבד, אין להציג אותה לספקים. בהצלחה!`
+    : `Hi ${first}, you've been approved for The Inner Circle – Israel Guide, the colleagues' supplier list run by Eretz Israel Tours. Open vendors.eretzisraeltours.com on the phone you signed up with, or use the personal link you got when you joined. If you've lost it, reply and I'll send a new one. Reminder: the list is for colleagues only, never show it to suppliers. Welcome!`;
 }
 function openWelcome(m){
   const ph=firstPhone(m.phone||''), em=m.email||''; let lang='en';
@@ -1144,7 +1201,7 @@ function openWelcome(m){
   w.querySelectorAll('[data-wl]').forEach(b=>b.onclick=()=>{ lang=b.dataset.wl; w.querySelectorAll('[data-wl]').forEach(o=>o.setAttribute('aria-pressed',o===b)); t.value=welcomeText(m,lang); t.dir=lang==='he'?'rtl':'ltr'; });
   w.querySelector('#wSkip').onclick=closeSheet;
   const wa=w.querySelector('#wWa'); if(wa) wa.onclick=()=>{ window.open(`https://wa.me/${intlDigits(ph)}?text=${encodeURIComponent(t.value)}`,'_blank','noopener'); closeSheet(); };
-  const ml=w.querySelector('#wMail'); if(ml) ml.onclick=()=>{ location.href=`mailto:${em}?subject=${encodeURIComponent(lang==='he'?'אושרת לרשימת הספקים':'You\'re approved: Israel Suppliers Master List')}&body=${encodeURIComponent(t.value)}`; closeSheet(); };
+  const ml=w.querySelector('#wMail'); if(ml) ml.onclick=()=>{ location.href=`mailto:${em}?subject=${encodeURIComponent(lang==='he'?'אושרת לרשימת הספקים':'You\'re approved: The Inner Circle – Israel Guide')}&body=${encodeURIComponent(t.value)}`; closeSheet(); };
 }
 function viewReview(){
   const view=document.getElementById('view');
@@ -1332,9 +1389,10 @@ function bccPopup(em){
 function openMySettings(){
   const body=`<p style="margin:0 0 12px;color:var(--ink-2)">${esc(S.me.name)} · ${esc(S.me.email)}${S.me.role?' · '+esc(S.me.role):''}</p>
     ${S.me.is_admin?'':`<label class="switch" for="myBcc"><input id="myBcc" type="checkbox" ${S.me.bcc_opt_out?'':'checked'}><span><b>Copy Eretz Israel Tours on supplier emails</b><br><span class="hint">Adds ${esc(S.me.bcc_email||'the Eretz Israel Tours address')} as a hidden copy when you use the Email button. Helps keep prices and bookings up to date.</span></span></label>`}
+    <p style="margin-top:14px"><button type="button" class="btn soft" id="myTour">Take the welcome tour again</button></p>
     <p style="margin-top:14px"><button type="button" class="linkbtn" id="myTerms">Terms and privacy</button></p>`;
   const w=sheet('My settings', body, `<button class="btn primary" id="msOk" type="button">Done</button>`);
-  w.querySelector('#msOk').onclick=closeSheet; w.querySelector('#myTerms').onclick=openTerms;
+  w.querySelector('#msOk').onclick=closeSheet; w.querySelector('#myTerms').onclick=openTerms; w.querySelector('#myTour').onclick=()=>{ closeSheet(); openTour(true); };
   const c=w.querySelector('#myBcc'); if(c) c.onchange=async()=>{ S.me.bcc_opt_out=!c.checked; S.me.bcc_ack=true; if(LIVE){ try{ await sb.rpc('set_bcc_pref',{p_token:S.token,p_opt_out:!c.checked}); }catch(e){ toast(e.message); } } toast(c.checked?'Your supplier emails will copy Eretz Israel Tours':'Your emails won\'t be copied'); };
 }
 function fromBadge(by,date,prefix){ if(!by || by.admin) return ''; return `<span class="from">👤 <span>${esc(prefix||'From')} <b>${esc(by.name)}</b>${by.role?` <span class="r">· ${esc(by.role)}</span>`:''}${date?` <span class="r">· ${fmtDate(date)}</span>`:''}</span></span>`; }
@@ -2896,6 +2954,127 @@ function openForm(v, preset){
       else { openDetail(saved.id); toast(saved._request?'Saved. Your 🔒 changes were sent for approval.':'Saved'); } }
     catch(e){ btn.disabled=false; btn.textContent=v?'Save changes':'Add supplier'; err.innerHTML=`<div class="msg err">Couldn't save: ${esc(e.message)}</div>`; }
   };
+}
+
+// ---------- welcome tour (first open after approval; again from My settings) ----------
+// Seen once per device (localStorage), like the booking-sheet explainer. No database change.
+const TOUR_KEY='eitv_tour_seen', TOUR_V='1';
+function tourSeen(){ if(S.tourSeen) return true; try{ return localStorage.getItem(TOUR_KEY)===TOUR_V; }catch(e){ return false; } }
+function tourDone(){ S.tourSeen=true; try{ localStorage.setItem(TOUR_KEY,TOUR_V); }catch(e){} }
+function tourSteps(replay){
+  const first = S.me && !S.me.is_admin ? String(S.me.name||'').trim().split(/\s+/)[0] : '';
+  const svg=d=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+  const row=(icon,t,d,cls)=>`<div class="tour-row"><div class="ti${cls?' '+cls:''}">${icon}</div><div><b>${t}</b><span>${d}</span></div></div>`;
+  const ex=(html,cap)=>`<div class="tour-ex" aria-hidden="true">${html}${cap?`<div class="tour-cap">${cap}</div>`:''}</div>`;
+  const SAMPLE='Example. Names and prices are samples.';
+  const I={ search:svg('<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>'), quote:svg('<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/>'),
+    bus:svg('<rect x="4" y="4" width="16" height="13" rx="2"/><path d="M4 11h16M8 17v2M16 17v2"/>'), plus:svg('<path d="M12 5v14M5 12h14"/>'),
+    phone:svg('<rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M11 18h2"/>'), people:svg('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.700 2 6.500 5.500"/><path d="M16 4.600a3.500 3.500 0 0 1 0 6.800M18.500 14.800c1.600.8 2.600 2.600 3 5.200"/>'),
+    chat:svg('<path d="M21 12a8 8 0 0 1-11.800 7L4 20l1.100-4.600A8 8 0 1 1 21 12z"/><path d="M9.500 12h.01M13 12h.01M16.500 12h.01"/>'), lock:svg('<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>') };
+  const rule=(n,t,d)=>`<div class="tour-row"><div class="ti tour-num">${n}</div><div><b>${t}</b><span>${d}</span></div></div>`;
+  const myLink = S.token ? linkBox('tourLink', personalLink(S.token)) : `<div class="addrow" style="margin:8px 0"><input type="text" readonly value="vendors.eretzisraeltours.com/?k=…" class="mono" style="font-size:13px" tabindex="-1"></div>`;
+  return [
+  { html:`<div class="tour-hero"><b>The Inner Circle</b><small>Israel Guide · shared by colleagues</small></div>
+    <div class="tour-kick">${replay||!first?'Welcome tour':"You're approved"}</div>
+    <h2 style="margin-top:6px">Welcome${first?', '+esc(first):''}.</h2>
+    <p>A supplier list kept by colleagues, for colleagues. It's free, and it works because everyone adds to it.</p>
+    ${row(I.search,'Find a supplier','Hotels, guides, bus companies, drivers and sites. Call or WhatsApp in one tap.')}
+    ${row(I.quote,'See real quotes','What colleagues were quoted per day and per hour, with every extra fee.')}
+    ${row(I.bus,'Book transport in writing',"A booking sheet both sides accept, so the price can't change afterwards.")}
+    ${row(I.plus,'Add what you know','Suppliers, prices, tips and driver reviews. The list is as good as what we all put in.')}
+    <p class="hint" style="margin:18px 0 0;font-size:13px">About two minutes. Eight short screens. <button type="button" class="linkbtn" data-t="skip">Skip to the house rules</button></p>` },
+  { html:`<div class="tour-ex"><div class="favs-h" style="margin:0">Your personal link</div>${myLink}
+      <div class="tour-row" style="margin-top:10px"><div class="ti">${I.phone}</div><div><b>Add it to your home screen</b><span>In your browser's menu, choose Add to Home Screen. It then opens like an app.</span></div></div></div>
+    <h2>Your link is your login</h2>
+    <p><b>No password.</b> Your personal link opens the list as you.</p>
+    <p><b>This phone remembers you.</b> On another phone or a computer, open your link once.</p>
+    <p><b>Keep it to yourself.</b> Anyone with the link uses the list as you. Lost it? Ask Eretz Israel Tours for a new one.</p>` },
+  { html:ex(`<div class="search"><span style="display:flex">${icons.search}</span><span style="padding:11px 0;color:var(--ink-2)">Search name, region, type, contact</span></div>
+      <div class="chips"><span class="chip" aria-pressed="true">All</span><span class="chip">Transport</span><span class="chip">Guide</span><span class="chip">Hotel</span><span class="chip">Adventure</span></div>
+      <div class="chips"><span class="chip" aria-pressed="true">📍 All regions</span><span class="chip">Jerusalem</span><span class="chip">Galilee</span><span class="chip">Golan</span></div>
+      <div class="favs-h">⭐ Your most used</div>
+      <div class="favs"><div class="fav"><span>Transport</span><b>Galil Buses</b></div><div class="fav"><span>Guide</span><b>Ronit Katz</b></div></div>
+      <div class="list"><div class="row"><span class="row-name">Golan Heights Jeep Tours</span><span class="row-price"><b>₪360</b><span>per person</span></span><span class="row-meta"><span class="cat">Adventure</span><span>Golan</span><span class="clip">2 prices</span></span></div>
+        <div class="row"><span class="row-name">Eli Dahan</span><span class="row-meta"><span class="cat">Transport</span><span>Negev &amp; Arava</span><span class="hint">Van 9–10 seats</span></span></div></div>`, SAMPLE)+`
+    <h2>Find a supplier fast</h2>
+    <p>Search by name, region, type or contact person. Tap a category or a region to narrow the list.</p>
+    <p>The suppliers you use most sit at the top. The rest is in mixed order that changes daily, so nobody is always first. Tap <b>Order</b> for A–Z.</p>` },
+  { html:ex(`<div style="font-family:var(--f-display);font-size:20px;line-height:1.2">Golan Heights Jeep Tours</div>
+      <div style="margin-top:2px"><span class="cat">Adventure</span> <span class="hint">Golan</span></div>
+      <div class="actions"><span class="act">${ic.call}Call</span><span class="act">${ic.wa}WhatsApp</span><span class="act">${ic.mail}Email</span><span class="act">${ic.nav}Waze</span><span class="act">${ic.maps}Maps</span></div>
+      <div class="btn red upd" style="box-sizing:border-box;text-align:center">⚠ Update this supplier</div>
+      <div class="favs-h" style="margin:10px 0 6px">Standard prices</div>
+      <div class="pl"><span class="who3">Adult <span class="tag agent">Agent</span></span><span class="amt">₪360</span><span class="meta">Per person · plus VAT · checked 14/08/2026</span></div>`, SAMPLE)+`
+    <h2>One page per supplier</h2>
+    <p><b>Contact in one tap.</b> Call, WhatsApp, email, or navigate with Waze or Maps.</p>
+    <p><b>Scroll for the rest.</b> Prices and agent rates, deals, colleagues' notes, food nearby, the kosher certificate, photos and PDFs.</p>
+    <p><b>Something wrong?</b> The red button reports it: closed, moved, phone or prices changed.</p>` },
+  { html:ex(`<div class="qstat"><div class="t">Bus (36–60 seats) · per day</div><div class="n">₪2,650<small>average of 4 quotes</small></div><div class="r">Lowest <b class="mono">₪2,400</b> · highest <b class="mono">₪3,000</b></div></div>
+      <div class="qcard"><div class="qhead"><b>Galil Buses</b><span class="pill approved">Booked</span></div><div class="qsub">Bus · 50 seats · Galilee</div>
+        <div class="qrate"><span class="p">₪2,400</span><span class="u">per day</span><span class="vs down">▼ 9% below average</span></div>
+        <div class="qsub" style="margin-top:6px">18/08/2026 · 45 people · plus VAT <span class="pill high">High season</span></div>
+        <div class="flags"><span class="flag extra">⚠ Kvish 6: extra</span><span class="flag incl">✓ Parking included</span><span class="flag miss">? Overtime not stated</span></div></div>`, SAMPLE)+`
+    <h2>See what others were quoted</h2>
+    <p><b>The Quotes tab.</b> Day and hour rates for buses, vans, guides, hotels and activities, in and out of high season. An average shows once there are three quotes.</p>
+    <p><b style="color:var(--bad)">Red</b> is charged extra, <b style="color:var(--ok)">green</b> is included, <b style="color:var(--warn)">amber</b> was never stated. Ask before you book.</p>
+    <p><b>Add your own.</b> Your quotes are shared without your name. You can switch sharing off on any quote.</p>` },
+  { html:`<div class="tour-sheet" aria-hidden="true" style="margin-top:6px"><div class="hd"><b lang="he" dir="rtl">דף הזמנת רכב</b><span class="hint">Vehicle booking sheet</span></div>
+      <div class="sec">The job <span lang="he" dir="rtl">ההזמנה</span><em>you fill in</em></div>
+      <div class="r"><span>Date <span lang="he" dir="rtl">תאריך</span></span><span>18/08/2026</span></div>
+      <div class="r"><span>Vehicle <span lang="he" dir="rtl">רכב</span></span><span>50-seat bus · 45 passengers</span></div>
+      <div class="r"><span>Pick-up <span lang="he" dir="rtl">איסוף</span></span><span>07:30, hotel in Jerusalem</span></div>
+      <div class="sec">Price and terms <span lang="he" dir="rtl">מחיר ותנאים</span><em>the company fills in</em></div>
+      <div class="r"><span>Price per day <span lang="he" dir="rtl">מחיר ליום</span></span><span class="mono">₪2,400 plus VAT</span></div>
+      <div class="r"><span>Price includes <span lang="he" dir="rtl">המחיר כולל</span></span><span>up to 10 hours · 250 km</span></div>
+      <div class="r"><span>Extra hour <span lang="he" dir="rtl">שעה נוספת</span></span><span class="mono">₪180</span></div>
+      <div class="r"><span>Highway 6 <span lang="he" dir="rtl">כביש 6</span></span><span class="x2">extra</span></div>
+      <div class="stmt"><b lang="he" dir="rtl" style="display:block">${esc(BK_STMT[0])}</b><span>${esc(BK_STMT[1])}</span></div>
+      <div class="ft"><span class="hint">Example. Prices are samples.</span><span class="pill approved">Accepted by both</span></div></div>
+    <h2>The booking sheet</h2>
+    <p style="color:var(--ink)">Book a bus or a van in writing, so the price can't change afterwards.</p>
+    <p><b>You fill in the job</b> from the Quotes tab or a transport supplier's page, and send the company a link. It sees that one booking, never the list.</p>
+    <p><b>The company fills in the price</b> and every extra: overtime, extra km, Kvish 6, tip, cancellation.</p>
+    <p><b>Both sides accept</b> and the sheet locks. A change comes back in red for approval.</p>` },
+  { html:ex(`<div style="display:flex;justify-content:flex-end"><span class="btn accent" style="border-radius:999px;box-shadow:0 6px 18px rgba(0,0,0,.18)">+ Add supplier</span></div>
+      <div class="quickfill" style="margin:10px 0;background:var(--card)"><b>⚡ Quick fill</b><div class="presets"><span class="mini">From my contacts</span><span class="mini">Paste text</span><span class="mini">Contact card</span></div></div>
+      <div class="list"><div class="row"><span class="row-name">Shomron Bus Lines</span><span class="row-price"><span class="pill pending">Pending review</span></span><span class="row-meta"><span class="cat">Transport</span><span>added by you</span></span></div></div>`, 'Example. Names are samples.')+`
+    <h2>Add what you know</h2>
+    <p><b>A supplier in a minute.</b> Quick fill reads a phone contact, a pasted signature or a contact card.</p>
+    <p><b>Checked before it's shared.</b> New suppliers, and changes to names, contacts, main prices or cancellation terms, wait for approval by Eretz Israel Tours.</p>
+    <p><b>Your own prices.</b> A price you add for yourself is seen only by you and Eretz Israel Tours, unless you suggest it for everyone.</p>
+    <p><b>Review your driver.</b> His phone number identifies him, so his reviews follow him from company to company.</p>` },
+  { html:`<h2 style="margin-top:10px">Free, and built by all of us</h2>
+    <div class="tour-card">${row(I.people,'Not for pay','As of now, nobody pays to join, and you will not be asked to pay in the future. If we ever decide the costs are not worth bearing, founding members stay free.')}</div>
+    <div class="tour-card">${row(I.plus,'Everybody uses it and adds to it','This project is meant to help everyone, and it works only if we all add to it: a supplier, a price, a quote, a tip, a driver review, a correction.')}</div>
+    <div class="tour-card">${row(I.chat,'AI search is coming <span class="pill high" style="font-size:11px">In the works</span>',"We're building an AI chat box: ask in plain words and it searches the list for you. It costs money to run. Eretz Israel Tours is paying for it, for the greater good.")}</div>
+    <div class="tour-card warn"><b>Take part, or lose your place</b><span>Every member has to both use the list and add to it. Anyone who has not done both for 3 months gets a reminder, and is then removed.</span></div>` },
+  { html:`<h2 style="margin-top:10px">Five house rules</h2>
+    <div class="tour-card bad" style="display:flex;gap:12px;align-items:flex-start"><span style="flex:none;width:22px;height:22px;color:var(--bad);display:flex">${I.lock}</span><div><b>Never show the list to suppliers</b><span>Not the app, screenshots, prices or notes. Anyone who does loses access.</span></div></div>
+    ${rule(2,'Use it and add to it','Members who have not both used the list and added to it for 3 months are removed, after a reminder.')}
+    ${rule(3,'Keep it factual','Say what happened on your trip, and mark an opinion as an opinion. Running someone down gets you removed.')}
+    ${rule(4,'Eretz Israel Tours sees everything','Including items marked private and who added each quote. Private means hidden from other colleagues.')}
+    ${rule(5,'Confirm before you book','Prices and details come from colleagues and can change. Always check with the supplier.')}
+    <p class="hint" style="margin:16px 0 0;border-top:1px solid var(--line);padding-top:10px;font-size:13px">Emails sent with the Email button copy Eretz Israel Tours as a hidden BCC. You can turn that off under My settings.</p>
+    <p style="margin:0"><button type="button" class="linkbtn" data-t="terms">Read the full terms and privacy notice</button></p>` }
+  ];
+}
+function openTour(replay){
+  closeSheet(); const old=document.getElementById('tourWrap'); if(old) old.remove();
+  const steps=tourSteps(replay), last=steps.length-1; let i=0;
+  const w=document.createElement('div'); w.id='tourWrap'; w.className='tour'; w.setAttribute('role','dialog'); w.setAttribute('aria-modal','true'); w.setAttribute('aria-label','Welcome tour');
+  document.body.appendChild(w);
+  const end=()=>{ tourDone(); w.remove(); };
+  const draw=()=>{
+    w.innerHTML=`<div class="tour-in">${i?`<div class="tour-top"><span class="tour-n">${i} of ${last}</span><div class="tour-bar" aria-hidden="true">${steps.slice(1).map((x,k)=>`<i${k<i?' class="on"':''}></i>`).join('')}</div>${i<last?'<button class="tour-skip" type="button" data-t="skip">Skip</button>':'<span style="width:12px"></span>'}</div>`:''}
+      <div class="tour-body">${steps[i].html}</div>
+      <div class="tour-foot">${i?'<button class="btn soft" type="button" data-t="back">Back</button>':''}<button class="btn ${i===last?'accent':'primary'} go" type="button" data-t="next">${i===0?'Show me around':i===last?'Start using the list':'Next'}</button></div></div>`;
+    wireCopy(w);
+    w.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{ const a=b.dataset.t;
+      if(a==='terms') return openTerms();
+      if(a==='next'){ if(i===last) return end(); i++; } else if(a==='back'){ i--; } else if(a==='skip'){ i=last; }
+      draw(); });
+  };
+  draw();
 }
 
 // ---------- start ----------

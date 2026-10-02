@@ -1,4 +1,6 @@
-# Israel Suppliers Master List
+# The Inner Circle – Israel Guide
+
+*Called the Israel Suppliers Master List until 2 October 2026 (decision D-6). Older sections below still use the old name.*
 
 Shared vendor list for Eretz Israel Tours colleagues. Static single-page app (GitHub Pages) on a free Supabase project.
 
@@ -142,3 +144,14 @@ Shared vendor list for Eretz Israel Tours colleagues. Static single-page app (Gi
 
 ## Dates are day / month / year everywhere (2 Oct 2026)
 The owner asked for Israeli date order. A browser shows `<input type="date">` in the device's own order (month first on a US-set phone), so every date field in the app is now a `dd/mm/yyyy` text box with a calendar button; the real date input stays hidden behind it and the code still reads and writes `yyyy-mm-dd` (`ilDateField`, applied to every date input as it appears). Typing `10112026`, `10/11/26` or `10.11.2026` all work; an impossible date turns the box red and is not saved. Dates that were shown as `2026-10-25` (quote valid-until, price checked-on, deal expiry, cancellation-policy checked, reservation visits) now show as `25/10/2026`. Other dates were already day-first ("10 Nov 2026").
+
+## Welcome tour, new name, use-and-add rule (2 Oct 2026, decision D-6)
+**Status: live since 2 Oct 2026. Front end only: no database change, nothing in `supabase/` touched.**
+- **Name:** the app is now **The Inner Circle – Israel Guide**. Changed in the page title, the header ("The Inner Circle", with "Israel Guide · shared by colleagues" under it), the join screen, `manifest.json` (home-screen name "Inner Circle"), the welcome message sent on approval (English and Hebrew), the join-request push alert, and terms section 1. The address is still vendors.eretzisraeltours.com. `innercircleisrael.com` looked unregistered on 2 Oct (registry lookup only; not bought, no trademark search done).
+- **Welcome tour** (`tourSteps`, `openTour`, CSS `.tour*`): a full-screen walkthrough the first time an approved member opens the app, after the terms are accepted. A welcome screen and eight steps: your link is your login (shows the member's own link with Copy / WhatsApp), find a supplier, a supplier's page, quotes, the booking sheet, add what you know, "Free, and built by all of us", five house rules. Each step shows a small example built from the app's own styles with sample names and prices. **Skip** jumps to the house rules, never past them. The last button is "Start using the list".
+- **Seen once per device:** `localStorage` key `eitv_tour_seen` = `1` (`TOUR_V`; raise it to show the tour to everyone again). Existing members see it once too. **My settings** (tap your name) has "Take the welcome tour again". In preview (DEMO) mode it also shows on first open.
+- **What the tour tells members, in the owner's words:** the list is not for pay; everybody has to use it and add to it; an AI chat box for searches is being built, Eretz Israel Tours pays for it and does not pass the cost on; "as of now nobody pays to join, nor will you be asked to pay in the future"; if the costs are ever not worth bearing, founding members stay free.
+- **Terms `2026-10-02c`** (everyone re-accepts): **2a Use it and add to it**: every member has to both use the list and add to it (a supplier, price, quote, note, deal, driver review or correction); a member who has not done both for 3 months gets a reminder and is removed if that does not change. **2b Cost**: nobody pays as of now; if a fee is ever introduced, founding members stay free; a founding member is anyone approved while the list is still free. Section 1 carries the new name. Draft, not lawyer-reviewed.
+- **Not built:** (1) nothing counts, per member, what he added in the last 3 months, and nothing sends the reminder: the Team tab shows "last seen" only, so the rule is applied by hand for now. A Team-tab view of who used and who added needs a new database function. (2) The AI chat box: the tour says it is in the works. (3) Hebrew version of the tour.
+- **Tested** in DEMO mode in a browser at phone width, light and dark: all nine screens, Back / Next / Skip, the terms opening over the last step, finishing the tour, no tour on reload, replay from My settings. No page errors. Not tried on the live site by a person yet.
+
