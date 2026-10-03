@@ -14,8 +14,8 @@
 | Repo | `Danielg972/eit-vendors`, branch `main` (cite by commit SHA) |
 | Database | Supabase project `wjuqtjlrtcywjaspjpwu` (org "EIT Vendors", Frankfurt) |
 | Schema record | `supabase/schema.sql` (tables, functions, grants), plus `supabase/functions/files/index.ts` (edge function v9) |
-| Terms version | `2026-10-03a` (draft, not yet reviewed by a lawyer; adds 6d, jobs between colleagues and My days) |
-| Decisions | `docs/DECISIONS.md` (D-1 Cockpit boundary; D-2 quote tracker; D-3 driver reviews; D-4 transport by vehicle size; D-5 booking sheets; D-6 welcome tour, name, use-and-add rule; D-7 Shomer Shabbat badge, kosher restaurants only; D-8 opening hours, no-certificate needs approval; D-9 verified hours, last entry, hours from websites; D-10 official buttons; D-11 jobs between colleagues and My days, live for Eretz Israel Tours only) |
+| Terms version | `2026-10-03a` (draft, not yet reviewed by a lawyer; adds 6d, jobs between colleagues and My days). On the branch `guide-for-clients`: `2026-10-03b`, which adds 6e |
+| Decisions | `docs/DECISIONS.md` (D-1 Cockpit boundary; D-2 quote tracker; D-3 driver reviews; D-4 transport by vehicle size; D-5 booking sheets; D-6 welcome tour, name, use-and-add rule; D-7 Shomer Shabbat badge, kosher restaurants only; D-8 opening hours, no-certificate needs approval; D-9 verified hours, last entry, hours from websites; D-10 official buttons; D-11 jobs between colleagues and My days, live for Eretz Israel Tours only; D-12 a guide's page for clients, on a branch) |
 
 ## Integration with the Cockpit
 
@@ -60,9 +60,11 @@
 12. From D-11: members' availability and job posts are personal data. A poster's name stays hidden from colleagues only inside the app; a WhatsApp message he sends himself shows who he is. Terms 6d is not reviewed by a lawyer.
 13. From D-11: terms 6d says "As of now, nothing is charged on a job". Whether a job is ever charged for is the owner's open decision.
 14. Schema record and production had drifted on `member_decide` (welcome email through a Google Apps Script since 1 Oct). The record is corrected; the README's older "nothing is sent automatically" line is out of date. Worth a look by the owner: a secret for that script sits in `app_settings`.
+15. From D-12 (once live): a guide's bio and pictures are meant to be sent to clients, and any member can write them, including for a guide who is not a member. Not reviewed by a lawyer.
 
 ## Waiting for the owner
 
+- **A guide's page for clients (D-12): try the preview, then say go.** Built on the branch `guide-for-clients`; nothing live changed. To go live: the database change `2026-10-03b_guide_for_clients.sql` (no DELETE in it, so the Supabase connector can apply it), then the owner merges the branch. Also his to confirm: that "every guide" means the Guide suppliers' pages, and that any member may fill a guide's page in.
 - **Jobs (D-11): when to open it to colleagues** (Team tab), and whether a job is ever charged for.
 - **Official logos on the WhatsApp, Waze and Google Maps buttons (D-10).** The buttons are ready and show a logo as soon as the brand owner's own file is in `brand/` in the repository (names and sources in `brand/README.md`). Needed from the owner: the WhatsApp logo from Meta's brand page; for Google Maps, Google's approval first (their brand page requires it), and the same is likely for Waze, whose rules are behind a sign-in.
 - **Emails for booking sheets: choose how the app sends email.** Asked for 2 Oct 15:16 ("if that's easy"): a copy by email when a sheet goes out, and an email to the guide when the company answers. Not built: the app has no email-sending service. Options: (a) a Resend account with the eretzisraeltours.com domain verified (DNS records at SiteGround), the route Supabase documents; (b) an Eretz Israel Tours mailbox at SiteGround used over SMTP, not yet confirmed to work from Supabase. Either needs a secret set in Supabase by the owner.
@@ -80,6 +82,7 @@
 
 ## Changes that would affect the Cockpit (log)
 
+- 2026-10-03: **Not live (branch `guide-for-clients`):** a guide's page for clients (D-12). New fields `vendors.client_bio`, `vendors.retail_price`, `vendor_files.for_clients`; RPCs `vendor_set_client`, `file_for_clients`. If the Cockpit later reads `vendors`, `retail_price` is free text and not a price it can apply.
 - 2026-10-03: **Live for Eretz Israel Tours only (21:04):** jobs between colleagues and My days (D-11), terms `2026-10-03a`. New tables `jobs`, `job_offers`, `member_days`; six new columns on `members`; eleven new RPCs; `whoami` gains `jobs`, `jobs_post`, `jobs_for`; setting `jobs_for`. 26 tables, 107 functions. Nothing Cockpit-facing: a job carries no trip or client id, and there is no export.
 - 2026-10-02: **Data only (evening):** website pass wrote hours for 63 suppliers, 200 unverified public price lines (`vendor_prices.created_by` = `import from websites (2 Oct 2026)`, `checked_on` 2026-10-02), contact details and notes. A Cockpit read of `vendor_prices` must not treat these as confirmed prices: check the `note` and `created_by`.
 - 2026-10-02: **Live (about 17:40):** verified hours (`hours_verify`, `hours_verified_*`), last entry and other times (`vendors.hours_last`), source of unverified hours (`vendors.hours_source`). Migration `2026-10-02f`, applied to production. 60 callable functions. Hours for 32 suppliers written from their websites, unverified. New readable fields for the Cockpit; treat `hours` as unconfirmed unless `hours_verified_how` is set. No IDs or export formats changed.

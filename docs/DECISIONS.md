@@ -6,6 +6,34 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-12 · A guide's page for clients: bio, up to four pictures, retail price (built on a branch; not live)
+
+**Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session, 3 October 2026, 20:45 Israel time.
+
+**In his words:** "Every guide should have a client-facing bio and place to put up to four pictures. And an option to add their retail price. in a free text."
+
+**Decisions:**
+
+1. **Every guide has a bio written for clients.**
+2. **Up to four pictures.**
+3. **A retail price, optional, in free text.**
+
+**How it was read (his to correct):** "every guide" was taken as every supplier in the Guide category, on that supplier's page, because that is where colleagues look a guide up. It was not built on members' own profiles; a guide who is a member fills in his own page on the list. "Client-facing" was taken as material a colleague sends to his client, not a page a client opens by himself.
+
+**Implementation choices (not owner decisions; change on request):**
+
+- **Any approved member can fill it in**, like other open fields, without approval by Eretz Israel Tours.
+- **These three things may leave the list**; everything else on the page stays between colleagues. Terms 6e says so. This is a deliberate exception to "never show the list to anyone outside".
+- **The retail price follows "Keep this supplier's prices private"**: colleagues then neither see it nor change it.
+- **Copy bio** copies the name and the bio, not the price, so a colleague who adds his own margin is not undercut by his own message. **Share with a client** uses the phone's share sheet.
+- **Pictures:** JPEG, PNG or WebP; never a file marked "only me". They sit with the supplier's other photos, marked "for clients".
+
+**To check with a lawyer:** terms 6e; pictures of people, and of guides who are not members, passed on to clients.
+
+**Status:** on the branch `guide-for-clients` (database change, front end, terms `2026-10-03b`). Not applied to production, not merged. Tested on a local database and in preview mode; see README.
+
+---
+
 ## D-11 · Jobs between colleagues, and My days (live for Eretz Israel Tours only)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session, 2 October 2026, 17:16 Israel time (the idea) and 3 October 2026, 20:02–20:47 (the mock-up, the go-ahead to build, and the go-ahead to go live).
