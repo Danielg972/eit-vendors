@@ -10,20 +10,6 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
-## D-13 · Food nearby only on entries with a physical address (live)
-
-**Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session, 3 October 2026, 21:16 Israel time.
-
-**In his words:** "food nearby is only on entries with a phsical address not a service provider like guide, rappeling, jeep, bus etc."
-
-**Decision:** the Food nearby section belongs to places, not to service providers.
-
-**Implementation choices (not owner decisions; change on request):** "a place" is decided by category (Hotel, Restaurant, Winery, Attraction / Site, National Parks), plus Activity and Other unless the entry is tagged jeep, ATV / RZR or rappelling. The whole Adventure category counts as a service provider. Tips already saved on service providers stay in the database, unseen.
-
-**Status:** front end only; live since 3 Oct 2026 (pull request #8 merged).
-
----
-
 ## D-15 · Limited members: organisations that are not in tourism (live)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session, 3 October 2026, over several messages: the idea, the rules, a mock-up of six phone screens, then the go-ahead to build and go live.
@@ -65,6 +51,20 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 **To check with a lawyer:** terms 2c; the credentials text is personal data now stored; showing what one organisation paid to others.
 
 **Status:** live since 3 Oct 2026, about 21:40. Database change on production (connector migrations `limited_members_2026_10_03b_part1_columns_helpers`, `_part2_rpcs`, and `_part3_decision_number`, which only corrects two comments), `files` function v11 deployed (v10 at go-live; v11 corrects a comment), code on `main`. Tested on a local database (74 checks as an organisation, a guide and Eretz Israel Tours; guides' and Eretz Israel Tours' results unchanged), in a browser against that database, and by a rolled-back probe on production; see README. Not yet tried on the live site by a person.
+
+---
+
+## D-13 · Food nearby only on entries with a physical address (live)
+
+**Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session, 3 October 2026, 21:16 Israel time.
+
+**In his words:** "food nearby is only on entries with a phsical address not a service provider like guide, rappeling, jeep, bus etc."
+
+**Decision:** the Food nearby section belongs to places, not to service providers.
+
+**Implementation choices (not owner decisions; change on request):** "a place" is decided by category (Hotel, Restaurant, Winery, Attraction / Site, National Parks), plus Activity and Other unless the entry is tagged jeep, ATV / RZR or rappelling. The whole Adventure category counts as a service provider. Tips already saved on service providers stay in the database, unseen.
+
+**Status:** front end only; live since 3 Oct 2026 (pull request #8 merged).
 
 ---
 
