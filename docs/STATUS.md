@@ -4,7 +4,7 @@
 
 *Short, factual status for the Cockpit Steward and other EIT projects. Updated by the Vendor Master session after any change that matters to them. The commit that last changed this file is its version.*
 
-**As of:** 2 October 2026
+**As of:** 3 October 2026
 
 ## Identity
 
@@ -60,6 +60,7 @@
 
 ## Waiting for the owner
 
+- **Official logos on the WhatsApp, Waze and Google Maps buttons (D-10).** The buttons are ready and show a logo as soon as the brand owner's own file is in `brand/` in the repository (names and sources in `brand/README.md`). Needed from the owner: the WhatsApp logo from Meta's brand page; for Google Maps, Google's approval first (their brand page requires it), and the same is likely for Waze, whose rules are behind a sign-in.
 - **Emails for booking sheets: choose how the app sends email.** Asked for 2 Oct 15:16 ("if that's easy"): a copy by email when a sheet goes out, and an email to the guide when the company answers. Not built: the app has no email-sending service. Options: (a) a Resend account with the eretzisraeltours.com domain verified (DNS records at SiteGround), the route Supabase documents; (b) an Eretz Israel Tours mailbox at SiteGround used over SMTP, not yet confirmed to work from Supabase. Either needs a secret set in Supabase by the owner.
 
 ## Next

@@ -177,8 +177,9 @@ textarea.out{width:100%;min-height:160px;font-family:var(--f-mono);font-size:12p
 .upl .hint{flex-basis:100%}
 .clip{font-size:12px;color:var(--ink-3)}
 .actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(72px,1fr));gap:8px;margin:0 0 16px}
-.act{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 4px;border-radius:10px;background:var(--card);border:1px solid var(--line);color:var(--ink);text-decoration:none;font-size:12px;font-weight:500}
+.act{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 4px;border-radius:10px;background:var(--card);border:1px solid var(--line);color:var(--ink);text-decoration:none;font-size:12px;font-weight:500;text-align:center;line-height:1.2}
 .act svg{width:22px;height:22px;color:var(--olive-2)}
+.act img.bmark{width:22px;height:22px;object-fit:contain;display:block}
 :root:not([data-theme="light"]) .act svg{color:var(--tab-on)}
 .act:active{background:var(--wash)}
 .prices{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
@@ -1173,7 +1174,7 @@ async function drawFood(v){
   const near=encodeURIComponent(' '+(v.location||v.region||''));
   box.innerHTML=(list.length?list.map(f=>{ const onList=S.vendors.find(o=>normN(o.name)===normN(f.name)); const q=encodeURIComponent(f.name)+near;
     return `<div class="note"><span class="meta"><b style="color:var(--ink)">${esc(f.name)}</b>${f.kosher?' · '+esc(f.kosher):''}</span>${f.note?`<p>${esc(f.note)}</p>`:''}
-      <div class="btn-row" style="margin-top:6px">${onList?`<button class="mini" data-fopen="${esc(onList.id)}" type="button">Open on list</button>`:''}<a class="mini" data-track="maps" data-v="${esc(v.id)}" href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener">Maps</a><a class="mini" data-track="waze" data-v="${esc(v.id)}" href="https://waze.com/ul?q=${q}&navigate=yes" target="_blank" rel="noopener">Waze</a>${f.mine||S.admin?`<button class="mini" data-fdel="${esc(f.id)}" type="button">Remove</button>`:''}</div>
+      <div class="btn-row" style="margin-top:6px">${onList?`<button class="mini" data-fopen="${esc(onList.id)}" type="button">Open on list</button>`:''}<a class="mini" data-track="maps" data-v="${esc(v.id)}" href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener">Google Maps</a><a class="mini" data-track="waze" data-v="${esc(v.id)}" href="https://waze.com/ul?q=${q}&navigate=yes" target="_blank" rel="noopener">Waze</a>${f.mine||S.admin?`<button class="mini" data-fdel="${esc(f.id)}" type="button">Remove</button>`:''}</div>
       ${fromBadge(f.by,f.created_at,'Tip from')}</div>`; }).join(''):'<p class="hint">No food tips yet. Where do you eat or take groups near here? Kosher places only.</p>')
     +`<div class="foodadd"><input id="fdName" placeholder="Place name, e.g. Shawarma Hashuk" maxlength="120"><select id="fdKos" aria-label="Kosher"><option value="">Kosher?</option>${KOSHER_OPTS.filter(k=>!notKosher(k)&&k!=='Not relevant'&&(S.admin||!noCert(k))).map(k=>`<option>${esc(k)}</option>`).join('')}</select>
       <input id="fdNote" placeholder="Why it's good, price, good for groups?" maxlength="500"><button class="btn primary" id="fdAdd" type="button">Add tip</button></div>`;
@@ -1387,6 +1388,11 @@ const ic = {
   maps:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg>',
   nav:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>'
 };
+// Other companies' marks (WhatsApp, Waze, Google Maps). The app never draws them.
+// If the brand owner's own file is in brand/ (see brand/README.md) it is shown unchanged; otherwise a plain icon.
+const BRAND={whatsapp:'',waze:'','google-maps':''};
+(function brandProbe(){ Object.keys(BRAND).forEach(k=>{ const go=x=>{ if(!x.length) return; const im=new Image(); const src='brand/'+k+'.'+x[0]; im.onload=()=>{ BRAND[k]=src; }; im.onerror=()=>go(x.slice(1)); im.src=src; }; go(['svg','png']); }); })();
+function bmark(k,plain){ return BRAND[k]?`<img class="bmark" src="${BRAND[k]}" alt="">`:plain; }
 function track(vid, action){
   if(!LIVE || !S.token) return;
   try{ fetch(SUPABASE_URL+'/rest/v1/rpc/log_action',{method:'POST',keepalive:true,headers:{apikey:SUPABASE_KEY,'Content-Type':'application/json'},body:JSON.stringify({p_token:S.token,p_vendor:vid||'',p_action:action})}); }catch(e){}
@@ -1432,15 +1438,15 @@ function contactBar(v){
   if(ph) a.push(`<a class="act" ${t('call')} href="tel:${esc(ph)}">${ic.call}Call</a>`);
   const mobile=String(v.phone||'').split(/[;,/]/).map(firstPhone).find(p=>/^0?5\d{8}$/.test(p.replace(/^\+?972/,'0')))||'';
   const wa=firstPhone(v.whatsapp)||mobile;
-  if(wa) a.push(`<a class="act" ${t('whatsapp')} href="https://wa.me/${esc(intlDigits(wa))}" target="_blank" rel="noopener">${ic.wa}WhatsApp</a>`);
+  if(wa) a.push(`<a class="act" ${t('whatsapp')} href="https://wa.me/${esc(intlDigits(wa))}" target="_blank" rel="noopener" title="Chat on WhatsApp" aria-label="Chat on WhatsApp">${bmark('whatsapp',ic.wa)}WhatsApp</a>`);
   if(em) a.push(`<a class="act" ${t('email')} data-mail="${esc(em)}" data-vname="${esc(v.name)}" href="${esc(mailHref(em))}">${ic.mail}Email</a>`);
   if(v.website) a.push(`<a class="act" ${t('website')} href="${esc(/^https?:/.test(v.website)?v.website:'https://'+v.website)}" target="_blank" rel="noopener">${ic.web}Website</a>`);
   const where=encodeURIComponent((v.name.replace(/\s*\(.*?\)\s*/g,' ')+' '+(v.location||'')).trim());
   const ll=coordsOf(v.maps_link);
   const waze = ll ? `https://waze.com/ul?ll=${ll}&navigate=yes` : `https://waze.com/ul?q=${where}&navigate=yes`;
   const gmap = v.maps_link || `https://www.google.com/maps/search/?api=1&query=${where}`;
-  if(v.location||v.name||v.maps_link){ a.push(`<a class="act" ${t('waze')} href="${esc(waze)}" target="_blank" rel="noopener">${ic.nav}Waze</a>`);
-    a.push(`<a class="act" ${t('maps')} href="${esc(gmap)}" target="_blank" rel="noopener">${ic.maps}Maps</a>`); }
+  if(v.location||v.name||v.maps_link){ a.push(`<a class="act" ${t('waze')} href="${esc(waze)}" target="_blank" rel="noopener" title="Navigate with Waze" aria-label="Navigate with Waze">${bmark('waze',ic.nav)}Waze</a>`);
+    a.push(`<a class="act" ${t('maps')} href="${esc(gmap)}" target="_blank" rel="noopener" title="Open with Google Maps" aria-label="Open with Google Maps">${bmark('google-maps',ic.maps)}Google Maps</a>`); }
   return a.length?`<div class="actions">${a.join('')}</div>`:'';
 }
 function money(cur,p){ if(String(p).trim()!=='' && Number(p)===0) return 'Free'; return (CUR_SIGN[cur]||'')+Number(p).toLocaleString('en-US'); }
@@ -3063,12 +3069,12 @@ function tourSteps(replay){
     <p>The suppliers you use most sit at the top. The rest is in mixed order that changes daily, so nobody is always first. Tap <b>Order</b> for A–Z.</p>` },
   { html:ex(`<div style="font-family:var(--f-display);font-size:20px;line-height:1.2">Golan Heights Jeep Tours</div>
       <div style="margin-top:2px"><span class="cat">Adventure</span> <span class="hint">Golan</span></div>
-      <div class="actions"><span class="act">${ic.call}Call</span><span class="act">${ic.wa}WhatsApp</span><span class="act">${ic.mail}Email</span><span class="act">${ic.nav}Waze</span><span class="act">${ic.maps}Maps</span></div>
+      <div class="actions"><span class="act">${ic.call}Call</span><span class="act">${bmark('whatsapp',ic.wa)}WhatsApp</span><span class="act">${ic.mail}Email</span><span class="act">${bmark('waze',ic.nav)}Waze</span><span class="act">${bmark('google-maps',ic.maps)}Google Maps</span></div>
       <div class="btn red upd" style="box-sizing:border-box;text-align:center">⚠ Update this supplier</div>
       <div class="favs-h" style="margin:10px 0 6px">Standard prices</div>
       <div class="pl"><span class="who3">Adult <span class="tag agent">Agent</span></span><span class="amt">₪360</span><span class="meta">Per person · plus VAT · checked 14/08/2026</span></div>`, SAMPLE)+`
     <h2>One page per supplier</h2>
-    <p><b>Contact in one tap.</b> Call, WhatsApp, email, or navigate with Waze or Maps.</p>
+    <p><b>Contact in one tap.</b> Call, WhatsApp, email, or navigate with Waze or Google Maps.</p>
     <p><b>Scroll for the rest.</b> Prices and agent rates, deals, colleagues' notes, food nearby, the kosher certificate, photos and PDFs.</p>
     <p><b>Something wrong?</b> The red button reports it: closed, moved, phone or prices changed.</p>` },
   { html:ex(`<div class="qstat"><div class="t">Bus (36–60 seats) · per day</div><div class="n">₪2,650<small>average of 4 quotes</small></div><div class="r">Lowest <b class="mono">₪2,400</b> · highest <b class="mono">₪3,000</b></div></div>

@@ -6,6 +6,26 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-10 · Official WhatsApp, Waze and Google Maps buttons (asked for; logos not yet in)
+
+**Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session, 2 October 2026 ("the Waze and Google Maps and Whatsapp buttons should be official") and 3 October 2026, 19:28 Israel time ("I want the official buttons").
+
+**Decision:** the WhatsApp, Waze and Google Maps buttons on a supplier page should be the official ones.
+
+**What the brand owners' own pages say (read 3 Oct 2026):**
+
+- **WhatsApp (Meta):** publishes a logo pack and a ready-made "Chat on WhatsApp" button, with the rule to use them as supplied and unchanged.
+- **Google Maps:** creatives that include the Google Maps trademark or logo "must be reviewed and fully approved by Google's brand team". Without approval, Google welcomes a text button such as "Open with Google Maps".
+- **Waze (a Google brand):** the rules sit behind a sign-in on Google's Partner Marketing Hub and were not read.
+
+**Done (live 3 Oct 2026):** the buttons carry the owners' wording ("Chat on WhatsApp", "Open with Google Maps"; "Navigate with Waze" is our own), the short label "Maps" is now "Google Maps", and each button shows the brand owner's own logo file as soon as it is put in the `brand/` folder of the repository. No code change is needed then. File names, sources and rules: `brand/README.md`.
+
+**Not done, and why:** no logo is on the buttons yet. The session does not draw other companies' logos, its workspace cannot download from Meta's or Google's sites, and no browser on the owner's computer was reachable. The Google Maps logo (and probably Waze) also needs Google's approval first.
+
+**Implementation choices (not owner decisions; change on request):** logos show at 22 px on the existing small buttons, unchanged in colour; a plain line icon stays until a file is present; redrawn or icon-site versions are not accepted.
+
+---
+
 ## D-9 · Hours pulled from websites are unverified until checked in person or by phone; last entry times (approved; live)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session, 2 October 2026, 16:58–17:20 Israel time.
