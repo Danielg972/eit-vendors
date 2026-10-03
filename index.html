@@ -553,14 +553,22 @@ const REGIONS = ['Jerusalem','Gush Etzion & Judea','Binyamin & Shomron','Dead Se
 const TAG_SUGGEST = {Adventure:['Jeep','ATV / RZR','Rappelling','Kayak & rafting','Zipline','Boat','Snorkelling','Bikes','Horse riding','Camels','Shooting'],
   Activity:['Workshop','Food & wine','Volunteering','Archaeology','Family','Shooting','Farm'],
   Hotel:['Kosher','Shabbat-friendly','Kibbutz','Boutique','Pool'],
-  Transport:['Independent van driver','Armoured bus','Airport transfers'],
+  Transport:['Independent van driver','Eshkol driver','D1 license','Armoured bus','Airport transfers'],
   Restaurant:['Meat','Dairy','Mehadrin','Group menus','Winery'],
-  Guide:['Eshkol license','Owns an Eshkol vehicle','Midbari 4x4 vehicle','Carries a gun','Driver-guide','English','French','Spanish','Russian'],
+  Guide:['Eshkol license','D1 license','Owns an Eshkol vehicle','Midbari 4x4 vehicle','Carries a gun','Driver-guide','Shuk tours','Graffiti tours','English','French','Spanish','Russian'],
   'Travel Agent':['Hotel bookings','Flights','Packages','Groups','Commission'],
   'Itinerary Planner':['Full trip planning','Day trips','Groups','Families','Bar/bat mitzvah'],
   Winery:['Tasting','Tour','Restaurant','Boutique','Free bottle for guide','Group menus']};
 // Shomer Shabbat is a tag on the supplier (no database change); the kosher rule: no non-kosher restaurants on the list.
 const SHABBAT_TAG='Shomer Shabbat';
+// Guide rules (D-15): only licensed tour guides are listed, except a specialty (shuk tours, graffiti tours and the
+// like) that Eretz Israel Tours approves; an Eshkol driver or guide needs a D1 license. Both are stated with tags.
+const GUIDE_LICENSED='Licensed tour guide', GUIDE_SPECIALTY='Specialty guide', D1_TAG='D1 license';
+const tagHas=(tags,t)=>String(tags||'').split(',').map(x=>x.trim().toLowerCase()).includes(t.toLowerCase());
+const eshkolListed=tags=>/eshkol (license|driver|guide)/i.test(String(tags||''));
+const guideSpecialty=v=>catsOf(v).includes('Guide') && tagHas(v.tags, GUIDE_SPECIALTY);
+const GUIDE_RULE='Only licensed tour guides are listed, except specialties such as shuk tours or graffiti tours.';
+const D1_RULE='Only a driver with a D1 license can be listed as an Eshkol driver or guide.';
 const tagList=v=>String(v&&v.tags||'').split(',').map(t=>t.trim()).filter(Boolean);
 const isShabbat=v=>tagList(v).some(t=>t.toLowerCase()===SHABBAT_TAG.toLowerCase());
 const tagsNoShab=v=>tagList(v).filter(t=>t.toLowerCase()!==SHABBAT_TAG.toLowerCase()).join(', ');
@@ -1046,8 +1054,9 @@ const TERMS_HTML=`<p class="hint">Version ${TERMS_VERSION}. Plain-language summa
 <h4>2a. Use it and add to it</h4><p>This list is meant to help everyone, and it works only if everyone takes part. <b>Every member has to both use the list and add to it</b>: a supplier, a price, a quote, a note, a deal, a driver review or a correction. A member who has not done both for 3 months gets a reminder, and is removed if that does not change.</p>
 <h4>2b. Cost</h4><p><b>As of now, nobody pays to join, and you will not be asked to pay in the future.</b> If Eretz Israel Tours ever decides the costs are not worth bearing and a fee is introduced, founding members stay free. A founding member is anyone approved while the list is still free.</p>
 <h4>3. What you share</h4><p>Share supplier information you believe is accurate and that you're allowed to share. Don't post personal member codes, card or bank details, or personal details of your clients. Be fair in ratings and notes: describe your own experience. When you add a driver, add only the phone number he uses for work; it is there so colleagues can tell drivers apart.</p>
-<h4>3a. Fair, objective feedback</h4><p>Feedback, ratings, notes, supplier updates and reviews of drivers must be objective and factual. A driver review says what happened on your trip (timing, driving, service), with your name next to it. When something is your personal or subjective opinion, say so clearly (for example "In my opinion…").</p><p><b>Slandering or running down a colleague, competitor, supplier or anyone else, in any form, is grounds for being removed from the service.</b> Reports sent anonymously are not shown with your name, but are kept on record so this rule can be enforced.</p>
+<h4>3a. Fair, objective feedback</h4><p>Feedback, ratings, notes, supplier updates and reviews of drivers must be objective and factual. A driver review says what happened on your trip (timing, driving, service), with your name next to it. When something is your personal or subjective opinion, say so clearly (for example "In my opinion…").</p><p><b>Slandering or running down a colleague, competitor, supplier or anyone else, in any form, is grounds for being removed from the service. A malicious post is removed, and the member who posted it is banned.</b> Reports sent anonymously are not shown with your name, but are kept on record so this rule can be enforced.</p>
 <h4>3b. Kosher restaurants only</h4><p><b>The list does not accept non-kosher restaurants.</b> Do not add one, as a supplier or as a food tip. Any that are found are removed. A restaurant that is kosher without a certificate is not accepted either, except as an exception that Eretz Israel Tours reviews and approves.</p>
+<h4>3c. Licensed guides only; Eshkol needs a D1 license</h4><p><b>Only licensed tour guides may be listed as guides, or take guiding jobs, here.</b> The exception is a specialty that is not guiding in the licensed sense, such as a shuk tour or a graffiti tour; Eretz Israel Tours approves each of those. <b>Only a driver who holds a D1 driving license may be listed as an Eshkol driver or guide.</b> An entry that breaks either rule is removed.</p>
 <h4>4. How you use it</h4><p>Use the list for your own professional work. Keep your personal link to yourself, and don't copy, resell or publish the list.</p><p><b>Never show the list to suppliers.</b> Don't show suppliers the app, screenshots, prices, notes or ratings from it. Anyone who does will lose access immediately.</p>
 <h4>5. Crowdsourced: no responsibility for mistakes</h4><p>This is a crowdsourced list built by colleagues. Eretz Israel Tours takes no responsibility for mistakes, missing or out-of-date information. Please take great care when you add or change anything, and if you see a mistake, let us know with the <b>Update this supplier</b> button or the Feedback box. Prices, terms and contacts come from colleagues and can change. Always confirm with the supplier before booking. Eretz Israel Tours isn't responsible for information shared by members or for suppliers' services.</p>
 <h4>6. Your data and privacy</h4><p>We store your name, email, phone, role, license number and license photo, what you add, when you last used the app, and which supplier contact buttons you tap (call, WhatsApp, email, website, maps and booking links), with the time. Colleagues see your name next to what you add, except quotes (see 6b). Your license photo is visible only to Eretz Israel Tours.</p><p><b>Eretz Israel Tours can see everything in the app, including items marked "private".</b> "Private" means hidden from other colleagues, not from Eretz Israel Tours.</p><p>Data is stored with Supabase (servers in Frankfurt, EU) and the app is hosted on GitHub Pages. You can ask Eretz Israel Tours at any time to see, correct or delete your data and account.</p>
@@ -1385,7 +1394,7 @@ function viewReview(){
     </section>
     <section class="panel"><h3>New suppliers to check</h3>
       <p>Suppliers added by colleagues, and the ones I imported from your email. Imported suppliers stay hidden from colleagues until you approve them. Check each one's private note for the sources. Only approved suppliers go into the R5 export.</p>
-      ${pend.length? pend.map(v=>`<div class="rev"><div class="who2"><b>${esc(v.name)}</b><span>${esc(v.category)} · by ${esc(who(v.updated_by))} · ${fmtDate(v.updated_at)}</span>${kosherNeedsOk(v)?'<span style="color:var(--warn);font-weight:600">⚠ Kosher, no certificate. Approve only as an exception.</span>':''}</div>
+      ${pend.length? pend.map(v=>`<div class="rev"><div class="who2"><b>${esc(v.name)}</b><span>${esc(v.category)} · by ${esc(who(v.updated_by))} · ${fmtDate(v.updated_at)}</span>${kosherNeedsOk(v)?'<span style="color:var(--warn);font-weight:600">⚠ Kosher, no certificate. Approve only as an exception.</span>':''}${guideSpecialty(v)?'<span style="color:var(--warn);font-weight:600">⚠ Specialty guide, not licensed. Approve only as an exception.</span>':''}</div>
         <div class="btn-row"><button class="btn soft" data-open="${esc(v.id)}">View</button><button class="btn primary" data-ok="${esc(v.id)}">Approve</button></div></div>`).join('') : '<div class="empty" style="padding:16px">All caught up.</div>'}
     </section>
     <section class="panel"><h3>Legacy R5 export <span class="hint">(backup only)</span></h3>
@@ -1640,7 +1649,7 @@ function openDetail(id, opt){
     ['Cancellation',rows([['Policy',esc(v.cancelPolicy)],['Notice',notice],['Penalty',esc(v.cancelPenalty)],['Checked',esc(ilDate(v.cancelPolicyVerifiedDate))]])],
     ['Experience',rows([['Ratings',rating],['Strengths',esc(v.strengths)],['Weaknesses',esc(v.weaknesses)],['Summary',esc(v.notes)]])]
   ].filter(s=>s[1] && !(v._own && s[0]==='Experience'));
-  const body=`${vtabs}<div class="keep" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px"><span class="cat">${esc(v.category)}${v.also_categories?' + '+esc(v.also_categories):''}</span>${v.region||v.location?`<span class="hint">${esc(v.region||v.location)}</span>`:''}${shabPill(v)}${statusPill(v)}${claimedPill(v)}</div>
+  const body=`${vtabs}<div class="keep" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px"><span class="cat">${esc(v.category)}${v.also_categories?' + '+esc(v.also_categories):''}</span>${v.region||v.location?`<span class="hint">${esc(v.region||v.location)}</span>`:''}${shabPill(v)}${statusPill(v)}${claimedPill(v)}${guideSpecialty(v)?'<span class="pill pending">Specialty guide · not licensed</span>':''}</div>
     ${ownBar(v)}
     <div class="hrs"><span class="hint">Opening hours</span>${v.hours?`<b>${esc(v.hours)}</b>`:`<span class="hint">· not added yet</span><button class="mini" id="addHours" type="button">+ Add hours</button>`}
       ${v.hours_last?`<span class="hint brk">Last entry and other times</span><b>${esc(v.hours_last)}</b>`:''}
@@ -1665,6 +1674,7 @@ function openDetail(id, opt){
     ${v._own?'':`<fieldset><legend>Notes from colleagues</legend>
       <div class="addline"><textarea id="noteText" rows="1" placeholder="Add a tip, warning or update…"></textarea><button class="btn primary" id="noteAdd" type="button">Add</button></div>
       <label class="check" for="notePriv" style="margin:6px 0 8px"><input id="notePriv" type="checkbox"><span>Only me and Eretz Israel Tours see this note</span></label>
+      <p class="hint" style="margin:0 0 8px">Keep it to what happened. A malicious post is removed, and the member who posted it is banned.</p>
       ${guideOnGuide(v)?'<p class="hint" style="margin:0 0 8px">You are a guide writing about another guide. Eretz Israel Tours reads your note before colleagues see it, unless you keep it private.</p>':''}
       <div id="notesBox"></div></fieldset>`}
     ${foodOk(v)?'':'<!--'}<details class="food" id="foodWrap"><summary>🍽 Food nearby <span class="hint" id="foodCount"></span></summary><div id="foodBox"><p class="hint">Loading…</p></div></details>${foodOk(v)?'':'-->'}
@@ -2003,7 +2013,7 @@ function openDriverReview(v, d){
     <div class="grid"><div class="f"><label for="dmon">Month of the trip</label><input id="dmon" type="month" value="${esc(today().slice(0,7))}" max="${esc(today().slice(0,7))}"></div>
       <div class="f wide"><label for="dbody">In your own words</label><textarea id="dbody" rows="4" maxlength="1500" placeholder="Write anything about the trip: timing, driving, how he was with the group."></textarea></div></div>
     <label class="check" for="dpriv" style="margin:10px 0 0"><input id="dpriv" type="checkbox"><span>Only me and Eretz Israel Tours see this review</span></label>
-    <p class="hint" style="margin-top:10px">Your name shows next to your review. Keep it to what happened on your trip; see "Fair, objective feedback" in the terms.</p><div id="derr"></div>`,
+    <p class="hint" style="margin-top:10px">Your name shows next to your review. Keep it to what happened on your trip; see "Fair, objective feedback" in the terms. A malicious post is removed, and the member who posted it is banned.</p><div id="derr"></div>`,
     `<button class="btn soft" id="dcancel" type="button">Cancel</button><button class="btn primary" id="dsave" type="button">Save review</button>`);
   const g=id=>w.querySelector('#'+id); wireToggles(w); let rating='';
   const own=(grp,bad)=>{ const inp=g(grp+'x'), t=inp.value.replace(/[,!]/g,' ').replace(/\s+/g,' ').trim(); if(!t) return;
@@ -3064,7 +3074,10 @@ function openForm(v, preset){
       ${sel('category','Main category',[['','Choose…'],...byUse('category',CATEGORIES)],false,true)}
       <div class="f wide"><label>Also offers <span class="hint">(optional, e.g. a guide who also drives jeep tours)</span></label><input type="hidden" id="f_also_categories" value="${esc(x.also_categories||'')}"><div class="presets" id="alsoSug" style="margin:6px 0 0"></div></div>
       <div class="f wide" id="fleetWrap" hidden><label>Vehicles they offer</label><div class="tgs" id="fleetPick" role="group" aria-label="Vehicles they offer" style="margin:0">${VEHICLES.map(x=>`<button class="tg" type="button" data-veh="${x[0]}" aria-pressed="false">${esc(x[1])}</button>`).join('')}</div><span class="hint">Tap every size they have. Vans go by seats.</span></div>
-      <div class="f wide"><label for="f_tags">Type (separate with commas)</label><input id="f_tags" value="${esc(x.tags)}" placeholder="Jeep, ATV / RZR"><div class="presets" id="tagSug" style="margin:6px 0 0"></div></div>
+      <div class="f wide"><label for="f_tags">Type (separate with commas)</label><input id="f_tags" value="${esc(x.tags)}" placeholder="Jeep, ATV / RZR"><div class="presets" id="tagSug" style="margin:6px 0 0"></div><span class="hint" id="d1Hint" hidden>${D1_RULE} Add the tag "D1 license" to confirm it.</span></div>
+      <div class="f wide" id="licWrap" hidden><span class="lab">Is this guide licensed? <em style="color:var(--bad);font-style:normal">*</em></span>
+        <div class="tgs" role="group" aria-label="Is this guide licensed?"><button class="tg" type="button" id="licYes" aria-pressed="false">Licensed tour guide</button><button class="tg" type="button" id="licSpec" aria-pressed="false">Specialty guide, not licensed</button></div>
+        <span class="hint">${GUIDE_RULE} ${S.admin?'A specialty guide is your exception to make.':'A specialty guide is an exception that Eretz Israel Tours approves.'}</span></div>
       <div class="f wide"><label for="f_hours">Opening hours</label><input id="f_hours" value="${esc(x.hours||'')}" maxlength="600" placeholder="Sun–Thu 9:00–17:00, Fri 9:00–13:00, closed Shabbat"><div class="presets" id="hrSug" style="margin:6px 0 0">${HOURS_PRESETS.map(h=>`<button type="button" class="mini" data-hr="${esc(h)}">+ ${esc(h)}</button>`).join('')}</div><span class="hint">Tap to add, then fix the times.</span></div>
       <div class="f wide"><label for="f_hours_last">Last entry and other times</label><input id="f_hours_last" value="${esc(x.hours_last||'')}" maxlength="600" placeholder="Last entry 16:00. Last cable car up 16:00, last down 17:00."><div class="presets" id="hlSug" style="margin:6px 0 0">${LAST_PRESETS.map(h=>`<button type="button" class="mini" data-hl="${esc(h)}">+ ${esc(h)}</button>`).join('')}</div><span class="hint">Last entry, last cable car, when a trail opens or closes. Changing the hours marks them unverified again.</span></div>
       <div class="f wide"><label>Shabbat</label><div class="tgs" style="margin:0"><button class="tg" type="button" id="shabTg" aria-pressed="false">Shomer Shabbat</button></div><span class="hint">Tap if they keep Shabbat. It shows as a badge on the supplier.</span></div>
@@ -3116,6 +3129,10 @@ function openForm(v, preset){
   const showIf=(el,on)=>{ if(el) el.hidden=!on; };
   const hrIn=f.querySelector('#f_hours'); f.querySelectorAll('[data-hr]').forEach(b=>b.onclick=()=>{ const p=b.dataset.hr, cur=hrIn.value.trim().replace(/[,;]\s*$/,''); if(cur.toLowerCase().includes(p.toLowerCase())) return; hrIn.value=(cur?cur+', ':'')+p; hrIn.focus(); });
   const hlIn=f.querySelector('#f_hours_last'); f.querySelectorAll('[data-hl]').forEach(b=>b.onclick=()=>{ const p=b.dataset.hl, cur=hlIn.value.trim(); if(cur.toLowerCase().includes(p.toLowerCase())) return; hlIn.value=(cur?cur.replace(/[.;,]\s*$/,'')+'. ':'')+p+(/:$/.test(p)?' ':''); hlIn.focus(); });
+  const licYes=f.querySelector('#licYes'), licSpec=f.querySelector('#licSpec');
+  const licDraw=()=>{ licYes.setAttribute('aria-pressed', tagHas(tagsIn.value, GUIDE_LICENSED)); licSpec.setAttribute('aria-pressed', tagHas(tagsIn.value, GUIDE_SPECIALTY)); };
+  const licSet=(on,off)=>{ const had=tagHas(tagsIn.value,on); const cur=tagsIn.value.split(',').map(t=>t.trim()).filter(t=>t && ![on,off].some(z=>z.toLowerCase()===t.toLowerCase())); if(!had) cur.unshift(on); tagsIn.value=cur.join(', '); tagsIn.dispatchEvent(new Event('input',{bubbles:true})); };
+  licYes.onclick=()=>licSet(GUIDE_LICENSED, GUIDE_SPECIALTY); licSpec.onclick=()=>licSet(GUIDE_SPECIALTY, GUIDE_LICENSED);
   const shabTg=f.querySelector('#shabTg'), shabDraw=()=>shabTg.setAttribute('aria-pressed', isShabbat({tags:tagsIn.value}));
   shabTg.onclick=()=>{ const on=isShabbat({tags:tagsIn.value}); const cur=tagList({tags:tagsIn.value}).filter(t=>t.toLowerCase()!==SHABBAT_TAG.toLowerCase()); if(!on) cur.push(SHABBAT_TAG); tagsIn.value=cur.join(', '); shabDraw(); };
   tagsIn.addEventListener('input',shabDraw); shabDraw();
@@ -3136,11 +3153,12 @@ function openForm(v, preset){
     showIf(f.querySelector('#freeWrap'), rel('free',cv));
     showIf(f.querySelector('#npWrap'), catsOf(cv).includes('National Parks'));
     showIf(f.querySelector('#gWrap'), catsOf(cv).includes('Guide'));
+    showIf(f.querySelector('#licWrap'), catsOf(cv).includes('Guide')); showIf(f.querySelector('#d1Hint'), catsOf(cv).includes('Guide')||catsOf(cv).includes('Transport')); licDraw();
     drawTagSug(); };
   const drawTagSug=()=>{ const have=tagsIn.value.split(',').map(t=>t.trim().toLowerCase()).filter(Boolean); const opts=[...new Set(catsOf(curCats()).flatMap(c=>TAG_SUGGEST[c]||[]))].filter(t=>!have.includes(t.toLowerCase()));
     tagSug.innerHTML=opts.map(t=>`<button class="mini" type="button" data-t="${esc(t)}">+ ${esc(t)}</button>`).join('');
     tagSug.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{ const cur=tagsIn.value.split(',').map(t=>t.trim()).filter(Boolean); cur.push(b.dataset.t); tagsIn.value=cur.join(', '); drawTagSug(); }); };
-  tagsIn.addEventListener('input',()=>{ drawTagSug(); fleetDraw(); });
+  tagsIn.addEventListener('input',()=>{ drawTagSug(); fleetDraw(); licDraw(); });
   f.querySelector('#f_location').setAttribute('list','dl_location'); f.querySelector('#f_location').setAttribute('autocomplete','off');
   const kos=f.querySelector('#f_kosher'); const kosNote=f.querySelector('#kosNote');
   const kosDraw=()=>{ f.querySelectorAll('[data-kos]').forEach(b=>b.classList.toggle('on',kos.value===b.dataset.kos));
@@ -3182,8 +3200,13 @@ function openForm(v, preset){
     const probs=[]; if(!data.name.trim()) probs.push('Add the supplier name.');
     if(catsOf(data).includes('Restaurant') && notKosher(data.kosher)) probs.push('The list does not accept non-kosher restaurants.'); if(!data.category) probs.push('Choose a category.');
     if(!v && dupCheck()) probs.push('This supplier is already on the list. Open it and edit it instead.');
-    let reason=''; if(guarded){ const changed=LOCKED.concat(kosherNeedsOk(data)?['kosher']:[]).concat(gogF?REVIEW_FIELDS:[]).filter(k=>String(data[k]||'').trim()!==String(v[k]||'').trim()); reason=f.querySelector('#f_reason').value.trim();
-      if(changed.length && reason.length<3) probs.push('You changed '+changed.map(k=>FIELD_LABEL[k]||REVIEW_LABEL[k]||k).join(', ')+'. Say briefly why, at the bottom.'); }
+    const isG=catsOf(data).includes('Guide'), lic=tagHas(data.tags,GUIDE_LICENSED), spec=tagHas(data.tags,GUIDE_SPECIALTY), wasG=!!v&&catsOf(v).includes('Guide');
+    if(isG && lic && spec) probs.push('Choose one: licensed tour guide, or specialty guide.');
+    else if(isG && !lic && !spec && !wasG) probs.push('Say whether this guide is licensed. '+GUIDE_RULE);
+    if(eshkolListed(data.tags) && !(v&&eshkolListed(v.tags)) && !tagHas(data.tags,D1_TAG)) probs.push(D1_RULE+' Add the tag "D1 license" to confirm it, or take Eshkol off.');
+    const specGain=guarded && isG && spec && !tagHas(v.tags,GUIDE_SPECIALTY);
+    let reason=''; if(guarded){ const changed=LOCKED.concat(kosherNeedsOk(data)?['kosher']:[]).concat(gogF?REVIEW_FIELDS:[]).concat(specGain?['tags']:[]).filter(k=>String(data[k]||'').trim()!==String(v[k]||'').trim()); reason=f.querySelector('#f_reason').value.trim();
+      if(changed.length && reason.length<3) probs.push('You changed '+changed.map(k=>k==='tags'?'Specialty guide':(FIELD_LABEL[k]||REVIEW_LABEL[k]||k)).join(', ')+'. Say briefly why, at the bottom.'); }
     if(probs.length){ err.innerHTML=`<div class="msg err">${probs.join(' ')}</div>`; err.scrollIntoView({block:'center'}); return; }
     const btn=w.querySelector('#saveBtn'); btn.disabled=true; btn.textContent='Saving…';
     try{ const saved=await DB.save(data, reason); if(!v && preset && preset.parent_id && S.admin){ try{ await DB.setSite(saved.id, preset.parent_id, preset.reservation||''); }catch(e){} } closeSheet(); S.tab='vendors'; render();
@@ -3385,7 +3408,7 @@ function openClientForm(v){
 // A colleague answers "I'm available"; the poster gives the job to one of them. Nothing is charged on a job.
 // My days: each member marks the days he is busy; a poster sees only Free / Busy / Not marked for his job's dates.
 const JOB_KINDS=[['guide','Guide','מדריך/ה'],['guide_vehicle','Guide with vehicle','מדריך/ה עם רכב'],['van_driver','Van driver','נהג/ת ואן'],['jeep_driver','Jeep driver','נהג/ת ג׳יפ'],['other','Someone else','איש/אשת מקצוע']];
-const JOB_NEEDS=[['licensed','Licensed guide'],['eshkol','Eshkol license'],['midbari','Midbari 4x4 vehicle'],['gun','Carries a gun'],['shabbat','Shomer Shabbat']];
+const JOB_NEEDS=[['licensed','Licensed guide'],['eshkol','Eshkol license (D1)'],['midbari','Midbari 4x4 vehicle'],['gun','Carries a gun'],['shabbat','Shomer Shabbat']];
 const JOB_PER=[['day','per day','ליום'],['job','for the whole job','לכל העבודה'],['hour','per hour','לשעה'],['vehicle','per vehicle','לרכב']];
 const JOB_VAT={including_vat:['VAT included','כולל מע״מ'],plus_vat:['plus VAT','בתוספת מע״מ'],not_applicable:['no VAT','ללא מע״מ']};
 const WEEKDAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Shabbat'];
@@ -3549,7 +3572,7 @@ async function openJobMine(j){
 
 // Post a job, step 1: the job.
 function openJobForm(j){
-  const d=Object.assign({kind:'guide',title:'',date_from:'',date_to:'',hours:'',start_place:'',region:'',pax:'',langs:'',needs:'',price:'',currency:'ILS',per:'day',vat:'including_vat',payment:'',note:'',reply_by:'',anon:true,audience:'all'}, j||S.jobDraft||{});
+  const d=Object.assign({kind:'guide',title:'',date_from:'',date_to:'',hours:'',start_place:'',region:'',pax:'',langs:'',needs:'',price:'',currency:'ILS',per:'day',vat:'including_vat',payment:'',note:'',reply_by:'',anon:true,audience:'all'}, j||S.jobDraft||{needs:'licensed'});   // a new job starts as a guide job, and guiding is for licensed guides
   const tg=(grp,k,l,on)=>`<button class="tg" type="button" data-${grp}="${k}" aria-pressed="${on}">${esc(l)}</button>`;
   const w=sheet(j?'Change the job':'Post a job', `
     <fieldset><legend>Who you need</legend><div class="tgs" id="jfKind" role="group" aria-label="Who you need">${JOB_KINDS.map(k=>tg('kind',k[0],k[1],d.kind===k[0])).join('')}</div></fieldset>
@@ -3564,6 +3587,7 @@ function openJobForm(j){
       <div class="f wide"><label for="jfLangs">Language of the group</label><input id="jfLangs" maxlength="120" value="${esc(d.langs)}" placeholder="English"></div>
     </div></fieldset>
     <fieldset><legend>Must have</legend><div class="tgs" id="jfNeeds" role="group" aria-label="Must have">${JOB_NEEDS.map(k=>tg('need',k[0],k[1],csv(d.needs).includes(k[0]))).join('')}</div>
+      <p class="hint" style="margin:8px 0 0">Only a licensed guide may guide. Leave "Licensed guide" on unless this is a specialty such as a shuk tour or a graffiti tour. An Eshkol driver or guide needs a D1 license.</p>
       <p class="hint" style="margin:-6px 0 0">The job goes only to colleagues who have said they have these.</p></fieldset>
     <fieldset><legend>What you pay</legend><div class="grid">
       <div class="f"><label for="jfPrice">Price <em>*</em></label><input id="jfPrice" class="mono" inputmode="decimal" maxlength="10" value="${esc(d.price)}" placeholder="1400"></div>
@@ -3858,12 +3882,13 @@ function tourSteps(replay){
     <div class="tour-card">${row(I.plus,'Everybody uses it and adds to it','This project is meant to help everyone, and it works only if we all add to it: a supplier, a price, a quote, a tip, a driver review, a correction.')}</div>
     <div class="tour-card">${row(I.chat,'AI search is coming <span class="pill high" style="font-size:11px">In the works</span>',"We're building an AI chat box: ask in plain words and it searches the list for you. It costs money to run. Eretz Israel Tours is paying for it, for the greater good.")}</div>
     <div class="tour-card warn"><b>Take part, or lose your place</b><span>Every member has to both use the list and add to it. Anyone who has not done both for 3 months gets a reminder, and is then removed.</span></div>` },
-  { html:`<h2 style="margin-top:10px">Five house rules</h2>
+  { html:`<h2 style="margin-top:10px">Six house rules</h2>
     <div class="tour-card bad" style="display:flex;gap:12px;align-items:flex-start"><span style="flex:none;width:22px;height:22px;color:var(--bad);display:flex">${I.lock}</span><div><b>Never show the list to suppliers</b><span>Not the app, screenshots, prices or notes. Anyone who does loses access.</span></div></div>
     ${rule(2,'Use it and add to it','Members who have not both used the list and added to it for 3 months are removed, after a reminder.')}
-    ${rule(3,'Keep it factual','Say what happened on your trip, and mark an opinion as an opinion. Running someone down gets you removed.')}
+    ${rule(3,'Keep it factual','Say what happened on your trip, and mark an opinion as an opinion. A malicious post is removed, and the member who posted it is banned.')}
     ${rule(4,'Eretz Israel Tours sees everything','Including items marked private and who added each quote. Private means hidden from other colleagues.')}
     ${rule(5,'Confirm before you book','Prices and details come from colleagues and can change. Always check with the supplier.')}
+    ${rule(6,'Licensed guides only','Only licensed tour guides are listed, except specialties such as shuk or graffiti tours. An Eshkol driver or guide needs a D1 license.')}
     <p class="hint" style="margin:16px 0 0;border-top:1px solid var(--line);padding-top:10px;font-size:13px">Emails sent with the Email button copy Eretz Israel Tours as a hidden BCC. You can turn that off under My settings.</p>
     <p style="margin:0"><button type="button" class="linkbtn" data-t="terms">Read the full terms and privacy notice</button></p>` }
   ];
