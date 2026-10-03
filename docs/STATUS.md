@@ -14,7 +14,7 @@
 | Repo | `Danielg972/eit-vendors`, branch `main` (cite by commit SHA) |
 | Database | Supabase project `wjuqtjlrtcywjaspjpwu` (org "EIT Vendors", Frankfurt) |
 | Schema record | `supabase/schema.sql` (tables, functions, grants), plus `supabase/functions/files/index.ts` (edge function v9) |
-| Terms version | `2026-10-02e` live; `2026-10-03a` on the branch `jobs-preview` (adds 6d, jobs and My days) (draft, not yet reviewed by a lawyer; adds 2a use-and-add rule, 2b cost and founding members, 3b kosher restaurants only, no-certificate as an approved exception) |
+| Terms version | `2026-10-02e` (draft, not yet reviewed by a lawyer; adds 2a use-and-add rule, 2b cost and founding members, 3b kosher restaurants only, no-certificate as an approved exception). On the branch `jobs-preview`: `2026-10-03a`, which adds 6d (jobs and My days) |
 | Decisions | `docs/DECISIONS.md` (D-1 Cockpit boundary; D-2 quote tracker; D-3 driver reviews; D-4 transport by vehicle size; D-5 booking sheets; D-6 welcome tour, name, use-and-add rule; D-7 Shomer Shabbat badge, kosher restaurants only; D-8 opening hours, no-certificate needs approval; D-9 verified hours, last entry, hours from websites; D-10 official buttons; D-11 jobs between colleagues and My days, on a branch) |
 
 ## Integration with the Cockpit
