@@ -414,6 +414,13 @@ button.bkcard{display:block;width:100%;text-align:left;font:inherit;color:inheri
 .tour-sheet .stmt{margin-top:8px;background:var(--wash);border-radius:8px;padding:7px 10px}
 .tour-sheet .stmt span{color:var(--ink-2)}
 .tour-sheet .ft{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px}
+.tour-ex .jobcard{margin:0 0 12px;cursor:default}
+.tour-ex .hrs{margin:8px 0 0}
+.tour-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin-top:6px}
+.tour-days span{min-width:0;height:36px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);background:var(--card);border-radius:8px;font-family:var(--f-mono);font-size:13px}
+.tour-days .dn{height:auto;border:0;background:none;font-family:inherit;font-size:12px;color:var(--ink-2)}
+.tour-days .on{background:var(--olive);border-color:var(--olive);color:var(--on-olive)}
+.tour-days .wk{background:var(--wash);color:var(--ink-2);border-style:dashed}
 /* jobs between colleagues, and My days */
 .jobcard .jtop{display:flex;gap:12px;align-items:flex-start}
 .jobcard .jtop>div:first-child{flex:1;min-width:0}
@@ -3469,6 +3476,8 @@ Object.assign(DB, {
 
 // ---------- welcome tour (first open after approval; again from My settings) ----------
 // Seen once per device (localStorage), like the booking-sheet explainer. No database change.
+// The tour follows what the member has: the Jobs screen shows only to a member who has the Jobs tab,
+// and the guide's page for clients is mentioned only once that feature is in the app.
 const TOUR_KEY='eitv_tour_seen', TOUR_V='1';
 function tourSeen(){ if(S.tourSeen) return true; try{ return localStorage.getItem(TOUR_KEY)===TOUR_V; }catch(e){ return false; } }
 function tourDone(){ S.tourSeen=true; try{ localStorage.setItem(TOUR_KEY,TOUR_V); }catch(e){} }
@@ -3481,10 +3490,12 @@ function tourSteps(replay){
   const I={ search:svg('<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>'), quote:svg('<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/>'),
     bus:svg('<rect x="4" y="4" width="16" height="13" rx="2"/><path d="M4 11h16M8 17v2M16 17v2"/>'), plus:svg('<path d="M12 5v14M5 12h14"/>'),
     phone:svg('<rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M11 18h2"/>'), people:svg('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.700 2 6.500 5.500"/><path d="M16 4.600a3.500 3.500 0 0 1 0 6.800M18.500 14.800c1.600.8 2.600 2.600 3 5.200"/>'),
-    chat:svg('<path d="M21 12a8 8 0 0 1-11.800 7L4 20l1.100-4.600A8 8 0 1 1 21 12z"/><path d="M9.500 12h.01M13 12h.01M16.500 12h.01"/>'), lock:svg('<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>') };
+    chat:svg('<path d="M21 12a8 8 0 0 1-11.800 7L4 20l1.100-4.600A8 8 0 1 1 21 12z"/><path d="M9.500 12h.01M13 12h.01M16.500 12h.01"/>'),
+    cal:svg('<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/>'), lock:svg('<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>') };
   const rule=(n,t,d)=>`<div class="tour-row"><div class="ti tour-num">${n}</div><div><b>${t}</b><span>${d}</span></div></div>`;
+  const jobs=jobsOn(), post=jobs&&jobsPost(), forClients=typeof clientBox==='function';
   const myLink = S.token ? linkBox('tourLink', personalLink(S.token)) : `<div class="addrow" style="margin:8px 0"><input type="text" readonly value="vendors.eretzisraeltours.com/?k=…" class="mono" style="font-size:13px" tabindex="-1"></div>`;
-  return [
+  const steps=[
   { html:`<div class="tour-hero"><b>The Inner Circle</b><small>Israel Guide · shared by colleagues</small></div>
     <div class="tour-kick">${replay||!first?'Welcome tour':"You're approved"}</div>
     <h2 style="margin-top:6px">Welcome${first?', '+esc(first):''}.</h2>
@@ -3492,8 +3503,9 @@ function tourSteps(replay){
     ${row(I.search,'Find a supplier','Hotels, guides, bus companies, drivers and sites. Call or WhatsApp in one tap.')}
     ${row(I.quote,'See real quotes','What colleagues were quoted per day and per hour, with every extra fee.')}
     ${row(I.bus,'Book transport in writing',"A booking sheet both sides accept, so the price can't change afterwards.")}
+    ${jobs?row(I.cal, post?'Pass work to a colleague':'Jobs from colleagues', post?'Post a job with the price you pay, and see who is free that day.':"Each job states what it pays. Tap I'm available, and mark the days you are busy."):''}
     ${row(I.plus,'Add what you know','Suppliers, prices, tips and driver reviews. The list is as good as what we all put in.')}
-    <p class="hint" style="margin:18px 0 0;font-size:13px">About two minutes. Eight short screens. <button type="button" class="linkbtn" data-t="skip">Skip to the house rules</button></p>` },
+    <p class="hint" style="margin:18px 0 0;font-size:13px">About two minutes. %N% short screens. <button type="button" class="linkbtn" data-t="skip">Skip to the house rules</button></p>` },
   { html:`<div class="tour-ex"><div class="favs-h" style="margin:0">Your personal link</div>${myLink}
       <div class="tour-row" style="margin-top:10px"><div class="ti">${I.phone}</div><div><b>Add it to your home screen</b><span>In your browser's menu, choose Add to Home Screen. It then opens like an app.</span></div></div></div>
     <h2>Your link is your login</h2>
@@ -3511,14 +3523,17 @@ function tourSteps(replay){
     <p>Search by name, region, type or contact person. Tap a category or a region to narrow the list.</p>
     <p>The suppliers you use most sit at the top. The rest is in mixed order that changes daily, so nobody is always first. Tap <b>Order</b> for A–Z.</p>` },
   { html:ex(`<div style="font-family:var(--f-display);font-size:20px;line-height:1.2">Golan Heights Jeep Tours</div>
-      <div style="margin-top:2px"><span class="cat">Adventure</span> <span class="hint">Golan</span></div>
+      <div style="margin-top:2px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="cat">Adventure</span><span class="hint">Golan</span><span class="pill shab">Shomer Shabbat</span></div>
+      <div class="hrs"><span class="hint">Opening hours</span><b>Sun–Thu 8:00–17:00, Fri 8:00–13:00</b><span class="hv brk"><span class="pill pending">Unverified</span><span class="hint">From their website</span><span class="mini">☐ I verified these hours</span></span></div>
       <div class="actions"><span class="act">${ic.call}Call</span><span class="act">${bmark('whatsapp',ic.wa)}WhatsApp</span><span class="act">${ic.mail}Email</span><span class="act">${bmark('waze',ic.nav)}Waze</span><span class="act">${bmark('google-maps',ic.maps)}Google Maps</span></div>
       <div class="btn red upd" style="box-sizing:border-box;text-align:center">⚠ Update this supplier</div>
       <div class="favs-h" style="margin:10px 0 6px">Standard prices</div>
       <div class="pl"><span class="who3">Adult <span class="tag agent">Agent</span></span><span class="amt">₪360</span><span class="meta">Per person · plus VAT · checked 14/08/2026</span></div>`, SAMPLE)+`
     <h2>One page per supplier</h2>
     <p><b>Contact in one tap.</b> Call, WhatsApp, email, or navigate with Waze or Google Maps.</p>
-    <p><b>Scroll for the rest.</b> Prices and agent rates, deals, colleagues' notes, food nearby, the kosher certificate, photos and PDFs.</p>
+    <p><b>Opening hours.</b> They stay Unverified until a colleague has spoken to the supplier or been there. If you have, tick it. Last entry times are listed too.</p>
+    <p><b>Scroll for the rest.</b> Prices and agent rates, deals, colleagues' notes, photos and PDFs. On places you visit, also food nearby and the kosher certificate.</p>
+    ${forClients?`<p><b>A guide's page has a part for clients.</b> A bio, up to four pictures and a retail price that you can copy and send to your client. The rest of the page stays between colleagues.</p>`:''}
     <p><b>Something wrong?</b> The red button reports it: closed, moved, phone or prices changed.</p>` },
   { html:ex(`<div class="qstat"><div class="t">Bus (36–60 seats) · per day</div><div class="n">₪2,650<small>average of 4 quotes</small></div><div class="r">Lowest <b class="mono">₪2,400</b> · highest <b class="mono">₪3,000</b></div></div>
       <div class="qcard"><div class="qhead"><b>Galil Buses</b><span class="pill approved">Booked</span></div><div class="qsub">Bus · 50 seats · Galilee</div>
@@ -3546,6 +3561,18 @@ function tourSteps(replay){
     <p><b>You fill in the job</b> from the Quotes tab or a transport supplier's page, and send the company a link. It sees that one booking, never the list.</p>
     <p><b>The company fills in the price</b> and every extra: overtime, extra km, Kvish 6, tip, cancellation.</p>
     <p><b>Both sides accept</b> and the sheet locks. A change comes back in red for approval.</p>` },
+  jobs && { html:ex(`<div class="qcard bkcard jobcard"><div class="jtop"><div><span class="cat">Guide</span><b>Old City, family of 6</b></div><div class="jprice"><b>₪1,500</b><span>per day, plus VAT</span></div></div>
+        <div class="qsub">12/11/2026 · 08:30–17:00 · Jerusalem<br>6 people · English</div>
+        <div class="flags"><span class="tag">Licensed guide</span><span class="pill approved">You are free that day</span></div>
+        <div class="jfoot">Posted by a colleague · today</div></div>
+      <div class="favs-h" style="margin:0">My days</div>
+      <div class="tour-days">${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<span class="dn">${d}</span>`).join('')}<span>8</span><span class="on">9</span><span class="on">10</span><span>11</span><span>12</span><span>13</span><span class="wk">14</span></div>
+      <div class="cal-k"><span><i style="background:var(--olive);border-color:var(--olive)"></i>Busy</span><span><i></i>Free</span><span><i style="background:var(--wash);border-style:dashed"></i>Busy every week</span></div>`, SAMPLE)+`
+    <h2>Jobs between colleagues</h2>
+    <p><b>The Jobs tab.</b> ${post?'Need a guide, a driver or a jeep for a date? Post the job with the price you pay, with or without your name. It goes to the colleagues it fits, or to the ones you pick.':'A colleague who needs a guide, a driver or a jeep for a date posts the job, with the price it pays. You see the jobs that fit you. Some are posted without a name.'}</p>
+    <p><b>Tap I'm available.</b> The colleague who posted then sees your name and role, and chooses. Phone numbers pass between the two of you only when the job is given.</p>
+    <p><b>My days.</b> Tap the days you are busy. A colleague posting a job sees only Free or Busy for the dates of that job, never why. A job you are given here is marked busy for you, and you can add it to your own calendar.</p>
+    <p><b>As of now, nothing is charged on a job.</b> The price is paid directly by the colleague who posted. Eretz Israel Tours is not a party to the job.</p>` },
   { html:ex(`<div style="display:flex;justify-content:flex-end"><span class="btn accent" style="border-radius:999px;box-shadow:0 6px 18px rgba(0,0,0,.18)">+ Add supplier</span></div>
       <div class="quickfill" style="margin:10px 0;background:var(--card)"><b>⚡ Quick fill</b><div class="presets"><span class="mini">From my contacts</span><span class="mini">Paste text</span><span class="mini">Contact card</span></div></div>
       <div class="list"><div class="row"><span class="row-name">Shomron Bus Lines</span><span class="row-price"><span class="pill pending">Pending review</span></span><span class="row-meta"><span class="cat">Transport</span><span>added by you</span></span></div></div>`, 'Example. Names are samples.')+`
@@ -3553,7 +3580,8 @@ function tourSteps(replay){
     <p><b>A supplier in a minute.</b> Quick fill reads a phone contact, a pasted signature or a contact card.</p>
     <p><b>Checked before it's shared.</b> New suppliers, and changes to names, contacts, main prices or cancellation terms, wait for approval by Eretz Israel Tours.</p>
     <p><b>Your own prices.</b> A price you add for yourself is seen only by you and Eretz Israel Tours, unless you suggest it for everyone.</p>
-    <p><b>Review your driver.</b> His phone number identifies him, so his reviews follow him from company to company.</p>` },
+    <p><b>Review your driver.</b> His phone number identifies him, so his reviews follow him from company to company.</p>
+    <p><b>Kosher restaurants only.</b> The list does not take non-kosher restaurants. Kosher without a certificate needs approval by Eretz Israel Tours.</p>` },
   { html:`<h2 style="margin-top:10px">Free, and built by all of us</h2>
     <div class="tour-card">${row(I.people,'Not for pay','As of now, nobody pays to join, and you will not be asked to pay in the future. If we ever decide the costs are not worth bearing, founding members stay free.')}</div>
     <div class="tour-card">${row(I.plus,'Everybody uses it and adds to it','This project is meant to help everyone, and it works only if we all add to it: a supplier, a price, a quote, a tip, a driver review, a correction.')}</div>
@@ -3563,11 +3591,13 @@ function tourSteps(replay){
     <div class="tour-card bad" style="display:flex;gap:12px;align-items:flex-start"><span style="flex:none;width:22px;height:22px;color:var(--bad);display:flex">${I.lock}</span><div><b>Never show the list to suppliers</b><span>Not the app, screenshots, prices or notes. Anyone who does loses access.</span></div></div>
     ${rule(2,'Use it and add to it','Members who have not both used the list and added to it for 3 months are removed, after a reminder.')}
     ${rule(3,'Keep it factual','Say what happened on your trip, and mark an opinion as an opinion. Running someone down gets you removed.')}
-    ${rule(4,'Eretz Israel Tours sees everything','Including items marked private and who added each quote. Private means hidden from other colleagues.')}
+    ${rule(4,'Eretz Israel Tours sees everything',(jobs?'Including items marked private, who added each quote and who posted each job.':'Including items marked private and who added each quote.')+' Private means hidden from other colleagues.')}
     ${rule(5,'Confirm before you book','Prices and details come from colleagues and can change. Always check with the supplier.')}
     <p class="hint" style="margin:16px 0 0;border-top:1px solid var(--line);padding-top:10px;font-size:13px">Emails sent with the Email button copy Eretz Israel Tours as a hidden BCC. You can turn that off under My settings.</p>
     <p style="margin:0"><button type="button" class="linkbtn" data-t="terms">Read the full terms and privacy notice</button></p>` }
-  ];
+  ].filter(Boolean);
+  steps[0].html=steps[0].html.replace('%N%', ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve'][steps.length-1]||String(steps.length-1));
+  return steps;
 }
 function openTour(replay){
   closeSheet(); const old=document.getElementById('tourWrap'); if(old) old.remove();

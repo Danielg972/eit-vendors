@@ -157,6 +157,8 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 **Status:** live since 2 Oct 2026, about 16:35. Front end only. The rule in decision 5 has no tooling yet: see README "Welcome tour, new name, use-and-add rule".
 
+**Update, 3 October 2026, 21:21 (the owner):** "with new additions from tonight the first time sign in tour needs to be edited". The tour was brought up to date with Jobs and My days (D-11), opening hours and their verification (D-8, D-9), the Shomer Shabbat badge and the kosher rule (D-7), and a guide's page for clients (D-12). **Implementation choices (not owner decisions; change on request):** the Jobs screen shows only to members who have the Jobs tab; the clients paragraph shows only once that feature is in the app; members who already took the tour are not shown it again. In a pull request from branch `tour-update`; live when he merges it. Details in the README.
+
 ---
 
 ## D-5 · Booking sheets for buses and vans (approved; live for all colleagues)
