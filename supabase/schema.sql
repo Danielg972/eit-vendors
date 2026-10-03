@@ -913,8 +913,7 @@ as $function$
     when not public._limited(m) then true
     when q.org then true
     when public._quote_kind(q, v) = 'transport' then m.see_quotes and 'transport' = any (string_to_array(m.sections, ','))
-    when public._quote_kind(q, v) = 'guide' then m.see_guide_rates and 'guides' = any (string_to_array(m.sections, ','))
-    else false end
+    else false end   -- D-18: an organisation never sees what a guide or an agent was quoted, except for transport
 $function$;
 
 CREATE OR REPLACE FUNCTION public._all_fields()
