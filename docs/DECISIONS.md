@@ -12,7 +12,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ## D-18 · Organisations see retail prices only; transport quotes are the one exception; a guide who also runs jeeps is two entries (live)
 
-**Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 3 October 2026, 22:23, 22:34 and 22:52 Israel time.
+**Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 3 October 2026, 22:23, 22:34, 22:52 and 22:59 Israel time.
 
 **In his words (22:23):** "yeshivas and outside organizers ONLY see retail pricing NEVER pricing thats agent or pricing history of any guides or others users, the only exception is transportation. they can contribute to all". On a guide's page showing an organisation "Ask for rate": "Correct. yes". **(22:34),** asked about a supplier who is listed for jeeps and also guides, whose retail price an organisation could still see: "Really I think he should be two different entries. One guide one jeep".
 
@@ -22,8 +22,8 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 2. **It never sees what a guide, an agent or another member was quoted or paid,** except for transportation (bus and van quotes).
 3. **A guide's own prices stay behind "Ask for rate"** unless Eretz Israel Tours switches guide rates on for that member.
 4. **Organisations can add to everything they see.**
-5. **Someone who guides and also runs jeep tours is two entries:** one as a guide, one for the jeeps. Not one entry with "also offers".
-6. **The two entries link to each other.** (22:52) "No guide can offer those and have a link to that page."
+5. **Someone who guides and also runs jeep tours is two entries:** one as a guide, one for the jeeps.
+6. **A guide may still offer other services on his guide entry, and have another page for that service; the two link to each other.** (22:52) "No guide can offer those and have a link to that page." Asked whether that meant a guide entry may not tick another category, he corrected the reading (22:59): "No, what I meant to say is, Guide is allowed to offer those. He can offer other services and still have another page for that service."
 7. **A business that itself offers several activities stays one entry.** (22:52) Of a supplier whose business is jeeps and rappelling: "that's what his business does. So he should remain one entry."
 
 **What changed, and what did not:**
@@ -32,7 +32,8 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 - **Already so:** agent prices, agent links, other members' own price lines, and guides' and agents' quotes for hotels, sites and activities were never sent to an organisation.
 - **Done on the list (decisions 5 and 6), 3 Oct about 23:00, after his "I think so" to splitting them now:** the two entries that combined Guide and Adventure are now four. In each pair the entry that already held the history kept its id; the new one got the same contact details. Where the pair was hidden and pending, both still are. Each jeep entry points to its guide entry through the existing `parent_id` link, so the guide's page lists the jeep entry and the jeep page links back. What each entry looked like before is written in its private note.
 - **App (decision 6):** the link was built for national-park sites and said "Part of" and "Sites". For any other pair it now says "See also". The "+ Add site" button shows only on a national-parks entry.
-- **Not done:** the supplier form still lets a guide tick another category under "also offers", and the database does not refuse it. His sentence can be read as asking for that; it is his to confirm. The new guide entry carries neither "Licensed tour guide" nor "Specialty guide", and its Eshkol tag has no "D1 license" (D-16): someone who knows has to mark it.
+- **"Also offers" stays as it is (decision 6):** the form and the database go on letting a guide tick another category. On one of the two split guide entries the master agent had taken "also offers Adventure" off, on a wrong reading of his 22:52 sentence; it was put back at 23:00. The jeep entries do not carry "also offers Guide": a jeep page is not a guide page.
+- **Still to do:** the new guide entry carries neither "Licensed tour guide" nor "Specialty guide", and its Eshkol tag has no "D1 license" (D-16): someone who knows has to mark it.
 
 **Implementation choices (not owner decisions; change on request):**
 
