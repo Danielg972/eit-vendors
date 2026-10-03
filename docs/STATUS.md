@@ -68,7 +68,7 @@
 
 ## Waiting for the owner
 
-- **Do not let the branch `guide-for-clients` go live as it is.** It was built before limited members existed and its database files would undo their protection (risk 19). Whichever session finishes that branch has to rework it on top of `main` first.
+- **Do not let the branch `guide-for-clients` go live as it is.** It was built before limited members existed and its database files would undo their protection (risk 19). The session that built it has to rework it on top of `main` first. What to do, rule by rule and function by function, is in `docs/HANDOFF_guide-for-clients.md` (the owner asked for that hand-off on 3 Oct, 21:48); the checks it must pass are in `supabase/tests/limited_members/`. The session could not be messaged directly, so it needs to be pointed at that file or at the GitHub issue.
 - **Limited members (D-15): try it once on the live site.** Ask to join as an organisation from a second browser, approve it in the Team tab, and look at the list through that link. Tested on a local copy and by a probe on production, not yet by a person on the live site. Also: read the automatic welcome email with an organisation in mind.
 - **Jobs (D-11): when to open it to colleagues** (Team tab), and whether a job is ever charged for.
 - **Official logos on the WhatsApp, Waze and Google Maps buttons (D-10).** The buttons are ready and show a logo as soon as the brand owner's own file is in `brand/` in the repository (names and sources in `brand/README.md`). Needed from the owner: the WhatsApp logo from Meta's brand page; for Google Maps, Google's approval first (their brand page requires it), and the same is likely for Waze, whose rules are behind a sign-in.
