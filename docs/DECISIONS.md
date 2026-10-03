@@ -4,9 +4,33 @@
 
 Decisions that bind this project. Newest first. Each entry says who decided, when, and on what evidence.
 
-*D-12 (a guide's page for clients) and D-14 (claimed pages, disputes, reviews) are recorded on the branch `guide-for-clients`. They are built, not live, and join this file when that branch is merged. Read the clash note under D-15 first.*
+*D-12, D-14 and D-16 were built on the branch `guide-for-clients` at the same time as D-15, and rebuilt on top of it before anything of theirs touched production. See the note under D-15.*
 
 *D-15 (limited members) was first recorded as D-12 by mistake, for a few minutes on 3 Oct; D-12 was already taken on that branch.*
+
+---
+
+## D-16 · Licensed guides only, D1 for Eshkol, malicious posts (database live; app waits for the owner's merge)
+
+**Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session, 3 October 2026, 21:41 Israel time.
+
+**In his words:** "add to all relevant places that the rules is only licesned guides are allowed to be used except for specialties like shuk tours, or graffiti tours etc.  any malicious post will be removed and used will be banned.  only drivers with a D1 license will be allowed to be listed as an eshkol driver/guide"
+
+**Decisions:**
+
+1. **Only licensed guides are used**, except specialties such as shuk tours or graffiti tours.
+2. **A malicious post is removed and its author is banned.**
+3. **Only a driver with a D1 license is listed as an Eshkol driver or guide.**
+
+**Implementation choices (not owner decisions; change on request):**
+
+- **Stated with tags, not checked against a license.** `Licensed tour guide` or `Specialty guide` on a guide; `D1 license` next to any Eshkol tag. The form and the database both ask.
+- **A specialty guide is an exception Eretz Israel Tours approves**, the way "Kosher, no certificate" is.
+- **Entries already on the list are not blocked** from other edits and are not marked. Going through them is still to do.
+- **"All relevant places"** was taken as: terms 3a and 3c, the welcome tour's house rules, the supplier form, the Review tab, the note box, the driver review form, the job form and "Jobs I take". A new job starts with "Licensed guide" ticked; the poster can untick it for a specialty.
+- **"Banned" is done by hand:** Eretz Israel Tours removes the post and revokes the member in the Team tab. Nothing detects a malicious post.
+
+**Status:** the rule in `vendor_save` is on production since 3 Oct 2026, about 22:00. The form, terms `2026-10-03d` and house rules go live when the owner merges `guide-for-clients`. Until then the live form does not offer the two buttons, so a new guide entry is refused unless the tag is typed by hand.
 
 ---
 
@@ -46,6 +70,8 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 **Clash to settle before the branch `guide-for-clients` goes live:** The branch `guide-for-clients` (D-12 a guide's page for clients, D-14 claimed pages, disputes and reviews; built, not live) was written at the same time, from the code as it was before this change. Its two database files (`2026-10-03b_guide_for_clients.sql`, `2026-10-03c_claims.sql`) replace six functions that now carry the limited-member rules: `_vendor_view`, `vendor_detail`, `vendor_save`, `note_add`, `_driver_json` and `driver_review_add`. Its versions do not have those rules. Run on production as they are, they would send agent prices and guides' reviews to limited members. Before either file is run: bring the branch up to date with `main`, rewrite those six functions on top of the current ones, and repeat the limited-member probe on production. Its terms version is also `2026-10-03b`; it needs one later than `2026-10-03c`. Nothing from that branch is on production (checked 3 Oct, 21:50: no `vendor_set_client`, no `vendor_claim`).
 
+**Settled 3 Oct 2026, about 22:00:** the two files were never run. The branch was brought up to date with `main`, the six functions were rewritten on top of the limited-member versions (through `_note_visible` and `_vendor_for`, where the rules now live), and the three files became one, `2026-10-03c_guides_claims_reviews.sql`. It was probed locally as two organisations and on production (rolled back) before and after applying. Its terms version is `2026-10-03d`.
+
 **Left as it was (known, small):** the function that asks to remove a price line (`price_delete`) was not changed. It works by the line's internal id, which a limited member is never sent for an agent line.
 
 **To check with a lawyer:** terms 2c; the credentials text is personal data now stored; showing what one organisation paid to others.
@@ -54,7 +80,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
-## D-14 · Claimed pages, disputes, reviews hidden from the person they are about, approval of a guide's review of a guide, private reviews (built on a branch; not live)
+## D-14 · Claimed pages, disputes, reviews hidden from the person they are about, approval of a guide's review of a guide, private reviews (database live; app waits for the owner's merge)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session, 3 October 2026, 21:15 and 21:25 Israel time.
 
@@ -83,7 +109,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 **To check with a lawyer:** terms 6f. A member is told that remarks about him exist and are kept from him; under privacy law a person may have a right to see information held about him.
 
-**Status:** on the branch `guide-for-clients` (migration `2026-10-03c_claims.sql`, front end, terms `2026-10-03b`). Not applied to production, not merged. Tested on a local database and in preview mode; see README.
+**Status:** the database change is on production since 3 Oct 2026, about 22:00, rebuilt on top of limited members (D-15); see README. The app code (terms `2026-10-03d`) goes live when the owner merges `guide-for-clients` into `main`. His go-ahead, 21:41: "yes add changes". Tested on a local database, in preview mode, and by a rolled-back probe on production.
 
 ---
 
@@ -101,7 +127,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
-## D-12 · A guide's page for clients: bio, up to four pictures, retail price (built on a branch; not live)
+## D-12 · A guide's page for clients: bio, up to four pictures, retail price (database live; app waits for the owner's merge)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session, 3 October 2026, 20:45 Israel time.
 
@@ -125,7 +151,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 **To check with a lawyer:** terms 6e; pictures of people, and of guides who are not members, passed on to clients.
 
-**Status:** on the branch `guide-for-clients` (database change, front end, terms `2026-10-03b`). Not applied to production, not merged. Tested on a local database and in preview mode; see README.
+**Status:** the database change is on production since 3 Oct 2026, about 22:00, rebuilt on top of limited members (D-15); see README. The app code (terms `2026-10-03d`) goes live when the owner merges `guide-for-clients` into `main`. Tested on a local database, in preview mode, and by a rolled-back probe on production.
 
 ---
 
