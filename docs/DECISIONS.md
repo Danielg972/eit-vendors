@@ -6,6 +6,17 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-13 · Food nearby only on entries with a physical address (asked for; in pull request #8)
+
+**Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session, 3 October 2026, 21:16 Israel time.
+
+**In his words:** "food nearby is only on entries with a phsical address not a service provider like guide, rappeling, jeep, bus etc."
+
+**Decision:** the Food nearby section belongs to places, not to service providers.
+
+**Implementation choices (not owner decisions; change on request):** "a place" is decided by category (Hotel, Restaurant, Winery, Attraction / Site, National Parks), plus Activity and Other unless the entry is tagged jeep, ATV / RZR or rappelling. The whole Adventure category counts as a service provider. Tips already saved on service providers stay in the database, unseen.
+
+**Status:** front end only; live when pull request #8 is merged.
 ## D-12 · A guide's page for clients: bio, up to four pictures, retail price (built on a branch; not live)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session, 3 October 2026, 20:45 Israel time.

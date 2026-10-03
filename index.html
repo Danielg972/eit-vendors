@@ -530,11 +530,17 @@ const REL = {
   kosher:['Hotel','Restaurant','Winery','Activity','Attraction / Site','Other'],
   languages:['Guide','Transport','Activity','Adventure','Attraction / Site','Travel Agent','Itinerary Planner','Hotel','Other'],
   maxCap:['Hotel','Restaurant','Winery','Transport','Activity','Adventure','Attraction / Site','National Parks','Other'],
-  free:['Attraction / Site','National Parks','Activity','Winery','Other'],
-  food:['Hotel','Guide','Transport','Restaurant','Winery','Attraction / Site','Activity','Adventure','National Parks','Other']
+  free:['Attraction / Site','National Parks','Activity','Winery','Other']
 };
 const catsOf = v => [v.category, ...String(v.also_categories||'').split(',').map(t=>t.trim()).filter(Boolean)];
 const rel = (field, v) => catsOf(v).some(c=>REL[field].includes(c));
+// Food nearby is only for a place you can stand at. A guide, a bus or van company, or a jeep, ATV or rappelling
+// outfit comes to the client and has no "nearby", so it gets no food section.
+const PLACE_CATS=['Hotel','Restaurant','Winery','Attraction / Site','National Parks'];
+function foodOk(v){ const c=catsOf(v);
+  if(c.some(x=>PLACE_CATS.includes(x))) return true;
+  if(!c.some(x=>x==='Activity'||x==='Other')) return false;
+  return !/(^|,)\s*(jeep|atv|rzr|rappel)/i.test(String(v.tags||'')); }
 const REGIONS = ['Jerusalem','Gush Etzion & Judea','Binyamin & Shomron','Dead Sea & Judean Desert','Negev & Arava','Eilat','Tel Aviv & Center','Shfela','Haifa & Coast','Galilee','Golan','Countrywide'];
 const TAG_SUGGEST = {Adventure:['Jeep','ATV / RZR','Rappelling','Kayak & rafting','Zipline','Boat','Snorkelling','Bikes','Horse riding','Camels','Shooting'],
   Activity:['Workshop','Food & wine','Volunteering','Archaeology','Family','Shooting','Farm'],
@@ -1600,7 +1606,7 @@ function openDetail(id, opt){
     <fieldset><legend>Notes from colleagues</legend>
       <div class="addline"><textarea id="noteText" rows="1" placeholder="Add a tip, warning or update…"></textarea><button class="btn primary" id="noteAdd" type="button">Add</button></div>
       <div id="notesBox"></div></fieldset>
-    ${rel('food',v)?'':'<!--'}<details class="food" id="foodWrap"><summary>🍽 Food nearby <span class="hint" id="foodCount"></span></summary><div id="foodBox"><p class="hint">Loading…</p></div></details>${rel('food',v)?'':'-->'}
+    ${foodOk(v)?'':'<!--'}<details class="food" id="foodWrap"><summary>🍽 Food nearby <span class="hint" id="foodCount"></span></summary><div id="foodBox"><p class="hint">Loading…</p></div></details>${foodOk(v)?'':'-->'}
     <fieldset><legend>Photos, receipts and PDFs</legend><div id="filesBox"><p class="hint">Loading files…</p></div></fieldset>
     ${S.admin?'<div id="actBox"></div>':''}
     <div id="siteSettings"></div>
