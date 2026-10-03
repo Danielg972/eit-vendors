@@ -10,6 +10,28 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-19 · A supplier shows what it does, not the word "Adventure"; the category is called Extreme (live)
+
+**Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 3 October 2026, 23:02, 23:05 and 23:08 Israel time.
+
+**In his words:** "why category called adventure. Why not jeep". Offered two ways (rename the category, or show the type instead of the category), he chose: "Show the type instead of the category on a page like Eitan's, so it reads 'Guide + Jeep'", and added: "Adventure is not a real category we would use".
+
+**Decisions:**
+
+1. **Where the app printed "Adventure" for a supplier, it prints what the supplier does:** Jeep, ATV / RZR, Rappelling, Kayak & rafting and so on. A guide who also runs jeeps reads "Guide + Jeep".
+2. **"Adventure" is not a category guides and agents would use.**
+3. **The category is called Extreme.** Asked what the filter button should be called (23:08): "extreme".
+
+**Implementation choices (not owner decisions; change on request):**
+
+- **The type comes from the supplier's type tags** that are on the Adventure suggestion list, in that list's order. At most two are printed, then "…". A supplier with none of them still reads "Adventure".
+- **Display only.** The stored category, the database, the limited-member sections and the R5 mapping are unchanged. It applies to the list rows, the supplier page, the most-used cards, the Review list and the pick lists.
+- **"Extreme" is the name shown, not the name stored** (`catDisp`): on the filter button, in the form's category list and "also offers" buttons, in search (typing "extreme" finds them), in the access sheet for organisations and in the welcome tour's example. The database still holds `Adventure`, so nothing stored had to move. A supplier with no type tag reads "Extreme".
+
+**Status:** live since 3 Oct 2026, about 23:30 (pull request #14, merged by the master agent on his "Yes merge"). Front end only. Tested in preview at phone and desktop width with sample suppliers set up like the live ones: rows, a guide's page, most-used cards, the Extreme filter, search, the form. No page errors. Not tested on the live site.
+
+---
+
 ## D-18 · Organisations see retail prices only; transport quotes are the one exception; a guide who also runs jeeps is two entries (live)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 3 October 2026, 22:23, 22:34, 22:52 and 22:59 Israel time.
