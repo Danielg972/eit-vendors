@@ -414,6 +414,44 @@ button.bkcard{display:block;width:100%;text-align:left;font:inherit;color:inheri
 .tour-sheet .stmt{margin-top:8px;background:var(--wash);border-radius:8px;padding:7px 10px}
 .tour-sheet .stmt span{color:var(--ink-2)}
 .tour-sheet .ft{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px}
+/* jobs between colleagues, and My days */
+.jobcard .jtop{display:flex;gap:12px;align-items:flex-start}
+.jobcard .jtop>div:first-child{flex:1;min-width:0}
+.jobcard .cat{display:block;margin-bottom:2px}
+.jobcard .jtop b{font-size:16px;overflow-wrap:anywhere}
+.jprice{text-align:right;flex:none}
+.jprice b{display:block;font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-weight:500;font-size:17px}
+.jprice span{font-size:12px;color:var(--ink-2)}
+.jfoot{font-size:12.5px;color:var(--ink-2);border-top:1px solid var(--line);margin-top:10px;padding-top:8px}
+.jbig{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin:0 0 14px}
+.jbig .p{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:28px;font-weight:500}
+.jbig .u{font-size:14px;color:var(--ink-2);margin-left:8px}
+.nofee{font-size:13px;color:var(--ok);background:var(--ok-wash);border-radius:8px;padding:8px 10px;margin-top:8px}
+.jnote{font-size:13px;color:var(--ink-2);background:var(--wash);border-radius:8px;padding:10px 12px;margin:0 0 14px}
+.jnote.warn{background:var(--warn-wash);color:var(--ink)}
+.prow{display:flex;gap:12px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);min-height:44px}
+.prow:last-child{border-bottom:0}
+.prow input{width:22px;height:22px;flex:none;accent-color:var(--olive-2)}
+.prow .pn{flex:1;min-width:0}
+.prow .pn b{display:block}
+.prow .pn span{font-size:13px;color:var(--ink-2)}
+.cal{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin:0 0 16px}
+.cal-h{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.cal-h b{flex:1;text-align:center;font-family:var(--f-display);font-weight:400;font-size:19px}
+.cal-h button{border:0;background:var(--wash);border-radius:999px;width:44px;height:44px;font-size:18px}
+.cal-h button:disabled{opacity:.35}
+.cal-g{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.cal-g .dn{font-size:12px;color:var(--ink-2);text-align:center;padding-bottom:2px}
+.cal-g button{height:44px;border:1px solid var(--line);background:var(--card);border-radius:8px;font-family:var(--f-mono);font-size:14px;position:relative;padding:0}
+.cal-g button[aria-pressed="true"]{background:var(--olive);border-color:var(--olive);color:var(--on-olive)}
+.cal-g button.wk{background:var(--wash);color:var(--ink-2);border-style:dashed}
+.cal-g button.tod{box-shadow:inset 0 0 0 2px var(--ochre)}
+.cal-g button.from{box-shadow:inset 0 0 0 2px var(--tab-on)}
+.cal-g button:disabled{opacity:.4}
+.cal-g button.jb::after{content:"";position:absolute;right:5px;top:5px;width:7px;height:7px;border-radius:50%;background:var(--ochre)}
+.cal-k{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--ink-2);margin-top:10px}
+.cal-k i{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-2px;margin-right:6px;border:1px solid var(--line)}
+.mini[aria-pressed="true"]{background:var(--olive);border-color:var(--olive);color:var(--on-olive)}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(140px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--ground);padding:10px 16px;border-radius:999px;font-size:14px;z-index:40;max-width:calc(100% - 32px)}
 </style>
 <style>
@@ -536,7 +574,7 @@ function sample(){
 }
 
 // ---------- state ----------
-const S = { bookings:null, qview:'tracker', demoBookings:[], usage:{category:{},region:{}}, myTop:[], reg:'All', quotes:null, qt:{grp:'All',svc:'All',season:'All',q:'',sort:'new'}, demoDrivers:[], demoQuotes:{}, feedback:[], openVendor:null, files:{}, demo:{}, demoRequests:[], requests:[], token:null, members:[], user:null, admin:false, contributor:false, vendors:[], team:[], tab:'vendors', q:'', cat:'All', busy:false };
+const S = { jobs:null, jview:'open', jkind:'All', bookings:null, qview:'tracker', demoBookings:[], usage:{category:{},region:{}}, myTop:[], reg:'All', quotes:null, qt:{grp:'All',svc:'All',season:'All',q:'',sort:'new'}, demoDrivers:[], demoQuotes:{}, feedback:[], openVendor:null, files:{}, demo:{}, demoRequests:[], requests:[], token:null, members:[], user:null, admin:false, contributor:false, vendors:[], team:[], tab:'vendors', q:'', cat:'All', busy:false };
 let sb = null;
 
 function bump(vid,k,n){ const v=S.vendors.find(x=>x.id===vid); if(v) v[k]=Math.max(0,(v[k]||0)+n); }
@@ -621,7 +659,8 @@ const DB = {
       const d=n=>new Date(Date.now()-n*86400000).toISOString();
       S.members=[{id:'m1',name:'Eretz Israel Tours',email:OWNER,status:'approved',is_admin:true,created_at:d(30),last_seen_at:d(0)},
         {id:'m2',name:'Yossi Ben-David',email:'yossi.guide@gmail.com',phone:'+972 52 111 2233',note:'Galilee and Golan',role:'Licensed tour guide',license_no:'12345',has_proof:true,status:'pending',is_admin:false,created_at:d(0)},
-        {id:'m3',name:'Rachel Amar',email:'rachel.ops@gmail.com',role:'Travel agent',license_no:'TA-2291',has_proof:true,status:'approved',is_admin:false,created_at:d(6),last_seen_at:d(1)}]; return; }
+        {id:'m3',name:'Rachel Amar',email:'rachel.ops@gmail.com',role:'Travel agent',license_no:'TA-2291',has_proof:true,status:'approved',is_admin:false,created_at:d(6),last_seen_at:d(1)}];
+      try{ S.jobs=await DB.loadJobs(); }catch(e){} return; }
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {auth:{persistSession:false,autoRefreshToken:false}});
     S.token = readToken();
     if(S.token) await DB.loadMe();
@@ -631,7 +670,7 @@ const DB = {
     if(error) throw new Error(error.message);
     S.me = data; S.user = data?{email:data.email}:null;
     S.contributor = !!(data && data.status==='approved'); S.admin = !!(data && data.is_admin && S.contributor);
-    if(S.contributor){ await DB.loadVendors(); try{ await DB.loadFeedback(); }catch(e){} if(S.admin){ await DB.loadTeam(); try{ await DB.loadRequests(); }catch(e){} try{ await DB.loadReports(); }catch(e){} } }
+    if(S.contributor){ await DB.loadVendors(); if(jobsOn()){ try{ S.jobs=await DB.loadJobs(); }catch(e){ S.jobs=null; } } try{ await DB.loadFeedback(); }catch(e){} if(S.admin){ await DB.loadTeam(); try{ await DB.loadRequests(); }catch(e){} try{ await DB.loadReports(); }catch(e){} } }
   },
   async loadVendors(){ if(!LIVE) return; try{ S.vendors = await rpc('vendors_list'); }catch(e){ toast('Could not load vendors: '+e.message); } try{ S.myTop = await rpc('my_top'); }catch(e){ S.myTop=[]; } try{ S.usage = await rpc('my_usage'); }catch(e){} },
   async loadTeam(){ if(!LIVE) return; S.members = await rpc('members_list'); },
@@ -873,7 +912,8 @@ const icons = {
   check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg>',
   people:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 14.8c1.6.8 2.6 2.6 3 5.2"/></svg>',
   search:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:var(--ink-3)"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>',
-  quote:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>'
+  quote:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>',
+  jobs:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M3 13h18"/></svg>'
 };
 
 function statusPill(v){
@@ -906,7 +946,7 @@ function linkBox(id, url){
 function wireCopy(root){ root.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>{ const i=root.querySelector('#'+b.dataset.copy); copyText(i.value,i); }); }
 
 const ROLES=['Licensed tour guide','Travel agent','Tour operator','Other'];
-const TERMS_VERSION='2026-10-02e';
+const TERMS_VERSION='2026-10-03a';
 const TERMS_HTML=`<p class="hint">Version ${TERMS_VERSION}. Plain-language summary. Draft: not yet reviewed by a lawyer.</p>
 <h4>1. Who runs this</h4><p>The Inner Circle – Israel Guide (until October 2026 called the Israel Suppliers Master List) is run by Eretz Israel Tours, which approves members and manages the list.</p>
 <h4>2. Who can join</h4><p>Licensed tour guides, travel agents, tour operators and other travel professionals approved by Eretz Israel Tours. You confirm the details and license you submit are yours and true. Eretz Israel Tours can decline, pause or remove access at any time.</p>
@@ -921,6 +961,7 @@ const TERMS_HTML=`<p class="hint">Version ${TERMS_VERSION}. Plain-language summa
 <h4>6a. Email copies</h4><p><b>When you email a supplier with the app's Email button, Eretz Israel Tours is added as a BCC to help keep prices, bookings and supplier details up to date for everyone. You can see and remove it in each email, and you can opt out at any time under My settings.</b> WhatsApp messages and calls are not copied; the app only records that you tapped the button.</p>
 <h4>6b. Quotes are shared without your name</h4><p><b>A quote you add is shared with colleagues by default, without your name.</b> They see the supplier, the dates, the prices, what was included, what cost extra and the conditions. They never see who got the quote, the client or trip, the supplier's reference, your private note or your attachments. You can switch sharing off on any quote; then only you and Eretz Israel Tours see it. Eretz Israel Tours sees who added every quote. The averages in the Quotes tab are worked out from these quotes. Don't write client names or personal details in the conditions box.</p>
 <h4>6c. Booking sheets</h4><p><b>When you send a booking sheet, the bus or van company sees your name, your phone and the job</b>: date, passengers, vehicle, pick-up, outline of the day, drop-off and your notes to them. It never sees the client, your private note or anything else in this app. Once you confirm a sheet, its price and terms are shared with colleagues in the Quotes tab without your name, like any quote (6b). You can switch that off on each sheet. Eretz Israel Tours sees every booking sheet. A booking sheet records what you and the company agreed; it is not legal advice, and Eretz Israel Tours is not a party to your booking.</p>
+<h4>6d. Jobs between colleagues, and My days</h4><p><b>A job you post is shown to the colleagues it fits, or to the ones you pick.</b> Posted without your name, they see "Posted by a colleague"; your name and phone go only to the colleague you give the job to, and you get theirs. A message you send yourself on WhatsApp comes from your own number. <b>If you tap "I'm available", the colleague who posted sees your name and role.</b> Eretz Israel Tours sees every job and who posted it.</p><p><b>As of now, nothing is charged on a job.</b> The price shown is what the colleague is paid, directly by the one who posted. Eretz Israel Tours is not a party to the job, does not check the people or the work, and is not responsible for payment between you.</p><p>My days: you mark the days you are busy. A colleague posting a job sees only "Free", "Busy" or "Not marked" for the dates of that job, never what you are doing, and you can switch that off. The jobs you say you take, your languages and what you hold (license, vehicle) are shown to a colleague posting a job, with your name and role. Never your phone or email.</p>
 <h4>7. Sponsored content</h4><p>If supplier offers or promotions are ever paid for, they will be clearly labelled as sponsored. Ratings and notes are never for sale.</p>
 <h4>8. Changes</h4><p>If these terms change, you'll be asked to accept the new version.</p>`;
 function openTerms(){ sheet('Terms and privacy', `<div class="terms">${TERMS_HTML}</div>`, `<button class="btn primary" id="tOk" type="button">Close</button>`).querySelector('#tOk').onclick=closeSheet; }
@@ -1020,6 +1061,8 @@ function render(){
   const pending = S.vendors.filter(v=>v.review_status==='pending').length + (S.requests||[]).length + (S.admin?(S.feedback||[]).filter(f=>f.status==='New').length+(S.reports||[]).filter(r=>r.status==='New').length:0);
   const waiting = S.members.filter(m=>m.status==='pending').length;
   const tabs = [['vendors','Suppliers',icons.list],['quotes','Quotes',icons.quote]];
+  if(jobsOn()) tabs.push(['jobs','Jobs',icons.jobs]); else if(S.tab==='jobs') S.tab='vendors';
+  const newJobs = jobsOn()?jobsNew():0;
   if(S.admin){ tabs.push(['review','Review',icons.check]); tabs.push(['team','Team',icons.people]); }
   app.innerHTML = `
     <header class="top"><div class="top-row">
@@ -1029,19 +1072,20 @@ function render(){
     ${LIVE?'':'<div class="demo-bar">Preview with sample suppliers. Changes here aren\'t saved.</div>'}
     ${S.me&&S.me.reminder_due?`<div style="padding:0 16px"><div class="rule" role="note"><span>🔒 <b>Colleagues only.</b> Never show this list to suppliers: not the app, screenshots, prices or notes. Anyone who does loses access.</span><button class="mini" id="ruleOk" type="button">Got it</button></div></div>`:''}
     <main id="view"></main>
-    ${S.tab==='vendors'?'<button class="fab" id="add">+ Add supplier</button>':''}${S.tab==='quotes'?(bookingsOn()&&S.qview==='bookings'?'<button class="fab" id="addB">+ New booking sheet</button>':'<button class="fab" id="addQ">+ Add quote</button>'):''}
-    ${tabs.length>1?`<nav class="tabs">${tabs.map(([k,l,ic])=>`<button class="tab" data-tab="${k}" ${S.tab===k?'aria-current="page"':''}>${ic}${l}${k==='review'&&pending?`<span class="badge">${pending}</span>`:''}${k==='team'&&waiting?`<span class="badge">${waiting}</span>`:''}</button>`).join('')}</nav>`:''}`;
+    ${S.tab==='vendors'?'<button class="fab" id="add">+ Add supplier</button>':''}${S.tab==='quotes'?(bookingsOn()&&S.qview==='bookings'?'<button class="fab" id="addB">+ New booking sheet</button>':'<button class="fab" id="addQ">+ Add quote</button>'):''}${S.tab==='jobs'&&jobsPost()&&S.jview!=='days'?'<button class="fab" id="addJ">+ Post a job</button>':''}
+    ${tabs.length>1?`<nav class="tabs">${tabs.map(([k,l,ic])=>`<button class="tab" data-tab="${k}" ${S.tab===k?'aria-current="page"':''}>${ic}${l}${k==='review'&&pending?`<span class="badge">${pending}</span>`:''}${k==='team'&&waiting?`<span class="badge">${waiting}</span>`:''}${k==='jobs'&&newJobs?`<span class="badge">${newJobs}</span>`:''}</button>`).join('')}</nav>`:''}`;
   document.getElementById('fbBtn').onclick=()=>openFeedback();
   const me=document.getElementById('meBtn'); if(me) me.onclick=()=>{ if(S.me) openMySettings(); };
   const ro=document.getElementById('ruleOk'); if(ro) ro.onclick=async()=>{ S.me.reminder_due=false; render(); if(LIVE){ try{ await sb.rpc('ack_reminder',{p_token:S.token}); }catch(e){} } };
   const so=document.getElementById('signOut'); if(so) so.onclick=()=>{ if(so.dataset.c!=='1'){ so.dataset.c='1'; so.textContent='Tap again. You\'ll need your link to return.'; return; } forgetToken(); boot(); };
-  app.querySelectorAll('.tab').forEach(t=>t.onclick=async()=>{ S.tab=t.dataset.tab; if(S.tab==='quotes'){ S.quotes=null; S.bookings=null; } render();
+  app.querySelectorAll('.tab').forEach(t=>t.onclick=async()=>{ S.tab=t.dataset.tab; if(S.tab==='quotes'){ S.quotes=null; S.bookings=null; } if(S.tab==='jobs'&&LIVE) S.jobs=null; render();
     if(LIVE && S.tab==='review'){ try{ await DB.loadVendors(); await DB.loadRequests(); await DB.loadFeedback(); try{ await DB.loadReports(); }catch(e){} render(); }catch(e){} }
     if(LIVE && S.tab==='team'){ try{ await DB.loadTeam(); render(); }catch(e){} } });
   const add=document.getElementById('add'); if(add) add.onclick=()=>openForm(null);
   const addQ=document.getElementById('addQ'); if(addQ) addQ.onclick=()=>openQuotePicker();
   const addB=document.getElementById('addB'); if(addB) addB.onclick=()=>bkExplain(openBookingPicker);
-  ({vendors:viewVendors, quotes:viewQuotes, review:viewReview, team:viewTeam})[S.tab]();
+  const addJ=document.getElementById('addJ'); if(addJ) addJ.onclick=()=>openJobForm(null);
+  ({vendors:viewVendors, quotes:viewQuotes, jobs:viewJobs, review:viewReview, team:viewTeam})[S.tab]();
 }
 
 function suggestTerms(){
@@ -1290,6 +1334,11 @@ function viewTeam(){
       <p>A guide sends a bus or van company the job and gets the price and terms back in writing (Quotes tab, and on every transport supplier). For now only you see it.</p>
       <label class="switch" for="bkAll"><input id="bkAll" type="checkbox" ${S.me&&S.me.bookings_for==='all'?'checked':''}><span><b>Open booking sheets to all colleagues</b><br><span class="hint">Switch on once you have tried it yourself. You can switch it off again; sheets already made are kept.</span></span></label>
     </section>`:''}
+    ${!LIVE||(S.me&&S.me.jobs_for)?`<section class="panel"><h3>Jobs between colleagues</h3>
+      <p>A colleague posts a job with the price he pays; the colleagues it fits say they're available; he gives it to one of them. Everyone marks busy days in My days. Nothing is charged. For now only you see the Jobs tab.</p>
+      <div class="f"><label for="jobsFor">Who can use it</label><select id="jobsFor">${[['admin','Only you, for now'],['receive','Colleagues see and answer jobs and mark their days. Only you post.'],['all','Every colleague can post jobs too']].map(([k,l])=>`<option value="${k}"${((S.me&&S.me.jobs_for)||'admin')===k?' selected':''}>${l}</option>`).join('')}</select></div>
+      <p class="hint" style="margin:8px 0 0">Change it once you have tried it yourself. You can change it back; jobs and days already saved are kept.</p>
+    </section>`:''}
     <section class="panel"><h3>Asking to join</h3>
       ${pend.length? pend.map(m=>`<div class="rev"><div class="who2"><b>${esc(m.name)}</b><span>${esc(m.role||'Role not given')}${m.license_no?` · license <span class="mono">${esc(m.license_no)}</span>`:''}<br>${esc(m.email)}${m.phone?' · '+esc(m.phone):''}${m.note?'<br>'+(/^No proof:/.test(m.note)?`<b style="color:var(--warn)">⚠ Asked to join without proof.</b> ${esc(m.note.replace(/^No proof:\s*/,''))}`:esc(m.note)):''}</span></div>
         <div class="btn-row">${m.has_proof?`<button class="btn soft" data-proof="${m.id}">View proof</button>`:'<span class="pill pending">No proof yet</span>'}<button class="btn soft" data-no="${m.id}">Decline</button><button class="btn primary" data-yes="${m.id}">Approve</button></div><span id="pf_${m.id}" style="flex-basis:100%"></span></div>`).join('')
@@ -1307,6 +1356,8 @@ function viewTeam(){
     try{ if(LIVE){ const { error } = await sb.rpc('set_setting',{p_token:S.token,p_key:'bcc_email',p_value:v}); if(error) throw new Error(error.message); } S.me.bcc_email=v.toLowerCase(); toast(v?'Email copies go to '+v:'Email copies turned off'); }catch(e){ toast(e.message); } };
   const bkAll=view.querySelector('#bkAll'); if(bkAll) bkAll.onchange=async e=>{ const on=e.target.checked;
     try{ if(LIVE){ const { error } = await sb.rpc('set_setting',{p_token:S.token,p_key:'bookings_for',p_value:on?'all':'admin'}); if(error) throw new Error(error.message); } S.me.bookings_for=on?'all':'admin'; toast(on?'Booking sheets are open to all colleagues':'Booking sheets are back to you only'); }catch(err){ e.target.checked=!on; toast(err.message); } };
+  const jf=view.querySelector('#jobsFor'); if(jf) jf.onchange=async()=>{ const v=jf.value, was=(S.me&&S.me.jobs_for)||'admin';
+    try{ if(LIVE){ const { error } = await sb.rpc('set_setting',{p_token:S.token,p_key:'jobs_for',p_value:v}); if(error) throw new Error(error.message); } S.me.jobs_for=v; toast(v==='all'?'Every colleague can now see and post jobs':v==='receive'?'Colleagues now see the Jobs tab. Only you post.':'Jobs are back to you only'); }catch(err){ jf.value=was; toast(err.message); } };
   (async()=>{ const box=view.querySelector('#actAll'); if(!box) return;
     let a; try{ a = LIVE ? await rpc('activity',{p_vendor:''}) : {recent:[],top:[],by_person:[]}; }catch(e){ box.innerHTML=`<div class="msg err">${esc(e.message)}</div>`; return; }
     if(!a.recent.length){ box.innerHTML='<p class="hint" style="margin:0">Nothing yet. It fills in as colleagues use the contact buttons.</p>'; return; }
@@ -3024,6 +3075,392 @@ function openForm(v, preset){
   };
 }
 
+// ---------- jobs between colleagues, and My days ----------
+// A member posts a job with the price he pays. It goes to the colleagues it fits, or to the ones he picks.
+// A colleague answers "I'm available"; the poster gives the job to one of them. Nothing is charged on a job.
+// My days: each member marks the days he is busy; a poster sees only Free / Busy / Not marked for his job's dates.
+const JOB_KINDS=[['guide','Guide','מדריך/ה'],['guide_vehicle','Guide with vehicle','מדריך/ה עם רכב'],['van_driver','Van driver','נהג/ת ואן'],['jeep_driver','Jeep driver','נהג/ת ג׳יפ'],['other','Someone else','איש/אשת מקצוע']];
+const JOB_NEEDS=[['licensed','Licensed guide'],['eshkol','Eshkol license'],['midbari','Midbari 4x4 vehicle'],['gun','Carries a gun'],['shabbat','Shomer Shabbat']];
+const JOB_PER=[['day','per day','ליום'],['job','for the whole job','לכל העבודה'],['hour','per hour','לשעה'],['vehicle','per vehicle','לרכב']];
+const JOB_VAT={including_vat:['VAT included','כולל מע״מ'],plus_vat:['plus VAT','בתוספת מע״מ'],not_applicable:['no VAT','ללא מע״מ']};
+const WEEKDAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Shabbat'];
+const DAYS_STALE=21; // days before the app asks "are your days still right?"
+const jobsOn=()=>!LIVE||!!(S.me&&S.me.jobs);
+const jobsPost=()=>!LIVE||!!(S.me&&S.me.jobs_post);
+const jLab=(list,k)=>{ const x=list.find(y=>y[0]===k); return x?x[1]:''; };
+const jKind=j=>jLab(JOB_KINDS,j.kind)||'Job';
+const jMoney=j=>(CUR_SIGN[j.currency]||'₪')+Number(j.price||0).toLocaleString('en-US');
+const jPerLine=j=>[jLab(JOB_PER,j.per),JOB_VAT[j.vat]?JOB_VAT[j.vat][0]:''].filter(Boolean).join(', ');
+const csv=x=>String(x||'').split(',').map(t=>t.trim()).filter(Boolean);
+const isoOf=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const isoAdd=(iso,n)=>{ const d=new Date(iso+'T12:00:00'); d.setDate(d.getDate()+n); return isoOf(d); };
+const isoToday=()=>isoOf(new Date());
+const isoRange=(a,b)=>{ const out=[]; if(!a) return out; let d=a; const end=b&&b>=a?b:a; while(d<=end&&out.length<62){ out.push(d); d=isoAdd(d,1); } return out; };
+const daysAgo=iso=>iso?Math.floor((Date.now()-new Date(iso))/86400000):null;
+const agoTxt=n=>n==null?'never':n<1?'today':n===1?'yesterday':n+' days ago';
+const jobsNew=()=>S.jobs?(S.jobs.open||[]).filter(j=>!j.my_answer&&j.my_day!=='busy').length:0;
+function dayPill(st, self, many){
+  const d=many?'those days':'that day';
+  const m=self?{free:['approved','You are free '+d],busy:['pending','You marked '+(many?'those days':'this day')+' busy']}
+    :{free:['approved','Free'],busy:['pending','Busy'],unmarked:['inactive','Days not marked'],hidden:['inactive','Days not shared']};
+  return m[st]?`<span class="pill ${m[st][0]}">${m[st][1]}</span>`:''; }
+const needsTags=j=>csv(j.needs).map(k=>`<span class="tag">${esc(jLab(JOB_NEEDS,k)||k)}</span>`).join('');
+function jobStatusPill(j){
+  if(j.status==='filled') return `<span class="pill approved">Given${j.taker?' to '+esc(j.taker.name):''}</span>`;
+  if(j.status==='closed') return '<span class="pill inactive">Closed</span>';
+  return j.n_yes?`<span class="pill high">Open · ${j.n_yes} available</span>`:'<span class="pill pending">Open · no answers yet</span>'; }
+function jobCard(j, mode){
+  const many=!!j.date_to;
+  const st = mode==='open' ? (j.my_answer==='yes'?'<span class="pill approved">You said you\'re available</span>':j.my_answer==='no'?'<span class="pill inactive">You said not for you</span>':dayPill(j.my_day,true,many))
+    : mode==='taken' ? (j.status==='closed'?'<span class="pill rejected">Cancelled by the poster</span>':'<span class="pill approved">This job is yours</span>') : jobStatusPill(j);
+  const by = mode==='mine' ? (j.anon?'Posted without your name':'Posted with your name') : j.by ? 'Posted by '+j.by.name+(j.anon&&mode!=='taken'?' (without a name)':'') : 'Posted by a colleague';
+  const dim=(mode==='open'&&(j.my_day==='busy'||j.my_answer==='no')&&j.my_answer!=='yes')||j.status==='closed';
+  return `<button class="qcard bkcard jobcard${dim?' old':''}" type="button" data-job="${esc(j.id)}" data-mode="${mode}">
+    <div class="jtop"><div><span class="cat">${esc(jKind(j))}</span><b>${esc(j.title)}</b></div><div class="jprice"><b>${esc(jMoney(j))}</b><span>${esc(jPerLine(j))}</span></div></div>
+    <div class="qsub">${[bkRange(j,false),j.hours,j.region||j.start_place].filter(Boolean).map(esc).join(' · ')}${j.pax||j.langs?'<br>'+[j.pax,j.langs].filter(Boolean).map(esc).join(' · '):''}</div>
+    <div class="flags">${needsTags(j)}${st}</div>
+    <div class="jfoot">${esc(by)} · ${since(j.created_at)}${j.reply_by&&mode==='open'?' · answer by '+esc(ilDate(j.reply_by)):''}</div></button>`; }
+function jobFind(id){ const J=S.jobs||{}; for(const k of ['taken','open','mine','all']){ const j=(J[k]||[]).find(x=>String(x.id)===String(id)); if(j) return [j,k]; } return [null,'']; }
+function wireJobCards(root){ root.querySelectorAll('[data-job]').forEach(el=>el.onclick=()=>{ const k=el.dataset.mode, j=((S.jobs||{})[k]||[]).find(x=>String(x.id)===el.dataset.job); if(!j) return; (k==='mine'||k==='all')?openJobMine(j):openJob(j); }); }
+const jviewSwitch=()=>`<div class="otabs vtabs" role="tablist" style="margin:12px 0 10px">${[['open','Open jobs'],['mine','My posts'],['days','My days']].filter(x=>x[0]!=='mine'||jobsPost()).map(([k,l])=>`<button class="otab" type="button" role="tab" data-jv="${k}" aria-selected="${S.jview===k}">${l}</button>`).join('')}</div>`;
+async function reloadJobs(){ S.jobs=await DB.loadJobs(); if(S.tab==='jobs') render(); }
+async function viewJobs(){
+  const view=document.getElementById('view');
+  if(!S.jobs){ view.innerHTML='<p class="hint" style="padding:24px 0">Loading jobs…</p>';
+    try{ S.jobs=await DB.loadJobs(); }catch(e){ if(S.tab==='jobs') view.innerHTML=`<div class="msg err">Couldn't load jobs: ${esc(e.message)}</div>`; return; }
+    if(S.tab==='jobs') render(); return; }
+  if(S.jview==='mine'&&!jobsPost()) S.jview='open';
+  const J=S.jobs, me=J.me||{};
+  if(S.jview==='days'){ view.innerHTML=jviewSwitch()+'<div id="daysBody"></div>'; wireJview(); drawDays(); }
+  else if(S.jview==='mine'){
+    const open=J.mine.filter(j=>j.status==='open'), done=J.mine.filter(j=>j.status!=='open');
+    view.innerHTML=jviewSwitch()+`<div class="qt-intro"><h2>My posts</h2><p>Jobs you posted. Tap one to see who is available and to give it to someone.</p></div>
+      ${J.mine.length?'':`<div class="empty"><h3>Nothing posted yet</h3><p>Need a guide or a driver for a day? Post the job with the price you pay, and the colleagues it fits can say they're available.</p><button class="btn accent" id="jFirst" type="button">+ Post a job</button></div>`}
+      ${open.length?`<p class="favs-h" style="margin:4px 2px 8px">Open</p>${open.map(j=>jobCard(j,'mine')).join('')}`:''}
+      ${done.length?`<p class="favs-h" style="margin:14px 2px 8px">Given or closed</p>${done.map(j=>jobCard(j,'mine')).join('')}`:''}
+      ${S.admin&&J.all&&J.all.length?`<p class="favs-h" style="margin:18px 2px 8px">Posted by colleagues · only you see who posted</p>${J.all.map(j=>jobCard(j,'all')).join('')}`:''}`;
+    wireJview(); wireJobCards(view); const f=view.querySelector('#jFirst'); if(f) f.onclick=()=>openJobForm(null);
+  } else {
+    const age=daysAgo(me.updated_at), kinds=['All',...JOB_KINDS.map(k=>k[0]).filter(k=>J.open.some(j=>j.kind===k))];
+    if(!kinds.includes(S.jkind)) S.jkind='All';
+    const list=J.open.filter(j=>S.jkind==='All'||j.kind===S.jkind).sort((a,b)=>((a.my_day==='busy'||a.my_answer==='no')-(b.my_day==='busy'||b.my_answer==='no')));
+    const nudge = !me.updated_at ? `<div class="bkban"><span>📅</span><span><b>Mark your busy days.</b> Then a colleague with a job sees at a glance whether you are free.<br><button class="mini" id="nDays" type="button" style="margin-top:6px">Open My days</button></span></div>`
+      : age>=DAYS_STALE ? `<div class="bkban"><span>📅</span><span><b>Are your days still right?</b> Last updated ${agoTxt(age)}.<br><span class="btn-row" style="margin-top:6px"><button class="mini" id="nOk" type="button">Yes, still right</button><button class="mini" id="nDays" type="button">Update My days</button></span></span></div>` : '';
+    const prof = me.kinds==='' ? `<div class="bkban"><span>👤</span><span><b>Say what jobs you take.</b> Until you do, every job is shown to you.<br><button class="mini" id="nProf" type="button" style="margin-top:6px">Set it in My days</button></span></div>` : '';
+    view.innerHTML=jviewSwitch()+`<div class="qt-intro"><h2>Jobs from colleagues</h2><p>A colleague needs a guide or a driver for a date. The price shown is what you are paid, by them. No fee on any job.</p></div>
+      ${nudge}${prof}
+      ${J.taken.length?`<p class="favs-h" style="margin:4px 2px 8px">Given to you</p>${J.taken.map(j=>jobCard(j,'taken')).join('')}`:''}
+      ${kinds.length>2?`<div class="chips" role="group" aria-label="Filter by kind of job">${kinds.map(k=>`<button class="chip" data-jk="${k}" aria-pressed="${S.jkind===k}">${k==='All'?'All':esc(jLab(JOB_KINDS,k))}</button>`).join('')}</div>`:''}
+      ${list.length?`<p class="count">${list.length} open job${list.length>1?'s':''}${me.kinds?' that fit you':''}</p>${list.map(j=>jobCard(j,'open')).join('')}`
+        :`<div class="empty"><h3>No open jobs right now</h3><p>When a colleague posts a job that fits you, it shows here and the Jobs tab gets a number.</p></div>`}`;
+    wireJview(); wireJobCards(view);
+    view.querySelectorAll('[data-jk]').forEach(c=>c.onclick=()=>{ S.jkind=c.dataset.jk; viewJobs(); });
+    const go=()=>{ S.jview='days'; render(); };
+    ['nDays','nProf'].forEach(id=>{ const b=view.querySelector('#'+id); if(b) b.onclick=go; });
+    const ok=view.querySelector('#nOk'); if(ok) ok.onclick=async()=>{ try{ J.me=await DB.setDayPrefs({confirm:'true'}); toast('Thanks. Marked as up to date.'); viewJobs(); }catch(e){ toast(e.message); } };
+  }
+  if(S.openJob){ const id=S.openJob; S.openJob=null; const [j,k]=jobFind(id); if(j){ (k==='mine'||k==='all')?openJobMine(j):openJob(j); } else toast('That job is not open to you any more.'); }
+}
+function wireJview(){ document.querySelectorAll('[data-jv]').forEach(x=>x.onclick=()=>{ if(S.jview===x.dataset.jv) return; S.jview=x.dataset.jv; render(); }); }
+
+// What both sides read: the job itself.
+function jobRows(j){
+  const r=(k,v)=>v?`<dt>${k}</dt><dd>${esc(v)}</dd>`:'';
+  return `<dl class="dl">${r('Date',bkRange(j,false))}${r('Hours',j.hours)}${r('Starts at',j.start_place)}${r('Region',j.region)}${r('Group',j.pax)}${r('Language',j.langs)}${r('Must have',csv(j.needs).map(k=>jLab(JOB_NEEDS,k)).join(', '))}${r('Payment',j.payment)}${r('Answer by',j.reply_by?ilDate(j.reply_by):'')}</dl>
+    ${j.note?`<div class="note"><div class="meta">${j.mine?'Your note':'From the colleague'}</div><p>${esc(j.note)}</p></div>`:''}`; }
+const jobHead=j=>`<div style="margin:0 0 12px"><span class="cat">${esc(jKind(j))}</span><div style="font-family:var(--f-display);font-size:22px;line-height:1.2">${esc(j.title)}</div></div>
+  <div class="jbig"><span class="p">${esc(jMoney(j))}</span><span class="u">${esc(jPerLine(j))}</span><div class="nofee">${j.mine?'No fee. You pay this amount in full, directly to the colleague who takes the job.':'No fee. You are paid the full amount by the colleague who posted.'}</div></div>`;
+function phoneRow(name, role, phone){
+  const d=firstPhone(phone);
+  return `<div class="jbig"><b>${esc(name)}</b>${role?` <span class="hint">· ${esc(role)}</span>`:''}<br>${d?`<span class="mono">${esc(phone)}</span><div class="btn-row" style="margin-top:8px"><a class="btn soft" style="text-decoration:none" href="tel:${esc(d)}">Call</a><a class="btn soft" style="text-decoration:none" href="https://wa.me/${esc(intlDigits(d))}" target="_blank" rel="noopener">Chat on WhatsApp</a></div>`:'<span class="hint">No phone number on file. Ask Eretz Israel Tours.</span>'}</div>`; }
+// "Add to my calendar": Google Calendar by link; Apple, Outlook and the rest by a calendar file.
+function jobCalText(j, who){ return [jKind(j)+': '+j.title, j.hours?'Hours: '+j.hours:'', j.start_place?'Starts at: '+j.start_place:'', j.pax?'Group: '+j.pax:'', j.langs?'Language: '+j.langs:'', 'Pay: '+jMoney(j)+' '+jPerLine(j), j.payment?'Payment: '+j.payment:'', who||'', j.note||'', 'From The Inner Circle – Israel Guide'].filter(Boolean).join('\n'); }
+function jobGcal(j, who){ const a=j.date_from.replace(/-/g,''), b=isoAdd(j.date_to||j.date_from,1).replace(/-/g,'');
+  return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent(j.title)+'&dates='+a+'/'+b+'&details='+encodeURIComponent(jobCalText(j,who))+(j.start_place?'&location='+encodeURIComponent(j.start_place):''); }
+function jobIcs(j, who){
+  const e=s=>String(s||'').replace(/\\/g,'\\\\').replace(/\r?\n/g,'\\n').replace(/([,;])/g,'\\$1');
+  const fold=l=>{ const out=[]; while(l.length>70){ out.push(l.slice(0,70)); l=' '+l.slice(70); } out.push(l); return out.join('\r\n'); };
+  const stamp=new Date().toISOString().replace(/[-:]/g,'').slice(0,15)+'Z';
+  return ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Eretz Israel Tours//The Inner Circle//EN','CALSCALE:GREGORIAN','BEGIN:VEVENT','UID:job-'+j.id+'@vendors.eretzisraeltours.com','DTSTAMP:'+stamp,
+    'DTSTART;VALUE=DATE:'+j.date_from.replace(/-/g,''),'DTEND;VALUE=DATE:'+isoAdd(j.date_to||j.date_from,1).replace(/-/g,''),'SUMMARY:'+e(j.title),'DESCRIPTION:'+e(jobCalText(j,who)),
+    j.start_place?'LOCATION:'+e(j.start_place):'','TRANSP:OPAQUE','END:VEVENT','END:VCALENDAR'].filter(Boolean).map(fold).join('\r\n')+'\r\n'; }
+function jobIcsDownload(j, who){ try{ const url=URL.createObjectURL(new Blob([jobIcs(j,who)],{type:'text/calendar;charset=utf-8'})); const a=document.createElement('a'); a.href=url; a.download='job-'+j.date_from+'.ics'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),5000); }catch(e){ toast('Could not make the calendar file.'); } }
+const calButtons=`<div class="jbig"><b>Add to my calendar</b><div class="btn-row" style="margin-top:8px"><a class="btn soft" id="calG" style="text-decoration:none" target="_blank" rel="noopener" href="#">Google Calendar</a><button class="btn soft" id="calI" type="button">Apple, Outlook or other</button></div><span class="hint" style="display:block;margin-top:6px">The second button saves a calendar file. Open it and your calendar offers to add the job.${LIVE?'':' In this preview the file cannot be saved; it works in the live app.'}</span></div>`;
+function wireCal(w, j, who){ const g=w.querySelector('#calG'); if(g) g.href=jobGcal(j,who); const i=w.querySelector('#calI'); if(i) i.onclick=()=>jobIcsDownload(j,who); }
+
+// A job as the colleague it was sent to sees it.
+function openJob(j){
+  const many=!!j.date_to, mine=j.taken_me&&j.status==='filled';
+  const by=j.by?`Posted by ${esc(j.by.name)}${j.by.role?' · '+esc(j.by.role):''}`:'Posted by a colleague';
+  const state = mine ? `<div class="msg ok" style="margin:0 0 14px">This job is yours. It is marked busy in My days.</div>${phoneRow(j.by?j.by.name:'The colleague who posted', j.by?j.by.role:'', j.by_phone)}${calButtons}`
+    : j.taken_me ? `<div class="msg err" style="margin:0 0 14px">The colleague who posted cancelled this job. Its days were taken off My days.</div>`
+    : j.my_answer==='yes' ? `<div class="msg ok" style="margin:0 0 14px">You said you're available. The colleague who posted now sees your name and chooses. If the job is given to you, it shows here under "Given to you".</div>`
+    : j.my_answer==='no' ? `<div class="jnote">You said this one is not for you. You can still change your mind while it is open.</div>` : '';
+  const foot = mine||j.taken_me ? `<button class="btn primary" id="jClose" type="button">Close</button>`
+    : j.my_answer==='yes' ? `<button class="btn soft" id="jBack" type="button">Take it back</button><button class="btn primary" id="jClose" type="button">Close</button>`
+    : `<button class="btn soft" id="jNo" type="button">Not for me</button><button class="btn soft" id="jBusy" type="button">I'm busy ${many?'then':'that day'}</button><button class="btn primary" id="jYes" type="button">I'm available</button>`;
+  const w=sheet(mine?'Your job':'Job offer', `${jobHead(j)}<p class="hint" style="margin:-6px 0 12px">${by} · ${since(j.created_at)}</p>${state}${jobRows(j)}
+    ${mine||j.taken_me?'':`<div class="flags" style="margin:0 0 12px">${dayPill(j.my_day,true,many)||'<span class="pill inactive">Your days are not marked yet</span>'}<span class="hint">from My days</span></div>
+    <div class="jnote">If you tap "I'm available", the colleague who posted sees your name and role. You see theirs, with a phone number, when they give you the job. Saying you are available does not commit either side.</div>`}`, foot);
+  wireCal(w, j, j.by?'Posted by: '+j.by.name+(j.by_phone?', '+j.by_phone:''):'');
+  const c=w.querySelector('#jClose'); if(c) c.onclick=closeSheet;
+  const act=async(ans,busy,msg)=>{ try{ await DB.answerJob(j.id,ans,busy); closeSheet(); toast(msg); await reloadJobs(); }catch(e){ toast(e.message); } };
+  const y=w.querySelector('#jYes'); if(y) y.onclick=()=>act('yes',false,"Sent. They'll see you are available.");
+  const n=w.querySelector('#jNo'); if(n) n.onclick=()=>act('no',false,'Marked as not for you.');
+  const b=w.querySelector('#jBusy'); if(b) b.onclick=()=>act('no',true,many?'Marked those days busy in My days.':'Marked that day busy in My days.');
+  const k=w.querySelector('#jBack'); if(k) k.onclick=()=>act('',false,'Taken back.');
+}
+
+// A job as its poster (or Eretz Israel Tours) sees it: who answered, and giving it to someone.
+async function openJobMine(j){
+  const tap2=(b,txt,fn)=>{ if(b) b.onclick=()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.dataset.t=b.textContent; b.textContent=txt; setTimeout(()=>{ if(b.isConnected&&b.dataset.c==='1'){ b.dataset.c=''; b.textContent=b.dataset.t; } },4000); return; } fn(); }; };
+  const run=async(fn,msg)=>{ try{ const nj=await fn(); toast(msg); S.jobs=await DB.loadJobs(); if(S.tab==='jobs') render(); const [fresh]=jobFind(j.id); if(fresh&&nj!==null) openJobMine(fresh); else closeSheet(); }catch(e){ toast(e.message); } };
+  const who=j.by&&!j.mine?`<p class="hint" style="margin:-6px 0 12px">Posted by ${esc(j.by.name)}${j.anon?' · without a name':''} · ${since(j.created_at)}</p>`:`<p class="hint" style="margin:-6px 0 12px">${j.anon?'Posted without your name':'Posted with your name'} · ${since(j.created_at)}</p>`;
+  const foot = j.status==='open' ? `<button class="btn danger" id="jCl" type="button">Close the job</button>${j.mine?'<button class="btn soft" id="jEd" type="button">Change it</button><button class="btn soft" id="jSh" type="button">Share</button>':''}`
+    : `<button class="btn danger" id="jDel" type="button">Delete</button><button class="btn soft" id="jRe" type="button">Reopen</button><button class="btn primary" id="jClose" type="button">Close</button>`;
+  const w=sheet(j.mine?'Your job':'A colleague\'s job', `${jobHead(j)}${who}<div class="flags" style="margin:0 0 12px">${jobStatusPill(j)}</div>
+    ${j.status==='filled'&&j.taker?`<p class="favs-h" style="margin:0 2px 8px">Given to</p>${phoneRow(j.taker.name,j.taker.role,j.taker.phone)}${j.mine?calButtons:''}`:''}
+    ${j.status==='open'?'<div id="jReplies"><p class="hint">Loading answers…</p></div>':''}${jobRows(j)}`, foot);
+  wireCal(w, j, j.taker?'Given to: '+j.taker.name+(j.taker.phone?', '+j.taker.phone:''):'');
+  const c=w.querySelector('#jClose'); if(c) c.onclick=closeSheet;
+  tap2(w.querySelector('#jCl'),'Tap again to close it',()=>run(()=>DB.setJobStatus(j.id,'closed'),'Closed. Colleagues no longer see it.'));
+  tap2(w.querySelector('#jRe'),'Tap again to reopen',()=>run(()=>DB.setJobStatus(j.id,'open'),'Open again.'));
+  tap2(w.querySelector('#jDel'),'Tap again to delete',()=>run(async()=>{ await DB.deleteJob(j.id); return null; },'Deleted.'));
+  const ed=w.querySelector('#jEd'); if(ed) ed.onclick=()=>openJobForm(j);
+  const sh=w.querySelector('#jSh'); if(sh) sh.onclick=()=>openJobPosted(j,true);
+  const box=w.querySelector('#jReplies'); if(!box) return;
+  let rows=[]; try{ rows=await DB.jobReplies(j.id)||[]; }catch(e){ box.innerHTML=`<div class="msg err">${esc(e.message)}</div>`; return; }
+  if(!box.isConnected) return;
+  const yes=rows.filter(r=>r.answer==='yes'), rest=rows.filter(r=>r.answer!=='yes');
+  const line=r=>`${[r.role,r.langs,csv(r.tags).map(k=>jLab(JOB_NEEDS,k)).join(', ')].filter(Boolean).map(esc).join(' · ')}`;
+  box.innerHTML=`<p class="favs-h" style="margin:0 2px 8px">${j.audience==='picked'?`Sent to ${j.n_sent}`:'Open to every colleague it fits'} · ${yes.length} available${j.audience==='picked'?` · ${rest.filter(r=>!r.answer).length} no answer`:''}${j.n_no?` · ${j.n_no} said no`:''}</p>
+    ${yes.length?yes.map(r=>`<div class="qcard"><div class="qhead"><b>${esc(r.name)}</b><span class="pill approved">Available</span>${dayPill(r.day,false)}</div><div class="qsub">${line(r)}</div>
+      <div class="qsub">Answered ${since(r.answered_at)}</div><div class="btn-row" style="margin-top:10px"><button class="btn primary" type="button" data-give="${esc(r.id)}" data-n="${esc(r.name)}">Give ${esc(r.name.split(' ')[0])} the job</button></div></div>`).join('')
+      :`<div class="jnote">Nobody has said they are available yet. ${j.mine?'You can share the job on WhatsApp to nudge people.':''}</div>`}
+    ${rest.length?`<div class="list" style="margin:0 0 14px">${rest.map(r=>`<div class="prow"><span class="pn"><b>${esc(r.name)}</b><span>${line(r)}</span></span><span class="pill inactive">${r.answer==='no'?'Not for them':'No answer yet'}</span></div>`).join('')}</div>`:''}
+    ${yes.length?`<div class="jnote">When you give someone the job, they get your name and phone and you get theirs. The others are told the job is no longer open. You pay the colleague directly.</div>`:''}`;
+  box.querySelectorAll('[data-give]').forEach(b=>tap2(b,'Tap again: give '+b.dataset.n+' the job',()=>run(()=>DB.giveJob(j.id,b.dataset.give),'Done. '+b.dataset.n+' has the job.')));
+}
+
+// Post a job, step 1: the job.
+function openJobForm(j){
+  const d=Object.assign({kind:'guide',title:'',date_from:'',date_to:'',hours:'',start_place:'',region:'',pax:'',langs:'',needs:'',price:'',currency:'ILS',per:'day',vat:'including_vat',payment:'',note:'',reply_by:'',anon:true,audience:'all'}, j||S.jobDraft||{});
+  const tg=(grp,k,l,on)=>`<button class="tg" type="button" data-${grp}="${k}" aria-pressed="${on}">${esc(l)}</button>`;
+  const w=sheet(j?'Change the job':'Post a job', `
+    <fieldset><legend>Who you need</legend><div class="tgs" id="jfKind" role="group" aria-label="Who you need">${JOB_KINDS.map(k=>tg('kind',k[0],k[1],d.kind===k[0])).join('')}</div></fieldset>
+    <fieldset><legend>The job</legend><div class="grid">
+      <div class="f wide"><label for="jfTitle">What is it, in a few words <em>*</em></label><input id="jfTitle" maxlength="120" value="${esc(d.title)}" placeholder="Old City and City of David, full day"></div>
+      <div class="f"><label for="jfFrom">Date <em>*</em></label><input id="jfFrom" type="date" value="${esc(d.date_from)}"></div>
+      <div class="f"><label for="jfTo">Last day, if more than one</label><input id="jfTo" type="date" value="${esc(d.date_to)}"></div>
+      <div class="f"><label for="jfHours">Hours</label><input id="jfHours" maxlength="40" value="${esc(d.hours)}" placeholder="08:00 to 17:00"></div>
+      <div class="f"><label for="jfStart">Starts at</label><input id="jfStart" maxlength="160" value="${esc(d.start_place)}" placeholder="Jaffa Gate"></div>
+      <div class="f"><label for="jfRegion">Region</label><select id="jfRegion"><option value="">Choose…</option>${REGIONS.map(r=>`<option${d.region===r?' selected':''}>${esc(r)}</option>`).join('')}</select></div>
+      <div class="f"><label for="jfPax">Group</label><input id="jfPax" maxlength="80" value="${esc(d.pax)}" placeholder="Family of 6"></div>
+      <div class="f wide"><label for="jfLangs">Language of the group</label><input id="jfLangs" maxlength="120" value="${esc(d.langs)}" placeholder="English"></div>
+    </div></fieldset>
+    <fieldset><legend>Must have</legend><div class="tgs" id="jfNeeds" role="group" aria-label="Must have">${JOB_NEEDS.map(k=>tg('need',k[0],k[1],csv(d.needs).includes(k[0]))).join('')}</div>
+      <p class="hint" style="margin:-6px 0 0">The job goes only to colleagues who have said they have these.</p></fieldset>
+    <fieldset><legend>What you pay</legend><div class="grid">
+      <div class="f"><label for="jfPrice">Price <em>*</em></label><input id="jfPrice" class="mono" inputmode="decimal" maxlength="10" value="${esc(d.price)}" placeholder="1400"></div>
+      <div class="f"><label for="jfCur">Currency</label><select id="jfCur">${Object.keys(CUR_SIGN).map(c=>`<option value="${c}"${d.currency===c?' selected':''}>${c} ${CUR_SIGN[c]}</option>`).join('')}</select></div>
+      <div class="f"><label for="jfPer">For</label><select id="jfPer">${JOB_PER.map(p=>`<option value="${p[0]}"${d.per===p[0]?' selected':''}>${p[1]}</option>`).join('')}</select></div>
+      <div class="f"><label for="jfVat">VAT</label><select id="jfVat">${Object.keys(JOB_VAT).map(v=>`<option value="${v}"${d.vat===v?' selected':''}>${JOB_VAT[v][0]}</option>`).join('')}<option value=""${d.vat?'':' selected'}>Not stated</option></select></div>
+      <div class="f wide"><label for="jfPay">How and when you pay</label><input id="jfPay" maxlength="200" value="${esc(d.payment)}" placeholder="Bank transfer within 14 days"></div>
+    </div><div class="nofee">No fee. Whoever takes the job is paid this amount in full, by you.</div></fieldset>
+    <fieldset><legend>Anything else they should know</legend><div class="f"><textarea id="jfNote" maxlength="1500" rows="3" aria-label="Anything else they should know" placeholder="Who the group is, pace, what is already booked">${esc(d.note)}</textarea></div>
+      <div class="f" style="margin-top:10px;max-width:260px"><label for="jfReply">Answer by (optional)</label><input id="jfReply" type="date" value="${esc(d.reply_by)}"></div></fieldset>
+    <label class="switch" for="jfAnon"><input id="jfAnon" type="checkbox" ${d.anon?'checked':''}><span><b>Post without my name</b><br><span class="hint">Colleagues see "Posted by a colleague". Your name and phone go only to the colleague you give the job to. Eretz Israel Tours sees who posted every job.</span></span></label>
+    <div id="jfMsg"></div>`,
+    `<button class="btn soft" id="jfCancel" type="button">Cancel</button><button class="btn primary" id="jfNext" type="button">Next: choose who gets it</button>`);
+  w.querySelectorAll('#jfKind .tg').forEach(b=>b.onclick=()=>w.querySelectorAll('#jfKind .tg').forEach(x=>x.setAttribute('aria-pressed',x===b)));
+  w.querySelectorAll('#jfNeeds .tg').forEach(b=>b.onclick=()=>b.setAttribute('aria-pressed',b.getAttribute('aria-pressed')!=='true'));
+  w.querySelector('#jfCancel').onclick=closeSheet;
+  const val=id=>w.querySelector('#'+id).value.trim();
+  w.querySelector('#jfNext').onclick=()=>{
+    const kind=(w.querySelector('#jfKind .tg[aria-pressed="true"]')||{dataset:{}}).dataset.kind||'';
+    const out={id:j?j.id:undefined,kind,title:val('jfTitle'),date_from:val('jfFrom'),date_to:val('jfTo'),hours:val('jfHours'),start_place:val('jfStart'),region:val('jfRegion'),pax:val('jfPax'),langs:val('jfLangs'),
+      needs:[...w.querySelectorAll('#jfNeeds .tg[aria-pressed="true"]')].map(b=>b.dataset.need).join(','),price:val('jfPrice').replace(/[,\s₪$€]/g,''),currency:val('jfCur'),per:val('jfPer'),vat:val('jfVat'),payment:val('jfPay'),note:val('jfNote'),reply_by:val('jfReply'),
+      anon:w.querySelector('#jfAnon').checked,audience:d.audience};
+    const bad = !kind?'Choose who you need.' : out.title.length<3?'Say what the job is, in a few words.' : !out.date_from?'Add the date of the job.' : out.date_from<isoToday()?'That date has passed.'
+      : out.date_to&&out.date_to<out.date_from?'The last day is before the first day.' : !/^\d{1,7}(\.\d{1,2})?$/.test(out.price)?'Add the price you pay, as a number.' : '';
+    if(bad){ w.querySelector('#jfMsg').innerHTML=`<div class="msg err">${bad}</div>`; return; }
+    if(out.date_to===out.date_from) out.date_to='';
+    S.jobDraft=out; openJobSend(out);
+  };
+}
+// Post a job, step 2: who gets it.
+async function openJobSend(d){
+  const w=sheet('Who gets it', `<div class="bkfill"><b>${esc(d.title)}</b><br>${esc(jKind(d))} · ${esc(bkRange(d,false))}${d.region?' · '+esc(d.region):''} · <span class="mono">${esc(jMoney(d))}</span> ${esc(jPerLine(d))}</div>
+    <div class="otabs vtabs" role="tablist"><button class="otab" type="button" role="tab" data-aud="all" aria-selected="${d.audience!=='picked'}">Everyone it fits</button><button class="otab" type="button" role="tab" data-aud="picked" aria-selected="${d.audience==='picked'}">Let me pick</button></div>
+    <div id="jsBody"><p class="hint">Finding the colleagues this job fits…</p></div><div id="jsMsg"></div>`,
+    `<button class="btn soft" id="jsBack" type="button">Back</button><button class="btn primary" id="jsPost" type="button" disabled>Post</button>`);
+  w.querySelector('#jsBack').onclick=()=>openJobForm(d.id?Object.assign({},d):null);
+  let people=[]; try{ people=await DB.jobCandidates(d)||[]; }catch(e){ w.querySelector('#jsBody').innerHTML=`<div class="msg err">${esc(e.message)}</div>`; return; }
+  if(!w.isConnected) return;
+  let picked=new Set(people.filter(p=>p.day==='free').map(p=>String(p.id)));
+  if(d.id){ try{ const prev=(await DB.jobReplies(d.id)||[]).filter(r=>r.picked).map(r=>String(r.id)); if(prev.length) picked=new Set(prev); }catch(e){} if(!w.isConnected) return; }
+  const post=w.querySelector('#jsPost'), body=w.querySelector('#jsBody');
+  const free=people.filter(p=>p.day==='free').length;
+  const sub=p=>[p.role,p.langs,csv(p.tags).map(k=>jLab(JOB_NEEDS,k)).join(', '),p.profile?'':'has not said what jobs they take',p.day!=='hidden'&&p.days_age!=null&&p.days_age>=DAYS_STALE?'days updated '+agoTxt(p.days_age):''].filter(Boolean).map(esc).join(' · ');
+  const draw=()=>{ const pick=d.audience==='picked';
+    w.querySelectorAll('[data-aud]').forEach(x=>x.setAttribute('aria-selected',x.dataset.aud===d.audience||(!pick&&x.dataset.aud==='all')));
+    body.innerHTML = !people.length ? `<div class="jnote warn">No colleague fits this job yet. ${d.needs?'Try with fewer must-haves, or p':'P'}ost it anyway: it shows to anyone who fits later.</div>`
+      : `<p class="count" style="margin-top:6px">${people.length} colleague${people.length>1?'s':''} fit${people.length>1?'':'s'}${d.date_from?` · ${free} free on ${esc(ilDate(d.date_from).slice(0,5))}`:''}</p>
+        <div class="list" style="margin:0 0 14px">${people.map(p=>`<label class="prow" for="jp_${esc(p.id)}">${pick?`<input id="jp_${esc(p.id)}" type="checkbox" data-p="${esc(p.id)}" ${picked.has(String(p.id))?'checked':''}>`:''}<span class="pn"><b>${esc(p.name)}</b><span>${sub(p)}</span></span>${dayPill(p.day,false)}</label>`).join('')}</div>
+        <div class="jnote">${pick?'Only the people you tick see this job.':'Everyone on this list sees the job, and so does anyone who fits it later.'} They get a number on their Jobs tab. After posting you can also share it on WhatsApp.</div>`;
+    body.querySelectorAll('[data-p]').forEach(c=>c.onchange=()=>{ c.checked?picked.add(c.dataset.p):picked.delete(c.dataset.p); label(); });
+    label(); };
+  const label=()=>{ const n=d.audience==='picked'?picked.size:people.length; post.disabled=d.audience==='picked'&&!n; post.textContent=d.audience==='picked'?(n?`Post to ${n} colleague${n>1?'s':''}`:'Tick at least one'):(d.id?'Save':'Post the job'); };
+  w.querySelectorAll('[data-aud]').forEach(x=>x.onclick=()=>{ d.audience=x.dataset.aud; draw(); });
+  post.onclick=async()=>{ post.disabled=true; try{ const saved=await DB.saveJob(d, d.audience==='picked'?[...picked]:[]); S.jobDraft=null; S.jview='mine'; S.jobs=await DB.loadJobs(); if(S.tab==='jobs') render(); const [fresh]=jobFind(saved.id); openJobPosted(fresh||saved); }
+    catch(e){ w.querySelector('#jsMsg').innerHTML=`<div class="msg err">${esc(e.message)}</div>`; post.disabled=false; } };
+  draw();
+}
+// The WhatsApp message for a job: Hebrew, then English, with a link that opens the job in the app.
+function jobMsg(j){
+  const link=APP_URL+'#job='+j.id, k=JOB_KINDS.find(x=>x[0]===j.kind), per=JOB_PER.find(x=>x[0]===j.per);
+  const he=[k?k[2]:'', bkRange(j,true), j.region, Number(j.price).toLocaleString('en-US')+' '+(CUR_SIGN[j.currency]||'₪')+' '+(per?per[2]:'')+(JOB_VAT[j.vat]?' '+JOB_VAT[j.vat][1]:'')].filter(Boolean).join(', ');
+  const en=[jKind(j).toLowerCase(), bkRange(j,false), j.region, jMoney(j)+' '+jPerLine(j)].filter(Boolean).join(', ');
+  return `עבודה חדשה במעגל הפנימי: ${he}. פרטים ותשובה: ${link}\n\nNew job on The Inner Circle: ${en}. Details and answer: ${link}`; }
+// After posting: the job is in colleagues' Jobs tab; sharing on WhatsApp is the poster's own choice.
+function openJobPosted(j, again){
+  const msg=jobMsg(j);
+  const w=sheet(again?'Share the job':'Posted', `${again?'':`<div class="msg ok" style="margin:0 0 14px">${j.audience==='picked'?`Posted to ${j.n_sent} colleague${j.n_sent>1?'s':''}.`:'Posted to every colleague it fits.'} They see it in their Jobs tab.</div>`}
+    <p style="margin:0 0 8px"><b>Also tell them on WhatsApp?</b> The app does not send messages. This opens WhatsApp with the message ready, and you choose the people or the group.</p>
+    <div class="f"><label for="jmTxt">The message</label><textarea id="jmTxt" rows="7" dir="auto">${esc(msg)}</textarea></div>
+    ${j.anon?`<div class="jnote warn" style="margin-top:12px">You posted without your name. A WhatsApp message comes from your own number, so whoever you send it to knows it is you.</div>`:''}
+    <p class="hint" style="margin-top:12px">The link opens this job in the app. A colleague the job was not sent to sees "not open to you".</p>`,
+    `<button class="btn soft" id="jmDone" type="button">Done</button><button class="btn soft" id="jmCopy" type="button">Copy</button><a class="btn primary" id="jmWa" style="text-decoration:none" target="_blank" rel="noopener" href="#">Share on WhatsApp</a>`);
+  const t=w.querySelector('#jmTxt'), wa=w.querySelector('#jmWa'), set=()=>{ wa.href='https://wa.me/?text='+encodeURIComponent(t.value); };
+  t.addEventListener('input',set); set();
+  w.querySelector('#jmCopy').onclick=()=>copyText(t.value,t);
+  w.querySelector('#jmDone').onclick=closeSheet;
+}
+
+// My days: a month to tap. Busy days are stored; everything else is free.
+function drawDays(){
+  const box=document.getElementById('daysBody'); if(!box||!S.jobs) return; const me=S.jobs.me;
+  const now=new Date(), td=isoToday(); if(!S.cal) S.cal={y:now.getFullYear(),m:now.getMonth()};
+  const {y,m}=S.cal, first=new Date(y,m,1), n=new Date(y,m+1,0).getDate(), lead=first.getDay();
+  const busy=new Map((me.days||[]).map(x=>[x.d,x])), wk=csv(me.weekly), age=daysAgo(me.updated_at);
+  const cells=Array.from({length:lead},()=>'<span></span>').concat(Array.from({length:n},(_,i)=>{ const iso=isoOf(new Date(y,m,i+1)), b=busy.get(iso), w=wk.includes(String(new Date(y,m,i+1).getDay()));
+    return `<button type="button" data-d="${iso}" aria-pressed="${!!b}" class="${[!b&&w?'wk':'',iso===td?'tod':'',b&&b.src==='job'?'jb':'',S.rangeFrom===iso?'from':''].filter(Boolean).join(' ')}" ${iso<td?'disabled':''} aria-label="${i+1} ${first.toLocaleDateString('en-GB',{month:'long'})}${b?', busy'+(b.job?', '+b.job:''):w?', busy every week':', free'}"${b&&b.job?` title="${esc(b.job)}"`:''}>${i+1}</button>`; }));
+  const kinds=csv(me.kinds), none=me.kinds==='none', tags=csv(me.tags), langs=csv(me.langs);
+  const canBack=new Date(y,m,1)>new Date(now.getFullYear(),now.getMonth(),1);
+  box.innerHTML=`<div class="qt-intro"><h2>My days</h2><p>Tap a day to mark it busy. A colleague posting a job sees who is free that day, and nothing else.</p></div>
+    <div class="cal"><div class="cal-h"><button type="button" id="calPrev" aria-label="Previous month" ${canBack?'':'disabled'}>‹</button><b>${first.toLocaleDateString('en-GB',{month:'long',year:'numeric'})}</b><button type="button" id="calNext" aria-label="Next month">›</button></div>
+      <div class="cal-g">${WEEKDAYS.map(d=>`<span class="dn">${d==='Shabbat'?'Sat':d}</span>`).join('')}${cells.join('')}</div>
+      <div class="cal-k"><span><i style="background:var(--olive);border-color:var(--olive)"></i>Busy</span><span><i></i>Free</span><span><i style="background:var(--wash);border-style:dashed"></i>Busy every week</span><span><i style="background:var(--ochre);border-color:var(--ochre);border-radius:50%;width:8px;height:8px;vertical-align:1px"></i>A job from here</span></div>
+      <div class="btn-row" style="margin-top:12px"><button class="mini" id="calRange" type="button" aria-pressed="${!!S.rangeOn}">${S.rangeOn?(S.rangeFrom?'Now tap the last day':'Tap the first day'):'Mark several days in a row'}</button>${S.rangeOn?'<button class="mini" id="calRangeX" type="button">Cancel</button>':''}</div>
+      <p class="hint" style="margin:10px 0 0">Last updated ${agoTxt(age)}.${age!=null&&age>=1?' <button class="linkbtn" id="calOk" type="button">Still right</button>':''} A job you are given here is marked busy for you.</p></div>
+    <fieldset><legend>Busy every week on</legend><div class="tgs" id="wkT" role="group" aria-label="Busy every week on">${WEEKDAYS.map((d,i)=>`<button class="tg" type="button" data-k="${i}" aria-pressed="${wk.includes(String(i))}">${d}</button>`).join('')}</div></fieldset>
+    <label class="switch" for="dShare" style="margin:0 0 18px"><input id="dShare" type="checkbox" ${me.shared!==false?'checked':''}><span><b>Show free or busy to colleagues posting a job</b><br><span class="hint">They see only "Free" or "Busy" for the dates of their job. Never where you are or who you are working for.</span></span></label>
+    <fieldset><legend>Jobs I take</legend>
+      <div class="tgs" id="pfK" role="group" aria-label="Jobs I take">${JOB_KINDS.filter(k=>k[0]!=='other').map(k=>`<button class="tg" type="button" data-k="${k[0]}" aria-pressed="${kinds.includes(k[0])}">${k[1]}</button>`).join('')}<button class="tg" type="button" data-k="other" aria-pressed="${kinds.includes('other')}">Other work</button><button class="tg bad" type="button" data-k="none" aria-pressed="${none}">I don't take jobs</button></div>
+      <p class="hint" style="margin:-6px 0 10px">${me.kinds===''?'Not set yet, so every job is shown to you.':'Only jobs of these kinds are shown to you.'}</p>
+      <div class="f"><span class="lab">What I have</span><div class="tgs" id="pfT" role="group" aria-label="What I have">${JOB_NEEDS.map(k=>`<button class="tg" type="button" data-k="${k[0]}" aria-pressed="${tags.includes(k[0])}">${k[1]}</button>`).join('')}</div></div>
+      <div class="f"><span class="lab">Languages I work in</span><div class="tgs" id="pfL" role="group" aria-label="Languages I work in">${LANG_OPTS.map(l=>`<button class="tg" type="button" data-k="${l}" aria-pressed="${langs.includes(l)}">${l}</button>`).join('')}</div></div>
+      <p class="hint" style="margin:0 0 10px">A colleague posting a job sees your name, role, languages and these marks. Never your phone or email.</p>
+      <button class="btn primary" id="pfSave" type="button">Save</button></fieldset>`;
+  const save=async(busyL,freeL)=>{ try{ S.jobs.me=await DB.setDays(busyL,freeL); }catch(e){ toast(e.message); } drawDays(); };
+  box.querySelector('#calPrev').onclick=()=>{ S.cal=m?{y,m:m-1}:{y:y-1,m:11}; drawDays(); };
+  box.querySelector('#calNext').onclick=()=>{ S.cal=m<11?{y,m:m+1}:{y:y+1,m:0}; drawDays(); };
+  box.querySelector('#calRange').onclick=()=>{ S.rangeOn=!S.rangeOn; S.rangeFrom=null; drawDays(); };
+  const rx=box.querySelector('#calRangeX'); if(rx) rx.onclick=()=>{ S.rangeOn=false; S.rangeFrom=null; drawDays(); };
+  const ok=box.querySelector('#calOk'); if(ok) ok.onclick=async()=>{ try{ S.jobs.me=await DB.setDayPrefs({confirm:'true'}); toast('Thanks. Marked as up to date.'); }catch(e){ toast(e.message); } drawDays(); };
+  box.querySelectorAll('.cal-g [data-d]').forEach(b=>b.onclick=()=>{ const iso=b.dataset.d;
+    if(S.rangeOn){ if(!S.rangeFrom){ S.rangeFrom=iso; drawDays(); return; } const a=S.rangeFrom<iso?S.rangeFrom:iso, z=S.rangeFrom<iso?iso:S.rangeFrom; S.rangeOn=false; S.rangeFrom=null; return save(isoRange(a,z),[]); }
+    const cur=busy.get(iso); if(cur&&cur.src==='job'&&b.dataset.c!=='1'){ b.dataset.c='1'; toast('That day is busy with a job from here. Tap again to free it.'); return; }
+    cur?save([],[iso]):save([iso],[]); });
+  wireToggles(box.querySelector('#wkT')); box.querySelectorAll('#wkT .tg').forEach(b=>b.addEventListener('click',async()=>{ const v=[...box.querySelectorAll('#wkT .tg[aria-pressed="true"]')].map(x=>x.dataset.k).join(',');
+    try{ S.jobs.me=await DB.setDayPrefs({weekly:v}); }catch(e){ toast(e.message); } drawDays(); }));
+  box.querySelector('#dShare').onchange=async e=>{ const on=e.target.checked; try{ S.jobs.me=await DB.setDayPrefs({shared:String(on)}); toast(on?'Colleagues posting a job see free or busy':'Your days are hidden from colleagues'); }catch(err){ e.target.checked=!on; toast(err.message); } };
+  wireToggles(box.querySelector('#pfT')); wireToggles(box.querySelector('#pfL'));
+  box.querySelectorAll('#pfK .tg').forEach(b=>b.onclick=()=>{ const on=b.getAttribute('aria-pressed')!=='true'; b.setAttribute('aria-pressed',on);
+    if(on) box.querySelectorAll('#pfK .tg').forEach(x=>{ if((b.dataset.k==='none')!==(x.dataset.k==='none')) x.setAttribute('aria-pressed',false); }); });
+  box.querySelector('#pfSave').onclick=async()=>{ const sel=id=>[...box.querySelectorAll('#'+id+' .tg[aria-pressed="true"]')].map(x=>x.dataset.k);
+    try{ S.jobs.me=await DB.setDayPrefs({kinds:sel('pfK').join(','),tags:sel('pfT').join(','),langs:sel('pfL').join(', ')}); toast('Saved'); S.jobs=await DB.loadJobs(); if(S.tab==='jobs') render(); }catch(e){ toast(e.message); } };
+}
+
+// ----- preview only: sample colleagues and jobs, kept in memory -----
+function demoJobsInit(){
+  if(S.dj) return S.dj; const ago=n=>new Date(Date.now()-n*3600000).toISOString();
+  const inD=n=>{ let d=isoAdd(isoToday(),n); while(new Date(d+'T12:00:00').getDay()>3) d=isoAdd(d,1); return d; }; // Sunday to Wednesday
+  const people=[
+    {id:'c1',name:'Tamar Levy',role:'Licensed tour guide',kinds:'guide,guide_vehicle',tags:'licensed,eshkol',langs:'English, French',phone:'052-000-1010',busy:[inD(5),inD(6)],weekly:'6',shared:true,upd:2},
+    {id:'c2',name:'Eitan Shalom',role:'Licensed tour guide',kinds:'guide,jeep_driver',tags:'licensed,midbari,gun',langs:'English, Hebrew',phone:'054-000-2020',busy:[inD(9)],weekly:'',shared:true,upd:1},
+    {id:'c3',name:'Miriam Kaplan',role:'Licensed tour guide',kinds:'guide',tags:'licensed,shabbat',langs:'English, Spanish',phone:'050-000-3030',busy:[],weekly:'5,6',shared:true,upd:null},
+    {id:'c4',name:'Yossi Ben-David',role:'Licensed tour guide',kinds:'guide,guide_vehicle',tags:'licensed,eshkol',langs:'English, Russian',phone:'052-111-2233',busy:[inD(14),isoAdd(inD(14),1)],weekly:'',shared:true,upd:34},
+    {id:'c5',name:'Noam Peretz',role:'Other',kinds:'van_driver,guide_vehicle',tags:'eshkol',langs:'Hebrew, English',phone:'053-000-5050',busy:[],weekly:'',shared:false,upd:3},
+    {id:'c6',name:'Rachel Amar',role:'Travel agent',kinds:'none',tags:'',langs:'English',phone:'050-000-6060',busy:[],weekly:'',shared:true,upd:null}];
+  const job=o=>Object.assign({id:'j'+Math.random().toString(36).slice(2,9),kind:'guide',title:'',date_from:inD(14),date_to:'',hours:'',start_place:'',region:'',pax:'',langs:'',needs:'',price:'0',currency:'ILS',per:'day',vat:'including_vat',payment:'',note:'',reply_by:'',audience:'all',status:'open',anon:true,owner:'me',offers:{},taken:'',myAnswer:'',created_at:ago(2),updated_at:ago(2)},o);
+  S.dj={people, me:{days:[{d:inD(9),src:'job',job:'Judean Desert sunset tour'},{d:inD(20),src:'tap',job:null},{d:isoAdd(inD(20),1),src:'tap',job:null}],weekly:'6',shared:true,updated_at:ago(26*24),kinds:'guide,jeep_driver',tags:'licensed,midbari',langs:'English, Hebrew',phone:'050-000-0000'},
+    jobs:[
+      job({id:'jd1',owner:'c1',title:'Old City and City of David, full day',date_from:inD(14),hours:'08:00 to 17:00',start_place:'Jaffa Gate',region:'Jerusalem',pax:'Family of 6',langs:'English',needs:'licensed',price:'1400',payment:'Bank transfer within 14 days',note:'Bar mitzvah family, two grandparents who walk slowly. Entrance tickets are booked.',created_at:ago(2)}),
+      job({id:'jd2',owner:'c6',anon:false,kind:'guide_vehicle',title:'Galilee and Golan, 2 days',date_from:inD(20),date_to:isoAdd(inD(20),1),start_place:'Tiberias',region:'Galilee',pax:'Couple',langs:'English or French',needs:'eshkol',price:'2600',vat:'plus_vat',reply_by:inD(12),created_at:ago(26)}),
+      job({id:'jd3',owner:'c4',kind:'jeep_driver',title:'Judean Desert sunset tour, 3 hours',date_from:inD(9),hours:'15:30',start_place:'Metzoke Dragot',region:'Dead Sea & Judean Desert',pax:'Group of 14, 2 jeeps',needs:'midbari',price:'900',per:'vehicle',status:'filled',taken:'me',myAnswer:'yes',created_at:ago(70)}),
+      job({id:'jd4',owner:'me',anon:true,audience:'picked',title:'Shomron day: Shilo and Har Bracha',date_from:inD(11),hours:'08:30 to 16:30',start_place:'Hotel, Jerusalem',region:'Binyamin & Shomron',pax:'Group of 12',langs:'English',needs:'licensed,gun',price:'1500',payment:'Bank transfer, end of the month',
+        offers:{c2:{picked:true,answer:'yes',answered_at:ago(1)},c1:{picked:true,answer:'',answered_at:null},c3:{picked:true,answer:'no',answered_at:ago(3)}},created_at:ago(5)})]};
+  return S.dj; }
+function demoPerson(id){ return demoJobsInit().people.find(p=>p.id===id); }
+function demoDay(p, a, b, self){ if(!self&&!p.shared) return 'hidden'; if(!a) return 'unknown'; const days=isoRange(a,b);
+  if(days.some(d=>(p.busy||[]).includes(d))) return 'busy'; const wk=csv(p.weekly); if(wk.length&&days.some(d=>wk.includes(String(new Date(d+'T12:00:00').getDay())))) return 'busy';
+  return p.upd==null?'unmarked':'free'; }
+const demoFits=(kind,needs,p)=>p.kinds!=='none'&&(p.kinds===''||csv(p.kinds).includes(kind))&&(p.kinds===''||csv(needs).every(n=>csv(p.tags+(p.role==='Licensed tour guide'?',licensed':'')).includes(n)));
+function demoMe(){ const D=demoJobsInit(), m=D.me; return {name:'Eretz Israel Tours',role:'',kinds:m.kinds,tags:m.tags,busy:m.days.map(x=>x.d),weekly:m.weekly,shared:m.shared,upd:daysAgo(m.updated_at),phone:m.phone}; }
+function demoJobView(j){ const mine=j.owner==='me', o=mine?null:demoPerson(j.owner), tk=j.taken&&j.taken!=='me'?demoPerson(j.taken):null, offs=Object.values(j.offers||{});
+  return Object.assign({}, j, {mine, by: mine?{name:'Eretz Israel Tours',role:'',admin:true}:{name:o.name,role:o.role,admin:false}, by_phone: j.taken==='me'&&j.status==='filled'?o.phone:null,
+    my_answer:j.myAnswer||'', my_day:demoDay(demoMe(),j.date_from,j.date_to,true), taken_me:j.taken==='me',
+    n_sent:offs.filter(x=>x.picked).length, n_yes:offs.filter(x=>x.answer==='yes').length, n_no:offs.filter(x=>x.answer==='no').length,
+    taker: tk?{name:tk.name,role:tk.role,phone:tk.phone}:null, offers:undefined}); }
+// In the preview nobody is on the other end, so colleagues who are free answer "available" by themselves.
+function demoAutoAnswer(j){ const D=demoJobsInit(); let n=0;
+  D.people.forEach(p=>{ const f=j.offers[p.id]; if(j.audience==='picked'?!(f&&f.picked):!demoFits(j.kind,j.needs,p)) return; if(f&&f.answer) return;
+    if(n<2&&['free','unmarked'].includes(demoDay(p,j.date_from,j.date_to,true))){ j.offers[p.id]=Object.assign({picked:false},f,{answer:'yes',answered_at:new Date().toISOString()}); n++; } }); }
+Object.assign(DB, {
+  async loadJobs(){
+    if(LIVE) return await rpc('jobs_list',{});
+    const D=demoJobsInit(), td=isoToday(), v=D.jobs.map(demoJobView);
+    return {open:v.filter(j=>!j.mine&&j.status==='open'&&(j.date_to||j.date_from)>=td), mine:v.filter(j=>j.mine), taken:v.filter(j=>j.taken_me), all:v.filter(j=>!j.mine), me:JSON.parse(JSON.stringify(Object.assign({},D.me,{phone:undefined})))}; },
+  async jobCandidates(d){
+    if(LIVE) return await rpc('job_candidates',{p_job:d});
+    const ord=['free','unmarked','hidden','unknown','busy'];
+    return demoJobsInit().people.filter(p=>demoFits(d.kind,d.needs,p)).map(p=>({id:p.id,name:p.name,role:p.role,langs:p.langs,tags:p.tags,profile:p.kinds!=='',day:demoDay(p,d.date_from,d.date_to,false),days_age:p.shared?p.upd:null}))
+      .sort((a,b)=>ord.indexOf(a.day)-ord.indexOf(b.day)||a.name.localeCompare(b.name)); },
+  async saveJob(d, ids){
+    if(LIVE) return await rpc('job_save',{p_job:d,p_to:ids||[]});
+    const D=demoJobsInit(), now=new Date().toISOString(); let j=d.id&&D.jobs.find(x=>x.id===d.id);
+    if(!j){ j={id:'j'+Date.now(),owner:'me',status:'open',taken:'',myAnswer:'',offers:{},created_at:now}; D.jobs.unshift(j); }
+    Object.assign(j,d,{id:j.id,updated_at:now}); Object.keys(j.offers).forEach(k=>{ if(!j.offers[k].answer) delete j.offers[k]; else j.offers[k].picked=false; });
+    if(d.audience==='picked') (ids||[]).forEach(id=>{ j.offers[id]=Object.assign({answer:'',answered_at:null},j.offers[id],{picked:true}); });
+    return demoJobView(j); },
+  async jobReplies(id){
+    if(LIVE) return await rpc('job_replies',{p_id:id});
+    const D=demoJobsInit(), j=D.jobs.find(x=>x.id===id); if(j.owner==='me') demoAutoAnswer(j);
+    return Object.entries(j.offers).filter(([,f])=>f.picked||f.answer==='yes').map(([pid,f])=>{ const p=demoPerson(pid); return {id:p.id,name:p.name,role:p.role,langs:p.langs,tags:p.tags,picked:f.picked,answer:f.answer,answered_at:f.answered_at,day:demoDay(p,j.date_from,j.date_to,false)}; })
+      .sort((a,b)=>(b.answer==='yes')-(a.answer==='yes')); },
+  async answerJob(id, ans, busy){
+    if(LIVE) return await rpc('job_answer',{p_id:id,p_answer:ans,p_busy:!!busy});
+    const D=demoJobsInit(), j=D.jobs.find(x=>x.id===id); j.myAnswer=ans;
+    if(ans==='no'&&busy){ isoRange(j.date_from,j.date_to).forEach(d=>{ if(!D.me.days.some(x=>x.d===d)) D.me.days.push({d,src:'tap',job:null}); }); D.me.updated_at=new Date().toISOString(); }
+    return demoJobView(j); },
+  async giveJob(id, pid){
+    if(LIVE) return await rpc('job_give',{p_id:id,p_member:pid});
+    const j=demoJobsInit().jobs.find(x=>x.id===id); Object.assign(j,{taken:pid,status:'filled',filled_at:new Date().toISOString()}); return demoJobView(j); },
+  async setJobStatus(id, st){
+    if(LIVE) return await rpc('job_set_status',{p_id:id,p_status:st});
+    const j=demoJobsInit().jobs.find(x=>x.id===id); Object.assign(j, st==='open'?{status:'open',taken:''}:{status:'closed'}); return demoJobView(j); },
+  async deleteJob(id){ if(LIVE) return await rpc('job_delete',{p_id:id}); const D=demoJobsInit(); D.jobs=D.jobs.filter(x=>x.id!==id); },
+  async setDays(busy, free){
+    if(LIVE) return await rpc('my_days_set',{p_busy:busy||[],p_free:free||[]});
+    const m=demoJobsInit().me; (busy||[]).forEach(d=>{ if(!m.days.some(x=>x.d===d)) m.days.push({d,src:'tap',job:null}); }); m.days=m.days.filter(x=>!(free||[]).includes(x.d)).sort((a,b)=>a.d<b.d?-1:1);
+    m.updated_at=new Date().toISOString(); return JSON.parse(JSON.stringify(m)); },
+  async setDayPrefs(p){
+    if(LIVE) return await rpc('my_days_prefs',{p_prefs:p});
+    const m=demoJobsInit().me; if('weekly' in p) m.weekly=p.weekly; if('shared' in p) m.shared=p.shared!=='false'; if('kinds' in p) m.kinds=csv(p.kinds).includes('none')?'none':p.kinds; if('tags' in p) m.tags=p.tags; if('langs' in p) m.langs=p.langs;
+    if('weekly' in p||p.confirm==='true') m.updated_at=new Date().toISOString(); return JSON.parse(JSON.stringify(m)); }
+});
+
 // ---------- welcome tour (first open after approval; again from My settings) ----------
 // Seen once per device (localStorage), like the booking-sheet explainer. No database change.
 const TOUR_KEY='eitv_tour_seen', TOUR_V='1';
@@ -3146,7 +3583,8 @@ function openTour(replay){
 }
 
 // ---------- start ----------
-(async()=>{ try{ await DB.init(); }catch(e){ app.innerHTML='<div class="gate"><div class="gate-card"><h1 class="mark">Can\'t connect</h1><p>'+esc(e.message)+'. Check your internet connection and reload.</p></div></div>'; return; } boot(); })();
+(async()=>{ try{ const hm=/[#&]job=([0-9a-z-]{3,40})/i.exec(location.hash||''); if(hm){ S.openJob=hm[1]; S.tab='jobs'; history.replaceState(null,'',location.pathname+location.search); } }catch(e){}
+  try{ await DB.init(); }catch(e){ app.innerHTML='<div class="gate"><div class="gate-card"><h1 class="mark">Can\'t connect</h1><p>'+esc(e.message)+'. Check your internet connection and reload.</p></div></div>'; return; } boot(); })();
 })();
 </script>
 
