@@ -6,7 +6,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
-## D-11 · Jobs between colleagues, and My days (live for Eretz Israel Tours only; one database step open)
+## D-11 · Jobs between colleagues, and My days (go-live asked for; waits for the owner's merge and one database step)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session, 2 October 2026, 17:16 Israel time (the idea) and 3 October 2026, 20:02–20:47 (the mock-up, the go-ahead to build, and the go-ahead to go live).
 
@@ -38,7 +38,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 **To check with a lawyer:** terms 6d; members' availability is personal data now stored; if a job is ever charged for, the payment-services and tax points in the research.
 
-**Status:** live since 3 Oct 2026, about 21:00, for Eretz Israel Tours only (terms `2026-10-03a`). The database change is on production except four functions that contain a DELETE (`job_save`, `job_set_status`, `job_delete`, `my_days_set`): the Supabase connector asks the owner to confirm those and the confirmation was cancelled three times. They wait in `supabase/migrations/2026-10-03_jobs_last_step.sql` for him to run in the SQL editor. Until then posting, closing or deleting a job and marking a day show an error. Tested on a local database, in preview mode, and by a rolled-back probe on production; see README.
+**Status:** the database change is on production (3 Oct 2026) except the four functions below; the code goes live, for Eretz Israel Tours only, when the owner merges `jobs-preview` into `main` (terms `2026-10-03a`). The database change is on production except four functions that contain a DELETE (`job_save`, `job_set_status`, `job_delete`, `my_days_set`): the Supabase connector asks the owner to confirm those and the confirmation was cancelled three times. They wait in `supabase/migrations/2026-10-03_jobs_last_step.sql` for him to run in the SQL editor. Until then posting, closing or deleting a job and marking a day show an error. Tested on a local database, in preview mode, and by a rolled-back probe on production; see README.
 
 ---
 
