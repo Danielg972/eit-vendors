@@ -731,15 +731,8 @@ const DB = {
       S.claims=[{id:'c1',vendor_id:'vendor_z2c8m1v',vendor_name:'Ronit Katz',category:'Guide',member:'ronit.katz@example.com',member_name:'Ronit Katz',role:'Licensed tour guide',note:'This is me. The phone number on the page is mine.',match:true,created_at:d(0)}];
       S.demoClaims={'vendor_z2c8m1v|ronit.katz@example.com':true};
       demoFlags(); await DB.loadPendingNotes();
-      // Preview as a limited member: add ?as=limited to the address. A rough copy of what the database does for real.
-      if(/[?&]as=limited\b/.test(location.search)){
-        S.admin=false; S.user={email:'avi@sample-yeshiva.org'};
-        S.me={name:'Avi Stern',email:'avi@sample-yeshiva.org',status:'approved',is_admin:false,role:ORG_ROLE,org:'Sample Yeshiva',member_type:'limited',sections:DEF_SECTIONS,see_quotes:true,see_guide_rates:false,see_transport_reviews:true,see_reviews:false,bookings:true,jobs:false,jobs_post:false};
-        S.vendors=S.vendors.filter(v=>v.review_status==='approved'&&catsOf(v).some(c=>mySections().includes(secOf(c)))).map(v=>{ const o=Object.assign({},v,{agentPrice:'',agentPriceVatTreatment:'',agent_link:'',agent_howto:''});
-          if(v.category==='Guide') Object.assign(o,{listedPrice:'',maxPax:'',retail_price:''}); if(!catsOf(v).includes('Transport')) Object.assign(o,{rateReliability:'',rateService:'',rateValue:'',strengths:'',weaknesses:'',notes:''}); return o; });
-        Object.keys(S.demo).forEach(k=>{ const dd2=S.demo[k]; if(dd2&&dd2.prices){ dd2.prices=dd2.prices.filter(p=>!p.is_agent); dd2.notes=[]; const vv=S.vendors.find(x=>x.id===k); if(vv){ vv._prices=dd2.prices.length; vv._notes=0; } } });
-        Object.keys(S.demoQuotes).forEach(k=>{ const vv=S.vendors.find(x=>x.id===k); S.demoQuotes[k]=vv&&vv.category==='Transport'?S.demoQuotes[k].filter(q=>q.shared&&!q.mine).map(q=>Object.assign({},q,{owner:'',owner_name:'',owner_role:'',title:'',ref:'',private_note:'',can_edit:false,files:0})):[]; });
-        S.demoBookings=[]; S.requests=[]; S.demoRequests=[]; S.members=[]; S.myTop=[]; S.feedback=[]; S.jobs=null; return; }
+      // Preview as a limited member: add ?as=limited to the address, or choose it under "View as".
+      if(/[?&]as=limited\b/.test(location.search)){ demoLimited(); S.demoAs='org'; return; }
       try{ S.jobs=await DB.loadJobs(); }catch(e){} return; }
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {auth:{persistSession:false,autoRefreshToken:false}});
     S.token = readToken();
@@ -1774,7 +1767,7 @@ function openDetail(id, opt){
       ${lim()?`<p class="hint" style="margin:0 0 8px">${reviewsOpen(v)?'':'You see reviews written by organisations. '}Yours is read by everyone on the list, with your name. Keep it to what happened on your visit.</p>
         <div class="stars" id="noteStars" role="group" aria-label="Your rating, 1 to 5" style="margin:0 0 8px">${[1,2,3,4,5].map(n=>`<button type="button" data-n="${n}" aria-pressed="false" aria-label="${n} out of 5">${n}</button>`).join('')}<span class="hint" style="align-self:center;margin-left:4px">Rating, optional</span></div>`:''}
       <div class="addline"><textarea id="noteText" rows="${lim()?2:1}" placeholder="${lim()?'How did it go? Group size, what worked, what to know before going…':'Add a tip, warning or update…'}"></textarea><button class="btn primary" id="noteAdd" type="button">Add</button></div>
-      ${lim()?'':'<label class="check" for="notePriv" style="margin:6px 0 8px"><input id="notePriv" type="checkbox"><span>Only me and Eretz Israel Tours see this note</span></label>'}
+      <label class="check" for="notePriv" style="margin:6px 0 8px"><input id="notePriv" type="checkbox"><span>Only me and Eretz Israel Tours see this ${lim()?'review':'note'}</span></label>
       <p class="hint" style="margin:0 0 8px">Keep it to what happened. A malicious post is removed, and the member who posted it is banned.</p>
       ${guideOnGuide(v)?'<p class="hint" style="margin:0 0 8px">You are a guide writing about another guide. Eretz Israel Tours reads your note before colleagues see it, unless you keep it private.</p>':''}
       <div id="notesBox"></div></fieldset>`}
@@ -3422,10 +3415,27 @@ const DEMO_PEOPLE={
   admin:{label:'Eretz Israel Tours',name:'Eretz Israel Tours',email:OWNER,is_admin:true,role:''},
   owner:{label:'Noa Shalev, a guide (her own page is claimed)',name:'Noa Shalev',email:'noa.shalev@example.com',is_admin:false,role:'Licensed tour guide'},
   guide:{label:'Avi Mizrahi, another guide',name:'Avi Mizrahi',email:'avi.mizrahi@example.com',is_admin:false,role:'Licensed tour guide'},
-  agent:{label:'Rachel Amar, a travel agent',name:'Rachel Amar',email:'rachel.ops@gmail.com',is_admin:false,role:'Travel agent'}};
+  agent:{label:'Rachel Amar, a travel agent',name:'Rachel Amar',email:'rachel.ops@gmail.com',is_admin:false,role:'Travel agent'},
+  org:{label:'Avi Stern, an organisation (limited member)'}};
+// Preview only: turn the sample data into what an organisation (limited member) is sent. A rough copy of what the database does for real.
+function demoLimited(){
+  S.admin=false; S.user={email:'avi@sample-yeshiva.org'};
+  S.me={name:'Avi Stern',email:'avi@sample-yeshiva.org',status:'approved',is_admin:false,role:ORG_ROLE,org:'Sample Yeshiva',member_type:'limited',sections:DEF_SECTIONS,see_quotes:true,see_guide_rates:false,see_transport_reviews:true,see_reviews:false,bookings:true,jobs:false,jobs_post:false};
+  S.vendors=S.vendors.filter(v=>v.review_status==='approved'&&catsOf(v).some(c=>mySections().includes(secOf(c)))).map(v=>{ const o=Object.assign({},v,{agentPrice:'',agentPriceVatTreatment:'',agent_link:'',agent_howto:''});
+  if(v.category==='Guide') Object.assign(o,{listedPrice:'',maxPax:'',retail_price:''}); if(!catsOf(v).includes('Transport')) Object.assign(o,{rateReliability:'',rateService:'',rateValue:'',strengths:'',weaknesses:'',notes:''}); return o; });
+  Object.keys(S.demo).forEach(k=>{ const dd2=S.demo[k]; if(dd2&&dd2.prices){ dd2.prices=dd2.prices.filter(p=>!p.is_agent); dd2.notes=[]; const vv=S.vendors.find(x=>x.id===k); if(vv){ vv._prices=dd2.prices.length; vv._notes=0; } } });
+  Object.keys(S.demoQuotes).forEach(k=>{ const vv=S.vendors.find(x=>x.id===k); S.demoQuotes[k]=vv&&vv.category==='Transport'?S.demoQuotes[k].filter(q=>q.shared&&!q.mine).map(q=>Object.assign({},q,{owner:'',owner_name:'',owner_role:'',title:'',ref:'',private_note:'',can_edit:false,files:0})):[]; });
+  S.demoBookings=[]; S.requests=[]; S.demoRequests=[]; S.members=[]; S.myTop=[]; S.feedback=[]; S.jobs=null;
+  S.claims=[]; S.noteQueue=[]; S.reports=[];
+}
 function demoFlags(){ S.vendors.forEach(v=>{ v._claimed=!!v.claimed_by; v._mine=!S.admin&&!!v.claimed_by&&v.claimed_by===S.user.email; v._own=v._mine; if(!v._claimed) v.claimed_name=''; }); }
-function demoAs(k){ const p=DEMO_PEOPLE[k]||DEMO_PEOPLE.admin; S.demoAs=k; S.user={email:p.email};
-  S.me={name:p.name,email:p.email,status:'approved',is_admin:p.is_admin,role:p.role}; S.admin=p.is_admin; S.contributor=true;
+function demoAs(k){
+  const KEEP=['vendors','demo','demoQuotes','demoBookings','requests','demoRequests','members','myTop','feedback','jobs','claims','noteQueue','reports'];
+  if(S._demoSnap){ Object.assign(S, JSON.parse(S._demoSnap)); S._demoSnap=null; }   // leaving the organisation: the full sample data comes back
+  if(k==='org'){ S._demoSnap=JSON.stringify(Object.fromEntries(KEEP.map(x=>[x,S[x]===undefined?null:S[x]]))); demoLimited(); S.demoAs='org'; S.contributor=true;
+    if(S.tab!=='vendors'&&S.tab!=='quotes') S.tab='vendors'; demoFlags(); closeSheet(); render(); return; }
+  const p=DEMO_PEOPLE[k]||DEMO_PEOPLE.admin; S.demoAs=k; S.user={email:p.email};
+  S.me={name:p.name,email:p.email,status:'approved',is_admin:p.is_admin,role:p.role,member_type:'full'}; S.admin=p.is_admin; S.contributor=true;
   if(!S.admin && (S.tab==='review'||S.tab==='team')) S.tab='vendors'; demoFlags(); if(S.admin) DB.loadPendingNotes(); closeSheet(); render(); }
 function demoNoteSeen(n){ return S.admin || n.author===S.user.email || (!n.private && n.status!=='pending' && n.status!=='rejected'); }
 

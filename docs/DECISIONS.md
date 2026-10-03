@@ -106,10 +106,11 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 - **A note turned down** stays visible to its author and Eretz Israel Tours, marked "Not approved".
 - **Private** exists for notes and driver reviews. Eretz Israel Tours sees private ones (house rule 4). A private note skips approval.
 - **A dispute** arrives with the supplier updates in Review, marked as coming from the page's owner.
+- **Where this meets limited members (D-15)**, chosen by the two sessions, the owner to say if he wants otherwise: a guide's retail price follows the organisation's "guide rates" switch (off by default, so it is not sent); an organisation does not write a guide's section for clients and does not claim a page; an organisation's review shows at once and never waits for approval, and it may keep one private; the owner of a page sees no notes on it, organisations' included.
 
 **To check with a lawyer:** terms 6f. A member is told that remarks about him exist and are kept from him; under privacy law a person may have a right to see information held about him.
 
-**Status:** the database change is on production since 3 Oct 2026, about 22:00, rebuilt on top of limited members (D-15); see README. The app code (terms `2026-10-03d`) goes live when the owner merges `guide-for-clients` into `main`. His go-ahead, 21:41: "yes add changes". Tested on a local database, in preview mode, and by a rolled-back probe on production.
+**Status:** the database change is on production since 3 Oct 2026, about 22:00, rebuilt on top of limited members (D-15); see README. The app code (terms `2026-10-03d`) goes live when the owner merges `guide-for-clients` into `main`. His go-ahead, 21:41: "yes add changes". Tested on a local database (96 checks with the limited-member ones), in preview mode as five kinds of member, and by two rolled-back probes on production.
 
 ---
 

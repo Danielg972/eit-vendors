@@ -14,7 +14,7 @@
 -- D-16  Only licensed tour guides are listed, except a specialty (shuk tours, graffiti tours) that Eretz Israel Tours
 --       approves. An Eshkol driver or guide needs a D1 license. Both are stated with tags and checked in vendor_save.
 -- With D-15: a limited member (an organisation) does not get a guide's retail price unless he sees guide rates, does not
---       write the client section, and his reviews are never private and never wait for approval.
+--       write the client section, does not claim a page, and his reviews never wait for approval.
 
 -- ===== 1. columns and one table =====
 alter table public.vendors
@@ -228,8 +228,8 @@ begin
     'note_by', coalesce((select json_object_agg(n.id, public._who(n.author)) from public.vendor_notes n where n.vendor_id = p_id and public._note_visible(n, v, m)), '{}'),
     'own', coalesce(own, false),
     'my_claim', exists (select 1 from public.vendor_claims c where c.vendor_id = p_id and c.member = m.email and c.status = 'pending'),
-    'claimer', case when m.is_admin then (select json_build_object('id',mm.id,'name',mm.name,'role',mm.role) from public.members mm where mm.email = v.claimed_by and v.claimed_by <> '' order by mm.created_at limit 1) end,
-    'matches', case when m.is_admin then coalesce((select json_agg(json_build_object('id',mm.id,'name',mm.name,'role',mm.role) order by mm.name)
+    'claimer', case when m.is_admin then (select json_build_object('id',mm.id,'name',mm.name,'role',case when mm.org <> '' then mm.org else mm.role end) from public.members mm where mm.email = v.claimed_by and v.claimed_by <> '' order by mm.created_at limit 1) end,
+    'matches', case when m.is_admin then coalesce((select json_agg(json_build_object('id',mm.id,'name',mm.name,'role',case when mm.org <> '' then mm.org else mm.role end) order by mm.name)
         from public.members mm where mm.status = 'approved' and v.claimed_by <> mm.email and public._is_own(v, mm)), '[]'::json) end
   );
 end $function$;
@@ -332,7 +332,7 @@ begin
 end $function$;
 
 -- review_post: every note and review goes through here. Nobody writes on his own page. A guide's note on another
--- guide's page waits for approval unless it is private. An organisation's review is public and live at once.
+-- guide's page waits for approval unless it is private. An organisation's review is live at once, private or not.
 create or replace function public.review_post(p_token text, p_vendor text, p_body text, p_rating text, p_private boolean)
  returns json language plpgsql security definer set search_path to ''
 as $function$
@@ -342,7 +342,7 @@ begin
   select * into v from public.vendors where id = p_vendor;
   if v.id is null then raise exception 'That supplier no longer exists.'; end if;
   if public._is_own(v, m) then raise exception 'You cannot add a note to your own page.'; end if;
-  pr := coalesce(p_private, false) and not public._limited(m);   -- an organisation's review is always for everyone (D-15)
+  pr := coalesce(p_private, false);   -- an organisation may keep a review private too; otherwise its review is for everyone, at once (D-15)
   if not m.is_admin and not pr and public._is_guide(v) and public._is_guide_member(m) then st := 'pending'; end if;
   insert into public.vendor_notes (vendor_id, body, author, author_name, org, rating, private, status)
   values (p_vendor, trim(p_body), m.email, m.name, public._limited(m), case when coalesce(p_rating,'') ~ '^[1-5]$' then p_rating else '' end, pr, st);
@@ -390,7 +390,7 @@ begin
   insert into public.driver_reviews (driver_id, vendor_id, rating, tags, body, trip_month, author, author_name, org, private)
   values (p_driver, vid, p_review->>'rating', left(trim(coalesce(p_review->>'tags','')),300), left(trim(coalesce(p_review->>'body','')),1500),
     case when coalesce(p_review->>'trip_month','') ~ '^\d{4}-\d{2}$' then p_review->>'trip_month' else '' end, m.email, m.name, public._limited(m),
-    coalesce(p_review->>'private','') in ('true','t') and not public._limited(m))
+    coalesce(p_review->>'private','') in ('true','t'))
   returning id into rid;
   return rid;
 end $function$;
@@ -469,6 +469,8 @@ declare m public.members; v public.vendors;
 begin
   m := public._auth(p_token); perform public._visible(p_vendor, m.is_admin);
   if m.is_admin then raise exception 'Eretz Israel Tours links a page to a member from the page itself.'; end if;
+  -- an organisation is not a supplier on the list (D-15); if a school should own a page, Eretz Israel Tours links it
+  if public._limited(m) then raise exception 'Claiming a page is for the guides, agents and suppliers on the list.' using errcode = '42501'; end if;
   select * into v from public.vendors where id = p_vendor;
   if v.id is null then raise exception 'That supplier no longer exists.'; end if;
   if v.claimed_by = m.email then raise exception 'This page is already yours.'; end if;
@@ -488,7 +490,7 @@ as $function$
 begin
   perform public._auth(p_token, true);
   return coalesce((select json_agg(json_build_object('id',c.id,'vendor_id',c.vendor_id,'vendor_name',v.name,'category',v.category,
-      'member_id',mm.id,'member_name',coalesce(mm.name, c.member_name),'role',coalesce(mm.role,''),'note',c.note,
+      'member_id',mm.id,'member_name',coalesce(mm.name, c.member_name),'role',case when mm.org <> '' then mm.org else coalesce(mm.role,'') end,'note',c.note,
       'match',coalesce(public._is_own(v, mm), false),'created_at',c.created_at) order by c.created_at)
     from public.vendor_claims c join public.vendors v on v.id = c.vendor_id
       left join public.members mm on mm.email = c.member and mm.status = 'approved'
