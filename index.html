@@ -3075,8 +3075,6 @@ function openForm(v, preset){
   };
 }
 
-// ---------- welcome tour (first open after approval; again from My settings) ----------
-// Seen once per device (localStorage), like the booking-sheet explainer. No database change.
 // ---------- jobs between colleagues, and My days ----------
 // A member posts a job with the price he pays. It goes to the colleagues it fits, or to the ones he picks.
 // A colleague answers "I'm available"; the poster gives the job to one of them. Nothing is charged on a job.
@@ -3187,7 +3185,7 @@ function jobIcs(j, who){
     'DTSTART;VALUE=DATE:'+j.date_from.replace(/-/g,''),'DTEND;VALUE=DATE:'+isoAdd(j.date_to||j.date_from,1).replace(/-/g,''),'SUMMARY:'+e(j.title),'DESCRIPTION:'+e(jobCalText(j,who)),
     j.start_place?'LOCATION:'+e(j.start_place):'','TRANSP:OPAQUE','END:VEVENT','END:VCALENDAR'].filter(Boolean).map(fold).join('\r\n')+'\r\n'; }
 function jobIcsDownload(j, who){ try{ const url=URL.createObjectURL(new Blob([jobIcs(j,who)],{type:'text/calendar;charset=utf-8'})); const a=document.createElement('a'); a.href=url; a.download='job-'+j.date_from+'.ics'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),5000); }catch(e){ toast('Could not make the calendar file.'); } }
-const calButtons=`<div class="jbig"><b>Add to my calendar</b><div class="btn-row" style="margin-top:8px"><a class="btn soft" id="calG" style="text-decoration:none" target="_blank" rel="noopener" href="#">Google Calendar</a><button class="btn soft" id="calI" type="button">Apple, Outlook or other</button></div><span class="hint" style="display:block;margin-top:6px">The second button saves a calendar file. Open it and your calendar offers to add the job.</span></div>`;
+const calButtons=`<div class="jbig"><b>Add to my calendar</b><div class="btn-row" style="margin-top:8px"><a class="btn soft" id="calG" style="text-decoration:none" target="_blank" rel="noopener" href="#">Google Calendar</a><button class="btn soft" id="calI" type="button">Apple, Outlook or other</button></div><span class="hint" style="display:block;margin-top:6px">The second button saves a calendar file. Open it and your calendar offers to add the job.${LIVE?'':' In this preview the file cannot be saved; it works in the live app.'}</span></div>`;
 function wireCal(w, j, who){ const g=w.querySelector('#calG'); if(g) g.href=jobGcal(j,who); const i=w.querySelector('#calI'); if(i) i.onclick=()=>jobIcsDownload(j,who); }
 
 // A job as the colleague it was sent to sees it.
@@ -3463,6 +3461,8 @@ Object.assign(DB, {
     if('weekly' in p||p.confirm==='true') m.updated_at=new Date().toISOString(); return JSON.parse(JSON.stringify(m)); }
 });
 
+// ---------- welcome tour (first open after approval; again from My settings) ----------
+// Seen once per device (localStorage), like the booking-sheet explainer. No database change.
 const TOUR_KEY='eitv_tour_seen', TOUR_V='1';
 function tourSeen(){ if(S.tourSeen) return true; try{ return localStorage.getItem(TOUR_KEY)===TOUR_V; }catch(e){ return false; } }
 function tourDone(){ S.tourSeen=true; try{ localStorage.setItem(TOUR_KEY,TOUR_V); }catch(e){} }

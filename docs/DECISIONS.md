@@ -6,6 +6,41 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-11 · Jobs between colleagues, and My days (built on a branch; not live)
+
+**Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session, 2 October 2026, 17:16 Israel time (the idea) and 3 October 2026, 20:02–20:19 (the mock-up and the go-ahead).
+
+**In his words:** "I would like to have an option, starting with myself and later with other people, to have anonymous requests for tour guides or other providers that might be on the site. The price will be listed, as will the details of the job. Each participant will get a notification or perhaps I will get to choose from a list of relevant guides based on the filters. It will be sent to them by WhatsApp or by a notification from the app." On availability: "if I had Google Calendar integration for the people in the app so I could see at a glance their availability and they can share their availability." On the mock-up (3 Oct, 20:13): "it looks good. Is there other calendar integration that makes sense outside of Google calendars? Is there an easy way for them to update their calendar availability?" On the suggestion to build tap-and-automatic availability and an "Add to my calendar" button now, and a pasted calendar link later (20:19): "OK let's do that. I'll take your suggestion".
+
+**Decisions:**
+
+1. **Members can post jobs for colleagues, anonymously, with the price and the details listed.**
+2. **It starts with Eretz Israel Tours and opens to others later.**
+3. **A job goes either to everyone it fits or to people the poster picks from a filtered list.**
+4. **Availability is kept by tapping days, and filled in automatically when a job is given.** Jobs can be added to the member's own calendar. Reading members' calendars through a pasted link comes later.
+5. **Build it in preview first, to try before it goes live.**
+
+**Not decided yet (his to decide):**
+
+- **Whether the app ever takes a cut of a job.** He wrote "I have to make a decision: whether I will use this as an opportunity to monetize by taking 5% of any booking that comes to the site or 10%. Research needs to be done." The research (Claude Doc "Inner Circle monetization research", 2 Oct) advises neither, and flat fees paid first by suppliers. He has not answered in his own words. Terms 6d on the branch says "Nothing is charged on a job"; that line needs his yes before the branch goes live.
+- **Whether founding members stay free for every later paid feature**, or only for the list.
+
+**Implementation choices (not owner decisions; change on request):**
+
+- **WhatsApp is a message the poster shares himself**, not one the app sends. Members' phone numbers are never given to other members (standing rule), and the app has no WhatsApp sending service. The share screen warns that sending it himself shows who posted.
+- **Name and phone pass between poster and taker only when the job is given.** This is a consented exception to the no-phones rule, stated in terms 6d.
+- **A "Jobs I take" profile** (kinds of jobs, what the member has, languages) decides who a job fits. An empty profile fits everything.
+- **Three levels in the Team tab** (`jobs_for`): only Eretz Israel Tours; colleagues receive; everyone posts. The default is the first.
+- **Answers are "I'm available", "Not for me" and "I'm busy that day".** The poster chooses among those available; the first to answer does not win automatically.
+- **Days shared by default**, with a switch to stop; colleagues see free or busy only, never why. A "still right?" prompt after 21 days.
+- **Eretz Israel Tours sees who posted each job**, in line with D-2 and house rule 4.
+
+**To check with a lawyer:** terms 6d; members' availability is personal data now stored; if a job is ever charged for, the payment-services and tax points in the research.
+
+**Status:** on the branch `jobs-preview` (database change, front end, terms `2026-10-03a`). Not applied to production, not merged. Tested on a local database and in preview mode; see README.
+
+---
+
 ## D-10 · Official WhatsApp, Waze and Google Maps buttons (asked for; logos not yet in)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session, 2 October 2026 ("the Waze and Google Maps and Whatsapp buttons should be official") and 3 October 2026, 19:28 Israel time ("I want the official buttons").
