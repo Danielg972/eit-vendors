@@ -8,18 +8,19 @@ create table if not exists public.__ids (k text primary key, id text);
 create or replace function public.__v(p jsonb) returns text language sql as $$ select (public.vendor_save('ADMINTOKEN0000000000000000', '{"active":"Active","currency":"ILS","priceBasis":"Per person"}'::jsonb || p))->'vendor'->>'id' $$;
 insert into public.__ids values
  ('T', public.__v('{"name":"Test Bus Co","category":"Transport","agentPrice":"2400","priceBasis":"Per day","rateReliability":"4","strengths":"On time","notes":"bus summary","phone":"054-000-1111","agent_link":"https://bus.example/agents","agent_howto":"Register as agent"}')),
- ('G', public.__v('{"name":"Gila Guide","category":"Guide","agentPrice":"1600","listedPrice":"2000","priceBasis":"Per day","rateService":"5","notes":"guide summary"}')),
+ ('G', public.__v('{"name":"Gila Guide","category":"Guide","agentPrice":"1600","listedPrice":"2000","priceBasis":"Per day","rateService":"5","notes":"guide summary","tags":"Licensed tour guide"}')),
  ('H', public.__v('{"name":"Test Hotel","category":"Hotel","agentPrice":"1150","listedPrice":"1400","rateValue":"3","weaknesses":"Slow check-in","notes":"Agents get 10% commission","agent_howto":"Ask the group desk for the agent rate"}')),
  ('S', public.__v('{"name":"Test Reserve","category":"National Parks","agentPrice":"29","listedPrice":"33"}')),
  ('R', public.__v('{"name":"Test Grill","category":"Restaurant","kosher":"Rabbanut"}')),
  ('W', public.__v('{"name":"Test Winery","category":"Winery","listedPrice":"90"}')),
  ('A', public.__v('{"name":"Test Travel Agent","category":"Travel Agent","agentPrice":"5"}')),
- ('GA', public.__v('{"name":"Jeep Guide","category":"Adventure","also_categories":"Guide","agentPrice":"900","listedPrice":"1200"}')),
+ ('GA', public.__v('{"name":"Jeep Guide","category":"Adventure","also_categories":"Guide","agentPrice":"900","listedPrice":"1200","tags":"Licensed tour guide"}')),
  ('X', public.__v('{"name":"Hidden Site","category":"Attraction / Site","listedPrice":"10"}')),
  ('P', public.__v('{"name":"Private Price Site","category":"Activity","listedPrice":"50","agentPrice":"40"}'));
 update public.vendors set hidden = true where id = (select id from public.__ids where k='X');
 update public.vendors set prices_private = true where id = (select id from public.__ids where k='P');
 create or replace function public.__id(p text) returns text language sql as $$ select id from public.__ids where k = p $$;
+-- (D-16: a new guide entry must say Licensed tour guide or Specialty guide, so the two sample guides carry the tag)
 -- price lines by admin
 select public.price_save(:'A', public.__id('S'), '{"label":"Adult","price":"33","is_agent":false,"basis":"Per person"}');
 select public.price_save(:'A', public.__id('S'), '{"label":"Adult agent","price":"29","is_agent":true,"basis":"Per person"}');

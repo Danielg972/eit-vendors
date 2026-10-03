@@ -452,6 +452,30 @@ button.bkcard{display:block;width:100%;text-align:left;font:inherit;color:inheri
 .cal-k{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--ink-2);margin-top:10px}
 .cal-k i{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-2px;margin-right:6px;border:1px solid var(--line)}
 .mini[aria-pressed="true"]{background:var(--olive);border-color:var(--olive);color:var(--on-olive)}
+/* a member's own page, claims, and notes that are private or waiting */
+.ownbar{border:1px solid var(--ochre);background:var(--ochre-wash);border-radius:12px;padding:12px;margin:0 0 14px;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.ownbar .btn-row{margin-top:4px}
+.claimline{margin:0 0 12px;font-size:13px}
+.ntag{display:inline-block;font-size:11px;font-weight:600;border-radius:999px;padding:2px 8px;margin:0 6px 4px 0;background:var(--wash);color:var(--ink-2)}
+.ntag.warn{background:var(--warn-wash);color:var(--warn)}
+.ntag.bad{background:var(--bad-wash);color:var(--bad)}
+.demo-bar select{margin-left:6px;max-width:100%;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font-size:13px;padding:4px 6px}
+/* a guide's page: the part written for clients */
+.cbox{border:1px solid var(--line);border-radius:12px;padding:12px;margin:10px 0 18px;background:var(--card)}
+.cbox .ch{display:flex;align-items:center;gap:8px;margin-bottom:2px}
+.cbox .ch b{font-size:15px}
+.cbox .ch .mini{margin-left:auto}
+.cbox .cbio{margin:10px 0 0;font-size:15px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
+.cbox .cret{margin:10px 0 0;font-size:14px;overflow-wrap:anywhere}
+.cbox .cret b{font-weight:600}
+.cpics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px}
+.cpics:empty{display:none}
+.cpic{position:relative;aspect-ratio:1;max-width:100%;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--wash);display:flex;align-items:center;justify-content:center;min-width:0;color:var(--ink-2);text-decoration:none}
+.cpic img{width:100%;height:100%;object-fit:cover;display:block}
+.cpic.add{border-style:dashed;font-size:12px;text-align:center;padding:4px;cursor:pointer;flex-direction:column;gap:2px}
+.cpic.add b{font-size:22px;font-weight:400;line-height:1}
+.cpic .rm{position:absolute;top:4px;right:4px;border:0;border-radius:999px;background:var(--card);color:var(--bad);font-size:12px;padding:3px 8px;box-shadow:0 1px 4px rgba(0,0,0,.15)}
+.ccount{font-size:12px;color:var(--ink-3);text-align:right}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(140px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--ground);padding:10px 16px;border-radius:999px;font-size:14px;z-index:40;max-width:calc(100% - 32px)}
 </style>
 <style>
@@ -529,14 +553,22 @@ const REGIONS = ['Jerusalem','Gush Etzion & Judea','Binyamin & Shomron','Dead Se
 const TAG_SUGGEST = {Adventure:['Jeep','ATV / RZR','Rappelling','Kayak & rafting','Zipline','Boat','Snorkelling','Bikes','Horse riding','Camels','Shooting'],
   Activity:['Workshop','Food & wine','Volunteering','Archaeology','Family','Shooting','Farm'],
   Hotel:['Kosher','Shabbat-friendly','Kibbutz','Boutique','Pool'],
-  Transport:['Independent van driver','Armoured bus','Airport transfers'],
+  Transport:['Independent van driver','Eshkol driver','D1 license','Armoured bus','Airport transfers'],
   Restaurant:['Meat','Dairy','Mehadrin','Group menus','Winery'],
-  Guide:['Eshkol license','Owns an Eshkol vehicle','Midbari 4x4 vehicle','Carries a gun','Driver-guide','English','French','Spanish','Russian'],
+  Guide:['Eshkol license','D1 license','Owns an Eshkol vehicle','Midbari 4x4 vehicle','Carries a gun','Driver-guide','Shuk tours','Graffiti tours','English','French','Spanish','Russian'],
   'Travel Agent':['Hotel bookings','Flights','Packages','Groups','Commission'],
   'Itinerary Planner':['Full trip planning','Day trips','Groups','Families','Bar/bat mitzvah'],
   Winery:['Tasting','Tour','Restaurant','Boutique','Free bottle for guide','Group menus']};
 // Shomer Shabbat is a tag on the supplier (no database change); the kosher rule: no non-kosher restaurants on the list.
 const SHABBAT_TAG='Shomer Shabbat';
+// Guide rules (D-15): only licensed tour guides are listed, except a specialty (shuk tours, graffiti tours and the
+// like) that Eretz Israel Tours approves; an Eshkol driver or guide needs a D1 license. Both are stated with tags.
+const GUIDE_LICENSED='Licensed tour guide', GUIDE_SPECIALTY='Specialty guide', D1_TAG='D1 license';
+const tagHas=(tags,t)=>String(tags||'').split(',').map(x=>x.trim().toLowerCase()).includes(t.toLowerCase());
+const eshkolListed=tags=>/eshkol (license|driver|guide)/i.test(String(tags||''));
+const guideSpecialty=v=>catsOf(v).includes('Guide') && tagHas(v.tags, GUIDE_SPECIALTY);
+const GUIDE_RULE='Only licensed tour guides are listed, except specialties such as shuk tours or graffiti tours.';
+const D1_RULE='Only a driver with a D1 license can be listed as an Eshkol driver or guide.';
 const tagList=v=>String(v&&v.tags||'').split(',').map(t=>t.trim()).filter(Boolean);
 const isShabbat=v=>tagList(v).some(t=>t.toLowerCase()===SHABBAT_TAG.toLowerCase());
 const tagsNoShab=v=>tagList(v).filter(t=>t.toLowerCase()!==SHABBAT_TAG.toLowerCase()).join(', ');
@@ -589,6 +621,8 @@ function sample(){
     v({id:'vendor_n3g7v2t',name:'Negev & Arava Transport',category:'Transport',contactPerson:'Eli',phone:'+972 54 000 9012',location:'Beer Sheva',region:'Negev & Arava',maxCap:'53',priceBasis:'Per day',tags:'Bus, Van 17–20 seats, Van 9–10 seats'}),
     v({id:'vendor_v4n0001',name:'Eli Dahan',category:'Transport',contactPerson:'Eli Dahan',phone:'050-000-3344',whatsapp:'050-000-3344',location:'Beer Sheva',region:'Negev & Arava',maxCap:'9',priceBasis:'Per day',tags:'Van 9–10 seats, Independent van driver'}),
     v({id:'vendor_q9x1b7e',name:'Machane Yehuda Food Walk',category:'Activity',location:'Jerusalem',kosher:'Mixed stalls, mostly Rabbanut',agentPrice:'220',priceBasis:'Per person',maxPax:'15',rateService:'5',rateValue:'5',strengths:'Families love it'}),
+    v({id:'vendor_n0a5h4l',name:'Noa Shalev',category:'Guide',tags:'Eshkol license, Owns an Eshkol vehicle',experience_years:'14',phone:'+972 52 555 0188',whatsapp:'+972 52 555 0188',location:'Jerusalem',region:'Jerusalem',languages:'English, Hebrew, Spanish',agentPrice:'1500',agentPriceVatTreatment:'plus_vat',priceBasis:'Per day',
+      client_bio:'Noa grew up in the Jerusalem hills and has guided families and small groups for fourteen years. She trained as an archaeologist, dug at the City of David, and still cannot walk past an open trench without stopping.\n\nShe guides in English, Hebrew and Spanish, and is at her best with mixed ages: grandparents who want the history, children who want the tunnels.',retail_price:'$650 a day, up to 9 hours. Vehicle and entrance fees extra.'}),
     v({id:'vendor_z2c8m1v',name:'Ronit Katz',category:'Guide',phone:'+972 50 777 2211',languages:'English, Hebrew, French',agentPrice:'1600',priceBasis:'Per day',active:'Inactive',notes:'On leave until spring'})
   ];
 }
@@ -623,6 +657,10 @@ const DB = {
   async init(){
     if(!LIVE){ S.user={email:OWNER}; S.me={name:'Eretz Israel Tours',email:OWNER,status:'approved',is_admin:true}; S.admin=true; S.contributor=true; S.vendors=sample();
       const dd=n=>new Date(Date.now()-n*86400000).toISOString();
+      // two sample pictures for the guide's client section: drawn here, not photographs
+      const pic=(a,b,c)=>'data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="${a}"/><circle cx="148" cy="56" r="22" fill="${c}"/><path d="M0 150 L50 96 L92 136 L134 84 L200 148 V200 H0Z" fill="${b}"/><text x="100" y="186" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#fff">Sample picture</text></svg>`);
+      S.files['vendor_n0a5h4l']=[['#c9a36b','#7a5a36','#f3e2b8'],['#8fb3c9','#3f5f4a','#fff4d6']].map((c,i)=>({id:'cp'+i,path:'cp'+i,vendor_id:'vendor_n0a5h4l',file_name:'sample-'+(i+1)+'.svg',mime_type:'image/svg+xml',size_bytes:900,kind:'Photo',for_clients:true,uploaded_by:OWNER,mine:true,created_at:dd(9-i),url:pic(c[0],c[1],c[2])}));
+      S.vendors.find(x=>x.id==='vendor_n0a5h4l')._files=2;
       S.demo['vendor_k3m9p2x']={
         prices:[
           {id:'p1',label:'2-hour jeep tour',audience:'Adult',price:'360',currency:'ILS',vat:'plus_vat',basis:'Per person',is_agent:true,pax_min:'',pax_max:'',season:'',source:'Quote from Moshe, WhatsApp',checked_on:'2026-08-14',note:''},
@@ -681,16 +719,20 @@ const DB = {
         {id:'m2',name:'Yossi Ben-David',email:'yossi.guide@gmail.com',phone:'+972 52 111 2233',note:'Galilee and Golan',role:'Licensed tour guide',license_no:'12345',has_proof:true,status:'pending',is_admin:false,created_at:d(0)},
         {id:'m3',name:'Rachel Amar',email:'rachel.ops@gmail.com',role:'Travel agent',license_no:'TA-2291',has_proof:true,status:'approved',is_admin:false,member_type:'full',created_at:d(6),last_seen_at:d(1)},
         {id:'m4',name:'Avi Stern',email:'avi@sample-yeshiva.org',phone:'+972 50 000 0000',role:ORG_ROLE,org:'Sample Yeshiva',credentials:'I run the trips for a yeshiva of about 120 students in Jerusalem, six years in the role. We book 10 to 15 busses a year and two Shabbatons. Office: 02-000-0000.',has_proof:false,status:'pending',is_admin:false,member_type:'limited',sections:DEF_SECTIONS,see_quotes:true,see_guide_rates:false,see_transport_reviews:true,see_reviews:false,created_at:d(0)},
-        {id:'m5',name:'Miri Cohen',email:'miri@sample-school.org',role:ORG_ROLE,org:'Sample School',credentials:'Trips coordinator at a girls school in Beit Shemesh since 2019.',has_proof:false,status:'approved',is_admin:false,member_type:'limited',sections:'transport,hotels',see_quotes:true,see_guide_rates:false,see_transport_reviews:true,see_reviews:false,created_at:d(4),last_seen_at:d(2)}];
-      // Preview as a limited member: add ?as=limited to the address. A rough copy of what the database does for real.
-      if(/[?&]as=limited\b/.test(location.search)){
-        S.admin=false; S.user={email:'avi@sample-yeshiva.org'};
-        S.me={name:'Avi Stern',email:'avi@sample-yeshiva.org',status:'approved',is_admin:false,role:ORG_ROLE,org:'Sample Yeshiva',member_type:'limited',sections:DEF_SECTIONS,see_quotes:true,see_guide_rates:false,see_transport_reviews:true,see_reviews:false,bookings:true,jobs:false,jobs_post:false};
-        S.vendors=S.vendors.filter(v=>v.review_status==='approved'&&catsOf(v).some(c=>mySections().includes(secOf(c)))).map(v=>{ const o=Object.assign({},v,{agentPrice:'',agentPriceVatTreatment:'',agent_link:'',agent_howto:''});
-          if(v.category==='Guide') Object.assign(o,{listedPrice:'',maxPax:''}); if(!catsOf(v).includes('Transport')) Object.assign(o,{rateReliability:'',rateService:'',rateValue:'',strengths:'',weaknesses:'',notes:''}); return o; });
-        Object.keys(S.demo).forEach(k=>{ const dd2=S.demo[k]; if(dd2&&dd2.prices){ dd2.prices=dd2.prices.filter(p=>!p.is_agent); dd2.notes=[]; const vv=S.vendors.find(x=>x.id===k); if(vv){ vv._prices=dd2.prices.length; vv._notes=0; } } });
-        Object.keys(S.demoQuotes).forEach(k=>{ const vv=S.vendors.find(x=>x.id===k); S.demoQuotes[k]=vv&&vv.category==='Transport'?S.demoQuotes[k].filter(q=>q.shared&&!q.mine).map(q=>Object.assign({},q,{owner:'',owner_name:'',owner_role:'',title:'',ref:'',private_note:'',can_edit:false,files:0})):[]; });
-        S.demoBookings=[]; S.requests=[]; S.demoRequests=[]; S.members=[]; S.myTop=[]; S.feedback=[]; S.jobs=null; return; }
+        {id:'m5',name:'Miri Cohen',email:'miri@sample-school.org',role:ORG_ROLE,org:'Sample School',credentials:'Trips coordinator at a girls school in Beit Shemesh since 2019.',has_proof:false,status:'approved',is_admin:false,member_type:'limited',sections:'transport,hotels',see_quotes:true,see_guide_rates:false,see_transport_reviews:true,see_reviews:false,created_at:d(4),last_seen_at:d(2)},
+        {id:'m6',name:'Noa Shalev',email:'noa.shalev@example.com',role:'Licensed tour guide',license_no:'8841',has_proof:true,status:'approved',is_admin:false,member_type:'full',created_at:d(5),last_seen_at:d(0)},
+        {id:'m7',name:'Avi Mizrahi',email:'avi.mizrahi@example.com',role:'Licensed tour guide',license_no:'7730',has_proof:true,status:'approved',is_admin:false,member_type:'full',created_at:d(4),last_seen_at:d(2)},
+        {id:'m8',name:'Ronit Katz',email:'ronit.katz@example.com',role:'Licensed tour guide',license_no:'6512',has_proof:true,status:'approved',is_admin:false,member_type:'full',created_at:d(1),last_seen_at:d(0)}];
+      // claimed pages: Noa has claimed hers; Ronit's claim is waiting; one note about Noa by another guide is waiting too
+      Object.assign(S.vendors.find(x=>x.id==='vendor_n0a5h4l'),{claimed_by:'noa.shalev@example.com',claimed_name:'Noa Shalev',rateReliability:'5',rateService:'5',rateValue:'4',strengths:'Wonderful with children',weaknesses:'Tends to run over time',_notes:1});
+      await DB.detail('vendor_n0a5h4l'); S.demo['vendor_n0a5h4l'].notes=[
+        {id:'n2',vendor_id:'vendor_n0a5h4l',body:'She cancelled on me two days before a tour in July.',author:'avi.mizrahi@example.com',author_name:'Avi Mizrahi',private:false,status:'pending',created_at:d(1)},
+        {id:'n1',vendor_id:'vendor_n0a5h4l',body:'Booked her for a bar mitzvah family in August. Brilliant with the kids. Ran 20 minutes over at the Kotel tunnels.',author:'rachel.ops@gmail.com',author_name:'Rachel Amar',private:false,status:'approved',created_at:d(12)}];
+      S.claims=[{id:'c1',vendor_id:'vendor_z2c8m1v',vendor_name:'Ronit Katz',category:'Guide',member:'ronit.katz@example.com',member_name:'Ronit Katz',role:'Licensed tour guide',note:'This is me. The phone number on the page is mine.',match:true,created_at:d(0)}];
+      S.demoClaims={'vendor_z2c8m1v|ronit.katz@example.com':true};
+      demoFlags(); await DB.loadPendingNotes();
+      // Preview as a limited member: add ?as=limited to the address, or choose it under "View as".
+      if(/[?&]as=limited\b/.test(location.search)){ demoLimited(); S.demoAs='org'; return; }
       try{ S.jobs=await DB.loadJobs(); }catch(e){} return; }
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {auth:{persistSession:false,autoRefreshToken:false}});
     S.token = readToken();
@@ -701,12 +743,16 @@ const DB = {
     if(error) throw new Error(error.message);
     S.me = data; S.user = data?{email:data.email}:null;
     S.contributor = !!(data && data.status==='approved'); S.admin = !!(data && data.is_admin && S.contributor);
-    if(S.contributor){ await DB.loadVendors(); if(jobsOn()){ try{ S.jobs=await DB.loadJobs(); }catch(e){ S.jobs=null; } } try{ await DB.loadFeedback(); }catch(e){} if(S.admin){ await DB.loadTeam(); try{ await DB.loadRequests(); }catch(e){} try{ await DB.loadReports(); }catch(e){} } }
+    if(S.contributor){ await DB.loadVendors(); if(jobsOn()){ try{ S.jobs=await DB.loadJobs(); }catch(e){ S.jobs=null; } } try{ await DB.loadFeedback(); }catch(e){} if(S.admin){ await DB.loadTeam(); try{ await DB.loadRequests(); }catch(e){} try{ await DB.loadReports(); }catch(e){} try{ await DB.loadClaims(); await DB.loadPendingNotes(); }catch(e){} } }
   },
   async loadVendors(){ if(!LIVE) return; try{ S.vendors = await rpc('vendors_list'); }catch(e){ toast('Could not load vendors: '+e.message); } try{ S.myTop = await rpc('my_top'); }catch(e){ S.myTop=[]; } try{ S.usage = await rpc('my_usage'); }catch(e){} },
   async loadTeam(){ if(!LIVE) return; S.members = await rpc('members_list'); },
   async detail(vid){
-    if(!LIVE){ return S.demo[vid] || (S.demo[vid]={prices:[],deals:[],notes:[],requests:[],sites:S.vendors.filter(x=>x.parent_id===vid).map(x=>({id:x.id,name:x.name,location:x.location,reservation:x.reservation})),parent:(()=>{const v=S.vendors.find(x=>x.id===vid); const pv=v&&v.parent_id&&S.vendors.find(x=>x.id===v.parent_id); return pv?{id:pv.id,name:pv.name}:null;})(),res_reports:[],res_answered:false}); }
+    if(!LIVE){ const d=S.demo[vid] || (S.demo[vid]={prices:[],deals:[],notes:[],requests:[],sites:S.vendors.filter(x=>x.parent_id===vid).map(x=>({id:x.id,name:x.name,location:x.location,reservation:x.reservation})),parent:(()=>{const v=S.vendors.find(x=>x.id===vid); const pv=v&&v.parent_id&&S.vendors.find(x=>x.id===v.parent_id); return pv?{id:pv.id,name:pv.name}:null;})(),res_reports:[],res_answered:false});
+      // what the database would send to whoever is looking (see demoAs)
+      const v=S.vendors.find(x=>x.id===vid)||{}, cm=(S.members||[]).find(x=>x.email&&x.email===v.claimed_by);
+      return Object.assign({}, d, {notes:v._own?[]:(d.notes||[]).filter(demoNoteSeen).map(n=>Object.assign({},n,{mine:n.author===S.user.email})), note_by:{}, own:!!v._own,
+        my_claim:!!((S.demoClaims||{})[vid+'|'+S.user.email]), claimer:S.admin&&cm?{id:cm.id,name:cm.name,role:cm.role}:null, matches:[]}); }
     return await rpc('vendor_detail',{p_id:vid});
   },
   async savePrice(vid, line, reason){
@@ -725,9 +771,39 @@ const DB = {
     if(!LIVE){ const d=await DB.detail(vid); d.deals=d.deals.filter(x=>x.id!==id); bump(vid,'_deals',-1); return; }
     await rpc('deal_delete',{p_id:id}); await DB.refreshVendor(vid);
   },
-  async addNote(vid, body, rating){
-    if(!LIVE){ const d=await DB.detail(vid); d.notes.unshift({id:'n'+Date.now(),body,rating:rating||'',org:lim(),mine:true,author:S.user.email,author_name:S.me.name,created_at:new Date().toISOString()}); bump(vid,'_notes',1); return; }
-    await rpc('review_add',{p_vendor:vid,p_body:body,p_rating:rating||''}); await DB.refreshVendor(vid);
+  async addNote(vid, body, rating, priv){
+    if(!LIVE){ const v=S.vendors.find(x=>x.id===vid), st=(!priv&&guideOnGuide(v))?'pending':'approved';
+      S.demo[vid].notes.unshift({id:'n'+Date.now(),vendor_id:vid,body,rating:rating||'',org:lim(),author:S.user.email,author_name:S.me.name,private:!!priv,status:st,created_at:new Date().toISOString()}); if(!priv&&st==='approved') bump(vid,'_notes',1); return {status:st,private:!!priv}; }
+    const r=await rpc('review_post',{p_vendor:vid,p_body:body,p_rating:rating||'',p_private:!!priv}); await DB.refreshVendor(vid); return r;
+  },
+  // Claimed pages and the two review queues (Eretz Israel Tours only): claims, and guides' notes about other guides.
+  async loadClaims(){ if(!LIVE){ S.claims=S.claims||[]; return S.claims; } S.claims=await rpc('claims_list'); return S.claims; },
+  async claim(vid, note){
+    if(!LIVE){ const v=S.vendors.find(x=>x.id===vid); (S.demoClaims=S.demoClaims||{})[vid+'|'+S.user.email]=true;
+      (S.claims=S.claims||[]).push({id:'c'+Date.now(),vendor_id:vid,vendor_name:v.name,category:v.category,member:S.user.email,member_name:S.me.name,role:S.me.role||'',note:note||'',match:false,created_at:new Date().toISOString()}); return; }
+    await rpc('vendor_claim',{p_vendor:vid,p_note:note||''});
+  },
+  async decideClaim(id, yes){
+    if(!LIVE){ const c=(S.claims||[]).find(x=>x.id===id); S.claims=(S.claims||[]).filter(x=>x.id!==id);
+      if(c){ if(S.demoClaims) delete S.demoClaims[c.vendor_id+'|'+c.member]; if(yes){ const v=S.vendors.find(x=>x.id===c.vendor_id); if(v){ v.claimed_by=c.member; v.claimed_name=c.member_name; } S.claims=S.claims.filter(x=>x.vendor_id!==c.vendor_id); demoFlags(); } } return; }
+    await rpc('claim_decide',{p_id:id,p_approve:!!yes}); await DB.loadVendors();
+  },
+  async setClaim(vid, memberId){
+    if(!LIVE){ const v=S.vendors.find(x=>x.id===vid), m=(S.members||[]).find(x=>x.id===memberId); v.claimed_by=m?m.email:''; v.claimed_name=m?m.name:''; if(m) S.claims=(S.claims||[]).filter(x=>x.vendor_id!==vid); demoFlags(); return v; }
+    const r=await rpc('vendor_set_claim',{p_vendor:vid,p_member:memberId||null}); const i=S.vendors.findIndex(v=>v.id===vid); if(i>=0) S.vendors[i]=Object.assign(S.vendors[i],r); try{ await DB.loadClaims(); }catch(e){} return r;
+  },
+  async dispute(vid, msg){
+    if(!LIVE){ const v=S.vendors.find(x=>x.id===vid); (S.reports=S.reports||[]).unshift({id:'r'+Date.now(),vendor_id:vid,vendor_name:v?v.name:'',kind:'Mistake',message:msg,anonymous:false,by_owner:true,author_name:S.me.name,status:'New',created_at:new Date().toISOString()}); return; }
+    await rpc('vendor_dispute',{p_vendor:vid,p_message:msg});
+  },
+  async loadPendingNotes(){
+    if(!LIVE){ S.noteQueue=Object.keys(S.demo).flatMap(vid=>((S.demo[vid]&&S.demo[vid].notes)||[]).filter(n=>n.status==='pending').map(n=>{ const v=S.vendors.find(x=>x.id===vid), who=Object.values(DEMO_PEOPLE).find(p=>p.email===n.author);
+      return {id:n.id,vendor_id:vid,vendor_name:v?v.name:'',body:n.body,author_name:n.author_name,by:{name:n.author_name,role:who?who.role:''},created_at:n.created_at}; })); return S.noteQueue; }
+    S.noteQueue=await rpc('notes_pending'); return S.noteQueue;
+  },
+  async decideNote(id, yes, vid){
+    if(!LIVE){ const n=((S.demo[vid]||{}).notes||[]).find(x=>x.id===id); if(n){ n.status=yes?'approved':'rejected'; if(yes) bump(vid,'_notes',1); } return; }
+    await rpc('note_decide',{p_id:id,p_approve:!!yes}); if(vid) await DB.refreshVendor(vid);
   },
   async deleteNote(vid, id){
     if(!LIVE){ const d=await DB.detail(vid); d.notes=d.notes.filter(x=>x.id!==id); bump(vid,'_notes',-1); return; }
@@ -893,14 +969,26 @@ const DB = {
     return (await filesApi('list',{vendor_id:vid,quote_id:qid||undefined})).files;
   },
   async upload(vid, file, kind, qid, priv){
-    if(!LIVE){ const path=vid+'/'+Date.now(); (S.files[qid||vid]=S.files[qid||vid]||[]).unshift({id:path,path,vendor_id:vid,file_name:file.name,mime_type:file.type||'',size_bytes:file.size,kind,uploaded_by:S.user.email,created_at:new Date().toISOString(),url:URL.createObjectURL(file)}); }
+    let row;
+    if(!LIVE){ const path=vid+'/'+Date.now(); row={id:path,path,vendor_id:vid,file_name:file.name,mime_type:file.type||'',size_bytes:file.size,kind,uploaded_by:S.user.email,mine:true,created_at:new Date().toISOString(),url:URL.createObjectURL(file)}; (S.files[qid||vid]=S.files[qid||vid]||[]).unshift(row); }
     else {
       const sig = await filesApi('sign_upload',{vendor_id:vid,file_name:file.name,quote_id:qid||undefined});
       const up = await sb.storage.from('vendor-files').uploadToSignedUrl(sig.path, sig.upload_token, file, {contentType:file.type||undefined});
       if(up.error) throw new Error(up.error.message);
-      await filesApi('confirm',{vendor_id:vid,path:sig.path,file_name:file.name,mime_type:file.type||'',size_bytes:file.size,kind,quote_id:qid||undefined,private:!!priv});
+      row=(await filesApi('confirm',{vendor_id:vid,path:sig.path,file_name:file.name,mime_type:file.type||'',size_bytes:file.size,kind,quote_id:qid||undefined,private:!!priv})).file;
     }
     const v=S.vendors.find(x=>x.id===vid); if(v && !qid) v._files=(v._files||0)+1;
+    return row;
+  },
+  // A guide's page for clients: the bio and retail price, and which photos are the client pictures (four at most).
+  async setClient(vid, bio, retail){
+    if(!LIVE){ const v=S.vendors.find(x=>x.id===vid); Object.assign(v,{client_bio:bio,retail_price:retail,updated_at:new Date().toISOString(),updated_by:S.user.email}); return v; }
+    const r=await rpc('vendor_set_client',{p_vendor:vid,p_bio:bio,p_retail:retail}); const i=S.vendors.findIndex(v=>v.id===vid); if(i>=0) S.vendors[i]=Object.assign(S.vendors[i],r); return r;
+  },
+  async fileForClients(f, on){
+    if(!LIVE){ const list=S.files[f.vendor_id]||[], x=list.find(y=>y.id===f.id); if(!x) throw new Error('That picture no longer exists.');
+      if(on && list.filter(y=>y.for_clients&&y.id!==f.id).length>=CLIENT_PICS) throw new Error('Four pictures at most. Remove one first.'); x.for_clients=!!on; return; }
+    await rpc('file_for_clients',{p_file:f.id,p_on:!!on});
   },
   async removeFile(f){
     if(LIVE) await filesApi('delete',{file_id:f.id});
@@ -985,7 +1073,7 @@ function linkBox(id, url){
 function wireCopy(root){ root.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>{ const i=root.querySelector('#'+b.dataset.copy); copyText(i.value,i); }); }
 
 const ROLES=['Licensed tour guide','Travel agent','Tour operator',ORG_ROLE,'Other'];
-const TERMS_VERSION='2026-10-03c';
+const TERMS_VERSION='2026-10-03d';
 const TERMS_HTML=`<p class="hint">Version ${TERMS_VERSION}. Plain-language summary. Draft: not yet reviewed by a lawyer.</p>
 <h4>1. Who runs this</h4><p>The Inner Circle – Israel Guide (until October 2026 called the Israel Suppliers Master List) is run by Eretz Israel Tours, which approves members and manages the list.</p>
 <h4>2. Who can join</h4><p>Licensed tour guides, travel agents, tour operators and other travel professionals approved by Eretz Israel Tours. You confirm the details and license you submit are yours and true. Eretz Israel Tours can decline, pause or remove access at any time.</p>
@@ -993,8 +1081,9 @@ const TERMS_HTML=`<p class="hint">Version ${TERMS_VERSION}. Plain-language summa
 <h4>2a. Use it and add to it</h4><p>This list is meant to help everyone, and it works only if everyone takes part. <b>Every member has to both use the list and add to it</b>: a supplier, a price, a quote, a note, a deal, a driver review or a correction. A member who has not done both for 3 months gets a reminder, and is removed if that does not change.</p>
 <h4>2b. Cost</h4><p><b>As of now, nobody pays to join, and you will not be asked to pay in the future.</b> If Eretz Israel Tours ever decides the costs are not worth bearing and a fee is introduced, founding members stay free. A founding member is anyone approved while the list is still free.</p>
 <h4>3. What you share</h4><p>Share supplier information you believe is accurate and that you're allowed to share. Don't post personal member codes, card or bank details, or personal details of your clients. Be fair in ratings and notes: describe your own experience. When you add a driver, add only the phone number he uses for work; it is there so colleagues can tell drivers apart.</p>
-<h4>3a. Fair, objective feedback</h4><p>Feedback, ratings, notes, supplier updates and reviews of drivers must be objective and factual. A driver review says what happened on your trip (timing, driving, service), with your name next to it. When something is your personal or subjective opinion, say so clearly (for example "In my opinion…").</p><p><b>Slandering or running down a colleague, competitor, supplier or anyone else, in any form, is grounds for being removed from the service.</b> Reports sent anonymously are not shown with your name, but are kept on record so this rule can be enforced.</p>
+<h4>3a. Fair, objective feedback</h4><p>Feedback, ratings, notes, supplier updates and reviews of drivers must be objective and factual. A driver review says what happened on your trip (timing, driving, service), with your name next to it. When something is your personal or subjective opinion, say so clearly (for example "In my opinion…").</p><p><b>Slandering or running down a colleague, competitor, supplier or anyone else, in any form, is grounds for being removed from the service. A malicious post is removed, and the member who posted it is banned.</b> Reports sent anonymously are not shown with your name, but are kept on record so this rule can be enforced.</p>
 <h4>3b. Kosher restaurants only</h4><p><b>The list does not accept non-kosher restaurants.</b> Do not add one, as a supplier or as a food tip. Any that are found are removed. A restaurant that is kosher without a certificate is not accepted either, except as an exception that Eretz Israel Tours reviews and approves.</p>
+<h4>3c. Licensed guides only; Eshkol needs a D1 license</h4><p><b>Only licensed tour guides may be listed as guides, or take guiding jobs, here.</b> The exception is a specialty that is not guiding in the licensed sense, such as a shuk tour or a graffiti tour; Eretz Israel Tours approves each of those. <b>Only a driver who holds a D1 driving license may be listed as an Eshkol driver or guide.</b> An entry that breaks either rule is removed.</p>
 <h4>4. How you use it</h4><p>Use the list for your own professional work. Keep your personal link to yourself, and don't copy, resell or publish the list.</p><p><b>Never show the list to suppliers.</b> Don't show suppliers the app, screenshots, prices, notes or ratings from it. Anyone who does will lose access immediately.</p>
 <h4>5. Crowdsourced: no responsibility for mistakes</h4><p>This is a crowdsourced list built by colleagues. Eretz Israel Tours takes no responsibility for mistakes, missing or out-of-date information. Please take great care when you add or change anything, and if you see a mistake, let us know with the <b>Update this supplier</b> button or the Feedback box. Prices, terms and contacts come from colleagues and can change. Always confirm with the supplier before booking. Eretz Israel Tours isn't responsible for information shared by members or for suppliers' services.</p>
 <h4>6. Your data and privacy</h4><p>We store your name, email, phone, role, license number and license photo (for an organisation: its name and what you wrote about your role), what you add, when you last used the app, and which supplier contact buttons you tap (call, WhatsApp, email, website, maps and booking links), with the time. Colleagues see your name next to what you add, except quotes (see 6b). Your license photo is visible only to Eretz Israel Tours.</p><p><b>Eretz Israel Tours can see everything in the app, including items marked "private".</b> "Private" means hidden from other colleagues, not from Eretz Israel Tours.</p><p>Data is stored with Supabase (servers in Frankfurt, EU) and the app is hosted on GitHub Pages. You can ask Eretz Israel Tours at any time to see, correct or delete your data and account.</p>
@@ -1002,6 +1091,8 @@ const TERMS_HTML=`<p class="hint">Version ${TERMS_VERSION}. Plain-language summa
 <h4>6b. Quotes are shared without your name</h4><p><b>A quote you add is shared with colleagues by default, without your name.</b> They see the supplier, the dates, the prices, what was included, what cost extra and the conditions. They never see who got the quote, the client or trip, the supplier's reference, your private note or your attachments. You can switch sharing off on any quote; then only you and Eretz Israel Tours see it. Eretz Israel Tours sees who added every quote. The averages in the Quotes tab are worked out from these quotes. Don't write client names or personal details in the conditions box.</p>
 <h4>6c. Booking sheets</h4><p><b>When you send a booking sheet, the bus or van company sees your name, your phone and the job</b>: date, passengers, vehicle, pick-up, outline of the day, drop-off and your notes to them. It never sees the client, your private note or anything else in this app. Once you confirm a sheet, its price and terms are shared with colleagues in the Quotes tab without your name, like any quote (6b). You can switch that off on each sheet. Eretz Israel Tours sees every booking sheet. A booking sheet records what you and the company agreed; it is not legal advice, and Eretz Israel Tours is not a party to your booking.</p>
 <h4>6d. Jobs between colleagues, and My days</h4><p><b>A job you post is shown to the colleagues it fits, or to the ones you pick.</b> Posted without your name, they see "Posted by a colleague"; your name and phone go only to the colleague you give the job to, and you get theirs. A message you send yourself on WhatsApp comes from your own number. <b>If you tap "I'm available", the colleague who posted sees your name and role.</b> Eretz Israel Tours sees every job and who posted it.</p><p><b>As of now, nothing is charged on a job.</b> The price shown is what the colleague is paid, directly by the one who posted. Eretz Israel Tours is not a party to the job, does not check the people or the work, and is not responsible for payment between you.</p><p>My days: you mark the days you are busy. A colleague posting a job sees only "Free", "Busy" or "Not marked" for the dates of that job, never what you are doing, and you can switch that off. The jobs you say you take, your languages and what you hold (license, vehicle) are shown to a colleague posting a job, with your name and role. Never your phone or email.</p>
+<h4>6e. A guide's page for clients</h4><p><b>A guide's page can hold a bio, up to four pictures and a retail price that are written for clients.</b> These are the one part of the list meant to leave it: a colleague may copy them and send them to a client. Everything else on the page stays between colleagues, including agent prices, quotes, notes, reviews and phone numbers.</p><p>Until the guide claims the page, any member can add or change them. Once the guide has claimed it, only the guide and Eretz Israel Tours can. Add only pictures you have the right to share, and that the people in them are happy to have shown.</p>
+<h4>6f. Your own page, and reviews</h4><p>If you, or your business, are on the list, you can claim that page. Eretz Israel Tours approves the claim. <b>What colleagues wrote about your own page is hidden from you:</b> its ratings, strengths, weaknesses and notes, the notes thread, and reviews of you or of your company's drivers. Other colleagues still see them. The same holds, without a claim, for a page that carries your own phone number or email. You cannot rate or review your own page. You can dispute anything on it: the dispute goes to Eretz Israel Tours, who checks it and decides.</p><p><b>A guide's review of another guide is read by Eretz Israel Tours before colleagues see it:</b> a note on a guide's page, or a change to its ratings and remarks. Any note or driver review can be kept private; then only you and Eretz Israel Tours see it.</p>
 <h4>7. Sponsored content</h4><p>If supplier offers or promotions are ever paid for, they will be clearly labelled as sponsored. Ratings and notes are never for sale.</p>
 <h4>8. Changes</h4><p>If these terms change, you'll be asked to accept the new version.</p>`;
 function openTerms(){ sheet('Terms and privacy', `<div class="terms">${TERMS_HTML}</div>`, `<button class="btn primary" id="tOk" type="button">Close</button>`).querySelector('#tOk').onclick=closeSheet; }
@@ -1108,7 +1199,7 @@ function useBump(kind, val){ if(!val||val==='All') return; /* order updates next
 function mixKey(v){ const seed=(S.user&&S.user.email||'')+new Date().toISOString().slice(0,10)+v.id; let h=2166136261; for(let i=0;i<seed.length;i++){ h^=seed.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
 
 function render(){
-  const pending = S.vendors.filter(v=>v.review_status==='pending').length + (S.requests||[]).length + (S.admin?(S.feedback||[]).filter(f=>f.status==='New').length+(S.reports||[]).filter(r=>r.status==='New').length:0);
+  const pending = S.vendors.filter(v=>v.review_status==='pending').length + (S.requests||[]).length + (S.admin?(S.feedback||[]).filter(f=>f.status==='New').length+(S.reports||[]).filter(r=>r.status==='New').length+(S.claims||[]).length+(S.noteQueue||[]).length:0);
   const waiting = S.members.filter(m=>m.status==='pending').length;
   const tabs = [['vendors','Suppliers',icons.list],['quotes','Quotes',icons.quote]];
   if(jobsOn()) tabs.push(['jobs','Jobs',icons.jobs]); else if(S.tab==='jobs') S.tab='vendors';
@@ -1119,7 +1210,7 @@ function render(){
       <div class="brand">The Inner Circle<small>Israel Guide · shared by colleagues</small></div>
       <div class="who"><button class="ghost-btn" id="fbBtn" type="button">Feedback</button><button class="ghost-btn" id="meBtn" type="button" style="border:0;max-width:40vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(S.me?S.me.name:S.user.email)} ⚙</button>${LIVE?'<button class="ghost-btn" id="signOut">Sign out</button>':''}</div>
     </div></header>
-    ${LIVE?'':'<div class="demo-bar">Preview with sample suppliers. Changes here aren\'t saved.</div>'}
+    ${LIVE?'':`<div class="demo-bar">Preview with sample suppliers. Changes here aren't saved. <label style="white-space:nowrap">View as<select id="demoAs">${Object.keys(DEMO_PEOPLE).map(k=>`<option value="${k}"${(S.demoAs||'admin')===k?' selected':''}>${esc(DEMO_PEOPLE[k].label)}</option>`).join('')}</select></label></div>`}
     ${S.me&&S.me.reminder_due?`<div style="padding:0 16px"><div class="rule" role="note"><span>🔒 <b>Colleagues only.</b> Never show this list to suppliers: not the app, screenshots, prices or notes. Anyone who does loses access.</span><button class="mini" id="ruleOk" type="button">Got it</button></div></div>`:''}
     <main id="view"></main>
     ${S.tab==='vendors'?'<button class="fab" id="add">+ Add supplier</button>':''}${S.tab==='quotes'?(bookingsOn()&&S.qview==='bookings'?'<button class="fab" id="addB">+ New booking sheet</button>':'<button class="fab" id="addQ">+ Add quote</button>'):''}${S.tab==='jobs'&&jobsPost()&&S.jview!=='days'?'<button class="fab" id="addJ">+ Post a job</button>':''}
@@ -1129,12 +1220,13 @@ function render(){
   const ro=document.getElementById('ruleOk'); if(ro) ro.onclick=async()=>{ S.me.reminder_due=false; render(); if(LIVE){ try{ await sb.rpc('ack_reminder',{p_token:S.token}); }catch(e){} } };
   const so=document.getElementById('signOut'); if(so) so.onclick=()=>{ if(so.dataset.c!=='1'){ so.dataset.c='1'; so.textContent='Tap again. You\'ll need your link to return.'; return; } forgetToken(); boot(); };
   app.querySelectorAll('.tab').forEach(t=>t.onclick=async()=>{ S.tab=t.dataset.tab; if(S.tab==='quotes'){ S.quotes=null; S.bookings=null; } if(S.tab==='jobs'&&LIVE) S.jobs=null; render();
-    if(LIVE && S.tab==='review'){ try{ await DB.loadVendors(); await DB.loadRequests(); await DB.loadFeedback(); try{ await DB.loadReports(); }catch(e){} render(); }catch(e){} }
+    if(LIVE && S.tab==='review'){ try{ await DB.loadVendors(); await DB.loadRequests(); await DB.loadFeedback(); try{ await DB.loadReports(); }catch(e){} try{ await DB.loadClaims(); await DB.loadPendingNotes(); }catch(e){} render(); }catch(e){} }
     if(LIVE && S.tab==='team'){ try{ await DB.loadTeam(); render(); }catch(e){} } });
   const add=document.getElementById('add'); if(add) add.onclick=()=>openForm(null);
   const addQ=document.getElementById('addQ'); if(addQ) addQ.onclick=()=>openQuotePicker();
   const addB=document.getElementById('addB'); if(addB) addB.onclick=()=>bkExplain(openBookingPicker);
   const addJ=document.getElementById('addJ'); if(addJ) addJ.onclick=()=>openJobForm(null);
+  const das=document.getElementById('demoAs'); if(das) das.onchange=()=>demoAs(das.value);
   ({vendors:viewVendors, quotes:viewQuotes, jobs:viewJobs, review:viewReview, team:viewTeam})[S.tab]();
 }
 
@@ -1297,7 +1389,7 @@ function reportsPanel(){
   const list=S.reports||[]; const open=list.filter(r=>r.status==='New');
   return `<section class="panel"><h3>Supplier updates${open.length?` <span class="badge">${open.length}</span>`:''}</h3>
     <p>Colleagues' reports from the red <b>Update this supplier</b> button: closed, moved, changed or wrong details. Fix the supplier, then mark the report done.</p>
-    ${list.length? list.map(r=>`<div class="rev" style="display:block;${r.status==='New'?'':'opacity:.6'}"><div class="who2"><b>${esc((REPORT_KINDS.find(k=>k[0]===r.kind)||[0,r.kind])[1])}: ${esc(r.vendor_name)}</b><span>${r.anonymous?'Anonymous colleague':esc(r.author_name||who(r.author))} · ${fmtDate(r.created_at)}${r.status!=='New'?' · '+esc(r.status):''}</span></div>
+    ${list.length? list.map(r=>`<div class="rev" style="display:block;${r.status==='New'?'':'opacity:.6'}"><div class="who2"><b>${r.by_owner?'Dispute from the page\'s owner':esc((REPORT_KINDS.find(k=>k[0]===r.kind)||[0,r.kind])[1])}: ${esc(r.vendor_name)}</b><span>${r.anonymous?'Anonymous colleague':esc(r.author_name||who(r.author))} · ${fmtDate(r.created_at)}${r.status!=='New'?' · '+esc(r.status):''}</span></div>
       ${r.message?`<p style="margin:4px 0 8px;font-size:14px">${esc(r.message)}</p>`:''}
       <div class="btn-row"><button class="btn soft" data-open="${esc(r.vendor_id)}">Open supplier</button>${r.status==='New'?`<button class="btn soft" data-rp="${esc(r.id)}" data-st="Dismissed">Dismiss</button><button class="btn primary" data-rp="${esc(r.id)}" data-st="Fixed">Done</button>`:''}</div></div>`).join('') : '<div class="empty" style="padding:16px">No updates waiting.</div>'}
   </section>`;
@@ -1328,6 +1420,8 @@ function viewReview(){
   const pend=S.vendors.filter(v=>v.review_status==='pending');
   const appr=S.vendors.filter(v=>v.review_status==='approved');
   view.innerHTML = `
+    ${claimsPanel()}
+    ${notesPanel()}
     ${reportsPanel()}
     ${feedbackPanel()}
     <section class="panel"><h3>Suggested changes</h3>
@@ -1338,7 +1432,7 @@ function viewReview(){
     </section>
     <section class="panel"><h3>New suppliers to check</h3>
       <p>Suppliers added by colleagues, and the ones I imported from your email. Imported suppliers stay hidden from colleagues until you approve them. Check each one's private note for the sources. Only approved suppliers go into the R5 export.</p>
-      ${pend.length? pend.map(v=>`<div class="rev"><div class="who2"><b>${esc(v.name)}</b><span>${esc(v.category)} · by ${esc(who(v.updated_by))} · ${fmtDate(v.updated_at)}</span>${kosherNeedsOk(v)?'<span style="color:var(--warn);font-weight:600">⚠ Kosher, no certificate. Approve only as an exception.</span>':''}</div>
+      ${pend.length? pend.map(v=>`<div class="rev"><div class="who2"><b>${esc(v.name)}</b><span>${esc(v.category)} · by ${esc(who(v.updated_by))} · ${fmtDate(v.updated_at)}</span>${kosherNeedsOk(v)?'<span style="color:var(--warn);font-weight:600">⚠ Kosher, no certificate. Approve only as an exception.</span>':''}${guideSpecialty(v)?'<span style="color:var(--warn);font-weight:600">⚠ Specialty guide, not licensed. Approve only as an exception.</span>':''}</div>
         <div class="btn-row"><button class="btn soft" data-open="${esc(v.id)}">View</button><button class="btn primary" data-ok="${esc(v.id)}">Approve</button></div></div>`).join('') : '<div class="empty" style="padding:16px">All caught up.</div>'}
     </section>
     <section class="panel"><h3>Legacy R5 export <span class="hint">(backup only)</span></h3>
@@ -1351,6 +1445,7 @@ function viewReview(){
   const decide=async(b,yes)=>{ b.disabled=true; try{ await DB.decideRequest(yes?b.dataset.ryes:b.dataset.rno, yes); await DB.loadRequests(); toast(yes?'Approved and applied':'Rejected'); render(); }catch(e){ b.disabled=false; toast(e.message); } };
   view.querySelectorAll('[data-ryes]').forEach(b=>b.onclick=()=>decide(b,true));
   wireFeedbackPanel(view);
+  wireReviewQueues(view);
   view.querySelectorAll('[data-rp]').forEach(b=>b.onclick=async()=>{ b.disabled=true; try{ await DB.setReport(b.dataset.rp,b.dataset.st); toast(b.dataset.st==='Fixed'?'Marked done':'Dismissed'); render(); }catch(e){ b.disabled=false; toast(e.message); } });
   view.querySelectorAll('[data-rno]').forEach(b=>b.onclick=()=>decide(b,false));
   document.getElementById('exp').onclick=()=>exportR5(appr);
@@ -1645,8 +1740,9 @@ function openDetail(id, opt){
     [S.admin?(v.prices_private?'Main price (goes to R5) · private':'Main price (goes to R5)'):'Main price',rows([['Agent price',price(v.agentPrice,v.agentPriceVatTreatment)],['Listed price',price(v.listedPrice,v.listedPriceVatTreatment)],['Basis',esc(v.priceBasis)],['Max people',esc(v.maxPax)],['Payment terms',esc(v.payTerms)]])],
     ['Cancellation',rows([['Policy',esc(v.cancelPolicy)],['Notice',notice],['Penalty',esc(v.cancelPenalty)],['Checked',esc(ilDate(v.cancelPolicyVerifiedDate))]])],
     ['Experience',rows([['Ratings',rating],['Strengths',esc(v.strengths)],['Weaknesses',esc(v.weaknesses)],['Summary',esc(v.notes)]])]
-  ].filter(s=>s[1]);
-  const body=`${vtabs}<div class="keep" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px"><span class="cat">${esc(v.category)}${v.also_categories?' + '+esc(v.also_categories):''}</span>${v.region||v.location?`<span class="hint">${esc(v.region||v.location)}</span>`:''}${shabPill(v)}${statusPill(v)}</div>
+  ].filter(s=>s[1] && !(v._own && s[0]==='Experience'));
+  const body=`${vtabs}<div class="keep" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px"><span class="cat">${esc(v.category)}${v.also_categories?' + '+esc(v.also_categories):''}</span>${v.region||v.location?`<span class="hint">${esc(v.region||v.location)}</span>`:''}${shabPill(v)}${statusPill(v)}${claimedPill(v)}${guideSpecialty(v)?'<span class="pill pending">Specialty guide · not licensed</span>':''}</div>
+    ${ownBar(v)}
     <div class="hrs"><span class="hint">Opening hours</span>${v.hours?`<b>${esc(v.hours)}</b>`:`<span class="hint">· not added yet</span><button class="mini" id="addHours" type="button">+ Add hours</button>`}
       ${v.hours_last?`<span class="hint brk">Last entry and other times</span><b>${esc(v.hours_last)}</b>`:''}
       ${hoursCheck(v)}</div>
@@ -1657,6 +1753,7 @@ function openDetail(id, opt){
     <div id="resBox"></div>
     ${lim()?'':agentBox(v)}
     <div id="reqBox"></div>
+    ${isGuide(v)?clientBox(v):''}
     <div id="sitesWrap"></div>
     <fieldset><div class="sec-head"><legend>Quotes</legend><button class="mini" id="addQuote" type="button">+ Add quote</button></div><div id="quotesBox"><p class="hint">Loading…</p></div></fieldset>
     ${isTr&&bookingsOn()?`<fieldset><div class="sec-head"><legend>Booking sheets</legend><button class="mini" id="addBooking" type="button">+ New booking sheet</button></div><div id="bookingsBox"><p class="hint">Loading…</p></div></fieldset>`:''}
@@ -1666,17 +1763,21 @@ function openDetail(id, opt){
       ${S.admin?`<label class="switch" for="ppToggle" style="margin-bottom:10px"><input id="ppToggle" type="checkbox" ${v.prices_private?'checked':''}><span><b>Keep this supplier's prices private</b><br><span class="hint">Colleagues still see the supplier and contacts, but no prices. You can also mark single price lines private.</span></span></label>`:''}
       <div id="pricesBox"><p class="hint">Loading…</p></div></fieldset>
     <fieldset><div class="sec-head"><legend>Deals and discounts</legend><button class="mini" id="addDeal" type="button">+ Add deal</button></div><div id="dealsBox"><p class="hint">Loading…</p></div></fieldset>
-    <fieldset><legend>${lim()?'Reviews':'Notes from colleagues'}</legend>
+    ${v._own?'':`<fieldset><legend>${lim()?'Reviews':'Notes from colleagues'}</legend>
       ${lim()?`<p class="hint" style="margin:0 0 8px">${reviewsOpen(v)?'':'You see reviews written by organisations. '}Yours is read by everyone on the list, with your name. Keep it to what happened on your visit.</p>
         <div class="stars" id="noteStars" role="group" aria-label="Your rating, 1 to 5" style="margin:0 0 8px">${[1,2,3,4,5].map(n=>`<button type="button" data-n="${n}" aria-pressed="false" aria-label="${n} out of 5">${n}</button>`).join('')}<span class="hint" style="align-self:center;margin-left:4px">Rating, optional</span></div>`:''}
       <div class="addline"><textarea id="noteText" rows="${lim()?2:1}" placeholder="${lim()?'How did it go? Group size, what worked, what to know before going…':'Add a tip, warning or update…'}"></textarea><button class="btn primary" id="noteAdd" type="button">Add</button></div>
-      <div id="notesBox"></div></fieldset>
+      <label class="check" for="notePriv" style="margin:6px 0 8px"><input id="notePriv" type="checkbox"><span>Only me and Eretz Israel Tours see this ${lim()?'review':'note'}</span></label>
+      <p class="hint" style="margin:0 0 8px">Keep it to what happened. A malicious post is removed, and the member who posted it is banned.</p>
+      ${guideOnGuide(v)?'<p class="hint" style="margin:0 0 8px">You are a guide writing about another guide. Eretz Israel Tours reads your note before colleagues see it, unless you keep it private.</p>':''}
+      <div id="notesBox"></div></fieldset>`}
     ${foodOk(v)?'':'<!--'}<details class="food" id="foodWrap"><summary>🍽 Food nearby <span class="hint" id="foodCount"></span></summary><div id="foodBox"><p class="hint">Loading…</p></div></details>${foodOk(v)?'':'-->'}
     <fieldset><legend>Photos, receipts and PDFs</legend><div id="filesBox"><p class="hint">Loading files…</p></div></fieldset>
     ${S.admin?'<div id="actBox"></div>':''}
     <div id="siteSettings"></div>
     ${S.admin?`<fieldset><legend>Private note · only you see this</legend><div class="f wide"><textarea id="adminNote" rows="5" placeholder="Clients, trips, commissions, anything colleagues shouldn't see"></textarea></div><div class="btn-row" style="margin-top:8px"><button class="mini" id="adminNoteSave" type="button">Save private note</button></div></fieldset>`:''}
     ${sections.map(([h,dl])=>`<fieldset><legend>${h}</legend><dl class="dl">${dl}</dl></fieldset>`).join('')}
+    <div id="claimBox"></div>
     <div class="disclaim"><b>Shared by colleagues.</b> This list is crowdsourced. Eretz Israel Tours takes no responsibility for mistakes. Always confirm details with the supplier before booking, and take care when you add or change information. See a mistake? Tap the red <b>Update this supplier</b> button at the top, or use Feedback.</div>
     <p class="stamp">Added by ${esc(who(v.created_by))} on ${fmtDate(v.created_at)}. Last changed by ${esc(who(v.updated_by))} on ${fmtDate(v.updated_at)}. <span class="idtag">${esc(v.id)}</span></p>`;
   let foot=`<button class="btn primary" id="edit">${S.admin?'Edit':'Edit or suggest a change'}</button>`;
@@ -1693,6 +1794,8 @@ function openDetail(id, opt){
   const ah=w.querySelector('#addHours'); if(ah) ah.onclick=()=>{ openForm(v); setTimeout(()=>{ const el=document.getElementById('f_hours'); if(el){ el.scrollIntoView({block:'center'}); el.focus(); } },80); };
   const aa=w.querySelector('#agentAsk'); if(aa) aa.onclick=()=>openAgentAsk(v);
   const ae=w.querySelector('#agentEdit'); if(ae) ae.onclick=()=>openAgentForm(v);
+  const ce=w.querySelector('#cliEdit'); if(ce) ce.onclick=()=>openClientForm(v);
+  const dsb=w.querySelector('#disputeBtn'); if(dsb) dsb.onclick=()=>openDispute(v);
   drawFiles(v);
   drawExtras(v);
   drawFood(v);
@@ -1707,8 +1810,9 @@ function openDetail(id, opt){
   w.querySelector('#addDeal').onclick=()=>openDealForm(v);
   let noteRating=''; const nst=w.querySelector('#noteStars');
   if(nst) nst.querySelectorAll('button').forEach(b=>b.onclick=()=>{ noteRating = noteRating===b.dataset.n ? '' : b.dataset.n; nst.querySelectorAll('button').forEach(o=>o.setAttribute('aria-pressed', o.dataset.n===noteRating)); });
-  w.querySelector('#noteAdd').onclick=async()=>{ const t=w.querySelector('#noteText'); const body=t.value.trim(); if(!body){ t.focus(); return; }
-    try{ await DB.addNote(v.id, body, noteRating); t.value=''; noteRating=''; if(nst) nst.querySelectorAll('button').forEach(o=>o.setAttribute('aria-pressed','false')); toast(lim()?'Review added. Thank you.':'Note added'); drawExtras(v); }catch(e){ toast(e.message); } };
+  const nab=w.querySelector('#noteAdd'); if(nab) nab.onclick=async()=>{ const t=w.querySelector('#noteText'), pv=w.querySelector('#notePriv'); const body=t.value.trim(); if(!body){ t.focus(); return; }
+    try{ const r=await DB.addNote(v.id, body, noteRating, !!(pv&&pv.checked))||{}; t.value=''; if(pv) pv.checked=false; noteRating=''; if(nst) nst.querySelectorAll('button').forEach(o=>o.setAttribute('aria-pressed','false'));
+      toast(r.private?'Saved. Only you and Eretz Israel Tours see it.':r.status==='pending'?'Sent to Eretz Israel Tours. Colleagues see it once it is approved.':lim()?'Review added. Thank you.':'Note added'); drawExtras(v); }catch(e){ toast(e.message); } };
   const a=w.querySelector('#appr'); if(a) a.onclick=async()=>{ try{await DB.setStatus(v.id,'approved'); closeSheet(); toast('Approved'); render();}catch(e){toast(e.message);} };
   const r=w.querySelector('#rej'); if(r) r.onclick=async()=>{ try{await DB.setStatus(v.id,'rejected'); closeSheet(); toast('Marked rejected'); render();}catch(e){toast(e.message);} };
   const d=w.querySelector('#del'); if(d) d.onclick=async()=>{ if(d.dataset.c!=='1'){ d.dataset.c='1'; d.textContent='Tap again to delete'; return; } try{await DB.remove(v.id); closeSheet(); toast('Deleted'); render();}catch(e){toast(e.message);} };
@@ -1747,10 +1851,17 @@ function drawExtrasRest(v,det){
     : `<p class="hint" style="margin:0 0 10px">No deals yet. Share credit card club benefits (Cal, Max, Isracard, Hever), Cuponofesh-type vouchers, codes or group tricks.</p>`;
   db.querySelectorAll('[data-ddel]').forEach(b=>b.onclick=async()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again'; return; } try{ await DB.deleteDeal(v.id,b.dataset.ddel); toast('Deal removed'); drawExtras(v); }catch(e){ toast(e.message); } });
   const nb=document.getElementById('notesBox');
-  nb.innerHTML = det.notes.length ? det.notes.map(n=>{ const nby=(det.note_by||{})[n.id];
-      return `<div class="note"><span class="meta">${n.rating?`<span class="st" role="img" aria-label="${esc(n.rating)} out of 5">${starsTxt(+n.rating)}</span> · `:''}<b>${esc(n.author_name||n.author)}</b>${n.org?` · ${esc(nby&&nby.role||'Organisation')} <span class="tag">Organisation</span>`:''} · ${fmtDate(n.created_at)}${S.admin||n.mine||n.author===me?` · <button class="mini" style="padding:1px 8px" data-ndel="${esc(n.id)}" type="button">Delete</button>`:''}</span><p>${esc(n.body)}</p></div>`; }).join('')
-    : `<p class="hint" style="margin:0">${lim()?'No reviews yet. Yours would be the first.':'No notes yet.'}</p>`;
-  nb.querySelectorAll('[data-ndel]').forEach(b=>b.onclick=async()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again'; return; } try{ await DB.deleteNote(v.id,b.dataset.ndel); drawExtras(v); }catch(e){ toast(e.message); } });
+  if(nb){
+    nb.innerHTML = det.notes.length ? det.notes.map(n=>{ const nby=(det.note_by||{})[n.id];
+        return `<div class="note"><span class="meta">${n.rating?`<span class="st" role="img" aria-label="${esc(n.rating)} out of 5">${starsTxt(+n.rating)}</span> · `:''}<b>${esc(n.author_name||n.author)}</b>${n.org?` · ${esc(nby&&nby.role||'Organisation')} <span class="tag">Organisation</span>`:''} · ${fmtDate(n.created_at)}${S.admin||n.mine||n.author===me?` · <button class="mini" style="padding:1px 8px" data-ndel="${esc(n.id)}" type="button">Delete</button>`:''}</span>
+        ${noteTags(n)?`<div>${noteTags(n)}</div>`:''}<p>${esc(n.body)}</p>
+        ${S.admin&&n.status==='pending'?`<div class="btn-row" style="margin:0 0 6px"><button class="mini" data-nno="${esc(n.id)}" type="button">Turn down</button><button class="mini" data-nyes="${esc(n.id)}" type="button">Approve</button></div>`:''}</div>`; }).join('')
+      : `<p class="hint" style="margin:0">${lim()?'No reviews yet. Yours would be the first.':'No notes yet.'}</p>`;
+    nb.querySelectorAll('[data-ndel]').forEach(b=>b.onclick=async()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again'; return; } try{ await DB.deleteNote(v.id,b.dataset.ndel); drawExtras(v); }catch(e){ toast(e.message); } });
+    const nd=async(b,yes)=>{ b.disabled=true; try{ await DB.decideNote(yes?b.dataset.nyes:b.dataset.nno, yes, v.id); try{ await DB.loadPendingNotes(); }catch(e){} toast(yes?'Approved. Colleagues see it now.':'Turned down'); drawExtras(v); }catch(e){ b.disabled=false; toast(e.message); } };
+    nb.querySelectorAll('[data-nyes]').forEach(b=>b.onclick=()=>nd(b,true)); nb.querySelectorAll('[data-nno]').forEach(b=>b.onclick=()=>nd(b,false));
+  }
+  drawClaim(v,det);
   drawSiteBits(v,det);
   drawActivity(v);
   const an=document.getElementById('adminNote');
@@ -1846,14 +1957,14 @@ function reviewHtml(r, v, hide, noDel){
   const tags=String(r.tags||'').split(',').map(t=>t.trim()).filter(Boolean), by=r.by||{name:'A colleague',role:''};
   return `<div class="note drvrev"${hide?' hidden data-more':''}><span class="meta"><span class="st" role="img" aria-label="${esc(r.rating)} out of 5">${starsTxt(+r.rating)}</span> · <b>${esc(by.name)}</b>${by.role?' · '+esc(by.role):''}${r.org?' <span class="tag">Organisation</span>':''} · ${esc(r.trip_month?fmtMonth(r.trip_month):fmtDate(r.created_at))}${r.vendor_name&&(!v||r.vendor_id!==v.id)?' · with '+esc(r.vendor_name):''}${(S.admin||r.mine)&&!noDel?` · <button class="mini" style="padding:1px 8px" data-rdel="${esc(r.id)}" type="button">Delete</button>`:''}</span>
     ${tags.length?`<div class="flags">${tags.map(t=>{ const bad=t.startsWith('!')||DRV_BAD.includes(t); return `<span class="flag ${bad?'extra':'incl'}">${bad?'⚠ ':'✓ '}${esc(t.replace(/^!\s*/,''))}</span>`; }).join('')}</div>`:''}
-    ${r.body?`<p>${esc(r.body)}</p>`:''}</div>`;
+    ${r.private?`<div><span class="ntag">🔒 ${S.admin&&!r.mine?'Private: only its author and you':'Only you and Eretz Israel Tours'}</span></div>`:''}${r.body?`<p>${esc(r.body)}</p>`:''}</div>`;
 }
 function driverCard(d, i, v, bare){
   const others=(d.vendors||[]).filter(x=>!v||bare||x.id!==v.id).map(x=>x.name), revs=d.reviews||[];
   return `<div class="qcard">
-    <div class="qhead"><b>${esc(d.name)}</b>${d.n?`<span class="rate"><span class="st" aria-hidden="true">★</span> ${esc(Number(d.avg).toFixed(1))}</span><span class="hint">${d.n} review${d.n>1?'s':''}</span>`:'<span class="hint">No reviews yet</span>'}</div>
+    <div class="qhead"><b>${esc(d.name)}</b>${d.reviews_hidden?'<span class="hint">Reviews are hidden from you</span>':d.n?`<span class="rate"><span class="st" aria-hidden="true">★</span> ${esc(Number(d.avg).toFixed(1))}</span><span class="hint">${d.n} review${d.n>1?'s':''}</span>`:'<span class="hint">No reviews yet</span>'}</div>
     <div class="qsub"><span class="mono">${esc(d.phone)}</span>${d.drives?' · '+esc(d.drives):''}${others.length?' · '+(bare?'drives for ':'also drives for ')+esc(others.join(', ')):''}</div>
-    ${bare?'':`<div class="btn-row" style="margin-top:8px"><a class="mini" href="tel:${esc(d.phone)}">Call</a><a class="mini" href="https://wa.me/${esc(intlDigits(d.phone))}" target="_blank" rel="noopener">WhatsApp</a><button class="mini" data-drev="${i}" type="button">+ Review</button>${d.can_edit?`<button class="mini" data-dedit="${i}" type="button">Edit</button>`:''}</div>`}
+    ${bare?'':`<div class="btn-row" style="margin-top:8px"><a class="mini" href="tel:${esc(d.phone)}">Call</a><a class="mini" href="https://wa.me/${esc(intlDigits(d.phone))}" target="_blank" rel="noopener">WhatsApp</a>${d.reviews_hidden?'':`<button class="mini" data-drev="${i}" type="button">+ Review</button>`}${d.can_edit?`<button class="mini" data-dedit="${i}" type="button">Edit</button>`:''}</div>`}
     ${revs.map((r,ri)=>reviewHtml(r, bare?null:v, !bare&&ri>=3, bare)).join('')}
     ${!bare&&revs.length>3?`<button class="mini" data-dmore type="button" style="margin-top:8px">Show all ${revs.length} reviews</button>`:''}</div>`;
 }
@@ -1998,7 +2109,8 @@ function openDriverReview(v, d){
     <div class="ownrow"><input id="dbadx" maxlength="40" autocomplete="off" placeholder="Something else? Type it" aria-label="Something else that went wrong"><button class="mini" id="dbadadd" type="button">Add</button></div>
     <div class="grid"><div class="f"><label for="dmon">Month of the trip</label><input id="dmon" type="month" value="${esc(today().slice(0,7))}" max="${esc(today().slice(0,7))}"></div>
       <div class="f wide"><label for="dbody">In your own words</label><textarea id="dbody" rows="4" maxlength="1500" placeholder="Write anything about the trip: timing, driving, how he was with the group."></textarea></div></div>
-    <p class="hint" style="margin-top:10px">Your name shows next to your review. Keep it to what happened on your trip; see "Fair, objective feedback" in the terms.</p><div id="derr"></div>`,
+    <label class="check" for="dpriv" style="margin:10px 0 0"><input id="dpriv" type="checkbox"><span>Only me and Eretz Israel Tours see this review</span></label>
+    <p class="hint" style="margin-top:10px">Your name shows next to your review. Keep it to what happened on your trip; see "Fair, objective feedback" in the terms. A malicious post is removed, and the member who posted it is banned.</p><div id="derr"></div>`,
     `<button class="btn soft" id="dcancel" type="button">Cancel</button><button class="btn primary" id="dsave" type="button">Save review</button>`);
   const g=id=>w.querySelector('#'+id); wireToggles(w); let rating='';
   const own=(grp,bad)=>{ const inp=g(grp+'x'), t=inp.value.replace(/[,!]/g,' ').replace(/\s+/g,' ').trim(); if(!t) return;
@@ -2012,7 +2124,7 @@ function openDriverReview(v, d){
   g('dsave').onclick=async()=>{ if(!rating){ g('derr').innerHTML='<div class="msg err">Give an overall rating from 1 to 5.</div>'; return; }
     own('dgood',false); own('dbad',true);
     const b=g('dsave'); b.disabled=true; b.textContent='Saving…';
-    try{ await DB.addDriverReview(d.id, v.id, {rating,tags:[pressed(w,'#dgood'),pressed(w,'#dbad')].filter(Boolean).join(', '),body:g('dbody').value.trim(),trip_month:g('dmon').value}); toast('Review added'); openDetail(v.id,{tab:'drivers'}); }
+    try{ await DB.addDriverReview(d.id, v.id, {rating,tags:[pressed(w,'#dgood'),pressed(w,'#dbad')].filter(Boolean).join(', '),body:g('dbody').value.trim(),trip_month:g('dmon').value,private:g('dpriv').checked?'true':''}); toast(g('dpriv').checked?'Saved. Only you and Eretz Israel Tours see it.':'Review added'); openDetail(v.id,{tab:'drivers'}); }
     catch(e){ b.disabled=false; b.textContent='Save review'; g('derr').innerHTML=`<div class="msg err">${esc(e.message)}</div>`; } };
 }
 
@@ -2955,6 +3067,7 @@ async function drawFiles(v, qid, boxId, canAdd){
   const redraw=()=>drawFiles(v, qid, boxId, canAdd);
   let files=[]; try{ files=await DB.listFiles(v.id, qid); }catch(e){ box.innerHTML=`<div class="msg err">Couldn't load files: ${esc(e.message)}</div>`; return; }
   const me=(S.user.email||'').toLowerCase();
+  if(!qid) drawClientPics(v, files);
   if(!qid){ const kc=document.getElementById('kcert'), cert=files.find(f=>f.kind==='Kosher certificate');
     if(kc){ kc.innerHTML = cert&&cert.url ? ` <a href="${esc(cert.url)}" target="_blank" rel="noopener">📄 See certificate</a>` : (canAdd?`<br><button type="button" class="btn soft" id="kcAdd" style="margin-top:6px">📷 Add kosher certificate</button>`:'');
       const ka=document.getElementById('kcAdd'); if(ka) ka.onclick=()=>{ const sel=document.getElementById(sid+'_kind'); if(sel) sel.value='Kosher certificate'; const inp=document.getElementById(sid+'_file'); if(inp) inp.click(); }; } }
@@ -2963,7 +3076,7 @@ async function drawFiles(v, qid, boxId, canAdd){
       const inner = img && f.url ? `<img src="${esc(f.url)}" alt="${esc(f.file_name)}" loading="lazy">` : `<span class="doc">${/pdf/.test(f.mime_type)?'PDF':'FILE'}</span>`;
       const canRm = S.admin || f.mine || f.uploaded_by===me;
       return `<div class="file"><a class="thumb" href="${esc(f.url||'#')}" target="_blank" rel="noopener">${inner}</a>
-        <span class="fkind">${esc(f.kind)}${f.private?' · 🔒':''}</span><span class="fname" title="${esc(f.file_name)}">${esc(f.file_name)}</span>${f.by&&!f.by.admin?`<span class="fname" style="color:var(--ochre)">👤 ${esc(f.by.name)}</span>`:''}
+        <span class="fkind">${esc(f.kind)}${f.for_clients?' · for clients':''}${f.private?' · 🔒':''}</span><span class="fname" title="${esc(f.file_name)}">${esc(f.file_name)}</span>${f.by&&!f.by.admin?`<span class="fname" style="color:var(--ochre)">👤 ${esc(f.by.name)}</span>`:''}
         ${canRm?`<button class="rm" data-i="${i}" type="button">Remove</button>`:''}</div>`; }).join('')}</div>`
     : `<p class="hint" style="margin:8px 0 10px">${qid?'No attachments yet. Add the quote email screenshot or PDF.':'No files yet. Add a photo of the place, a receipt, a price list or a contract.'}</p>`)
   + (canAdd?`<div class="upl"><select id="${sid}_kind" aria-label="What is it?">${KINDS.map(k=>`<option${qid&&k==='Quote'?' selected':''}>${k}</option>`).join('')}</select>
@@ -3045,11 +3158,12 @@ function wireQuickFill(f){
 function openForm(v, preset){
   const x = Object.assign(blank(), {active:'Active',priceBasis:'Per person',currency:'ILS',category:''}, v||preset||{});
   const noPrice = lim() && !!v && v.category==='Guide' && !S.me.see_guide_rates;   // a guide's prices are not shown to this member
-  const guarded = !!v && !S.admin; const lk=k=>guarded && LOCKED.includes(k) ? ' <span class="lock">🔒</span>' : '';
+  const guarded = !!v && !S.admin; const gogF = guarded && guideOnGuide(v);   // a guide editing another guide's page: ratings and remarks need approval too
+  const lk=k=>guarded && (LOCKED.includes(k) || (gogF && REVIEW_FIELDS.includes(k))) ? ' <span class="lock">🔒</span>' : '';
   const inp=(k,label,type='text',ph='',wide=false,req=false)=>`<div class="f${wide?' wide':''}"><label for="f_${k}">${label}${req?' <em>*</em>':''}${lk(k)}</label><input id="f_${k}" name="${k}" type="${type}" value="${esc(x[k])}" placeholder="${esc(ph)}"${type==='number'?' inputmode="decimal" min="0" step="any"':''}${type==='tel'?' inputmode="tel"':''}></div>`;
   const sel=(k,label,opts,wide=false,req=false)=>`<div class="f${wide?' wide':''}"><label for="f_${k}">${label}${req?' <em>*</em>':''}${lk(k)}</label><select id="f_${k}" name="${k}">${opts.map(o=>{const [val,t]=Array.isArray(o)?o:[o,o];return `<option value="${esc(val)}"${String(x[k])===val?' selected':''}>${esc(t)}</option>`}).join('')}</select></div>`;
-  const area=(k,label,ph)=>`<div class="f wide"><label for="f_${k}">${label}</label><textarea id="f_${k}" name="${k}" rows="2" placeholder="${esc(ph)}">${esc(x[k])}</textarea></div>`;
-  const stars=(k,label)=>`<div class="f"><label>${label}</label><div class="stars" data-k="${k}">${[1,2,3,4,5].map(n=>`<button type="button" data-n="${n}" aria-pressed="${x[k]===String(n)}" aria-label="${label} ${n}">${n}</button>`).join('')}</div><input type="hidden" id="f_${k}" name="${k}" value="${esc(x[k])}"></div>`;
+  const area=(k,label,ph)=>`<div class="f wide"><label for="f_${k}">${label}${REVIEW_FIELDS.includes(k)?lk(k):''}</label><textarea id="f_${k}" name="${k}" rows="2" placeholder="${esc(ph)}">${esc(x[k])}</textarea></div>`;
+  const stars=(k,label)=>`<div class="f"><label>${label}${lk(k)}</label><div class="stars" data-k="${k}">${[1,2,3,4,5].map(n=>`<button type="button" data-n="${n}" aria-pressed="${x[k]===String(n)}" aria-label="${label} ${n}">${n}</button>`).join('')}</div><input type="hidden" id="f_${k}" name="${k}" value="${esc(x[k])}"></div>`;
   const body=`<form id="vf" novalidate>
     ${guarded?'<div class="lockbar">🔒 Name, contact details, the main price and cancellation terms are checked by Eretz Israel Tours. Change them here and say why, and the change shows once approved. Everything else saves straight away.</div>':''}
     <div class="quickfill"><b>⚡ Quick fill</b> <span class="hint">Fill the form from a contact or text instead of typing.</span>
@@ -3062,7 +3176,10 @@ function openForm(v, preset){
       ${sel('category','Main category',[['','Choose…'],...byUse('category',myCats())],false,true)}
       <div class="f wide"><label>Also offers <span class="hint">(optional, e.g. a guide who also drives jeep tours)</span></label><input type="hidden" id="f_also_categories" value="${esc(x.also_categories||'')}"><div class="presets" id="alsoSug" style="margin:6px 0 0"></div></div>
       <div class="f wide" id="fleetWrap" hidden><label>Vehicles they offer</label><div class="tgs" id="fleetPick" role="group" aria-label="Vehicles they offer" style="margin:0">${VEHICLES.map(x=>`<button class="tg" type="button" data-veh="${x[0]}" aria-pressed="false">${esc(x[1])}</button>`).join('')}</div><span class="hint">Tap every size they have. Vans go by seats.</span></div>
-      <div class="f wide"><label for="f_tags">Type (separate with commas)</label><input id="f_tags" value="${esc(x.tags)}" placeholder="Jeep, ATV / RZR"><div class="presets" id="tagSug" style="margin:6px 0 0"></div></div>
+      <div class="f wide"><label for="f_tags">Type (separate with commas)</label><input id="f_tags" value="${esc(x.tags)}" placeholder="Jeep, ATV / RZR"><div class="presets" id="tagSug" style="margin:6px 0 0"></div><span class="hint" id="d1Hint" hidden>${D1_RULE} Add the tag "D1 license" to confirm it.</span></div>
+      <div class="f wide" id="licWrap" hidden><span class="lab">Is this guide licensed? <em style="color:var(--bad);font-style:normal">*</em></span>
+        <div class="tgs" role="group" aria-label="Is this guide licensed?"><button class="tg" type="button" id="licYes" aria-pressed="false">Licensed tour guide</button><button class="tg" type="button" id="licSpec" aria-pressed="false">Specialty guide, not licensed</button></div>
+        <span class="hint">${GUIDE_RULE} ${S.admin?'A specialty guide is your exception to make.':'A specialty guide is an exception that Eretz Israel Tours approves.'}</span></div>
       <div class="f wide"><label for="f_hours">Opening hours</label><input id="f_hours" value="${esc(x.hours||'')}" maxlength="600" placeholder="Sun–Thu 9:00–17:00, Fri 9:00–13:00, closed Shabbat"><div class="presets" id="hrSug" style="margin:6px 0 0">${HOURS_PRESETS.map(h=>`<button type="button" class="mini" data-hr="${esc(h)}">+ ${esc(h)}</button>`).join('')}</div><span class="hint">Tap to add, then fix the times.</span></div>
       <div class="f wide"><label for="f_hours_last">Last entry and other times</label><input id="f_hours_last" value="${esc(x.hours_last||'')}" maxlength="600" placeholder="Last entry 16:00. Last cable car up 16:00, last down 17:00."><div class="presets" id="hlSug" style="margin:6px 0 0">${LAST_PRESETS.map(h=>`<button type="button" class="mini" data-hl="${esc(h)}">+ ${esc(h)}</button>`).join('')}</div><span class="hint">Last entry, last cable car, when a trail opens or closes. Changing the hours marks them unverified again.</span></div>
       <div class="f wide"><label>Shabbat</label><div class="tgs" style="margin:0"><button class="tg" type="button" id="shabTg" aria-pressed="false">Shomer Shabbat</button></div><span class="hint">Tap if they keep Shabbat. It shows as a badge on the supplier.</span></div>
@@ -3093,7 +3210,8 @@ function openForm(v, preset){
       ${inp('cancelNoticeAmount','Notice','number','7')}${sel('cancelNoticeUnit','Unit',[['','—'],'Hours','Days'])}${sel('cancelDayType','Counted in',[['','Not specified'],'Calendar days','Business days'])}
       ${inp('cancelPenalty','Penalty','text','50% fee inside notice period')}${inp('cancelPolicyVerifiedDate','Policy checked on','date')}
     </div></fieldset>
-    ${lim()&&!(v&&reviewsOpen(v))?'':`<fieldset><legend>Your experience</legend><div class="grid">
+    ${x._own?`<fieldset><legend>Your experience</legend><p class="hint" style="margin:0;font-size:13px">Ratings and remarks on your own page are hidden from you, and you cannot change them.</p></fieldset>`:lim()&&!(v&&reviewsOpen(v))?'':`<fieldset><legend>Your experience</legend>
+      ${gogF?'<p class="hint" style="margin:0 0 10px;font-size:13px">You are a guide writing about another guide. Eretz Israel Tours approves a change to these ratings and remarks before colleagues see it. Say why at the bottom.</p>':''}<div class="grid">
       ${stars('rateReliability','Reliability')}${stars('rateService','Service')}${stars('rateValue','Value')}
       ${area('strengths','Strengths','Very punctual, great English…')}${area('weaknesses','Weaknesses','Sometimes overbooks…')}${area('notes','Notes','Ask for a group discount above 10 people…')}
     </div></fieldset>`}
@@ -3113,6 +3231,10 @@ function openForm(v, preset){
   const showIf=(el,on)=>{ if(el) el.hidden=!on; };
   const hrIn=f.querySelector('#f_hours'); f.querySelectorAll('[data-hr]').forEach(b=>b.onclick=()=>{ const p=b.dataset.hr, cur=hrIn.value.trim().replace(/[,;]\s*$/,''); if(cur.toLowerCase().includes(p.toLowerCase())) return; hrIn.value=(cur?cur+', ':'')+p; hrIn.focus(); });
   const hlIn=f.querySelector('#f_hours_last'); f.querySelectorAll('[data-hl]').forEach(b=>b.onclick=()=>{ const p=b.dataset.hl, cur=hlIn.value.trim(); if(cur.toLowerCase().includes(p.toLowerCase())) return; hlIn.value=(cur?cur.replace(/[.;,]\s*$/,'')+'. ':'')+p+(/:$/.test(p)?' ':''); hlIn.focus(); });
+  const licYes=f.querySelector('#licYes'), licSpec=f.querySelector('#licSpec');
+  const licDraw=()=>{ licYes.setAttribute('aria-pressed', tagHas(tagsIn.value, GUIDE_LICENSED)); licSpec.setAttribute('aria-pressed', tagHas(tagsIn.value, GUIDE_SPECIALTY)); };
+  const licSet=(on,off)=>{ const had=tagHas(tagsIn.value,on); const cur=tagsIn.value.split(',').map(t=>t.trim()).filter(t=>t && ![on,off].some(z=>z.toLowerCase()===t.toLowerCase())); if(!had) cur.unshift(on); tagsIn.value=cur.join(', '); tagsIn.dispatchEvent(new Event('input',{bubbles:true})); };
+  licYes.onclick=()=>licSet(GUIDE_LICENSED, GUIDE_SPECIALTY); licSpec.onclick=()=>licSet(GUIDE_SPECIALTY, GUIDE_LICENSED);
   const shabTg=f.querySelector('#shabTg'), shabDraw=()=>shabTg.setAttribute('aria-pressed', isShabbat({tags:tagsIn.value}));
   shabTg.onclick=()=>{ const on=isShabbat({tags:tagsIn.value}); const cur=tagList({tags:tagsIn.value}).filter(t=>t.toLowerCase()!==SHABBAT_TAG.toLowerCase()); if(!on) cur.push(SHABBAT_TAG); tagsIn.value=cur.join(', '); shabDraw(); };
   tagsIn.addEventListener('input',shabDraw); shabDraw();
@@ -3133,11 +3255,12 @@ function openForm(v, preset){
     showIf(f.querySelector('#freeWrap'), rel('free',cv));
     showIf(f.querySelector('#npWrap'), catsOf(cv).includes('National Parks'));
     showIf(f.querySelector('#gWrap'), catsOf(cv).includes('Guide'));
+    showIf(f.querySelector('#licWrap'), catsOf(cv).includes('Guide')); showIf(f.querySelector('#d1Hint'), catsOf(cv).includes('Guide')||catsOf(cv).includes('Transport')); licDraw();
     drawTagSug(); };
   const drawTagSug=()=>{ const have=tagsIn.value.split(',').map(t=>t.trim().toLowerCase()).filter(Boolean); const opts=[...new Set(catsOf(curCats()).flatMap(c=>TAG_SUGGEST[c]||[]))].filter(t=>!have.includes(t.toLowerCase()));
     tagSug.innerHTML=opts.map(t=>`<button class="mini" type="button" data-t="${esc(t)}">+ ${esc(t)}</button>`).join('');
     tagSug.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{ const cur=tagsIn.value.split(',').map(t=>t.trim()).filter(Boolean); cur.push(b.dataset.t); tagsIn.value=cur.join(', '); drawTagSug(); }); };
-  tagsIn.addEventListener('input',()=>{ drawTagSug(); fleetDraw(); });
+  tagsIn.addEventListener('input',()=>{ drawTagSug(); fleetDraw(); licDraw(); });
   f.querySelector('#f_location').setAttribute('list','dl_location'); f.querySelector('#f_location').setAttribute('autocomplete','off');
   const kos=f.querySelector('#f_kosher'); const kosNote=f.querySelector('#kosNote');
   const kosDraw=()=>{ f.querySelectorAll('[data-kos]').forEach(b=>b.classList.toggle('on',kos.value===b.dataset.kos));
@@ -3179,8 +3302,13 @@ function openForm(v, preset){
     const probs=[]; if(!data.name.trim()) probs.push('Add the supplier name.');
     if(catsOf(data).includes('Restaurant') && notKosher(data.kosher)) probs.push('The list does not accept non-kosher restaurants.'); if(!data.category) probs.push('Choose a category.');
     if(!v && dupCheck()) probs.push('This supplier is already on the list. Open it and edit it instead.');
-    let reason=''; if(guarded){ const changed=LOCKED.concat(kosherNeedsOk(data)?['kosher']:[]).filter(k=>String(data[k]||'').trim()!==String(v[k]||'').trim()); reason=f.querySelector('#f_reason').value.trim();
-      if(changed.length && reason.length<3) probs.push('You changed '+changed.map(k=>FIELD_LABEL[k]||k).join(', ')+'. Say briefly why, at the bottom.'); }
+    const isG=catsOf(data).includes('Guide'), lic=tagHas(data.tags,GUIDE_LICENSED), spec=tagHas(data.tags,GUIDE_SPECIALTY), wasG=!!v&&catsOf(v).includes('Guide');
+    if(isG && lic && spec) probs.push('Choose one: licensed tour guide, or specialty guide.');
+    else if(isG && !lic && !spec && !wasG) probs.push('Say whether this guide is licensed. '+GUIDE_RULE);
+    if(eshkolListed(data.tags) && !(v&&eshkolListed(v.tags)) && !tagHas(data.tags,D1_TAG)) probs.push(D1_RULE+' Add the tag "D1 license" to confirm it, or take Eshkol off.');
+    const specGain=guarded && isG && spec && !tagHas(v.tags,GUIDE_SPECIALTY);
+    let reason=''; if(guarded){ const changed=LOCKED.concat(kosherNeedsOk(data)?['kosher']:[]).concat(gogF?REVIEW_FIELDS:[]).concat(specGain?['tags']:[]).filter(k=>String(data[k]||'').trim()!==String(v[k]||'').trim()); reason=f.querySelector('#f_reason').value.trim();
+      if(changed.length && reason.length<3) probs.push('You changed '+changed.map(k=>k==='tags'?'Specialty guide':(FIELD_LABEL[k]||REVIEW_LABEL[k]||k)).join(', ')+'. Say briefly why, at the bottom.'); }
     if(probs.length){ err.innerHTML=`<div class="msg err">${probs.join(' ')}</div>`; err.scrollIntoView({block:'center'}); return; }
     const btn=w.querySelector('#saveBtn'); btn.disabled=true; btn.textContent='Saving…';
     try{ const saved=await DB.save(data, reason); if(!v && preset && preset.parent_id && S.admin){ try{ await DB.setSite(saved.id, preset.parent_id, preset.reservation||''); }catch(e){} } closeSheet(); S.tab='vendors'; render();
@@ -3190,12 +3318,217 @@ function openForm(v, preset){
   };
 }
 
+// ---------- claimed pages, disputes, and reviews that wait for approval ----------
+// A member can claim the page that is his own. What colleagues wrote about that page is not sent to him by the
+// database (ratings, remarks, notes, driver reviews); the app only explains that. A guide's review of another guide
+// waits for approval by Eretz Israel Tours. A note or driver review can be kept private.
+const REVIEW_FIELDS=['rateReliability','rateService','rateValue','strengths','weaknesses','notes'];
+const REVIEW_LABEL={rateReliability:'Reliability rating',rateService:'Service rating',rateValue:'Value rating',strengths:'Strengths',weaknesses:'Weaknesses',notes:'Notes'};
+const guideMember=()=>!S.admin && !!S.me && (S.me.role==='Licensed tour guide' || S.vendors.some(v=>v._mine&&isGuide(v)));
+const guideOnGuide=v=>!!v && guideMember() && isGuide(v) && !v._own;
+function ownBar(v){
+  if(!v._own) return '';
+  return `<div class="ownbar"><b>${v._mine?'This is your page.':'This looks like your own page.'}</b>
+    <span>${v._mine?'':'Your phone number or email is on it. '}Colleagues' notes, ratings and reviews of it are hidden from you. Other colleagues still see them.</span>
+    <div class="btn-row"><button class="btn soft" id="disputeBtn" type="button">Dispute something on this page</button><span id="ownClaim" style="display:contents"></span></div></div>`;
+}
+const claimedPill=v=>v._claimed?`<span class="pill reg">✓ Claimed${v._mine?' by you':''}</span>`:'';
+// Filled in when the page's details arrive: whether my claim is waiting and, for Eretz Israel Tours, whose page it is.
+function drawClaim(v, det){
+  const oc=document.getElementById('ownClaim');
+  if(oc && !v._mine) oc.innerHTML = det.my_claim ? '<span class="hint" style="align-self:center">Your claim is waiting for Eretz Israel Tours.</span>' : (v._claimed?'':'<button class="btn primary" id="claimBtn" type="button">Claim this page</button>');
+  const box=document.getElementById('claimBox');
+  if(box){
+    if(S.admin){
+      const mem=(S.members||[]).filter(m=>m.status==='approved'&&!m.is_admin), cur=det.claimer, mt=det.matches||[], wait=(S.claims||[]).filter(c=>c.vendor_id===v.id).length;
+      box.innerHTML=`<fieldset><legend>Whose page is this · only you</legend>
+        <p class="hint" style="margin:0 0 8px;font-size:13px">${cur?`Claimed by <b>${esc(cur.name)}</b>${cur.role?' · '+esc(cur.role):''}. ${isGuide(v)?'Only they and you write the section for clients. ':''}Colleagues' notes, ratings and reviews of this page are hidden from them.`:'Not claimed. Link it to the member whose page it is.'}</p>
+        ${mt.length?`<p class="hint" style="margin:0 0 8px;font-size:13px;color:var(--warn)">The phone or email on this page matches ${mt.map(x=>'<b>'+esc(x.name)+'</b>').join(', ')}. Reviews of it are already hidden from them.</p>`:''}
+        ${wait?`<p class="hint" style="margin:0 0 8px;font-size:13px;color:var(--warn)">${wait} claim${wait>1?'s':''} waiting in the Review tab.</p>`:''}
+        <div class="grid"><div class="f"><label for="clSel">Belongs to</label><select id="clSel"><option value="">No one</option>${mem.map(m=>`<option value="${esc(m.id)}"${cur&&cur.id===m.id?' selected':''}>${esc(m.name)}${m.role?' · '+esc(m.role):''}</option>`).join('')}</select></div></div>
+        <div class="btn-row" style="margin-top:8px"><button class="mini" id="clSave" type="button">Save</button></div></fieldset>`;
+      box.querySelector('#clSave').onclick=async()=>{ try{ await DB.setClaim(v.id, box.querySelector('#clSel').value||null); toast('Saved'); openDetail(v.id); }catch(e){ toast(e.message); } };
+    }
+    else if(!v._own && !v._claimed && !lim()) box.innerHTML = det.my_claim ? '<p class="hint claimline">Your claim to this page is waiting for Eretz Israel Tours.</p>' : '<p class="hint claimline">Is this you, or your business? <button class="linkbtn" id="claimBtn" type="button">Claim this page</button></p>';
+    else box.innerHTML='';
+  }
+  const cb=document.getElementById('claimBtn'); if(cb) cb.onclick=()=>openClaim(v);
+}
+function openClaim(v){
+  const body=`<p style="margin:0 0 8px;color:var(--ink-2)">Tell Eretz Israel Tours that <b>${esc(v.name)}</b> is you, or your business. Once it is approved:</p>
+    <ul style="margin:0 0 4px;padding-left:20px;color:var(--ink-2);font-size:14px;line-height:1.5">
+      <li>${isGuide(v)?'only you write what clients see: your bio, pictures and retail price':'the page is marked as yours'}</li>
+      <li>you can dispute anything written on the page</li>
+      <li>colleagues' notes, ratings and reviews of the page are hidden from you, and stay visible to other colleagues</li></ul>
+    <div class="f wide" style="margin-top:12px"><label for="clNote">Anything that helps confirm it <span class="hint">· optional</span></label><textarea id="clNote" rows="2" maxlength="500" placeholder="The phone number on the page is mine"></textarea></div><div id="clErr"></div>`;
+  const w=sheet('Claim this page', body, `<button class="btn soft" id="clC" type="button">Back</button><button class="btn primary" id="clS" type="button">Send claim</button>`);
+  w.querySelector('#clC').onclick=()=>openDetail(v.id);
+  w.querySelector('#clS').onclick=async()=>{ const b=w.querySelector('#clS'); b.disabled=true;
+    try{ await DB.claim(v.id, w.querySelector('#clNote').value.trim()); toast('Claim sent to Eretz Israel Tours'); openDetail(v.id); }
+    catch(e){ b.disabled=false; w.querySelector('#clErr').innerHTML=`<div class="msg err">${esc(e.message)}</div>`; } };
+}
+function openDispute(v){
+  const body=`<p style="margin:0 0 10px;color:var(--ink-2)">Tell Eretz Israel Tours what is wrong on <b>${esc(v.name)}</b>, and what it should say. They check it and decide. Colleagues do not see your dispute.</p>
+    <div class="f wide"><label for="dsMsg">What is wrong, and what should it be?</label><textarea id="dsMsg" rows="5" maxlength="2000" placeholder="The day rate shown is from 2024. My rate is now…"></textarea></div><div id="dsErr"></div>`;
+  const w=sheet('Dispute something', body, `<button class="btn soft" id="dsC" type="button">Back</button><button class="btn primary" id="dsS" type="button">Send</button>`);
+  w.querySelector('#dsC').onclick=()=>openDetail(v.id);
+  w.querySelector('#dsS').onclick=async()=>{ const b=w.querySelector('#dsS'), t=w.querySelector('#dsMsg').value.trim();
+    if(t.length<5){ w.querySelector('#dsErr').innerHTML='<div class="msg err">Say what is wrong, and what it should be.</div>'; return; } b.disabled=true;
+    try{ await DB.dispute(v.id, t); toast('Sent to Eretz Israel Tours'); openDetail(v.id); }
+    catch(e){ b.disabled=false; w.querySelector('#dsErr').innerHTML=`<div class="msg err">${esc(e.message)}</div>`; } };
+}
+// Review tab, for Eretz Israel Tours: claims waiting, and guides' notes about other guides waiting.
+function claimsPanel(){
+  const list=S.claims||[]; if(!list.length) return '';
+  return `<section class="panel"><h3>Claims <span class="badge">${list.length}</span></h3>
+    <p>A member says a page is theirs. Once approved, colleagues' notes, ratings and reviews of that page are hidden from them, and on a guide's page only they write the section for clients.</p>
+    ${list.map(c=>`<div class="rev" style="display:block"><div class="who2"><b>${esc(c.member_name)} says this page is theirs: ${esc(c.vendor_name)}</b><span>${esc(c.role||'Member')} · ${fmtDate(c.created_at)}</span>
+        <span style="font-weight:600;color:var(${c.match?'--ok':'--warn'})">${c.match?'✓ Their phone or email is on the page':'⚠ Their phone and email are not on the page. Check before approving.'}</span></div>
+      ${c.note?`<p style="margin:4px 0 8px;font-size:14px">${esc(c.note)}</p>`:''}
+      <div class="btn-row"><button class="btn soft" data-open="${esc(c.vendor_id)}">Open supplier</button><button class="btn soft" data-cno="${esc(c.id)}">Reject</button><button class="btn primary" data-cyes="${esc(c.id)}">Approve</button></div></div>`).join('')}
+  </section>`;
+}
+function notesPanel(){
+  const list=S.noteQueue||[]; if(!list.length) return '';
+  return `<section class="panel"><h3>Reviews to approve <span class="badge">${list.length}</span></h3>
+    <p>A guide wrote about another guide. Colleagues see it only after you approve it. Turned down, it stays visible to you and to its author only.</p>
+    ${list.map(n=>`<div class="rev" style="display:block"><div class="who2"><b>${esc(n.vendor_name)}</b><span>by ${esc((n.by&&n.by.name)||n.author_name||'A colleague')}${n.by&&n.by.role?' · '+esc(n.by.role):''} · ${fmtDate(n.created_at)}</span></div>
+      <p style="margin:4px 0 8px;font-size:14px;white-space:pre-wrap">${esc(n.body)}</p>
+      <div class="btn-row"><button class="btn soft" data-open="${esc(n.vendor_id)}">Open supplier</button><button class="btn soft" data-nno="${esc(n.id)}" data-v="${esc(n.vendor_id)}">Turn down</button><button class="btn primary" data-nyes="${esc(n.id)}" data-v="${esc(n.vendor_id)}">Approve</button></div></div>`).join('')}
+  </section>`;
+}
+function wireReviewQueues(view){
+  const cd=async(b,yes)=>{ b.disabled=true; try{ await DB.decideClaim(yes?b.dataset.cyes:b.dataset.cno, yes); await DB.loadClaims(); toast(yes?'Approved. The page is theirs.':'Rejected'); render(); }catch(e){ b.disabled=false; toast(e.message); } };
+  view.querySelectorAll('[data-cyes]').forEach(b=>b.onclick=()=>cd(b,true)); view.querySelectorAll('[data-cno]').forEach(b=>b.onclick=()=>cd(b,false));
+  const nd=async(b,yes)=>{ b.disabled=true; try{ await DB.decideNote(yes?b.dataset.nyes:b.dataset.nno, yes, b.dataset.v); await DB.loadPendingNotes(); toast(yes?'Approved. Colleagues see it now.':'Turned down'); render(); }catch(e){ b.disabled=false; toast(e.message); } };
+  view.querySelectorAll('[data-nyes]').forEach(b=>b.onclick=()=>nd(b,true)); view.querySelectorAll('[data-nno]').forEach(b=>b.onclick=()=>nd(b,false));
+}
+// One note in the thread: who sees it, and whether it is waiting.
+function noteTags(n){
+  return (n.private?`<span class="ntag">🔒 ${S.admin&&!n.mine?'Private: only its author and you':'Only you and Eretz Israel Tours'}</span>`:'')
+    + (n.status==='pending'?`<span class="ntag warn">Waiting for approval${S.admin?'':' by Eretz Israel Tours'}</span>`:'')
+    + (n.status==='rejected'?'<span class="ntag bad">Not approved: colleagues do not see it</span>':'');
+}
+
+// Preview only: look at the list as Eretz Israel Tours, as a guide on her own claimed page, as another guide, or as a travel agent.
+const DEMO_PEOPLE={
+  admin:{label:'Eretz Israel Tours',name:'Eretz Israel Tours',email:OWNER,is_admin:true,role:''},
+  owner:{label:'Noa Shalev, a guide (her own page is claimed)',name:'Noa Shalev',email:'noa.shalev@example.com',is_admin:false,role:'Licensed tour guide'},
+  guide:{label:'Avi Mizrahi, another guide',name:'Avi Mizrahi',email:'avi.mizrahi@example.com',is_admin:false,role:'Licensed tour guide'},
+  agent:{label:'Rachel Amar, a travel agent',name:'Rachel Amar',email:'rachel.ops@gmail.com',is_admin:false,role:'Travel agent'},
+  org:{label:'Avi Stern, an organisation (limited member)'}};
+// Preview only: turn the sample data into what an organisation (limited member) is sent. A rough copy of what the database does for real.
+function demoLimited(){
+  S.admin=false; S.user={email:'avi@sample-yeshiva.org'};
+  S.me={name:'Avi Stern',email:'avi@sample-yeshiva.org',status:'approved',is_admin:false,role:ORG_ROLE,org:'Sample Yeshiva',member_type:'limited',sections:DEF_SECTIONS,see_quotes:true,see_guide_rates:false,see_transport_reviews:true,see_reviews:false,bookings:true,jobs:false,jobs_post:false};
+  S.vendors=S.vendors.filter(v=>v.review_status==='approved'&&catsOf(v).some(c=>mySections().includes(secOf(c)))).map(v=>{ const o=Object.assign({},v,{agentPrice:'',agentPriceVatTreatment:'',agent_link:'',agent_howto:''});
+  if(v.category==='Guide') Object.assign(o,{listedPrice:'',maxPax:'',retail_price:''}); if(!catsOf(v).includes('Transport')) Object.assign(o,{rateReliability:'',rateService:'',rateValue:'',strengths:'',weaknesses:'',notes:''}); return o; });
+  Object.keys(S.demo).forEach(k=>{ const dd2=S.demo[k]; if(dd2&&dd2.prices){ dd2.prices=dd2.prices.filter(p=>!p.is_agent); dd2.notes=[]; const vv=S.vendors.find(x=>x.id===k); if(vv){ vv._prices=dd2.prices.length; vv._notes=0; } } });
+  Object.keys(S.demoQuotes).forEach(k=>{ const vv=S.vendors.find(x=>x.id===k); S.demoQuotes[k]=vv&&vv.category==='Transport'?S.demoQuotes[k].filter(q=>q.shared&&!q.mine).map(q=>Object.assign({},q,{owner:'',owner_name:'',owner_role:'',title:'',ref:'',private_note:'',can_edit:false,files:0})):[]; });
+  S.demoBookings=[]; S.requests=[]; S.demoRequests=[]; S.members=[]; S.myTop=[]; S.feedback=[]; S.jobs=null;
+  S.claims=[]; S.noteQueue=[]; S.reports=[];
+}
+function demoFlags(){ S.vendors.forEach(v=>{ v._claimed=!!v.claimed_by; v._mine=!S.admin&&!!v.claimed_by&&v.claimed_by===S.user.email; v._own=v._mine; if(!v._claimed) v.claimed_name=''; }); }
+function demoAs(k){
+  const KEEP=['vendors','demo','demoQuotes','demoBookings','requests','demoRequests','members','myTop','feedback','jobs','claims','noteQueue','reports'];
+  if(S._demoSnap){ Object.assign(S, JSON.parse(S._demoSnap)); S._demoSnap=null; }   // leaving the organisation: the full sample data comes back
+  if(k==='org'){ S._demoSnap=JSON.stringify(Object.fromEntries(KEEP.map(x=>[x,S[x]===undefined?null:S[x]]))); demoLimited(); S.demoAs='org'; S.contributor=true;
+    if(S.tab!=='vendors'&&S.tab!=='quotes') S.tab='vendors'; demoFlags(); closeSheet(); render(); return; }
+  const p=DEMO_PEOPLE[k]||DEMO_PEOPLE.admin; S.demoAs=k; S.user={email:p.email};
+  S.me={name:p.name,email:p.email,status:'approved',is_admin:p.is_admin,role:p.role,member_type:'full'}; S.admin=p.is_admin; S.contributor=true;
+  if(!S.admin && (S.tab==='review'||S.tab==='team')) S.tab='vendors'; demoFlags(); if(S.admin) DB.loadPendingNotes(); closeSheet(); render(); }
+function demoNoteSeen(n){ return S.admin || n.author===S.user.email || (!n.private && n.status!=='pending' && n.status!=='rejected'); }
+
+// ---------- a guide's page: the part written for clients (bio, up to four pictures, retail price) ----------
+// The one part of a page that is meant to leave the list: a colleague copies it and sends it to his client.
+const CLIENT_PICS=4, CLIENT_BIO_MAX=1500, CLIENT_RETAIL_MAX=200;
+const isGuide=v=>catsOf(v).includes('Guide');
+const clientPics=files=>(files||[]).filter(f=>f.for_clients&&!f.quote_id).sort((a,b)=>String(a.created_at||'').localeCompare(String(b.created_at||''))).slice(0,CLIENT_PICS);
+const clientText=v=>[v.name, v.client_bio].filter(Boolean).join('\n\n');
+function clientBox(v){
+  const has=!!(v.client_bio||v.retail_price), locked=(!!v._claimed&&!v._mine&&!S.admin)||lim();   // once claimed, only the guide and Eretz Israel Tours write it; an organisation never does
+  const lead=v._mine?'Your bio, pictures and retail price for clients. Colleagues can pass them on to their clients. The rest of this page stays between colleagues.'
+    :lim()?'What this guide tells clients about themselves.'
+    :locked?`Written by ${esc(v.claimed_name||'the guide')}. You can pass it on to a client. The rest of this page stays between colleagues.`
+    :'A bio, pictures and a retail price that you can pass on to a client. The rest of this page stays between colleagues.';
+  const none=locked?'Nothing here yet.':v._mine?'No bio yet. Add a short bio, up to four pictures and your retail price.':'No bio yet. Until this guide claims the page, anyone who knows them well can add a short bio, up to four pictures and the retail price.';
+  return `<div class="cbox" id="cliBox"><div class="ch"><b>For clients</b>${locked?'':`<button class="mini" id="cliEdit" type="button">${has?'Edit':'+ Add'}</button>`}</div>
+    <span class="hint">${lead}</span>
+    <div class="cpics" id="cliPics"></div>
+    ${v.client_bio?`<p class="cbio" dir="auto">${esc(v.client_bio)}</p>`:`<p class="hint" style="margin:10px 0 0">${none}</p>`}
+    ${v.retail_price?`<p class="cret"><span class="hint">Retail price${S.admin&&v.prices_private?' · private, only you see it':''}</span><br><b dir="auto">${esc(v.retail_price)}</b></p>`:''}
+    <div class="btn-row" id="cliActs" style="margin-top:10px"${v.client_bio?'':' hidden'}><button class="btn soft" id="cliCopy" type="button">Copy bio</button><button class="btn soft" id="cliShare" type="button" hidden>Share with a client</button></div></div>`;
+}
+// The pictures arrive with the supplier's other files (drawFiles calls this).
+const cliBlobs={};
+function drawClientPics(v, files){
+  const box=document.getElementById('cliPics'); if(!box) return; const pics=clientPics(files);
+  box.innerHTML=pics.map(f=>`<a class="cpic" href="${esc(f.url||'#')}" target="_blank" rel="noopener">${f.url?`<img src="${esc(f.url)}" alt="Picture of ${esc(v.name)}" loading="lazy">`:''}</a>`).join('');
+  const acts=document.getElementById('cliActs'), sh=document.getElementById('cliShare'); if(!acts) return;
+  const canShare=!!navigator.share && !!(v.client_bio||pics.length);
+  acts.hidden=!(v.client_bio||canShare);
+  const ed=document.getElementById('cliEdit'); if(ed && pics.length) ed.textContent='Edit';
+  const cp=document.getElementById('cliCopy'); if(cp){ cp.hidden=!v.client_bio; cp.onclick=()=>copyText(clientText(v)); }
+  if(sh && canShare){ sh.hidden=false; sh.onclick=()=>clientShare(v, pics);
+    // fetch the pictures ahead of the tap: a phone only lets a page share straight after a tap
+    pics.forEach(f=>{ if(f.url&&!cliBlobs[f.id]) fetch(f.url).then(r=>r.ok?r.blob():null).then(b=>{ if(b) cliBlobs[f.id]=new File([b], f.file_name||'picture.jpg', {type:b.type||f.mime_type||'image/jpeg'}); }).catch(()=>{}); }); }
+}
+async function clientShare(v, pics){
+  const text=clientText(v), files=pics.map(f=>cliBlobs[f.id]).filter(Boolean);
+  try{
+    if(files.length && navigator.canShare && navigator.canShare({files})) await navigator.share(text?{files,text}:{files});
+    else if(text) await navigator.share({text});
+    else toast('The pictures are not ready yet. Try again in a moment.');
+  }catch(e){ if(e&&e.name==='AbortError') return; if(text) copyText(text); else toast('This phone cannot share from here. Open a picture and save it.'); }
+}
+function openClientForm(v){
+  const priv=!!v.prices_private&&!S.admin, me=(S.user.email||'').toLowerCase();
+  const body=`<p style="margin:0 0 12px;color:var(--ink-2)">What a client may see about <b>${esc(v.name)}</b>. Colleagues can copy it and send it to their clients, so write it for clients: no agent rates, no phone number.</p>
+    <div class="f wide"><label for="cbBio">Bio for clients</label><textarea id="cbBio" rows="8" maxlength="${CLIENT_BIO_MAX}" dir="auto" placeholder="Who the guide is, in a few sentences: background, languages, what they love to show people, the kind of groups they guide.">${esc(v.client_bio||'')}</textarea><span class="ccount" id="cbN"></span></div>
+    <div class="f wide" style="margin-top:12px"><span class="lab">Pictures for clients · up to four</span><div class="cpics" id="cbPics"></div>
+      <input id="cbFile" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+      <span class="hint" id="cbMsg">JPEG or PNG. A picture is saved as soon as you add it. Use pictures you have the right to share, and that the people in them are happy to have shown.</span></div>
+    ${priv?'':`<div class="f wide" style="margin-top:12px"><label for="cbRet">Retail price <span class="hint">· optional</span></label><input id="cbRet" type="text" maxlength="${CLIENT_RETAIL_MAX}" dir="auto" value="${esc(v.retail_price||'')}" placeholder="$650 a day, up to 9 hours. Vehicle extra.">
+      <span class="hint">What a client pays when booking this guide directly, in your own words. ${S.admin&&v.prices_private?'Prices on this supplier are private, so only you see it.':'Every colleague on the list sees it.'}</span></div>`}
+    <div id="cbErr"></div>`;
+  const w=sheet('For clients', body, `<button class="btn soft" id="cbC" type="button">Back</button><button class="btn primary" id="cbS" type="button">Save</button>`);
+  const bio=w.querySelector('#cbBio'), cnt=w.querySelector('#cbN'), box=w.querySelector('#cbPics'), inp=w.querySelector('#cbFile'), msg=w.querySelector('#cbMsg');
+  const count=()=>{ cnt.textContent=bio.value.length+' / '+CLIENT_BIO_MAX; }; bio.oninput=count; count();
+  const say=(t,bad)=>{ if(!document.body.contains(msg)) return toast(t); msg.textContent=t; msg.style.color=bad?'var(--bad)':''; };
+  const drawPics=async()=>{
+    let files=[]; try{ files=await DB.listFiles(v.id); }catch(e){ box.innerHTML=''; say("Couldn't load the pictures: "+e.message, true); return; }
+    if(!document.body.contains(box)) return;
+    const pics=clientPics(files);
+    box.innerHTML=pics.map((f,i)=>`<div class="cpic">${f.url?`<img src="${esc(f.url)}" alt="Picture ${i+1}">`:''}<button class="rm" data-i="${i}" type="button">Remove</button></div>`).join('')
+      + (pics.length<CLIENT_PICS?`<label class="cpic add" for="cbFile" tabindex="0" role="button"><b aria-hidden="true">+</b>Add picture</label>`:'');
+    box.querySelectorAll('.rm').forEach(b=>b.onclick=async()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again'; return; }
+      const f=pics[+b.dataset.i]; b.disabled=true;
+      // the person who added the picture, or Eretz Israel Tours, removes the file; anyone else only takes it off the client pictures
+      try{ if(S.admin||f.mine||f.uploaded_by===me) await DB.removeFile(f); else await DB.fileForClients(f,false); say('Picture removed'); }catch(e){ say(e.message, true); }
+      drawPics(); });
+    const add=box.querySelector('.cpic.add'); if(add) add.onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); inp.click(); } };
+  };
+  inp.onchange=async()=>{ const f0=inp.files[0]; inp.value=''; if(!f0) return;
+    if(!/^image\/(jpeg|png|webp)$/.test(f0.type)) return say('Use a JPEG or PNG picture.', true);
+    say('Uploading…'); const f=await shrink(f0);
+    if(f.size>10485760) return say('That picture is over 10 MB.', true);
+    let row=null;
+    try{ row=await DB.upload(v.id, f, 'Photo'); await DB.fileForClients(row, true); say('Picture added'); }
+    catch(e){ say(row?'The picture was saved under Photos, but not as a client picture: '+e.message:e.message, true); }
+    drawPics(); };
+  drawPics();
+  w.querySelector('#cbC').onclick=()=>openDetail(v.id);
+  w.querySelector('#cbS').onclick=async()=>{ const b=w.querySelector('#cbS'), r=w.querySelector('#cbRet'); b.disabled=true;
+    try{ await DB.setClient(v.id, bio.value.trim(), r?r.value.trim():''); toast('Saved'); openDetail(v.id); }
+    catch(e){ b.disabled=false; w.querySelector('#cbErr').innerHTML=`<div class="msg err">${esc(e.message)}</div>`; } };
+}
+
 // ---------- jobs between colleagues, and My days ----------
 // A member posts a job with the price he pays. It goes to the colleagues it fits, or to the ones he picks.
 // A colleague answers "I'm available"; the poster gives the job to one of them. Nothing is charged on a job.
 // My days: each member marks the days he is busy; a poster sees only Free / Busy / Not marked for his job's dates.
 const JOB_KINDS=[['guide','Guide','מדריך/ה'],['guide_vehicle','Guide with vehicle','מדריך/ה עם רכב'],['van_driver','Van driver','נהג/ת ואן'],['jeep_driver','Jeep driver','נהג/ת ג׳יפ'],['other','Someone else','איש/אשת מקצוע']];
-const JOB_NEEDS=[['licensed','Licensed guide'],['eshkol','Eshkol license'],['midbari','Midbari 4x4 vehicle'],['gun','Carries a gun'],['shabbat','Shomer Shabbat']];
+const JOB_NEEDS=[['licensed','Licensed guide'],['eshkol','Eshkol license (D1)'],['midbari','Midbari 4x4 vehicle'],['gun','Carries a gun'],['shabbat','Shomer Shabbat']];
 const JOB_PER=[['day','per day','ליום'],['job','for the whole job','לכל העבודה'],['hour','per hour','לשעה'],['vehicle','per vehicle','לרכב']];
 const JOB_VAT={including_vat:['VAT included','כולל מע״מ'],plus_vat:['plus VAT','בתוספת מע״מ'],not_applicable:['no VAT','ללא מע״מ']};
 const WEEKDAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Shabbat'];
@@ -3359,7 +3692,7 @@ async function openJobMine(j){
 
 // Post a job, step 1: the job.
 function openJobForm(j){
-  const d=Object.assign({kind:'guide',title:'',date_from:'',date_to:'',hours:'',start_place:'',region:'',pax:'',langs:'',needs:'',price:'',currency:'ILS',per:'day',vat:'including_vat',payment:'',note:'',reply_by:'',anon:true,audience:'all'}, j||S.jobDraft||{});
+  const d=Object.assign({kind:'guide',title:'',date_from:'',date_to:'',hours:'',start_place:'',region:'',pax:'',langs:'',needs:'',price:'',currency:'ILS',per:'day',vat:'including_vat',payment:'',note:'',reply_by:'',anon:true,audience:'all'}, j||S.jobDraft||{needs:'licensed'});   // a new job starts as a guide job, and guiding is for licensed guides
   const tg=(grp,k,l,on)=>`<button class="tg" type="button" data-${grp}="${k}" aria-pressed="${on}">${esc(l)}</button>`;
   const w=sheet(j?'Change the job':'Post a job', `
     <fieldset><legend>Who you need</legend><div class="tgs" id="jfKind" role="group" aria-label="Who you need">${JOB_KINDS.map(k=>tg('kind',k[0],k[1],d.kind===k[0])).join('')}</div></fieldset>
@@ -3374,6 +3707,7 @@ function openJobForm(j){
       <div class="f wide"><label for="jfLangs">Language of the group</label><input id="jfLangs" maxlength="120" value="${esc(d.langs)}" placeholder="English"></div>
     </div></fieldset>
     <fieldset><legend>Must have</legend><div class="tgs" id="jfNeeds" role="group" aria-label="Must have">${JOB_NEEDS.map(k=>tg('need',k[0],k[1],csv(d.needs).includes(k[0]))).join('')}</div>
+      <p class="hint" style="margin:8px 0 0">Only a licensed guide may guide. Leave "Licensed guide" on unless this is a specialty such as a shuk tour or a graffiti tour. An Eshkol driver or guide needs a D1 license.</p>
       <p class="hint" style="margin:-6px 0 0">The job goes only to colleagues who have said they have these.</p></fieldset>
     <fieldset><legend>What you pay</legend><div class="grid">
       <div class="f"><label for="jfPrice">Price <em>*</em></label><input id="jfPrice" class="mono" inputmode="decimal" maxlength="10" value="${esc(d.price)}" placeholder="1400"></div>
@@ -3669,12 +4003,13 @@ function tourSteps(replay){
     <div class="tour-card">${row(I.plus,'Everybody uses it and adds to it','This project is meant to help everyone, and it works only if we all add to it: a supplier, a price, a quote, a tip, a driver review, a correction.')}</div>
     <div class="tour-card">${row(I.chat,'AI search is coming <span class="pill high" style="font-size:11px">In the works</span>',"We're building an AI chat box: ask in plain words and it searches the list for you. It costs money to run. Eretz Israel Tours is paying for it, for the greater good.")}</div>
     <div class="tour-card warn"><b>Take part, or lose your place</b><span>Every member has to both use the list and add to it. Anyone who has not done both for 3 months gets a reminder, and is then removed.</span></div>` },
-  { html:`<h2 style="margin-top:10px">Five house rules</h2>
+  { html:`<h2 style="margin-top:10px">Six house rules</h2>
     <div class="tour-card bad" style="display:flex;gap:12px;align-items:flex-start"><span style="flex:none;width:22px;height:22px;color:var(--bad);display:flex">${I.lock}</span><div><b>Never show the list to suppliers</b><span>Not the app, screenshots, prices or notes. Anyone who does loses access.</span></div></div>
     ${rule(2,'Use it and add to it','Members who have not both used the list and added to it for 3 months are removed, after a reminder.')}
-    ${rule(3,'Keep it factual','Say what happened on your trip, and mark an opinion as an opinion. Running someone down gets you removed.')}
+    ${rule(3,'Keep it factual','Say what happened on your trip, and mark an opinion as an opinion. A malicious post is removed, and the member who posted it is banned.')}
     ${rule(4,'Eretz Israel Tours sees everything','Including items marked private and who added each quote. Private means hidden from other colleagues.')}
     ${rule(5,'Confirm before you book','Prices and details come from colleagues and can change. Always check with the supplier.')}
+    ${rule(6,'Licensed guides only','Only licensed tour guides are listed, except specialties such as shuk or graffiti tours. An Eshkol driver or guide needs a D1 license.')}
     <p class="hint" style="margin:16px 0 0;border-top:1px solid var(--line);padding-top:10px;font-size:13px">Emails sent with the Email button copy Eretz Israel Tours as a hidden BCC. You can turn that off under My settings.</p>
     <p style="margin:0"><button type="button" class="linkbtn" data-t="terms">Read the full terms and privacy notice</button></p>` }
   ];

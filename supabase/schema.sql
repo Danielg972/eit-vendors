@@ -1,5 +1,5 @@
 -- Israel Suppliers Master List: database schema (public schema; storage buckets listed at the end).
--- Exported from Supabase project wjuqtjlrtcywjaspjpwu on 2026-10-01; quote tracker, driver reviews and booking sheets, then opening hours, verified hours (hours_verify) and the kosher rule in vendor_save, added 2026-10-02 (supabase/migrations/); jobs between colleagues and My days (jobs, job_offers, member_days) added 2026-10-03. Limited members (organisations: member_type, sections, organisation rates and reviews) added 2026-10-03 (supabase/migrations/2026-10-03b_limited_members.sql).
+-- Exported from Supabase project wjuqtjlrtcywjaspjpwu on 2026-10-01; quote tracker, driver reviews and booking sheets, then opening hours, verified hours (hours_verify) and the kosher rule in vendor_save, added 2026-10-02 (supabase/migrations/); jobs between colleagues and My days (jobs, job_offers, member_days) added 2026-10-03. Limited members (organisations: member_type, sections, organisation rates and reviews) added 2026-10-03 (supabase/migrations/2026-10-03b_limited_members.sql). Guide pages for clients, claimed pages, review approval and private notes, guide rules (D-12, D-14, D-16; supabase/migrations/2026-10-03c_guides_claims_reviews.sql) added 3 Oct 2026.
 -- To rebuild on an empty Supabase project: run this file, create the three PRIVATE storage buckets,
 -- then deploy supabase/functions/files/index.ts (verify_jwt = false). Data is not included.
 -- KEEP CURRENT: re-export after every schema, function or security change (README > Change rules).
@@ -143,6 +143,7 @@ create table public.driver_reviews (
   author_name text default ''::text not null,
   created_at timestamp with time zone default now() not null,
   org boolean default false not null,
+  private boolean default false not null,
   constraint driver_reviews_pkey PRIMARY KEY (id),
   constraint driver_reviews_body_check CHECK ((length(body) <= 1500)),
   constraint driver_reviews_rating_check CHECK ((rating = ANY (ARRAY['1'::text, '2'::text, '3'::text, '4'::text, '5'::text]))),
@@ -442,6 +443,23 @@ create table public.vendor_admin_notes (
 );
 alter table public.vendor_admin_notes enable row level security;
 
+create table public.vendor_claims (
+  id uuid default gen_random_uuid() not null,
+  vendor_id text not null,
+  member text not null,
+  member_name text default ''::text not null,
+  note text default ''::text not null,
+  status text default 'pending'::text not null,
+  decided_by text,
+  decided_at timestamp with time zone,
+  created_at timestamp with time zone default now() not null,
+  constraint vendor_claims_pkey PRIMARY KEY (id),
+  constraint vendor_claims_note_check CHECK ((length(note) <= 500)),
+  constraint vendor_claims_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text])))
+);
+alter table public.vendor_claims enable row level security;
+CREATE UNIQUE INDEX vendor_claims_one_pending ON public.vendor_claims USING btree (vendor_id, member) WHERE (status = 'pending'::text);
+
 create table public.vendor_deals (
   id uuid default gen_random_uuid() not null,
   vendor_id text not null,
@@ -479,6 +497,7 @@ create table public.vendor_files (
   quote_id uuid,
   private boolean default false not null,
   org boolean default false not null,
+  for_clients boolean default false not null,
   constraint vendor_files_path_key UNIQUE (path),
   constraint vendor_files_pkey PRIMARY KEY (id),
   constraint vendor_files_kind_check CHECK ((kind = ANY (ARRAY['Photo'::text, 'Receipt'::text, 'Price list'::text, 'Booking confirmation'::text, 'Contract'::text, 'Quote'::text, 'Kosher certificate'::text, 'Other'::text])))
@@ -512,9 +531,14 @@ create table public.vendor_notes (
   created_at timestamp with time zone default now() not null,
   org boolean default false not null,
   rating text default ''::text not null,
+  private boolean default false not null,
+  status text default 'approved'::text not null,
+  decided_by text,
+  decided_at timestamp with time zone,
   constraint vendor_notes_pkey PRIMARY KEY (id),
   constraint vendor_notes_body_check CHECK (((length(TRIM(BOTH FROM body)) >= 1) AND (length(TRIM(BOTH FROM body)) <= 2000))),
-  constraint vendor_notes_rating_check CHECK ((rating = ANY (ARRAY[''::text, '1'::text, '2'::text, '3'::text, '4'::text, '5'::text])))
+  constraint vendor_notes_rating_check CHECK ((rating = ANY (ARRAY[''::text, '1'::text, '2'::text, '3'::text, '4'::text, '5'::text]))),
+  constraint vendor_notes_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text])))
 );
 alter table public.vendor_notes enable row level security;
 CREATE INDEX vendor_notes_vendor_idx ON public.vendor_notes USING btree (vendor_id);
@@ -570,6 +594,7 @@ create table public.vendor_reports (
   author_name text default ''::text not null,
   status text default 'New'::text not null,
   created_at timestamp with time zone default now() not null,
+  by_owner boolean default false not null,
   constraint vendor_reports_pkey PRIMARY KEY (id),
   constraint vendor_reports_kind_check CHECK ((kind = ANY (ARRAY['Closed'::text, 'Moved'::text, 'Contact changed'::text, 'Prices changed'::text, 'Mistake'::text, 'Other'::text]))),
   constraint vendor_reports_message_check CHECK ((length(message) <= 2000)),
@@ -635,6 +660,10 @@ create table public.vendors (
   hours_verified_at timestamp with time zone,
   hours_verified_by text default ''::text not null,
   hours_verified_how text default ''::text not null,
+  client_bio text default ''::text not null,
+  retail_price text default ''::text not null,
+  claimed_by text default ''::text not null,
+  claimed_at timestamp with time zone,
   constraint vendors_pkey PRIMARY KEY (id),
   constraint vendors_active_check CHECK ((active = ANY (ARRAY['Active'::text, 'Inactive'::text]))),
   constraint "vendors_agentPriceVatTreatment_check" CHECK (("agentPriceVatTreatment" = ANY (ARRAY[''::text, 'including_vat'::text, 'plus_vat'::text, 'not_applicable'::text]))),
@@ -644,6 +673,7 @@ create table public.vendors (
   constraint "vendors_cancelNoticeUnit_check" CHECK (("cancelNoticeUnit" = ANY (ARRAY[''::text, 'Hours'::text, 'Days'::text]))),
   constraint "vendors_cancelPolicyVerifiedDate_check" CHECK ((("cancelPolicyVerifiedDate" = ''::text) OR ("cancelPolicyVerifiedDate" ~ '^\d{4}-\d{2}-\d{2}$'::text))),
   constraint vendors_category_check CHECK ((category = ANY (ARRAY['Hotel'::text, 'Guide'::text, 'Transport'::text, 'Restaurant'::text, 'Winery'::text, 'Attraction / Site'::text, 'Activity'::text, 'Adventure'::text, 'National Parks'::text, 'Travel Agent'::text, 'Itinerary Planner'::text, 'Flight'::text, 'Other'::text]))),
+  constraint vendors_client_check CHECK (((length(client_bio) <= 1500) AND (length(retail_price) <= 200))),
   constraint vendors_currency_check CHECK ((currency = ANY (ARRAY['USD'::text, 'ILS'::text, 'EUR'::text]))),
   constraint vendors_experience_years_check CHECK (((experience_years = ''::text) OR (experience_years ~ '^\d{1,2}$'::text))),
   constraint vendors_hours_check CHECK ((length(hours) <= 600)),
@@ -663,6 +693,7 @@ create table public.vendors (
   constraint vendors_tags_check CHECK ((length(tags) <= 300))
 );
 alter table public.vendors enable row level security;
+CREATE INDEX vendors_claimed_by_idx ON public.vendors USING btree (claimed_by) WHERE (claimed_by <> ''::text);
 CREATE INDEX vendors_name_norm_idx ON public.vendors USING btree (name_norm);
 CREATE INDEX vendors_category_idx ON public.vendors USING btree (category);
 
@@ -706,9 +737,63 @@ alter table public.vendors add constraint vendors_parent_id_fkey FOREIGN KEY (pa
 
 alter table public.job_offers add constraint job_offers_job_id_fkey FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE;
 alter table public.member_days add constraint member_days_job_id_fkey FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE;
+alter table public.vendor_claims add constraint vendor_claims_vendor_id_fkey FOREIGN KEY (vendor_id) REFERENCES vendors(id) ON DELETE CASCADE;
 
 
 -- ===== Functions (RPCs; all data access goes through these) =====
+
+-- (_phone_norm sits here because _is_own, below, calls it)
+CREATE OR REPLACE FUNCTION public._phone_norm(p text)
+ RETURNS text
+ LANGUAGE sql
+ IMMUTABLE
+ SET search_path TO ''
+AS $function$
+  select case when d like '00972%' then '0' || substr(d, 6) when d like '972%' and length(d) >= 11 then '0' || substr(d, 4) else d end
+  from (select regexp_replace(coalesce(p,''), '\D', '', 'g') d) x
+$function$
+;
+
+-- Claimed pages and guide rules (D-12, D-14, D-16): internal helpers, not RPCs.
+-- Is this supplier a guide? Main category Guide, or Guide under "also offers".
+create or replace function public._is_guide(v public.vendors)
+ returns boolean language sql immutable set search_path to ''
+as $function$
+  select v.category = 'Guide' or coalesce(v.also_categories,'') ~* '(^|,)\s*Guide\s*(,|$)'
+$function$
+;
+
+-- Is this supplier page the member's own? He claimed it, or his own phone number or email is on it.
+create or replace function public._is_own(v public.vendors, m public.members)
+ returns boolean language sql immutable set search_path to ''
+as $function$
+  select coalesce(m.id is not null and not m.is_admin and (
+       (v.claimed_by <> '' and v.claimed_by = m.email)
+    or (length(public._phone_norm(m.phone)) >= 9 and (
+            position(right(public._phone_norm(m.phone), 9) in regexp_replace(coalesce(v.phone,''), '\D', '', 'g')) > 0
+         or position(right(public._phone_norm(m.phone), 9) in regexp_replace(coalesce(v.whatsapp,''), '\D', '', 'g')) > 0))
+    or (m.email <> '' and position(m.email in lower(coalesce(v.email,''))) > 0)), false)
+$function$
+;
+
+-- Is this driver the member himself (same phone number), or a driver of a company page that is the member's own?
+create or replace function public._driver_own(d public.drivers, m public.members)
+ returns boolean language sql stable security definer set search_path to ''
+as $function$
+  select coalesce(m.id is not null and not m.is_admin and (
+       (length(public._phone_norm(m.phone)) >= 9 and right(public._phone_norm(m.phone), 9) = right(d.phone_norm, 9))
+    or exists (select 1 from public.driver_vendors dv join public.vendors v on v.id = dv.vendor_id where dv.driver_id = d.id and public._is_own(v, m))), false)
+$function$
+;
+
+-- Is this member a guide? His role says so, or he has claimed a guide's page.
+create or replace function public._is_guide_member(m public.members)
+ returns boolean language sql stable security definer set search_path to ''
+as $function$
+  select coalesce(m.id is not null and not m.is_admin and (m.role = 'Licensed tour guide'
+    or exists (select 1 from public.vendors v where v.claimed_by = m.email and public._is_guide(v))), false)
+$function$
+;
 
 -- Limited members (organisations that are not in tourism, D-15, 3 Oct 2026): who may see what. Internal helpers, not RPCs.
 -- The member behind this call, as _auth saw him. Null before _auth has run.
@@ -775,8 +860,11 @@ $function$;
 create or replace function public._note_visible(n public.vendor_notes, v public.vendors, m public.members)
  returns boolean language sql stable set search_path to ''
 as $function$
-  select not public._limited(m) or n.org or n.author = m.email or n.author like 'import from websites%'
-    or public._reviews_open(m, v.category, v.also_categories)
+  select coalesce(m.is_admin, false) or (
+        not public._is_own(v, m)
+    and (n.author = m.email or (n.status = 'approved' and not n.private))
+    and (not public._limited(m) or n.org or n.author = m.email or n.author like 'import from websites%'
+         or public._reviews_open(m, v.category, v.also_categories)))
 $function$;
 
 -- A file on a supplier, for a limited member: his own, another organisation's, or a photo or kosher certificate.
@@ -893,17 +981,6 @@ CREATE OR REPLACE FUNCTION public._new_token()
  LANGUAGE sql
  SET search_path TO ''
 AS $function$ select encode(extensions.gen_random_bytes(24),'hex') $function$
-;
-
-CREATE OR REPLACE FUNCTION public._phone_norm(p text)
- RETURNS text
- LANGUAGE sql
- IMMUTABLE
- SET search_path TO ''
-AS $function$
-  select case when d like '00972%' then '0' || substr(d, 6) when d like '972%' and length(d) >= 11 then '0' || substr(d, 4) else d end
-  from (select regexp_replace(coalesce(p,''), '\D', '', 'g') d) x
-$function$
 ;
 
 CREATE OR REPLACE FUNCTION public._price_clean(p jsonb)
@@ -1027,17 +1104,19 @@ create or replace function public._vendor_for(v public.vendors, m public.members
  returns json language sql stable security definer set search_path to ''
 as $function$
   select (public._vendor_json(v.id)::jsonb
-      || case when v.prices_private then jsonb_build_object('agentPrice','','listedPrice','','agentPriceVatTreatment','','listedPriceVatTreatment','','maxPax','') else '{}'::jsonb end
+      || case when v.prices_private then jsonb_build_object('agentPrice','','listedPrice','','agentPriceVatTreatment','','listedPriceVatTreatment','','maxPax','','retail_price','') else '{}'::jsonb end
       || case when x.lim then jsonb_build_object('agentPrice','','agentPriceVatTreatment','','agent_link','','agent_howto','') else '{}'::jsonb end
-      || case when x.lim and v.category = 'Guide' and not m.see_guide_rates then jsonb_build_object('listedPrice','','listedPriceVatTreatment','','maxPax','') else '{}'::jsonb end
-      || case when x.lim and not x.rev then jsonb_build_object('rateReliability','','rateService','','rateValue','','strengths','','weaknesses','','notes','') else '{}'::jsonb end
+      || case when x.lim and v.category = 'Guide' and not m.see_guide_rates then jsonb_build_object('listedPrice','','listedPriceVatTreatment','','maxPax','','retail_price','') else '{}'::jsonb end
+      || case when (x.lim and not x.rev) or x.own then jsonb_build_object('rateReliability','','rateService','','rateValue','','strengths','','weaknesses','','notes','') else '{}'::jsonb end
       || case when x.lim then jsonb_build_object(
-           '_files', (select count(*) from public.vendor_files f where f.vendor_id = v.id and f.quote_id is null and public._file_visible(f, m)),
-           '_notes', (select count(*) from public.vendor_notes n where n.vendor_id = v.id and public._note_visible(n, v, m))) else '{}'::jsonb end
+           '_files', (select count(*) from public.vendor_files f where f.vendor_id = v.id and f.quote_id is null and public._file_visible(f, m))) else '{}'::jsonb end
       || jsonb_build_object('_prices', (select count(*) from public.vendor_prices p where p.vendor_id = v.id and public._price_visible(p, v, m)),
-           'created_by', public._name(v.created_by), 'updated_by', public._name(v.updated_by), 'hours_verified_by', public._name(v.hours_verified_by))
+           '_notes', (select count(*) from public.vendor_notes n where n.vendor_id = v.id and public._note_visible(n, v, m)),
+           'created_by', public._name(v.created_by), 'updated_by', public._name(v.updated_by), 'hours_verified_by', public._name(v.hours_verified_by),
+           'claimed_by', '', '_claimed', v.claimed_by <> '', 'claimed_name', public._name(v.claimed_by),
+           '_mine', coalesce(v.claimed_by <> '' and v.claimed_by = m.email, false), '_own', x.own)
     )::json
-  from (select public._limited(m) as lim, public._reviews_open(m, v.category, v.also_categories) as rev) x
+  from (select public._limited(m) as lim, public._reviews_open(m, v.category, v.also_categories) as rev, public._is_own(v, m) as own) x
 $function$;
 
 CREATE OR REPLACE FUNCTION public._vendor_view(p_id text, p_admin boolean, p_email text DEFAULT ''::text)
@@ -1051,7 +1130,8 @@ begin
   select * into v from public.vendors where id = p_id;
   if v.id is null then return null; end if;
   if p_admin then
-    return (public._vendor_json(p_id)::jsonb || jsonb_build_object('_prices',(select count(*) from public.vendor_prices p where p.vendor_id=p_id)))::json;
+    return (public._vendor_json(p_id)::jsonb || jsonb_build_object('_prices',(select count(*) from public.vendor_prices p where p.vendor_id=p_id),
+      '_claimed', v.claimed_by <> '', 'claimed_name', public._name(v.claimed_by), '_mine', false, '_own', false))::json;
   end if;
   m := public._me();
   if m.id is null or m.email is distinct from p_email then
@@ -1101,19 +1181,20 @@ CREATE OR REPLACE FUNCTION public._driver_json(d drivers, p_email text, p_admin 
 AS $function$
   select json_build_object('id',d.id,'name',d.name,'phone',d.phone,'drives',d.drives,
     'can_edit', p_admin or d.created_by = p_email,
-    'n',(select count(*) from public.driver_reviews r where r.driver_id = d.id and (x.every or r.org or r.author = p_email)),
-    'avg',(select round(avg(r.rating::int)::numeric, 1) from public.driver_reviews r where r.driver_id = d.id and (x.every or r.org or r.author = p_email)),
-    'some_hidden', not x.every,
+    'n',case when x.hide then 0 else (select count(*) from public.driver_reviews r where r.driver_id = d.id and (x.every or r.org or r.author = p_email) and (p_admin or not r.private or r.author = p_email)) end,
+    'avg',case when x.hide then null else (select round(avg(r.rating::int)::numeric, 1) from public.driver_reviews r where r.driver_id = d.id and (x.every or r.org or r.author = p_email) and (p_admin or not r.private or r.author = p_email)) end,
+    'some_hidden', not x.every, 'reviews_hidden', x.hide,
     'vendors',coalesce((select json_agg(json_build_object('id',v.id,'name',v.name) order by v.name)
         from public.driver_vendors dv join public.vendors v on v.id = dv.vendor_id
         where dv.driver_id = d.id and (p_admin or (not v.hidden and public._can_see(x.m, v.category, v.also_categories)))),'[]'::json),
-    'reviews',coalesce((select json_agg(json_build_object('id',r.id,'rating',r.rating,'tags',r.tags,'body',r.body,'trip_month',r.trip_month,
+    'reviews',case when x.hide then '[]'::json else coalesce((select json_agg(json_build_object('id',r.id,'rating',r.rating,'tags',r.tags,'body',r.body,'trip_month',r.trip_month,
           'vendor_id',case when v.id is not null and (p_admin or (not v.hidden and public._can_see(x.m, v.category, v.also_categories))) then v.id end,
           'vendor_name',case when v.id is not null and (p_admin or (not v.hidden and public._can_see(x.m, v.category, v.also_categories))) then v.name end,
-          'by',public._who(r.author),'mine',r.author = p_email,'org',r.org,'created_at',r.created_at) order by r.created_at desc)
+          'by',public._who(r.author),'mine',r.author = p_email,'org',r.org,'private',r.private,'created_at',r.created_at) order by r.created_at desc)
         from public.driver_reviews r left join public.vendors v on v.id = r.vendor_id
-        where r.driver_id = d.id and (x.every or r.org or r.author = p_email)),'[]'::json))
-  from (select q.m, (p_admin or not public._limited(q.m) or coalesce((q.m).see_transport_reviews, true)) as every from (select public._me() as m) q) x
+        where r.driver_id = d.id and (x.every or r.org or r.author = p_email) and (p_admin or not r.private or r.author = p_email)),'[]'::json) end)
+  from (select q.m, (p_admin or not public._limited(q.m) or coalesce((q.m).see_transport_reviews, true)) as every,
+               (not p_admin) and public._driver_own(d, q.m) as hide from (select public._me() as m) q) x
 $function$;
 
 CREATE OR REPLACE FUNCTION public.accept_terms(p_token text, p_version text)
@@ -1250,15 +1331,17 @@ begin
   m := public._auth(p_token);
   if public._limited(m) and not ('transport' = any (string_to_array(m.sections, ','))) then raise exception 'Driver reviews are not part of your access.' using errcode = '42501'; end if;
   if not exists (select 1 from public.drivers where id = p_driver) then raise exception 'That driver is no longer on the list.'; end if;
+  if exists (select 1 from public.drivers d where d.id = p_driver and public._driver_own(d, m)) then raise exception 'You cannot review yourself or your own company''s drivers.'; end if;
   if coalesce(p_review->>'rating','') !~ '^[1-5]$' then raise exception 'Give a rating from 1 to 5.'; end if;
   if vid is not null then
     perform public._visible(vid, m.is_admin);
     if not exists (select 1 from public.vendors where id = vid) then raise exception 'That supplier no longer exists.'; end if;
     insert into public.driver_vendors (driver_id, vendor_id, added_by) values (p_driver, vid, m.email) on conflict do nothing;
   end if;
-  insert into public.driver_reviews (driver_id, vendor_id, rating, tags, body, trip_month, author, author_name, org)
+  insert into public.driver_reviews (driver_id, vendor_id, rating, tags, body, trip_month, author, author_name, org, private)
   values (p_driver, vid, p_review->>'rating', left(trim(coalesce(p_review->>'tags','')),300), left(trim(coalesce(p_review->>'body','')),1500),
-    case when coalesce(p_review->>'trip_month','') ~ '^\d{4}-\d{2}$' then p_review->>'trip_month' else '' end, m.email, m.name, public._limited(m))
+    case when coalesce(p_review->>'trip_month','') ~ '^\d{4}-\d{2}$' then p_review->>'trip_month' else '' end, m.email, m.name, public._limited(m),
+    coalesce(p_review->>'private','') in ('true','t'))
   returning id into rid;
   return rid;
 end $function$;
@@ -1603,21 +1686,16 @@ CREATE OR REPLACE FUNCTION public.note_add(p_token text, p_vendor text, p_body t
  SECURITY DEFINER
  SET search_path TO ''
 AS $function$
-declare m public.members;
 begin
-  m := public._auth(p_token); perform public._visible(p_vendor, m.is_admin);
-  insert into public.vendor_notes (vendor_id, body, author, author_name, org) values (p_vendor, trim(p_body), m.email, m.name, public._limited(m));
+  perform public.review_post(p_token, p_vendor, p_body, '', false);
 end $function$;
 
 -- A note with an optional 1-5 rating: what the app calls a review.
 create or replace function public.review_add(p_token text, p_vendor text, p_body text, p_rating text default ''::text)
  returns void language plpgsql security definer set search_path to ''
 as $function$
-declare m public.members;
 begin
-  m := public._auth(p_token); perform public._visible(p_vendor, m.is_admin);
-  insert into public.vendor_notes (vendor_id, body, author, author_name, org, rating)
-  values (p_vendor, trim(p_body), m.email, m.name, public._limited(m), case when coalesce(p_rating,'') ~ '^[1-5]$' then p_rating else '' end);
+  perform public.review_post(p_token, p_vendor, p_body, p_rating, false);
 end $function$;
 
 CREATE OR REPLACE FUNCTION public.note_delete(p_token text, p_id uuid)
@@ -1937,12 +2015,12 @@ CREATE OR REPLACE FUNCTION public.vendor_detail(p_token text, p_id text)
  SECURITY DEFINER
  SET search_path TO ''
 AS $function$
-declare m public.members; v public.vendors; pp boolean; lim boolean;
+declare m public.members; v public.vendors; pp boolean; lim boolean; own boolean;
 begin
   m := public._auth(p_token); lim := public._limited(m);
   select * into v from public.vendors where id = p_id;
   if not m.is_admin and (v.hidden or not public._can_see(m, v.category, v.also_categories)) then raise exception 'That supplier is not available.'; end if;
-  pp := v.prices_private;
+  pp := v.prices_private; own := public._is_own(v, m);
   return json_build_object(
     'prices', coalesce((select json_agg(json_build_object('id',p.id,'vendor_id',p.vendor_id,'label',p.label,'audience',p.audience,'age_from',p.age_from,'age_to',p.age_to,'pax_min',p.pax_min,'pax_max',p.pax_max,'season',p.season,'price',p.price,'currency',p.currency,'vat',p.vat,'basis',p.basis,'is_agent',p.is_agent,'source',p.source,'checked_on',p.checked_on,'note',p.note,'private',p.private,'sort',p.sort,
           'org',p.org,
@@ -1955,7 +2033,7 @@ begin
     'prices_private', coalesce(pp,false),
     'deals', coalesce((select json_agg(case when m.is_admin then to_jsonb(d) else to_jsonb(d) || jsonb_build_object('reported_by', public._name(d.reported_by)) end order by (d.valid_to <> '' and d.valid_to < to_char(now(),'YYYY-MM-DD')), d.created_at desc) from public.vendor_deals d where d.vendor_id = p_id), '[]'),
     'notes', coalesce((select json_agg(case when m.is_admin then to_jsonb(n) || jsonb_build_object('mine', n.author = m.email)
-          else to_jsonb(n) || jsonb_build_object('author', public._name(n.author), 'mine', n.author = m.email) end order by n.created_at desc)
+          else to_jsonb(n) || jsonb_build_object('author', public._name(n.author), 'decided_by', '', 'mine', n.author = m.email) end order by n.created_at desc)
         from public.vendor_notes n where n.vendor_id = p_id and public._note_visible(n, v, m)), '[]'),
     'reviews_open', public._reviews_open(m, v.category, v.also_categories),
     'requests', coalesce((select json_agg(c order by c.created_at desc) from public.change_requests c where c.vendor_id = p_id and c.status = 'pending' and (m.is_admin or c.requested_by = m.email)), '[]'),
@@ -1967,7 +2045,12 @@ begin
     'res_reports', coalesce((select json_agg(json_build_object('checked',r.checked,'visit_date',r.visit_date,'note',r.note,'member_name',r.member_name,'created_at',r.created_at,'mine',r.member = m.email) order by r.created_at desc) from (select * from public.reservation_reports where vendor_id = p_id order by created_at desc limit 20) r), '[]'),
     'res_answered', exists (select 1 from public.reservation_reports where vendor_id = p_id and member = m.email),
     'deal_by', coalesce((select json_object_agg(d.id, public._who(d.reported_by)) from public.vendor_deals d where d.vendor_id = p_id), '{}'),
-    'note_by', coalesce((select json_object_agg(n.id, public._who(n.author)) from public.vendor_notes n where n.vendor_id = p_id and public._note_visible(n, v, m)), '{}')
+    'note_by', coalesce((select json_object_agg(n.id, public._who(n.author)) from public.vendor_notes n where n.vendor_id = p_id and public._note_visible(n, v, m)), '{}'),
+    'own', coalesce(own, false),
+    'my_claim', exists (select 1 from public.vendor_claims c where c.vendor_id = p_id and c.member = m.email and c.status = 'pending'),
+    'claimer', case when m.is_admin then (select json_build_object('id',mm.id,'name',mm.name,'role',case when mm.org <> '' then mm.org else mm.role end) from public.members mm where mm.email = v.claimed_by and v.claimed_by <> '' order by mm.created_at limit 1) end,
+    'matches', case when m.is_admin then coalesce((select json_agg(json_build_object('id',mm.id,'name',mm.name,'role',case when mm.org <> '' then mm.org else mm.role end) order by mm.name)
+        from public.members mm where mm.status = 'approved' and v.claimed_by <> mm.email and public._is_own(v, mm)), '[]'::json) end
   );
 end $function$;
 
@@ -2004,7 +2087,7 @@ AS $function$
 begin
   perform public._auth(p_token, true);
   return coalesce((select json_agg(json_build_object('id',r.id,'vendor_id',r.vendor_id,'vendor_name',v.name,'kind',r.kind,'message',r.message,'anonymous',r.anonymous,
-    'author_name',case when r.anonymous then '' else r.author_name end,'author',case when r.anonymous then '' else r.author end,'status',r.status,'created_at',r.created_at) order by (r.status='New') desc, r.created_at desc)
+    'author_name',case when r.anonymous then '' else r.author_name end,'author',case when r.anonymous then '' else r.author end,'status',r.status,'by_owner',r.by_owner,'created_at',r.created_at) order by (r.status='New') desc, r.created_at desc)
     from public.vendor_reports r join public.vendors v on v.id = r.vendor_id where r.status = 'New' or r.created_at > now() - interval '30 days'), '[]'::json);
 end $function$
 ;
@@ -2019,7 +2102,9 @@ declare m public.members; r public.vendors; cv public.vendors; f text; clean jso
   price_fields text[] := array['agentPrice','listedPrice','agentPriceVatTreatment','listedPriceVatTreatment','maxPax'];
   agent_fields text[] := array['agentPrice','agentPriceVatTreatment','agent_link','agent_howto'];
   skip text[] := array[]::text[];
-  is_rest boolean; no_cert boolean; lim boolean;
+  is_rest boolean; no_cert boolean; lim boolean; own boolean := false; gog boolean := false;
+  review_fields text[] := array['rateReliability','rateService','rateValue','strengths','weaknesses','notes'];
+  is_gd boolean; lic boolean; spec boolean; esh boolean; d1 boolean; was_gd boolean := false; was_spec boolean := false; was_esh boolean := false;
 begin
   m := public._auth(p_token); lim := public._limited(m);
   foreach f in array public._all_fields() loop
@@ -2029,6 +2114,23 @@ begin
   is_rest := (clean->>'category') = 'Restaurant' or (clean->>'also_categories') ~* '(^|,)\s*Restaurant\s*(,|$)';
   if is_rest and (clean->>'kosher') ~* '^\s*(not kosher|non[- ]?kosher|kosher[- ]style)' then raise exception 'The list does not accept non-kosher restaurants.'; end if;
   no_cert := is_rest and (clean->>'kosher') ~* '^\s*kosher\W+(no|without)\s+(certificate|certification|teuda|teudah|hechsher)';
+  -- Guides (D-16): only licensed tour guides are listed, except a specialty (shuk tours, graffiti tours and the like),
+  -- which Eretz Israel Tours approves as an exception. An Eshkol driver or guide needs a D1 license.
+  -- Both are stated with tags, and asked for when an entry is new, becomes a guide, or gains Eshkol.
+  is_gd := (clean->>'category') = 'Guide' or (clean->>'also_categories') ~* '(^|,)\s*Guide\s*(,|$)';
+  lic := (clean->>'tags') ~* '(^|,)\s*Licensed tour guide\s*(,|$)';
+  spec := (clean->>'tags') ~* '(^|,)\s*Specialty guide\s*(,|$)';
+  esh := (clean->>'tags') ~* 'eshkol (license|driver|guide)';
+  d1 := (clean->>'tags') ~* '(^|,)\s*D1 license\s*(,|$)';
+  if coalesce(p_data->>'id','') <> '' then
+    select public._is_guide(x), coalesce(x.tags,'') ~* '(^|,)\s*Specialty guide\s*(,|$)', coalesce(x.tags,'') ~* 'eshkol (license|driver|guide)'
+      into was_gd, was_spec, was_esh from public.vendors x where x.id = p_data->>'id';
+  end if;
+  if is_gd and lic and spec then raise exception 'Choose one: licensed tour guide, or specialty guide.'; end if;
+  if is_gd and not coalesce(was_gd, false) and not (lic or spec) then
+    raise exception 'Say whether this guide is licensed. Only licensed tour guides are listed, except specialties such as shuk tours or graffiti tours.'; end if;
+  if esh and not coalesce(was_esh, false) and not d1 then
+    raise exception 'Only a driver with a D1 license can be listed as an Eshkol driver or guide. Add the tag "D1 license" to confirm it, or take Eshkol off.'; end if;
   if coalesce(p_data->>'id','') = '' then
     if lim then
       -- A limited member adds suppliers in his own sections, and never an agent price (D-15).
@@ -2039,6 +2141,8 @@ begin
     insert into public.vendors (name,category,active,"contactPerson",phone,whatsapp,email,website,location,languages,kosher,"maxCap","listedPrice","listedPriceVatTreatment","agentPrice","agentPriceVatTreatment","maxPax","priceBasis",currency,"payTerms","cancelPolicy","cancelNoticeAmount","cancelNoticeUnit","cancelDayType","cancelPenalty","cancelPolicyVerifiedDate","npResLink","rateReliability","rateService","rateValue",strengths,weaknesses,notes,region,tags,experience_years,agent_link,agent_howto,also_categories,maps_link,hours,hours_last)
     values (r.name,r.category,r.active,r."contactPerson",r.phone,r.whatsapp,r.email,r.website,r.location,r.languages,r.kosher,r."maxCap",r."listedPrice",r."listedPriceVatTreatment",r."agentPrice",r."agentPriceVatTreatment",r."maxPax",r."priceBasis",r.currency,r."payTerms",r."cancelPolicy",r."cancelNoticeAmount",r."cancelNoticeUnit",r."cancelDayType",r."cancelPenalty",r."cancelPolicyVerifiedDate",r."npResLink",r."rateReliability",r."rateService",r."rateValue",r.strengths,r.weaknesses,r.notes,r.region,r.tags,r.experience_years,r.agent_link,r.agent_howto,r.also_categories,r.maps_link,r.hours,r.hours_last)
     returning * into r;
+    -- a member who adds his own business does not rate it (D-14)
+    if public._is_own(r, m) then update public.vendors set "rateReliability" = '', "rateService" = '', "rateValue" = '', strengths = '', weaknesses = '' where id = r.id; end if;
     return json_build_object('vendor', public._vendor_view(r.id, m.is_admin, m.email), 'request', false);
   end if;
   select * into cv from public.vendors v where v.id = p_data->>'id';
@@ -2058,11 +2162,17 @@ begin
     if cv.category = 'Guide' and not m.see_guide_rates then skip := skip || array['listedPrice','listedPriceVatTreatment','maxPax']; end if;
     if not public._reviews_open(m, cv.category, cv.also_categories) then skip := skip || array['rateReliability','rateService','rateValue','strengths','weaknesses','notes']; end if;
   end if;
+  -- D-14: ratings and remarks on a member's own page are hidden from him, so his save leaves them as they are;
+  -- a guide's change to another guide's ratings or remarks is a review, and Eretz Israel Tours approves it first.
+  own := public._is_own(cv, m);
+  if own then skip := skip || review_fields; end if;
+  gog := public._is_guide(cv) and public._is_guide_member(m);
   foreach f in array public._all_fields() loop
     if cv.prices_private and f = any(price_fields) then continue; end if;
     if f = any(skip) then continue; end if;
     if (clean->>f) is distinct from coalesce(cur->>f,'') then
-      if f = any(public._locked_fields()) or (f = 'kosher' and no_cert) then locked_changes := locked_changes || jsonb_build_object(f, clean->>f);
+      if f = any(public._locked_fields()) or (f = 'kosher' and no_cert) or (gog and f = any(review_fields))
+         or (f = 'tags' and is_gd and spec and not coalesce(was_spec, false)) then locked_changes := locked_changes || jsonb_build_object(f, clean->>f);
       else open_vals := open_vals || jsonb_build_object(f, clean->>f); end if;
     end if;
   end loop;
@@ -2856,6 +2966,175 @@ begin
 end $function$;
 
 
+-- ===== Guide pages for clients, claimed pages, reviews (3 Oct 2026, D-12, D-14) =====
+
+create or replace function public.review_post(p_token text, p_vendor text, p_body text, p_rating text, p_private boolean)
+ returns json language plpgsql security definer set search_path to ''
+as $function$
+declare m public.members; v public.vendors; st text := 'approved'; pr boolean;
+begin
+  m := public._auth(p_token); perform public._visible(p_vendor, m.is_admin);
+  select * into v from public.vendors where id = p_vendor;
+  if v.id is null then raise exception 'That supplier no longer exists.'; end if;
+  if public._is_own(v, m) then raise exception 'You cannot add a note to your own page.'; end if;
+  pr := coalesce(p_private, false);   -- an organisation may keep a review private too; otherwise its review is for everyone, at once (D-15)
+  if not m.is_admin and not pr and public._is_guide(v) and public._is_guide_member(m) then st := 'pending'; end if;
+  insert into public.vendor_notes (vendor_id, body, author, author_name, org, rating, private, status)
+  values (p_vendor, trim(p_body), m.email, m.name, public._limited(m), case when coalesce(p_rating,'') ~ '^[1-5]$' then p_rating else '' end, pr, st);
+  return json_build_object('status', st, 'private', pr);
+end $function$;
+
+create or replace function public.note_decide(p_token text, p_id uuid, p_approve boolean)
+ returns void language plpgsql security definer set search_path to ''
+as $function$
+declare m public.members;
+begin
+  m := public._auth(p_token, true);
+  update public.vendor_notes set status = case when coalesce(p_approve, false) then 'approved' else 'rejected' end, decided_by = m.email, decided_at = now()
+    where id = p_id and status = 'pending';
+  if not found then raise exception 'That note was already handled.'; end if;
+end $function$;
+
+create or replace function public.notes_pending(p_token text)
+ returns json language plpgsql security definer set search_path to ''
+as $function$
+begin
+  perform public._auth(p_token, true);
+  return coalesce((select json_agg(json_build_object('id',n.id,'vendor_id',n.vendor_id,'vendor_name',v.name,'body',n.body,
+      'author_name',n.author_name,'by',public._who(n.author),'created_at',n.created_at) order by n.created_at)
+    from public.vendor_notes n join public.vendors v on v.id = n.vendor_id where n.status = 'pending'), '[]'::json);
+end $function$;
+
+create or replace function public.vendor_set_client(p_token text, p_vendor text, p_bio text, p_retail text)
+ returns json language plpgsql security definer set search_path to ''
+as $function$
+declare m public.members; v public.vendors; b text := trim(coalesce(p_bio,'')); rt text := trim(coalesce(p_retail,''));
+begin
+  m := public._auth(p_token); perform public._visible(p_vendor, m.is_admin);
+  select * into v from public.vendors where id = p_vendor;
+  if v.id is null then raise exception 'That supplier no longer exists.'; end if;
+  if not public._is_guide(v) then raise exception 'Only a guide''s page has a section for clients.'; end if;
+  if public._limited(m) then raise exception 'This section is written by guides, agents and Eretz Israel Tours.' using errcode = '42501'; end if;
+  -- once a guide has claimed his page, only he and Eretz Israel Tours write what clients see
+  if v.claimed_by <> '' and not m.is_admin and v.claimed_by <> m.email then raise exception 'This guide has claimed the page, so only they can change what clients see.'; end if;
+  if length(b) > 1500 then raise exception 'Keep the bio under 1,500 characters.'; end if;
+  if length(rt) > 200 then raise exception 'Keep the retail price under 200 characters.'; end if;
+  -- a colleague neither sees nor changes a price on a supplier whose prices are private
+  if v.prices_private and not m.is_admin then rt := v.retail_price; end if;
+  update public.vendors set client_bio = b, retail_price = rt where id = p_vendor;
+  return public._vendor_view(p_vendor, m.is_admin, m.email);
+end $function$;
+
+create or replace function public.file_for_clients(p_token text, p_file uuid, p_on boolean)
+ returns json language plpgsql security definer set search_path to ''
+as $function$
+declare m public.members; f public.vendor_files; v public.vendors; n int;
+begin
+  m := public._auth(p_token);
+  select * into f from public.vendor_files where id = p_file;
+  if f.id is null or (f.private and not m.is_admin and f.uploaded_by <> m.email) then raise exception 'That picture no longer exists.'; end if;
+  perform public._visible(f.vendor_id, m.is_admin);
+  if public._limited(m) then raise exception 'This section is written by guides, agents and Eretz Israel Tours.' using errcode = '42501'; end if;
+  if exists (select 1 from public.vendors x where x.id = f.vendor_id and x.claimed_by <> '' and not m.is_admin and x.claimed_by <> m.email) then
+    raise exception 'This guide has claimed the page, so only they can change what clients see.'; end if;
+  if coalesce(p_on, false) then
+    -- one at a time per guide, so two people adding at once cannot pass four
+    select * into v from public.vendors where id = f.vendor_id for update;
+    if not public._is_guide(v) then raise exception 'Only a guide''s page has pictures for clients.'; end if;
+    if f.quote_id is not null then raise exception 'A file attached to a quote cannot be a picture for clients.'; end if;
+    if f.private then raise exception 'A file marked "only me" cannot be a picture for clients.'; end if;
+    if f.mime_type !~ '^image/(jpeg|png|webp)$' then raise exception 'Use a JPEG, PNG or WebP picture.'; end if;
+    if (select count(*) from public.vendor_files x where x.vendor_id = f.vendor_id and x.for_clients and x.id <> f.id) >= 4 then
+      raise exception 'Four pictures at most. Remove one first.'; end if;
+  end if;
+  update public.vendor_files set for_clients = coalesce(p_on, false) where id = p_file;
+  select count(*) into n from public.vendor_files x where x.vendor_id = f.vendor_id and x.for_clients;
+  return json_build_object('ok', true, 'for_clients', coalesce(p_on, false), 'n', n);
+end $function$;
+
+create or replace function public.vendor_claim(p_token text, p_vendor text, p_note text default ''::text)
+ returns json language plpgsql security definer set search_path to ''
+as $function$
+declare m public.members; v public.vendors;
+begin
+  m := public._auth(p_token); perform public._visible(p_vendor, m.is_admin);
+  if m.is_admin then raise exception 'Eretz Israel Tours links a page to a member from the page itself.'; end if;
+  -- an organisation is not a supplier on the list (D-15); if a school should own a page, Eretz Israel Tours links it
+  if public._limited(m) then raise exception 'Claiming a page is for the guides, agents and suppliers on the list.' using errcode = '42501'; end if;
+  select * into v from public.vendors where id = p_vendor;
+  if v.id is null then raise exception 'That supplier no longer exists.'; end if;
+  if v.claimed_by = m.email then raise exception 'This page is already yours.'; end if;
+  if v.claimed_by <> '' then raise exception 'Someone has already claimed this page. If that is wrong, tell Eretz Israel Tours through Feedback.'; end if;
+  if (select count(*) from public.vendor_claims c where c.member = m.email and c.status = 'pending' and c.vendor_id <> p_vendor) >= 5 then
+    raise exception 'You already have several claims waiting.'; end if;
+  insert into public.vendor_claims (vendor_id, member, member_name, note) values (p_vendor, m.email, m.name, left(trim(coalesce(p_note,'')), 500))
+    on conflict (vendor_id, member) where (status = 'pending'::text) do update set note = excluded.note;
+  return json_build_object('ok', true, 'status', 'pending');
+end $function$;
+
+create or replace function public.claims_list(p_token text)
+ returns json language plpgsql security definer set search_path to ''
+as $function$
+begin
+  perform public._auth(p_token, true);
+  return coalesce((select json_agg(json_build_object('id',c.id,'vendor_id',c.vendor_id,'vendor_name',v.name,'category',v.category,
+      'member_id',mm.id,'member_name',coalesce(mm.name, c.member_name),'role',case when mm.org <> '' then mm.org else coalesce(mm.role,'') end,'note',c.note,
+      'match',coalesce(public._is_own(v, mm), false),'created_at',c.created_at) order by c.created_at)
+    from public.vendor_claims c join public.vendors v on v.id = c.vendor_id
+      left join public.members mm on mm.email = c.member and mm.status = 'approved'
+    where c.status = 'pending'), '[]'::json);
+end $function$;
+
+create or replace function public.claim_decide(p_token text, p_id uuid, p_approve boolean)
+ returns void language plpgsql security definer set search_path to ''
+as $function$
+declare m public.members; c public.vendor_claims;
+begin
+  m := public._auth(p_token, true);
+  select * into c from public.vendor_claims where id = p_id and status = 'pending' for update;
+  if c.id is null then raise exception 'That claim was already handled.'; end if;
+  if coalesce(p_approve, false) then
+    if not exists (select 1 from public.members where email = c.member and status = 'approved') then raise exception 'That member is no longer active.'; end if;
+    update public.vendors set claimed_by = c.member, claimed_at = now() where id = c.vendor_id;
+    update public.vendor_claims set status = 'rejected', decided_by = m.email, decided_at = now() where vendor_id = c.vendor_id and status = 'pending' and id <> p_id;
+  end if;
+  update public.vendor_claims set status = case when coalesce(p_approve, false) then 'approved' else 'rejected' end, decided_by = m.email, decided_at = now() where id = p_id;
+end $function$;
+
+create or replace function public.vendor_set_claim(p_token text, p_vendor text, p_member uuid)
+ returns json language plpgsql security definer set search_path to ''
+as $function$
+declare m public.members; t public.members;
+begin
+  m := public._auth(p_token, true);
+  if not exists (select 1 from public.vendors where id = p_vendor) then raise exception 'That supplier no longer exists.'; end if;
+  if p_member is null then
+    update public.vendors set claimed_by = '', claimed_at = null where id = p_vendor;
+  else
+    select * into t from public.members where id = p_member and status = 'approved' and not is_admin;
+    if t.id is null then raise exception 'Choose an approved member.'; end if;
+    update public.vendors set claimed_by = t.email, claimed_at = now() where id = p_vendor;
+    update public.vendor_claims set status = case when member = t.email then 'approved' else 'rejected' end, decided_by = m.email, decided_at = now()
+      where vendor_id = p_vendor and status = 'pending';
+  end if;
+  return public._vendor_view(p_vendor, true);
+end $function$;
+
+create or replace function public.vendor_dispute(p_token text, p_vendor text, p_message text)
+ returns void language plpgsql security definer set search_path to ''
+as $function$
+declare m public.members; v public.vendors;
+begin
+  m := public._auth(p_token); perform public._visible(p_vendor, m.is_admin);
+  select * into v from public.vendors where id = p_vendor;
+  if v.id is null or not public._is_own(v, m) then raise exception 'Only the person whose page this is can dispute it. Use "Update this supplier" instead.'; end if;
+  if length(trim(coalesce(p_message,''))) < 5 then raise exception 'Say what is wrong, and what it should be.'; end if;
+  if (select count(*) from public.vendor_reports where author = m.email and created_at > now() - interval '1 hour') > 20 then raise exception 'Too many reports in a short time. Try again later.'; end if;
+  insert into public.vendor_reports (vendor_id, kind, message, anonymous, author, author_name, by_owner)
+    values (p_vendor, 'Mistake', left(trim(p_message), 2000), false, m.email, m.name, true);
+end $function$;
+
+
 -- ===== Triggers =====
 
 CREATE TRIGGER vendors_before_write BEFORE INSERT OR UPDATE ON public.vendors FOR EACH ROW EXECUTE FUNCTION vendors_before_write();
@@ -2985,6 +3264,20 @@ revoke all on function public._quote_visible(public.quotes,public.vendors,public
 revoke all on function public._vendor_for(public.vendors,public.members) from public, anon, authenticated;
 revoke all on function public.quotes_org_stamp() from public, anon, authenticated;
 revoke all on function public.review_add(text,text,text,text) from public; grant execute on function public.review_add(text,text,text,text) to anon, authenticated;
+revoke all on function public._is_guide(public.vendors) from public, anon, authenticated;
+revoke all on function public._is_own(public.vendors,public.members) from public, anon, authenticated;
+revoke all on function public._driver_own(public.drivers,public.members) from public, anon, authenticated;
+revoke all on function public._is_guide_member(public.members) from public, anon, authenticated;
+revoke all on function public.review_post(text,text,text,text,boolean) from public; grant execute on function public.review_post(text,text,text,text,boolean) to anon, authenticated;
+revoke all on function public.note_decide(text,uuid,boolean) from public; grant execute on function public.note_decide(text,uuid,boolean) to anon, authenticated;
+revoke all on function public.notes_pending(text) from public; grant execute on function public.notes_pending(text) to anon, authenticated;
+revoke all on function public.vendor_set_client(text,text,text,text) from public; grant execute on function public.vendor_set_client(text,text,text,text) to anon, authenticated;
+revoke all on function public.file_for_clients(text,uuid,boolean) from public; grant execute on function public.file_for_clients(text,uuid,boolean) to anon, authenticated;
+revoke all on function public.vendor_claim(text,text,text) from public; grant execute on function public.vendor_claim(text,text,text) to anon, authenticated;
+revoke all on function public.claims_list(text) from public; grant execute on function public.claims_list(text) to anon, authenticated;
+revoke all on function public.claim_decide(text,uuid,boolean) from public; grant execute on function public.claim_decide(text,uuid,boolean) to anon, authenticated;
+revoke all on function public.vendor_set_claim(text,text,uuid) from public; grant execute on function public.vendor_set_claim(text,text,uuid) to anon, authenticated;
+revoke all on function public.vendor_dispute(text,text,text) from public; grant execute on function public.vendor_dispute(text,text,text) to anon, authenticated;
 revoke all on function public.request_access_org(text,text,text,text,text,text,text) from public; grant execute on function public.request_access_org(text,text,text,text,text,text,text) to anon, authenticated;
 revoke all on function public.member_set_access(text,uuid,jsonb) from public; grant execute on function public.member_set_access(text,uuid,jsonb) to anon, authenticated;
 

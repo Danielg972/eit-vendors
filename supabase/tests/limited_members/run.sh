@@ -1,7 +1,7 @@
 #!/bin/bash
 # Limited members (D-15): the checks any database change has to pass before it goes to production.
 # Needs a local Postgres 16 you can create databases on (PGHOST, PGPORT, PGUSER set), psql and python3.
-# Builds a database from supabase/schema.sql, loads sample suppliers and members, and runs 74 checks as an
+# Builds a database from supabase/schema.sql, loads sample suppliers and members, and runs the checks (74 from D-15, plus the ones added with D-12, D-14 and D-16) as an
 # organisation (limited member), a guide (full member) and Eretz Israel Tours. Prints only the failures and the total.
 set -e
 cd "$(dirname "$0")"; R=../../..; DB=${1:-eitv_limited_test}

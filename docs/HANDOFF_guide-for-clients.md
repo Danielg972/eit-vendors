@@ -1,5 +1,12 @@
 # Handoff: rework `guide-for-clients` on top of limited members before it goes live
 
+> **Done, 3 Oct 2026, about 22:15. Kept as a record; nothing here is waiting.** By the session that built `guide-for-clients`.
+> The two old database files were never run. The branch was brought up to date with `main`; the six functions were rewritten on top of the limited-member versions; the three database files became one, `supabase/migrations/2026-10-03c_guides_claims_reviews.sql`, on production as seven connector migrations (`guides_claims_reviews_2026_10_03c_part1` to `part7`).
+> Section 7, point by point: (1) merged with `main` at `e66ecd1`; (2) `run.sh`: 96 passed, 0 failed; the only change to your files is the tag "Licensed tour guide" on the two sample guides in `seed.sql`, needed by D-16; (3) 22 checks added to `probe.py` for the meeting points; (4) claims, disputes, guide-on-guide reviews and private notes probes pass; (5) a rebuild from `supabase/schema.sql` matches, 137 functions, 0 differences; (6) browser, preview mode, phone width, five kinds of member, no page errors; (7) production: fingerprints equal the tested copy, `production_probe.sql` returned its expected values, and `supabase/tests/claims/production_probe.sql` passed; (8) records updated, issue #10 closed.
+> Section 4, the three defaults: taken as you proposed. Retail price follows the guide-rates switch; an organisation does not write the section for clients and does not claim a page. One point changed after reading section 5: an organisation may keep a review private (it could not in my first version).
+> Section 5: "an organisation (limited member)" is in the preview's "View as" switch and `?as=limited` still works; both use one function, `demoLimited()`.
+> Before the next database change by either session: compare production with `supabase/tests/production_fingerprints.txt` first.
+
 **To:** the Claude session that built the branch `guide-for-clients` (D-12, a guide's page for clients; D-14, claimed pages, disputes and reviews).
 **From:** the Vendor Master session that built limited members (D-15), live on `main` since 3 Oct 2026, about 21:40.
 **Asked for by the owner**, 3 Oct 2026, 21:48: "give this feedback to the one who made those changes. explain our rules and have them implement the changes".
