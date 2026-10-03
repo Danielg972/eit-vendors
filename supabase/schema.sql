@@ -1,5 +1,5 @@
 -- Israel Suppliers Master List: database schema (public schema; storage buckets listed at the end).
--- Exported from Supabase project wjuqtjlrtcywjaspjpwu on 2026-10-01; quote tracker, driver reviews and booking sheets, then opening hours, verified hours (hours_verify) and the kosher rule in vendor_save, added 2026-10-02 (supabase/migrations/); jobs between colleagues and My days (jobs, job_offers, member_days) added 2026-10-03.
+-- Exported from Supabase project wjuqtjlrtcywjaspjpwu on 2026-10-01; quote tracker, driver reviews and booking sheets, then opening hours, verified hours (hours_verify) and the kosher rule in vendor_save, added 2026-10-02 (supabase/migrations/); jobs between colleagues and My days (jobs, job_offers, member_days) added 2026-10-03. Guide pages for clients (client_bio, retail_price, vendor_files.for_clients; D-12) added 3 Oct 2026, not yet on production.
 -- To rebuild on an empty Supabase project: run this file, create the three PRIVATE storage buckets,
 -- then deploy supabase/functions/files/index.ts (verify_jwt = false). Data is not included.
 -- KEEP CURRENT: re-export after every schema, function or security change (README > Change rules).
@@ -467,6 +467,7 @@ create table public.vendor_files (
   created_at timestamp with time zone default now() not null,
   quote_id uuid,
   private boolean default false not null,
+  for_clients boolean default false not null,
   constraint vendor_files_path_key UNIQUE (path),
   constraint vendor_files_pkey PRIMARY KEY (id),
   constraint vendor_files_kind_check CHECK ((kind = ANY (ARRAY['Photo'::text, 'Receipt'::text, 'Price list'::text, 'Booking confirmation'::text, 'Contract'::text, 'Quote'::text, 'Kosher certificate'::text, 'Other'::text])))
@@ -619,6 +620,8 @@ create table public.vendors (
   hours_verified_at timestamp with time zone,
   hours_verified_by text default ''::text not null,
   hours_verified_how text default ''::text not null,
+  client_bio text default ''::text not null,
+  retail_price text default ''::text not null,
   constraint vendors_pkey PRIMARY KEY (id),
   constraint vendors_active_check CHECK ((active = ANY (ARRAY['Active'::text, 'Inactive'::text]))),
   constraint "vendors_agentPriceVatTreatment_check" CHECK (("agentPriceVatTreatment" = ANY (ARRAY[''::text, 'including_vat'::text, 'plus_vat'::text, 'not_applicable'::text]))),
@@ -628,6 +631,7 @@ create table public.vendors (
   constraint "vendors_cancelNoticeUnit_check" CHECK (("cancelNoticeUnit" = ANY (ARRAY[''::text, 'Hours'::text, 'Days'::text]))),
   constraint "vendors_cancelPolicyVerifiedDate_check" CHECK ((("cancelPolicyVerifiedDate" = ''::text) OR ("cancelPolicyVerifiedDate" ~ '^\d{4}-\d{2}-\d{2}$'::text))),
   constraint vendors_category_check CHECK ((category = ANY (ARRAY['Hotel'::text, 'Guide'::text, 'Transport'::text, 'Restaurant'::text, 'Winery'::text, 'Attraction / Site'::text, 'Activity'::text, 'Adventure'::text, 'National Parks'::text, 'Travel Agent'::text, 'Itinerary Planner'::text, 'Flight'::text, 'Other'::text]))),
+  constraint vendors_client_check CHECK (((length(client_bio) <= 1500) AND (length(retail_price) <= 200))),
   constraint vendors_currency_check CHECK ((currency = ANY (ARRAY['USD'::text, 'ILS'::text, 'EUR'::text]))),
   constraint vendors_experience_years_check CHECK (((experience_years = ''::text) OR (experience_years ~ '^\d{1,2}$'::text))),
   constraint vendors_hours_check CHECK ((length(hours) <= 600)),
@@ -895,7 +899,7 @@ AS $function$
   select case when p_admin then (public._vendor_json(p_id)::jsonb || jsonb_build_object('_prices',(select count(*) from public.vendor_prices p where p.vendor_id=p_id)))::json
   else (
     (public._vendor_json(p_id)::jsonb
-      || case when v.prices_private then jsonb_build_object('agentPrice','','listedPrice','','agentPriceVatTreatment','','listedPriceVatTreatment','','maxPax','') else '{}'::jsonb end)
+      || case when v.prices_private then jsonb_build_object('agentPrice','','listedPrice','','agentPriceVatTreatment','','listedPriceVatTreatment','','maxPax','','retail_price','') else '{}'::jsonb end)
       || jsonb_build_object('_prices', (select count(*) from public.vendor_prices p where p.vendor_id=p_id and ((p.owner <> '' and p.owner = p_email) or (p.owner = '' and not v.prices_private and not p.private))),
                             'created_by', public._name(v.created_by), 'updated_by', public._name(v.updated_by), 'hours_verified_by', public._name(v.hours_verified_by))
   )::json end
@@ -2583,6 +2587,59 @@ begin
 end $function$;
 
 
+-- ===== A guide's page for clients: bio, retail price, up to four pictures (3 Oct 2026, D-12) =====
+
+create or replace function public._is_guide(v public.vendors)
+ returns boolean language sql immutable set search_path to ''
+as $function$
+  select v.category = 'Guide' or coalesce(v.also_categories,'') ~* '(^|,)\s*Guide\s*(,|$)'
+$function$;
+
+-- Save the bio and the retail price on a guide's page.
+create or replace function public.vendor_set_client(p_token text, p_vendor text, p_bio text, p_retail text)
+ returns json language plpgsql security definer set search_path to ''
+as $function$
+declare m public.members; v public.vendors; b text := trim(coalesce(p_bio,'')); rt text := trim(coalesce(p_retail,''));
+begin
+  m := public._auth(p_token); perform public._visible(p_vendor, m.is_admin);
+  select * into v from public.vendors where id = p_vendor;
+  if v.id is null then raise exception 'That supplier no longer exists.'; end if;
+  if not public._is_guide(v) then raise exception 'Only a guide''s page has a section for clients.'; end if;
+  if length(b) > 1500 then raise exception 'Keep the bio under 1,500 characters.'; end if;
+  if length(rt) > 200 then raise exception 'Keep the retail price under 200 characters.'; end if;
+  -- a colleague neither sees nor changes a price on a supplier whose prices are private
+  if v.prices_private and not m.is_admin then rt := v.retail_price; end if;
+  update public.vendors set client_bio = b, retail_price = rt where id = p_vendor;
+  return public._vendor_view(p_vendor, m.is_admin, m.email);
+end $function$;
+
+-- Mark a photo as one of the guide's pictures for clients, or take the mark off. Four at most per guide.
+-- The file itself is not removed here; that stays with the files edge function (uploader or Eretz Israel Tours).
+create or replace function public.file_for_clients(p_token text, p_file uuid, p_on boolean)
+ returns json language plpgsql security definer set search_path to ''
+as $function$
+declare m public.members; f public.vendor_files; v public.vendors; n int;
+begin
+  m := public._auth(p_token);
+  select * into f from public.vendor_files where id = p_file;
+  if f.id is null or (f.private and not m.is_admin and f.uploaded_by <> m.email) then raise exception 'That picture no longer exists.'; end if;
+  perform public._visible(f.vendor_id, m.is_admin);
+  if coalesce(p_on, false) then
+    -- one at a time per guide, so two people adding at once cannot pass four
+    select * into v from public.vendors where id = f.vendor_id for update;
+    if not public._is_guide(v) then raise exception 'Only a guide''s page has pictures for clients.'; end if;
+    if f.quote_id is not null then raise exception 'A file attached to a quote cannot be a picture for clients.'; end if;
+    if f.private then raise exception 'A file marked "only me" cannot be a picture for clients.'; end if;
+    if f.mime_type !~ '^image/(jpeg|png|webp)$' then raise exception 'Use a JPEG, PNG or WebP picture.'; end if;
+    if (select count(*) from public.vendor_files x where x.vendor_id = f.vendor_id and x.for_clients and x.id <> f.id) >= 4 then
+      raise exception 'Four pictures at most. Remove one first.'; end if;
+  end if;
+  update public.vendor_files set for_clients = coalesce(p_on, false) where id = p_file;
+  select count(*) into n from public.vendor_files x where x.vendor_id = f.vendor_id and x.for_clients;
+  return json_build_object('ok', true, 'for_clients', coalesce(p_on, false), 'n', n);
+end $function$;
+
+
 -- ===== Triggers =====
 
 CREATE TRIGGER vendors_before_write BEFORE INSERT OR UPDATE ON public.vendors FOR EACH ROW EXECUTE FUNCTION vendors_before_write();
@@ -2674,6 +2731,9 @@ revoke all on function public.job_delete(text,uuid) from public; grant execute o
 revoke all on function public.my_days(text) from public; grant execute on function public.my_days(text) to anon, authenticated;
 revoke all on function public.my_days_set(text,jsonb,jsonb) from public; grant execute on function public.my_days_set(text,jsonb,jsonb) to anon, authenticated;
 revoke all on function public.my_days_prefs(text,jsonb) from public; grant execute on function public.my_days_prefs(text,jsonb) to anon, authenticated;
+revoke all on function public._is_guide(public.vendors) from public, anon, authenticated;
+revoke all on function public.vendor_set_client(text,text,text,text) from public; grant execute on function public.vendor_set_client(text,text,text,text) to anon, authenticated;
+revoke all on function public.file_for_clients(text,uuid,boolean) from public; grant execute on function public.file_for_clients(text,uuid,boolean) to anon, authenticated;
 revoke all on function vendor_set_status(text,text,text) from public; grant execute on function vendor_set_status(text,text,text) to anon, authenticated;
 revoke all on function vendor_set_prices_private(text,text,boolean) from public; grant execute on function vendor_set_prices_private(text,text,boolean) to anon, authenticated;
 revoke all on function accept_terms(text,text) from public; grant execute on function accept_terms(text,text) to anon, authenticated;
