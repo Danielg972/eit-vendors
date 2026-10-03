@@ -2881,7 +2881,8 @@ function resSummary(reps){
 }
 function drawSiteBits(v,det){
   const pb=document.getElementById('parentBox');
-  if(pb) pb.innerHTML = det.parent ? `<p style="margin:-4px 0 12px"><button class="parentlink" type="button" id="goParent">Part of ${esc(det.parent.name)} ›</button></p>` : '';
+  // A national-park site is "part of" its authority. Any other linked pair is two entries for one person or business (a guide and his jeep tours, D-18): "See also".
+  if(pb) pb.innerHTML = det.parent ? `<p style="margin:-4px 0 12px"><button class="parentlink" type="button" id="goParent">${v.category==='National Parks'?'Part of':'See also:'} ${esc(det.parent.name)} ›</button></p>` : '';
   const gp=document.getElementById('goParent'); if(gp) gp.onclick=()=>openDetail(det.parent.id);
   const rb=document.getElementById('resBox');
   if(rb){
@@ -2896,7 +2897,8 @@ function drawSiteBits(v,det){
   const sw=document.getElementById('sitesWrap'); if(!sw) return;
   const sites=det.sites||[];
   if(sites.length || (S.admin && v.category==='National Parks' && !v.parent_id)){
-    sw.innerHTML=`<fieldset><div class="sec-head"><legend>Sites</legend>${S.admin?'<button class="mini" id="addSite" type="button">+ Add site</button>':''}</div>
+    const park=v.category==='National Parks';
+    sw.innerHTML=`<fieldset><div class="sec-head"><legend>${park?'Sites':'See also'}</legend>${S.admin&&park?'<button class="mini" id="addSite" type="button">+ Add site</button>':''}</div>
       ${sites.length?`<div class="sitelist">${sites.map(x=>`<button type="button" data-site="${esc(x.id)}"><span>${esc(x.name)}${x.location?`<br><span class="hint">${esc(x.location)}</span>`:''}</span><span class="hint">${x.reservation==='required'?'📅 Reserve':''} ›</span></button>`).join('')}</div>`:'<p class="hint" style="margin:0 0 10px">No sites yet.</p>'}</fieldset>`;
     sw.querySelectorAll('[data-site]').forEach(b=>b.onclick=()=>openDetail(b.dataset.site));
     const as=sw.querySelector('#addSite'); if(as) as.onclick=()=>openForm(null,{category:v.category,parent_id:v.id,reservation:v.reservation,location:'',website:v.website});
