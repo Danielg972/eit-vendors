@@ -218,3 +218,9 @@ Researched by web lookups per supplier (the supplier's own site first, a third-p
 - **To open it to colleagues:** Team tab, "Jobs between colleagues": colleagues receive jobs, or everyone posts.
 - **Schema record corrected in the same change:** `member_decide` in `supabase/schema.sql` now matches production, which since 1 Oct (migration `welcome_email_on_approve`) posts a welcome email through a Google Apps Script address kept in `app_settings` (`welcome_url`, `welcome_secret`) when a pending member is approved. The record had the older version without it. Production was not changed. The "Welcome message on approval" line above, which says nothing is sent automatically, is out of date on that point.
 - **Not built yet:** a confirmed booking sheet does not mark the day busy; the welcome tour does not mention jobs; no alert reaches a member's phone when a job is posted.
+
+## Food nearby only on entries with a physical address (3 Oct 2026, decision D-13)
+**Status: on the branch `records-jobs-live` (pull request #8). Front end only, no database change. Live once merged.**
+- The 🍽 Food nearby section shows only on a place: Hotel, Restaurant, Winery, Attraction / Site and National Parks, and on an Activity or Other entry unless it is tagged as a jeep, ATV / RZR or rappelling outfit.
+- It no longer shows on service providers that come to the client: Guide, Transport (buses, vans, drivers), Adventure (jeeps, ATVs, rappelling and the like), Travel Agent, Itinerary Planner, Flight. A supplier that is both (a hotel that also runs jeep tours) keeps it.
+- Food tips already saved on such entries are kept in the database but no longer shown.
