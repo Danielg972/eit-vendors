@@ -109,8 +109,8 @@ Done means all of these:
 5. A database rebuilt from `supabase/schema.sql` matches base plus your migration, function by function.
 6. In a browser, in preview mode, at phone width: as Eretz Israel Tours, a guide on her own page, another guide, a travel agent, and an organisation. No page errors.
 7. Only then production: apply, compare fingerprints with your local database, run `production_probe.sql`, and record the result in the README.
-8. Records updated: README, `docs/STATUS.md` (remove risk 19 and the "Waiting for the owner" line about this branch), `docs/DECISIONS.md`, the three Project docs, and delete this file or mark it done.
+8. Records updated: README, `docs/STATUS.md` (remove risk 19 and the "Waiting for the owner" line about this branch), `docs/DECISIONS.md`, the three Project docs; delete this file or mark it done, in the repository and in the Project; close issue #10.
 
 ## 8. If something here is unclear or you disagree
 
-Write it in the GitHub issue that points to this file, and ask the owner where a rule is his to decide (the three defaults in section 4 are the likely ones). The owner does not carry files between sessions: the repository and the Project docs are where sessions hand work to each other.
+Write it in GitHub issue #10, which points to this file, and ask the owner where a rule is his to decide (the three defaults in section 4 are the likely ones). The owner does not carry files between sessions: the repository and the Project docs are where sessions hand work to each other.
