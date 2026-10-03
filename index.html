@@ -590,8 +590,10 @@ const isShabbat=v=>tagList(v).some(t=>t.toLowerCase()===SHABBAT_TAG.toLowerCase(
 const tagsNoShab=v=>tagList(v).filter(t=>t.toLowerCase()!==SHABBAT_TAG.toLowerCase()).join(', ');
 // "Adventure" is not a word guides and agents use for a supplier: show what the supplier does (Jeep, Rappelling, Kayak & rafting…), taken from its type tags.
 // Falls back to the category name when no type is set. Used wherever a supplier's category is printed; the stored category does not change.
+// The stored category is still 'Adventure'; guides and agents call it Extreme (owner, 3 Oct 2026, D-19). catDisp is the name shown on buttons and in the form.
+const catDisp=c=>c==='Adventure'?'Extreme':c;
 const advTypes=v=>{ const have=tagList(v).map(t=>t.toLowerCase()); return TAG_SUGGEST.Adventure.filter(t=>have.includes(t.toLowerCase())); };
-const catName=(c,v)=>{ if(c!=='Adventure') return c; const t=advTypes(v); return t.length ? t.slice(0,2).join(', ')+(t.length>2?'…':'') : c; };
+const catName=(c,v)=>{ if(c!=='Adventure') return c; const t=advTypes(v); return t.length ? t.slice(0,2).join(', ')+(t.length>2?'…':'') : catDisp(c); };
 const catMain=v=>catName(v.category, v);
 const catLabel=v=>catsOf(v).map(c=>catName(c,v)).join(' + ');
 const shabPill=v=>isShabbat(v)?'<span class="pill shab">Shomer Shabbat</span>':'';
@@ -614,7 +616,7 @@ const who = e => { const t=String(e||'').split(OWNER).join('Eretz Israel Tours')
 // The database enforces it (a limited member never receives an agent price); these helpers only shape the screen.
 const ORG_ROLE='Organisation, not in tourism';
 const SECTIONS=[['transport','Transportation','Bus companies, vans and drivers.',['Transport']],['guides','Guides','Profiles and contacts.',['Guide']],
-  ['hotels','Hotels','Contacts and listed prices. No agent rates.',['Hotel']],['sites','Sites and activities','Attractions, national parks, activities, adventure.',['Attraction / Site','Activity','Adventure','National Parks']],
+  ['hotels','Hotels','Contacts and listed prices. No agent rates.',['Hotel']],['sites','Sites and activities','Attractions, national parks, activities, extreme (jeeps, rappelling, kayaks).',['Attraction / Site','Activity','Adventure','National Parks']],
   ['food','Restaurants and wineries','Contacts, kosher details and opening hours.',['Restaurant','Winery']],['other','Agents and other','Travel agents, planners, flights, other.',['Travel Agent','Itinerary Planner','Flight','Other']]];
 const DEF_SECTIONS='transport,guides,hotels,sites,food';
 const lim=()=>!!(S.me&&S.me.member_type==='limited'&&!S.admin);
@@ -1210,7 +1212,7 @@ function renderWaiting(){
 
 function filtered(){
   const q=normN(S.q);
-  return S.vendors.filter(v=>(S.cat==='All'||catsOf(v).includes(S.cat)) && (S.reg==='All'||(v.region||'')===S.reg) && (S.cat!=='Transport'||!S.tat||(S.tat==='van')===isIndep(v)) && (S.cat!=='Transport'||!S.tveh||fleetOf(v).has(S.tveh)) && (S.cat!=='Guide'||!(S.gat||[]).length||S.gat.every(a=>String(v.tags||'').toLowerCase().split(',').map(t=>t.trim()).includes(a.toLowerCase()))) && (!q || normN([v.name,v.location,v.region,v.tags,v.contactPerson,v.category,v.notes].join(' ')).includes(q)))
+  return S.vendors.filter(v=>(S.cat==='All'||catsOf(v).includes(S.cat)) && (S.reg==='All'||(v.region||'')===S.reg) && (S.cat!=='Transport'||!S.tat||(S.tat==='van')===isIndep(v)) && (S.cat!=='Transport'||!S.tveh||fleetOf(v).has(S.tveh)) && (S.cat!=='Guide'||!(S.gat||[]).length||S.gat.every(a=>String(v.tags||'').toLowerCase().split(',').map(t=>t.trim()).includes(a.toLowerCase()))) && (!q || normN([v.name,v.location,v.region,v.tags,v.contactPerson,v.category,catsOf(v).map(catDisp).join(' '),v.notes].join(' ')).includes(q)))
     .sort(S.sort==='az' ? (a,b)=>a.name.localeCompare(b.name) : (a,b)=>mixKey(a)-mixKey(b));
 }
 // Mixed order: a shuffle that is different for each person and changes every day, so no supplier sits at the top
@@ -1255,7 +1257,7 @@ function render(){
 function suggestTerms(){
   const seen=new Map();
   const add=(t,kind)=>{ t=String(t||'').trim(); if(t.length<2) return; const k=t.toLowerCase(); if(!seen.has(k)) seen.set(k,{t,kind}); };
-  S.vendors.forEach(v=>{ add(v.name,'Supplier'); add(v.region,'Region'); add(v.location,'Area'); add(v.contactPerson,'Contact'); add(v.category,'Category'); String(v.tags||'').split(',').forEach(t=>add(t,'Type')); });
+  S.vendors.forEach(v=>{ add(v.name,'Supplier'); add(v.region,'Region'); add(v.location,'Area'); add(v.contactPerson,'Contact'); add(catDisp(v.category),'Category'); String(v.tags||'').split(',').forEach(t=>add(t,'Type')); });
   return [...seen.values()];
 }
 function viewVendors(){
@@ -1264,7 +1266,7 @@ function viewVendors(){
   view.innerHTML = `
     <div class="sug"><label class="search" for="q">${icons.search}<input id="q" type="search" placeholder="Search name, region, type, contact" value="${esc(S.q)}" autocomplete="off" role="combobox" aria-autocomplete="list" aria-controls="sugList" aria-expanded="false"></label>
     <div class="sug-list" id="sugList" role="listbox" hidden></div></div>
-    <div class="chips" role="group" aria-label="Filter by category">${cats.map(c=>`<button class="chip" data-cat="${esc(c)}" aria-pressed="${S.cat===c}">${esc(c)}</button>`).join('')}</div>
+    <div class="chips" role="group" aria-label="Filter by category">${cats.map(c=>`<button class="chip" data-cat="${esc(c)}" aria-pressed="${S.cat===c}">${esc(catDisp(c))}</button>`).join('')}</div>
     <div class="chips" role="group" aria-label="Filter by region" style="padding-top:2px">${['All',...byUse('region',[...new Set(REGIONS.filter(r=>S.vendors.some(v=>v.region===r)).concat(S.vendors.map(v=>v.region).filter(r=>r&&!REGIONS.includes(r))))])].map(r=>`<button class="chip" data-reg="${esc(r)}" aria-pressed="${S.reg===r}">${r==='All'?'📍 All regions':esc(r)}</button>`).join('')}</div>
     ${S.cat==='Guide'?`<div class="chips" role="group" aria-label="Guide details" style="padding-top:2px">${GUIDE_ATTRS.map(a=>`<button class="chip" data-gat="${esc(a)}" aria-pressed="${(S.gat||[]).includes(a)}">${(S.gat||[]).includes(a)?'✓ ':''}${esc(a)}</button>`).join('')}</div>`:''}
     ${S.cat==='Transport'?`<div class="chips" role="group" aria-label="Kind of transport supplier" style="padding-top:2px">${[['','All transport'],['bus','Bus companies'],['van','Independent van drivers']].map(([k,l])=>`<button class="chip" data-tat="${k}" aria-pressed="${(S.tat||'')===k}">${esc(l)}</button>`).join('')}</div>
@@ -1280,7 +1282,7 @@ function viewVendors(){
     fb.querySelectorAll('[data-fav]').forEach(b=>b.onclick=()=>openDetail(b.dataset.fav)); }
   const q=document.getElementById('q'), list=document.getElementById('sugList'); let hits=[], on=-1;
   const close=()=>{ list.hidden=true; q.setAttribute('aria-expanded','false'); on=-1; };
-  const pick=h=>{ if(h.kind==='Region'&&REGIONS.concat(S.vendors.map(v=>v.region)).includes(h.t)){ S.reg=h.t; S.q=''; viewVendors(); return; } if(h.kind==='Category'&&CATEGORIES.includes(h.t)){ S.cat=h.t; S.q=''; viewVendors(); return; }
+  const pick=h=>{ if(h.kind==='Region'&&REGIONS.concat(S.vendors.map(v=>v.region)).includes(h.t)){ S.reg=h.t; S.q=''; viewVendors(); return; } if(h.kind==='Category'&&CATEGORIES.some(c=>catDisp(c)===h.t)){ S.cat=CATEGORIES.find(c=>catDisp(c)===h.t); S.q=''; viewVendors(); return; }
     q.value=h.t; S.q=h.t; close(); drawList(); if(h.kind==='Supplier'){ const v=S.vendors.find(x=>x.name===h.t); if(v) openDetail(v.id); } };
   const show=()=>{
     const n=normN(q.value); if(!n){ close(); return; }
@@ -3197,7 +3199,7 @@ function openForm(v, preset){
     <fieldset><legend>Supplier</legend><div class="grid">
       ${inp('name','Vendor or company name','text','Golan Jeeps Ltd.',true,true)}
       <div id="dupBox" class="f wide" hidden></div>
-      ${sel('category','Main category',[['','Choose…'],...byUse('category',myCats())],false,true)}
+      ${sel('category','Main category',[['','Choose…'],...byUse('category',myCats()).map(c=>[c,catDisp(c)])],false,true)}
       <div class="f wide"><label>Also offers <span class="hint">(optional, e.g. a guide who also drives jeep tours)</span></label><input type="hidden" id="f_also_categories" value="${esc(x.also_categories||'')}"><div class="presets" id="alsoSug" style="margin:6px 0 0"></div></div>
       <div class="f wide" id="fleetWrap" hidden><label>Vehicles they offer</label><div class="tgs" id="fleetPick" role="group" aria-label="Vehicles they offer" style="margin:0">${VEHICLES.map(x=>`<button class="tg" type="button" data-veh="${x[0]}" aria-pressed="false">${esc(x[1])}</button>`).join('')}</div><span class="hint">Tap every size they have. Vans go by seats.</span></div>
       <div class="f wide"><label for="f_tags">Type (separate with commas)</label><input id="f_tags" value="${esc(x.tags)}" placeholder="Jeep, ATV / RZR"><div class="presets" id="tagSug" style="margin:6px 0 0"></div><span class="hint" id="d1Hint" hidden>${D1_RULE} Add the tag "D1 license" to confirm it.</span></div>
@@ -3250,7 +3252,7 @@ function openForm(v, preset){
   const alsoIn=f.querySelector('#f_also_categories'), alsoSug=f.querySelector('#alsoSug');
   const curCats=()=>({category:f.querySelector('#f_category').value, also_categories:alsoIn.value});
   const drawAlso=()=>{ const main=f.querySelector('#f_category').value; const have=alsoIn.value.split(',').map(t=>t.trim()).filter(t=>t&&t!==main); alsoIn.value=have.join(', ');
-    alsoSug.innerHTML=myCats().filter(c=>c!==main).map(c=>`<button type="button" class="mini${have.includes(c)?' on':''}" data-also="${esc(c)}">${have.includes(c)?'✓ ':'+ '}${esc(c)}</button>`).join('');
+    alsoSug.innerHTML=myCats().filter(c=>c!==main).map(c=>`<button type="button" class="mini${have.includes(c)?' on':''}" data-also="${esc(c)}">${have.includes(c)?'✓ ':'+ '}${esc(catDisp(c))}</button>`).join('');
     alsoSug.querySelectorAll('[data-also]').forEach(b=>b.onclick=()=>{ const c=b.dataset.also; const cur=alsoIn.value.split(',').map(t=>t.trim()).filter(Boolean); const i=cur.indexOf(c); if(i>=0) cur.splice(i,1); else cur.push(c); alsoIn.value=cur.join(', '); syncRel(); }); };
   const showIf=(el,on)=>{ if(el) el.hidden=!on; };
   const hrIn=f.querySelector('#f_hours'); f.querySelectorAll('[data-hr]').forEach(b=>b.onclick=()=>{ const p=b.dataset.hr, cur=hrIn.value.trim().replace(/[,;]\s*$/,''); if(cur.toLowerCase().includes(p.toLowerCase())) return; hrIn.value=(cur?cur+', ':'')+p; hrIn.focus(); });
@@ -3974,7 +3976,7 @@ function tourSteps(replay){
     <p><b>This phone remembers you.</b> On another phone or a computer, open your link once.</p>
     <p><b>Keep it to yourself.</b> Anyone with the link uses the list as you. Lost it? Ask Eretz Israel Tours for a new one.</p>` },
   { html:ex(`<div class="search"><span style="display:flex">${icons.search}</span><span style="padding:11px 0;color:var(--ink-2)">Search name, region, type, contact</span></div>
-      <div class="chips"><span class="chip" aria-pressed="true">All</span><span class="chip">Transport</span><span class="chip">Guide</span><span class="chip">Hotel</span><span class="chip">Adventure</span></div>
+      <div class="chips"><span class="chip" aria-pressed="true">All</span><span class="chip">Transport</span><span class="chip">Guide</span><span class="chip">Hotel</span><span class="chip">Extreme</span></div>
       <div class="chips"><span class="chip" aria-pressed="true">📍 All regions</span><span class="chip">Jerusalem</span><span class="chip">Galilee</span><span class="chip">Golan</span></div>
       <div class="favs-h">⭐ Your most used</div>
       <div class="favs"><div class="fav"><span>Transport</span><b>Galil Buses</b></div><div class="fav"><span>Guide</span><b>Ronit Katz</b></div></div>
