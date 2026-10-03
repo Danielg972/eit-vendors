@@ -327,7 +327,7 @@ create table public.members (
   constraint members_pkey PRIMARY KEY (id),
   constraint members_email_check CHECK (((email = lower(email)) AND (email ~ '^[^@\s]+@[^@\s]+\.[^@\s]+$'::text))),
   constraint members_name_check CHECK (((length(TRIM(BOTH FROM name)) >= 1) AND (length(TRIM(BOTH FROM name)) <= 80))),
-  constraint members_role_check CHECK ((role = ANY (ARRAY[''::text, 'Licensed tour guide'::text, 'Travel agent'::text, 'Tour operator'::text, 'Other'::text, 'Organisation, not in tourism'::text]))),
+  constraint members_role_check CHECK ((role = ANY (ARRAY[''::text, 'Licensed tour guide'::text, 'Travel agent'::text, 'Tour operator'::text, 'Other'::text]))),
   constraint members_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'revoked'::text]))),
   constraint members_jobs_check check (length(job_kinds) <= 80 and length(job_tags) <= 80 and length(job_langs) <= 200 and days_weekly ~ '^([0-6](,[0-6]){0,6})?$'::text),
   constraint members_access_check CHECK (((member_type = ANY (ARRAY['full'::text, 'limited'::text])) AND (sections ~ '^((transport|guides|hotels|sites|food|other)(,(transport|guides|hotels|sites|food|other))*)?$'::text) AND (length(org) <= 120) AND (length(credentials) <= 1000)))
@@ -1086,7 +1086,7 @@ CREATE OR REPLACE FUNCTION public._who(p_email text)
 AS $function$
   select case when p_email is null or p_email in ('','import','system') or p_email like 'import from%' then null
     else coalesce((select json_build_object('name',m.name,
-          'role',case when m.role = 'Organisation, not in tourism' then coalesce(nullif(m.org,''),'Organisation') else m.role end,
+          'role',case when m.org <> '' then m.org else m.role end,
           'admin',m.is_admin,'org',public._limited(m))
         from public.members m where m.email = split_part(p_email,' (',1) order by m.created_at limit 1),
                   json_build_object('name','A colleague','role','','admin',false)) end
@@ -1530,7 +1530,7 @@ CREATE OR REPLACE FUNCTION public.members_list(p_token text)
 AS $function$
 begin
   perform public._auth(p_token, true);
-  return coalesce((select json_agg(json_build_object('id',id,'name',name,'email',email,'phone',phone,'note',note,'role',role,'license_no',license_no,'has_proof',proof_path is not null,'status',status,'is_admin',is_admin,'created_at',created_at,'last_seen_at',last_seen_at,'terms_version',terms_version,'terms_accepted_at',terms_accepted_at,
+  return coalesce((select json_agg(json_build_object('id',id,'name',name,'email',email,'phone',phone,'note',note,'role',case when org <> '' then 'Organisation, not in tourism' else role end,'license_no',license_no,'has_proof',proof_path is not null,'status',status,'is_admin',is_admin,'created_at',created_at,'last_seen_at',last_seen_at,'terms_version',terms_version,'terms_accepted_at',terms_accepted_at,
     'member_type',member_type,'sections',sections,'see_quotes',see_quotes,'see_guide_rates',see_guide_rates,'see_transport_reviews',see_transport_reviews,'see_reviews',see_reviews,'org',org,'credentials',credentials) order by (status='pending') desc, created_at desc) from public.members), '[]'::json);
 end $function$;
 
@@ -1596,12 +1596,23 @@ begin
 end $function$
 ;
 
-CREATE OR REPLACE FUNCTION public.note_add(p_token text, p_vendor text, p_body text, p_rating text DEFAULT ''::text)
+-- A note. From a limited member it is a review, shown to everyone (org = true).
+CREATE OR REPLACE FUNCTION public.note_add(p_token text, p_vendor text, p_body text)
  RETURNS void
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO ''
 AS $function$
+declare m public.members;
+begin
+  m := public._auth(p_token); perform public._visible(p_vendor, m.is_admin);
+  insert into public.vendor_notes (vendor_id, body, author, author_name, org) values (p_vendor, trim(p_body), m.email, m.name, public._limited(m));
+end $function$;
+
+-- A note with an optional 1-5 rating: what the app calls a review.
+create or replace function public.review_add(p_token text, p_vendor text, p_body text, p_rating text default ''::text)
+ returns void language plpgsql security definer set search_path to ''
+as $function$
 declare m public.members;
 begin
   m := public._auth(p_token); perform public._visible(p_vendor, m.is_admin);
@@ -1628,23 +1639,23 @@ CREATE OR REPLACE FUNCTION public.price_delete(p_token text, p_id uuid, p_reason
  SECURITY DEFINER
  SET search_path TO ''
 AS $function$
-declare m public.members; cur public.vendor_prices; v public.vendors;
+declare m public.members; cur public.vendor_prices;
 begin
   m := public._auth(p_token);
   select * into cur from public.vendor_prices where id = p_id;
   if cur.id is null then return json_build_object('request', false); end if;
   if m.is_admin or (cur.owner <> '' and cur.owner = m.email) then delete from public.vendor_prices where id = p_id; return json_build_object('request', false); end if;
-  select * into v from public.vendors where id = cur.vendor_id;
-  if v.hidden or not public._can_see(m, v.category, v.also_categories) or not public._price_visible(cur, v, m) or cur.owner <> '' then return json_build_object('request', false); end if;
   if length(trim(coalesce(p_reason,''))) < 3 then raise exception 'Say briefly why this price should be removed.'; end if;
   insert into public.change_requests (vendor_id, kind, target_id, proposed, current, reason, requested_by, requested_name)
   values (cur.vendor_id, 'price_delete', p_id, '{}'::jsonb, to_jsonb(cur), trim(p_reason), m.email, m.name);
   return json_build_object('request', true);
-end $function$;
+end $function$
+;
 
 -- A price line a limited member adds is an ORGANISATION RATE: saved straight away, never an agent rate, shown to
 -- everyone without the name (owner = his email, org = true). On a private-price supplier it stays with him and
--- Eretz Israel Tours. Nobody can change or suggest changing a line he cannot see.
+-- Eretz Israel Tours. Nobody can change or suggest changing a line he cannot see. (Taking a line off the list is
+-- price_delete, which is not touched: the owner of a line and Eretz Israel Tours take it off directly, as before.)
 CREATE OR REPLACE FUNCTION public.price_save(p_token text, p_vendor text, p_data jsonb, p_reason text DEFAULT ''::text)
  RETURNS json
  LANGUAGE plpgsql
@@ -1712,7 +1723,7 @@ begin
   if qid is not null and not exists (select 1 from public.quotes where id = qid and vendor_id = p_vendor and (owner = m.email or m.is_admin)) then
     raise exception 'Only the person who added this quote, or Eretz Israel Tours, can change it.'; end if;
   if qid is null then
-    insert into public.quotes (vendor_id, owner, owner_name, org) values (p_vendor, m.email, m.name, public._limited(m)) returning id into qid;
+    insert into public.quotes (vendor_id, owner, owner_name) values (p_vendor, m.email, m.name) returning id into qid;
   end if;
   update public.quotes set title=left(coalesce(p_quote->>'title',''),160), date_from=coalesce(p_quote->>'date_from',''), date_to=coalesce(p_quote->>'date_to',''),
     pax=left(coalesce(p_quote->>'pax',''),20), units=left(coalesce(p_quote->>'units',''),60), received_on=coalesce(p_quote->>'received_on',''),
@@ -1740,7 +1751,8 @@ begin
     end loop;
   end loop;
   return qid;
-end $function$;
+end $function$
+;
 
 CREATE OR REPLACE FUNCTION public.quotes_list(p_token text, p_vendor text)
  RETURNS json
@@ -1785,28 +1797,46 @@ begin
 end $function$
 ;
 
-CREATE OR REPLACE FUNCTION public.request_access(p_name text, p_email text, p_role text, p_license text, p_phone text DEFAULT ''::text, p_note text DEFAULT ''::text, p_terms text DEFAULT ''::text, p_org text DEFAULT ''::text, p_credentials text DEFAULT ''::text)
+CREATE OR REPLACE FUNCTION public.request_access(p_name text, p_email text, p_role text, p_license text, p_phone text DEFAULT ''::text, p_note text DEFAULT ''::text, p_terms text DEFAULT ''::text)
  RETURNS json
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO ''
 AS $function$
-declare t text := public._new_token(); e text := lower(trim(p_email)); is_org boolean := p_role = 'Organisation, not in tourism';
-  cred text := left(trim(coalesce(p_credentials,'')),1000); org_name text := left(trim(coalesce(p_org,'')),120);
+declare t text := public._new_token(); e text := lower(trim(p_email));
 begin
   if coalesce(p_terms,'') = '' then raise exception 'Please read and accept the terms to join.'; end if;
-  if p_role not in ('Licensed tour guide','Travel agent','Tour operator','Other','Organisation, not in tourism') then raise exception 'Choose what you do.'; end if;
-  if is_org and length(org_name) < 2 then raise exception 'Add the name of your organisation.'; end if;
-  if is_org and length(cred) < 20 then raise exception 'Write a few lines about your role and how Eretz Israel Tours can check who you are.'; end if;
+  if p_role not in ('Licensed tour guide','Travel agent','Tour operator','Other') then raise exception 'Choose what you do.'; end if;
   if length(regexp_replace(coalesce(p_license,''),'[^0-9A-Za-z]','','g')) >= 3 and exists (select 1 from public.members where status in ('pending','approved')
        and lower(regexp_replace(license_no,'[^0-9A-Za-z]','','g')) = lower(regexp_replace(p_license,'[^0-9A-Za-z]','','g'))) then
     raise exception 'This license number is already registered. If it is yours, contact Eretz Israel Tours.'; end if;
   if (select count(*) from public.members where status = 'pending') >= 300 then raise exception 'Too many open requests right now. Try again later.'; end if;
   if exists (select 1 from public.members where email = e and status in ('pending','approved')) then
     raise exception 'This email already has access or a request waiting. Ask Eretz Israel Tours to send you your personal link.'; end if;
-  insert into public.members (name, email, phone, note, role, license_no, token_hash, terms_version, terms_accepted_at, org, credentials, member_type, sections)
-  values (trim(p_name), e, left(coalesce(trim(p_phone),''),40), left(coalesce(trim(p_note),''),300), p_role, left(trim(coalesce(p_license,'')),40), public._hash(t), left(p_terms,20), now(),
-    org_name, cred, case when is_org then 'limited' else 'full' end, case when is_org then 'transport,guides,hotels,sites,food' else '' end);
+  insert into public.members (name, email, phone, note, role, license_no, token_hash, terms_version, terms_accepted_at)
+  values (trim(p_name), e, left(coalesce(trim(p_phone),''),40), left(coalesce(trim(p_note),''),300), p_role, left(trim(coalesce(p_license,'')),40), public._hash(t), left(p_terms,20), now());
+  return json_build_object('token', t, 'status', 'pending', 'alert', (select value from public.app_settings where key = 'ntfy_topic'));
+end $function$
+;
+
+-- An organisation that is not in tourism asks to join: its name and, in free text, the person's credentials
+-- (no license, no upload). It starts as a limited member with the standard sections, whoever approves it and from
+-- whichever copy of the app. Stored with role 'Other'; members.org is what marks it as an organisation.
+create or replace function public.request_access_org(p_name text, p_email text, p_phone text, p_note text, p_terms text, p_org text, p_credentials text)
+ returns json language plpgsql security definer set search_path to ''
+as $function$
+declare t text := public._new_token(); e text := lower(trim(p_email));
+  cred text := left(trim(coalesce(p_credentials,'')),1000); org_name text := left(trim(coalesce(p_org,'')),120);
+begin
+  if coalesce(p_terms,'') = '' then raise exception 'Please read and accept the terms to join.'; end if;
+  if length(org_name) < 2 then raise exception 'Add the name of your organisation.'; end if;
+  if length(cred) < 20 then raise exception 'Write a few lines about your role and how Eretz Israel Tours can check who you are.'; end if;
+  if (select count(*) from public.members where status = 'pending') >= 300 then raise exception 'Too many open requests right now. Try again later.'; end if;
+  if exists (select 1 from public.members where email = e and status in ('pending','approved')) then
+    raise exception 'This email already has access or a request waiting. Ask Eretz Israel Tours to send you your personal link.'; end if;
+  insert into public.members (name, email, phone, note, role, token_hash, terms_version, terms_accepted_at, org, credentials, member_type, sections)
+  values (trim(p_name), e, left(coalesce(trim(p_phone),''),40), left(coalesce(trim(p_note),''),300), 'Other', public._hash(t), left(p_terms,20), now(),
+    org_name, cred, 'limited', 'transport,guides,hotels,sites,food');
   return json_build_object('token', t, 'status', 'pending', 'alert', (select value from public.app_settings where key = 'ntfy_topic'));
 end $function$;
 
@@ -1917,7 +1947,7 @@ begin
     'prices', coalesce((select json_agg(json_build_object('id',p.id,'vendor_id',p.vendor_id,'label',p.label,'audience',p.audience,'age_from',p.age_from,'age_to',p.age_to,'pax_min',p.pax_min,'pax_max',p.pax_max,'season',p.season,'price',p.price,'currency',p.currency,'vat',p.vat,'basis',p.basis,'is_agent',p.is_agent,'source',p.source,'checked_on',p.checked_on,'note',p.note,'private',p.private,'sort',p.sort,
           'org',p.org,
           'owner',case when m.is_admin or p.owner = m.email then p.owner else '' end,'mine',(p.owner <> '' and p.owner = m.email),
-          'by',case when p.org and not m.is_admin and p.owner <> m.email then json_build_object('name','An organisation','role','','admin',false,'org',true)
+          'by',case when p.org and not m.is_admin and p.owner <> m.email then json_build_object('name','an organisation','role','','admin',false,'org',true)
                     else public._who(case when p.owner <> '' then p.owner else p.created_by end) end,
           'by_date',p.updated_at)
         order by (p.owner <> '' and not p.org), p.org, p.sort, p.audience, p.created_at)
@@ -2186,7 +2216,6 @@ as $function$
     'created_at',b.created_at,'updated_at',b.updated_at)
 $function$;
 
--- A confirmed booking sheet becomes a Booked quote; it carries the organisation stamp of whoever made the sheet.
 create or replace function public._booking_to_quote(b public.bookings)
  returns uuid language plpgsql security definer set search_path to ''
 as $function$
@@ -2195,9 +2224,7 @@ begin
   if coalesce(t->>'price','') = '' then return null; end if;
   if qid is not null and not exists (select 1 from public.quotes where id = qid) then qid := null; end if;
   if qid is null then
-    insert into public.quotes (vendor_id, owner, owner_name, org)
-    values (b.vendor_id, b.owner, b.owner_name, coalesce((select public._limited(mm) from public.members mm where mm.email = b.owner order by mm.created_at limit 1), false))
-    returning id into qid;
+    insert into public.quotes (vendor_id, owner, owner_name) values (b.vendor_id, b.owner, b.owner_name) returning id into qid;
   end if;
   begin
     if b.date_from <> '' and b.date_to <> '' and b.date_to >= b.date_from then days := (b.date_to::date - b.date_from::date) + 1; end if;
@@ -2357,7 +2384,7 @@ begin
   return json_build_object('status',b.status,
     'company',(select v.name from public.vendors v where v.id = b.vendor_id),
     'booker_name',b.booker_name,
-    'booker_role',(select case when mm.role = 'Organisation, not in tourism' then mm.org else mm.role end from public.members mm where mm.email = b.owner limit 1),
+    'booker_role',(select case when mm.org <> '' then mm.org else mm.role end from public.members mm where mm.email = b.owner limit 1),
     'booker_phone',b.booker_phone,
     'date_from',b.date_from,'date_to',b.date_to,'pax',b.pax,'service',b.service,'seats',b.seats,'tourists',b.tourists,
     'pickup_time',b.pickup_time,'pickup_place',b.pickup_place,'route',b.route,'dropoff_time',b.dropoff_time,'dropoff_place',b.dropoff_place,
@@ -2443,7 +2470,7 @@ $function$;
 create or replace function public.whoami(p_token text)
  returns json language sql security definer set search_path to ''
 as $function$
-  select json_build_object('name',name,'email',email,'status',status,'is_admin',is_admin,'role',role,'has_proof',proof_path is not null,'terms_version',terms_version,
+  select json_build_object('name',name,'email',email,'status',status,'is_admin',is_admin,'role',case when org <> '' then 'Organisation, not in tourism' else role end,'has_proof',proof_path is not null,'terms_version',terms_version,
     'reminder_due', (not is_admin) and (reminder_seen_at is null or reminder_seen_at < now() - interval '30 days'),
     'bcc_email', case when status = 'approved' then (select value from public.app_settings where key = 'bcc_email') else '' end,
     'bcc_opt_out', bcc_opt_out, 'bcc_ack', bcc_ack,
@@ -2818,10 +2845,22 @@ begin
 end $function$;
 
 
+-- A quote added by a limited member is an organisation's quote. Stamped when the quote is first saved, whichever
+-- function saves it (quote_save, or a booking sheet both sides accepted).
+create or replace function public.quotes_org_stamp()
+ returns trigger language plpgsql security definer set search_path to ''
+as $function$
+begin
+  new.org := coalesce((select public._limited(mm) from public.members mm where mm.email = new.owner order by mm.created_at limit 1), false);
+  return new;
+end $function$;
+
+
 -- ===== Triggers =====
 
 CREATE TRIGGER vendors_before_write BEFORE INSERT OR UPDATE ON public.vendors FOR EACH ROW EXECUTE FUNCTION vendors_before_write();
 CREATE TRIGGER vendor_files_stamp BEFORE INSERT ON public.vendor_files FOR EACH ROW EXECUTE FUNCTION vendor_files_stamp();
+CREATE TRIGGER quotes_org_stamp BEFORE INSERT ON public.quotes FOR EACH ROW EXECUTE FUNCTION quotes_org_stamp();
 
 
 -- ===== Table and sequence privileges (fail closed) =====
@@ -2844,7 +2883,7 @@ grant all on all sequences in schema public to service_role;
 revoke all on function member_new_link(text,uuid) from public; grant execute on function member_new_link(text,uuid) to anon, authenticated;
 revoke all on function price_save(text,text,jsonb,text) from public; grant execute on function price_save(text,text,jsonb,text) to anon, authenticated;
 revoke all on function deal_delete(text,uuid) from public; grant execute on function deal_delete(text,uuid) to anon, authenticated;
-revoke all on function note_add(text,text,text,text) from public; grant execute on function note_add(text,text,text,text) to anon, authenticated;
+revoke all on function note_add(text,text,text) from public; grant execute on function note_add(text,text,text) to anon, authenticated;
 revoke all on function note_delete(text,uuid) from public; grant execute on function note_delete(text,uuid) to anon, authenticated;
 revoke all on function requests_list(text) from public; grant execute on function requests_list(text) to anon, authenticated;
 revoke all on function feedback_add(text,text,text,text,text) from public; grant execute on function feedback_add(text,text,text,text,text) to anon, authenticated;
@@ -2923,13 +2962,14 @@ revoke all on function activity(text,text) from public; grant execute on functio
 revoke all on function my_top(text) from public; grant execute on function my_top(text) to anon, authenticated;
 revoke all on function set_bcc_pref(text,boolean) from public; grant execute on function set_bcc_pref(text,boolean) to anon, authenticated;
 revoke all on function set_setting(text,text,text) from public; grant execute on function set_setting(text,text,text) to anon, authenticated;
-revoke all on function request_access(text,text,text,text,text,text,text,text,text) from public; grant execute on function request_access(text,text,text,text,text,text,text,text,text) to anon, authenticated;
+revoke all on function request_access(text,text,text,text,text,text,text) from public; grant execute on function request_access(text,text,text,text,text,text,text) to anon, authenticated;
 revoke all on function my_usage(text) from public; grant execute on function my_usage(text) to anon, authenticated;
 revoke all on function vendor_set_agent(text,text,text,text) from public; grant execute on function vendor_set_agent(text,text,text,text) to anon, authenticated;
 revoke all on function hours_verify(text,text,text) from public; grant execute on function hours_verify(text,text,text) to anon, authenticated;
 revoke all on function vendor_detail(text,text) from public; grant execute on function vendor_detail(text,text) to anon, authenticated;
--- Limited members (D-12): the new helpers are not RPCs; member_set_access is (Eretz Israel Tours only, checked inside).
--- _file_scope is called by the files edge function with the service key.
+-- Limited members (D-12): the new helpers and the quotes trigger function are not RPCs; member_set_access (Eretz Israel
+-- Tours only, checked inside), review_add and request_access_org are. _file_scope is called by the files edge function
+-- with the service key.
 revoke all on function public._me() from public, anon, authenticated;
 revoke all on function public._section_of(text) from public, anon, authenticated;
 revoke all on function public._limited(public.members) from public, anon, authenticated;
@@ -2943,6 +2983,9 @@ grant execute on function public._file_scope(uuid,text) to service_role;
 revoke all on function public._quote_kind(public.quotes,public.vendors) from public, anon, authenticated;
 revoke all on function public._quote_visible(public.quotes,public.vendors,public.members) from public, anon, authenticated;
 revoke all on function public._vendor_for(public.vendors,public.members) from public, anon, authenticated;
+revoke all on function public.quotes_org_stamp() from public, anon, authenticated;
+revoke all on function public.review_add(text,text,text,text) from public; grant execute on function public.review_add(text,text,text,text) to anon, authenticated;
+revoke all on function public.request_access_org(text,text,text,text,text,text,text) from public; grant execute on function public.request_access_org(text,text,text,text,text,text,text) to anon, authenticated;
 revoke all on function public.member_set_access(text,uuid,jsonb) from public; grant execute on function public.member_set_access(text,uuid,jsonb) to anon, authenticated;
 
 -- Internal helper, not an RPC: given an email it returns that member's display name, so it must not be callable

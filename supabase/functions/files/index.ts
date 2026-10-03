@@ -1,5 +1,8 @@
 // Vendor files, quote attachments, join proofs and feedback screenshots: checks the caller's personal link token, then signs uploads/downloads with the service key.
-// Deployed as Supabase edge function "files" (verify_jwt = false). Version 9, 2 Oct 2026. Keep this file identical to the deployed source.
+// Deployed as Supabase edge function "files" (verify_jwt = false). Version 10, 3 Oct 2026. Keep this file identical to the deployed source.
+// v10: limited members (organisations, D-12). A supplier outside the member's sections, or a hidden one, is closed; a limited
+// member sees his own files, other organisations' files, photos and kosher certificates, never a guide's or agent's price list,
+// receipt, contract, booking confirmation or quote. The rule itself lives in the database (_file_scope).
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 
 const cors = {
@@ -39,6 +42,13 @@ Deno.serve(async (req) => {
     if (!(m.is_admin || q.owner === m.email)) return null;
     return q;
   };
+  // may this member open this supplier's files, and is he a limited member? (database function _file_scope)
+  const scope = async (vid: string) => {
+    if (m.is_admin) return { can_see: true, limited: false };
+    const { data } = await db.rpc("_file_scope", { p_member: m.id, p_vendor: vid });
+    return (data as { can_see: boolean; limited: boolean } | null) || { can_see: false, limited: false };
+  };
+  const OPEN_KINDS = ["Photo", "Kosher certificate"];
   // colleagues never receive each other's email addresses
   const scrub = (f: any) => { f.mine = f.uploaded_by === m.email; if (!m.is_admin) delete f.uploaded_by; return f; };
 
@@ -97,14 +107,17 @@ Deno.serve(async (req) => {
       return json({ ok: true });
     }
     if (action === "list") {
+      const sc = await scope(String(body.vendor_id));
+      if (!sc.can_see) return json({ files: [] });
       let q = db.from("vendor_files").select("*").eq("vendor_id", String(body.vendor_id));
       if (body.quote_id) {
         if (!(await quoteAccess(String(body.quote_id), false))) return json({ files: [] });
         q = q.eq("quote_id", String(body.quote_id));
       } else q = q.is("quote_id", null);
       if (!m.is_admin) q = q.or(`private.eq.false,uploaded_by.eq.${m.email}`);
-      const { data, error } = await q.order("created_at", { ascending: false });
-      if (error) throw error;
+      const got = await q.order("created_at", { ascending: false });
+      if (got.error) throw got.error;
+      const data = sc.limited ? got.data.filter((f: any) => f.uploaded_by === m.email || f.org || OPEN_KINDS.includes(f.kind)) : got.data;
       if (data.length) {
         const { data: urls } = await db.storage.from(BUCKET).createSignedUrls(data.map((f) => f.path), 3600);
         (urls || []).forEach((u, i) => { (data[i] as any).url = u?.signedUrl || null; });
@@ -119,6 +132,7 @@ Deno.serve(async (req) => {
       const vid = String(body.vendor_id || "");
       const { data: v } = await db.from("vendors").select("id").eq("id", vid).maybeSingle();
       if (!v) return json({ error: "That supplier no longer exists." }, 404);
+      if (!(await scope(vid)).can_see) return json({ error: "That supplier is not available." }, 404);
       if (body.quote_id && !(await quoteAccess(String(body.quote_id), true))) return json({ error: "Only the person who added this quote, or Eretz Israel Tours, can add files to it." }, 403);
       const path = `${vid}/${Date.now().toString(36)}-${crypto.randomUUID().slice(0, 6)}-${safeName(body.file_name)}`;
       const { data, error } = await db.storage.from(BUCKET).createSignedUploadUrl(path);
@@ -130,10 +144,12 @@ Deno.serve(async (req) => {
       if (!path.startsWith(vid + "/")) return json({ error: "Bad file path" }, 400);
       const mime = String(body.mime_type || "");
       if (!TYPES.test(mime)) { await db.storage.from(BUCKET).remove([path]); return json({ error: "Only photos and PDFs are allowed." }, 400); }
+      const sc = await scope(vid);
+      if (!sc.can_see) { await db.storage.from(BUCKET).remove([path]); return json({ error: "That supplier is not available." }, 404); }
       let quote_id: string | null = null;
       if (body.quote_id) { const qa = await quoteAccess(String(body.quote_id), true); if (!qa) { await db.storage.from(BUCKET).remove([path]); return json({ error: "Not allowed." }, 403); } quote_id = qa.id; }
       const row = { vendor_id: vid, path, file_name: String(body.file_name || "file").slice(0, 200), mime_type: mime,
-        size_bytes: Number(body.size_bytes) || 0, kind: KINDS.includes(body.kind) ? body.kind : "Other", uploaded_by: m.email, quote_id, private: !!body.private };
+        size_bytes: Number(body.size_bytes) || 0, kind: KINDS.includes(body.kind) ? body.kind : "Other", uploaded_by: m.email, quote_id, private: !!body.private, org: sc.limited };
       const { data, error } = await db.from("vendor_files").insert(row).select().single();
       if (error) { await db.storage.from(BUCKET).remove([path]); throw error; }
       return json({ file: scrub(data) });

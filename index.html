@@ -556,6 +556,20 @@ const VAT = [['','Unknown'],['including_vat','Including VAT'],['plus_vat','Plus 
 const CUR_SIGN = {ILS:'₪',USD:'$',EUR:'€'};
 
 const who = e => { const t=String(e||'').split(OWNER).join('Eretz Israel Tours').replace(/^import from EIT email \(Claude\)$/,'Imported by Eretz Israel Tours'); return (!S.admin && /@/.test(t)) ? 'A colleague' : t; };
+// Limited members (D-12): organisations that are not in tourism. Eretz Israel Tours chooses which sections each one sees.
+// The database enforces it (a limited member never receives an agent price); these helpers only shape the screen.
+const ORG_ROLE='Organisation, not in tourism';
+const SECTIONS=[['transport','Transportation','Bus companies, vans and drivers.',['Transport']],['guides','Guides','Profiles and contacts.',['Guide']],
+  ['hotels','Hotels','Contacts and listed prices. No agent rates.',['Hotel']],['sites','Sites and activities','Attractions, national parks, activities, adventure.',['Attraction / Site','Activity','Adventure','National Parks']],
+  ['food','Restaurants and wineries','Contacts, kosher details and opening hours.',['Restaurant','Winery']],['other','Agents and other','Travel agents, planners, flights, other.',['Travel Agent','Itinerary Planner','Flight','Other']]];
+const DEF_SECTIONS='transport,guides,hotels,sites,food';
+const lim=()=>!!(S.me&&S.me.member_type==='limited'&&!S.admin);
+const mySections=()=>String(S.me&&S.me.sections||'').split(',').map(t=>t.trim()).filter(Boolean);
+const secOf=c=>(SECTIONS.find(x=>x[3].includes(c))||SECTIONS[5])[0];
+const secName=k=>(SECTIONS.find(x=>x[0]===k)||[0,k])[1];
+const myCats=()=>lim()?CATEGORIES.filter(c=>mySections().includes(secOf(c))):CATEGORIES;
+// Guides' and agents' reviews: transport has its own switch; everything else follows see_reviews.
+const reviewsOpen=v=>!lim()||(catsOf(v).includes('Transport')?!!S.me.see_transport_reviews:!!S.me.see_reviews);
 const normN = s => String(s||'').toLowerCase().replace(/\s+/g,' ').replace(/[.,;:!?]/g,'').trim();
 const esc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const blank = () => Object.fromEntries(R5_FIELDS.map(k=>[k,'']));
@@ -568,7 +582,7 @@ function sample(){
   const v = (o)=>Object.assign(blank(),{active:'Active',priceBasis:'Per person',currency:'ILS',review_status:'approved',created_by:'daniel@eretzisraeltours.com',updated_by:'daniel@eretzisraeltours.com',created_at:d(20),updated_at:d(3)},o);
   return [
     v({id:'vendor_k3m9p2x',name:'Golan Heights Jeep Tours',category:'Activity',tags:'Jeep, Shomer Shabbat',hours:'Sun–Thu 8:00–17:00, Fri 8:00–13:00, closed Shabbat',hours_last:'Last tour starts 15:30',hours_source:'their website, 2 Oct 2026',contactPerson:'Moshe Levi',phone:'+972 52 555 0142',whatsapp:'+972 52 555 0142',location:'Golan Heights',languages:'English, Hebrew',maxCap:'28',listedPrice:'450',listedPriceVatTreatment:'including_vat',agentPrice:'360',agentPriceVatTreatment:'plus_vat',priceBasis:'Per person',payTerms:'Invoice after the tour',cancelPolicy:'Free cancellation up to 72 hours before',cancelNoticeAmount:'72',cancelNoticeUnit:'Hours',cancelPenalty:'Full charge inside 72h',cancelPolicyVerifiedDate:'2026-08-14',rateReliability:'5',rateService:'4',rateValue:'4',strengths:'Punctual, drivers speak good English',notes:'Book 2 weeks ahead in Sukkot'}),
-    v({id:'vendor_a81qz0c',name:'Dan Panorama Jerusalem',category:'Hotel',contactPerson:'Group desk',phone:'+972 2 569 5695',email:'groups@example-hotel.co.il',location:'Jerusalem',kosher:'Rabbanut',maxCap:'290',agentPrice:'1150',agentPriceVatTreatment:'not_applicable',priceBasis:'Per group',currency:'USD',payTerms:'30% deposit, balance 14 days before',cancelNoticeAmount:'21',cancelNoticeUnit:'Days',cancelDayType:'Calendar days',rateReliability:'4',rateService:'4',rateValue:'3'}),
+    v({id:'vendor_a81qz0c',name:'Dan Panorama Jerusalem',category:'Hotel',contactPerson:'Group desk',phone:'+972 2 569 5695',email:'groups@example-hotel.co.il',location:'Jerusalem',kosher:'Rabbanut',maxCap:'290',agentPrice:'1150',agentPriceVatTreatment:'not_applicable',listedPrice:'1400',priceBasis:'Per group',currency:'USD',payTerms:'30% deposit, balance 14 days before',cancelNoticeAmount:'21',cancelNoticeUnit:'Days',cancelDayType:'Calendar days',rateReliability:'4',rateService:'4',rateValue:'3'}),
     v({id:'vendor_7tt2w4n',reservation:'required',name:'Ein Gedi Nature Reserve',category:'National Parks',location:'Dead Sea',npResLink:'https://www.parks.org.il',listedPrice:'33',listedPriceVatTreatment:'including_vat',agentPrice:'29',agentPriceVatTreatment:'including_vat',priceBasis:'Per person',review_status:'pending',created_by:'yossi.guide@gmail.com',updated_by:'yossi.guide@gmail.com',updated_at:d(1)}),
     v({id:'vendor_p0lk5sd',name:'Shomron Bus Lines',category:'Transport',contactPerson:'Avi',phone:'+972 54 000 1234',location:'Ariel',maxCap:'50',agentPrice:'2400',agentPriceVatTreatment:'plus_vat',priceBasis:'Per day',payTerms:'Cash or transfer on the day',rateReliability:'3',review_status:'pending',created_by:'rachel.ops@gmail.com',updated_by:'rachel.ops@gmail.com',updated_at:d(0)}),
     v({id:'vendor_g4l1c0a',name:'Galil Buses',category:'Transport',contactPerson:'Dudu',phone:'+972 54 000 5678',location:'Tiberias',region:'Galilee',maxCap:'55',priceBasis:'Per day',tags:'Bus, Midibus'}),
@@ -665,7 +679,18 @@ const DB = {
       const d=n=>new Date(Date.now()-n*86400000).toISOString();
       S.members=[{id:'m1',name:'Eretz Israel Tours',email:OWNER,status:'approved',is_admin:true,created_at:d(30),last_seen_at:d(0)},
         {id:'m2',name:'Yossi Ben-David',email:'yossi.guide@gmail.com',phone:'+972 52 111 2233',note:'Galilee and Golan',role:'Licensed tour guide',license_no:'12345',has_proof:true,status:'pending',is_admin:false,created_at:d(0)},
-        {id:'m3',name:'Rachel Amar',email:'rachel.ops@gmail.com',role:'Travel agent',license_no:'TA-2291',has_proof:true,status:'approved',is_admin:false,created_at:d(6),last_seen_at:d(1)}];
+        {id:'m3',name:'Rachel Amar',email:'rachel.ops@gmail.com',role:'Travel agent',license_no:'TA-2291',has_proof:true,status:'approved',is_admin:false,member_type:'full',created_at:d(6),last_seen_at:d(1)},
+        {id:'m4',name:'Avi Stern',email:'avi@sample-yeshiva.org',phone:'+972 50 000 0000',role:ORG_ROLE,org:'Sample Yeshiva',credentials:'I run the trips for a yeshiva of about 120 students in Jerusalem, six years in the role. We book 10 to 15 busses a year and two Shabbatons. Office: 02-000-0000.',has_proof:false,status:'pending',is_admin:false,member_type:'limited',sections:DEF_SECTIONS,see_quotes:true,see_guide_rates:false,see_transport_reviews:true,see_reviews:false,created_at:d(0)},
+        {id:'m5',name:'Miri Cohen',email:'miri@sample-school.org',role:ORG_ROLE,org:'Sample School',credentials:'Trips coordinator at a girls school in Beit Shemesh since 2019.',has_proof:false,status:'approved',is_admin:false,member_type:'limited',sections:'transport,hotels',see_quotes:true,see_guide_rates:false,see_transport_reviews:true,see_reviews:false,created_at:d(4),last_seen_at:d(2)}];
+      // Preview as a limited member: add ?as=limited to the address. A rough copy of what the database does for real.
+      if(/[?&]as=limited\b/.test(location.search)){
+        S.admin=false; S.user={email:'avi@sample-yeshiva.org'};
+        S.me={name:'Avi Stern',email:'avi@sample-yeshiva.org',status:'approved',is_admin:false,role:ORG_ROLE,org:'Sample Yeshiva',member_type:'limited',sections:DEF_SECTIONS,see_quotes:true,see_guide_rates:false,see_transport_reviews:true,see_reviews:false,bookings:true,jobs:false,jobs_post:false};
+        S.vendors=S.vendors.filter(v=>v.review_status==='approved'&&catsOf(v).some(c=>mySections().includes(secOf(c)))).map(v=>{ const o=Object.assign({},v,{agentPrice:'',agentPriceVatTreatment:'',agent_link:'',agent_howto:''});
+          if(v.category==='Guide') Object.assign(o,{listedPrice:'',maxPax:''}); if(!catsOf(v).includes('Transport')) Object.assign(o,{rateReliability:'',rateService:'',rateValue:'',strengths:'',weaknesses:'',notes:''}); return o; });
+        Object.keys(S.demo).forEach(k=>{ const dd2=S.demo[k]; if(dd2&&dd2.prices){ dd2.prices=dd2.prices.filter(p=>!p.is_agent); dd2.notes=[]; const vv=S.vendors.find(x=>x.id===k); if(vv){ vv._prices=dd2.prices.length; vv._notes=0; } } });
+        Object.keys(S.demoQuotes).forEach(k=>{ const vv=S.vendors.find(x=>x.id===k); S.demoQuotes[k]=vv&&vv.category==='Transport'?S.demoQuotes[k].filter(q=>q.shared&&!q.mine).map(q=>Object.assign({},q,{owner:'',owner_name:'',owner_role:'',title:'',ref:'',private_note:'',can_edit:false,files:0})):[]; });
+        S.demoBookings=[]; S.requests=[]; S.demoRequests=[]; S.members=[]; S.myTop=[]; S.feedback=[]; S.jobs=null; return; }
       try{ S.jobs=await DB.loadJobs(); }catch(e){} return; }
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {auth:{persistSession:false,autoRefreshToken:false}});
     S.token = readToken();
@@ -685,7 +710,7 @@ const DB = {
     return await rpc('vendor_detail',{p_id:vid});
   },
   async savePrice(vid, line, reason){
-    if(!LIVE){ const d=await DB.detail(vid); if(line.id){ const i=d.prices.findIndex(p=>p.id===line.id); d.prices[i]=Object.assign({},d.prices[i],line); } else d.prices.push(Object.assign({id:'p'+Date.now(),created_by:S.user.email},line)); bump(vid,'_prices',line.id?0:1); return {request:false}; }
+    if(!LIVE){ const d=await DB.detail(vid); if(line.id){ const i=d.prices.findIndex(p=>p.id===line.id); d.prices[i]=Object.assign({},d.prices[i],line); } else d.prices.push(Object.assign({id:'p'+Date.now(),created_by:S.user.email},line,lim()?{org:true,mine:true,is_agent:false,owner:S.user.email,by:{name:S.me.name,role:S.me.org||'',admin:false,org:true},by_date:new Date().toISOString()}:{})); bump(vid,'_prices',line.id?0:1); return {request:false,org:lim()}; }
     const r = await rpc('price_save',{p_vendor:vid,p_data:line,p_reason:reason||''}); await DB.refreshVendor(vid); return r;
   },
   async deletePrice(vid, id, reason){
@@ -700,9 +725,9 @@ const DB = {
     if(!LIVE){ const d=await DB.detail(vid); d.deals=d.deals.filter(x=>x.id!==id); bump(vid,'_deals',-1); return; }
     await rpc('deal_delete',{p_id:id}); await DB.refreshVendor(vid);
   },
-  async addNote(vid, body){
-    if(!LIVE){ const d=await DB.detail(vid); d.notes.unshift({id:'n'+Date.now(),body,author:S.user.email,author_name:S.me.name,created_at:new Date().toISOString()}); bump(vid,'_notes',1); return; }
-    await rpc('note_add',{p_vendor:vid,p_body:body}); await DB.refreshVendor(vid);
+  async addNote(vid, body, rating){
+    if(!LIVE){ const d=await DB.detail(vid); d.notes.unshift({id:'n'+Date.now(),body,rating:rating||'',org:lim(),mine:true,author:S.user.email,author_name:S.me.name,created_at:new Date().toISOString()}); bump(vid,'_notes',1); return; }
+    await rpc('review_add',{p_vendor:vid,p_body:body,p_rating:rating||''}); await DB.refreshVendor(vid);
   },
   async deleteNote(vid, id){
     if(!LIVE){ const d=await DB.detail(vid); d.notes=d.notes.filter(x=>x.id!==id); bump(vid,'_notes',-1); return; }
@@ -882,8 +907,11 @@ const DB = {
     else { const key=f.quote_id||f.vendor_id; S.files[key]=(S.files[key]||[]).filter(x=>x.id!==f.id); }
     const v=S.vendors.find(x=>x.id===f.vendor_id); if(v) v._files=Math.max(0,(v._files||1)-1);
   },
-  async requestAccess(name,email,role,license,phone,note,terms){
-    const { data, error } = await sb.rpc('request_access',{p_name:name,p_email:email,p_role:role,p_license:license,p_phone:phone,p_note:note,p_terms:terms});
+  async requestAccess(name,email,role,license,phone,note,terms,org,credentials){
+    // An organisation that is not in tourism joins on its name and what the person wrote about the role: no license.
+    const { data, error } = role===ORG_ROLE
+      ? await sb.rpc('request_access_org',{p_name:name,p_email:email,p_phone:phone,p_note:note,p_terms:terms,p_org:org||'',p_credentials:credentials||''})
+      : await sb.rpc('request_access',{p_name:name,p_email:email,p_role:role,p_license:license,p_phone:phone,p_note:note,p_terms:terms});
     if(error) throw new Error(error.message);
     S.token=data.token; try{ localStorage.setItem(TOKEN_KEY,S.token); }catch(e){}
     // Push alert to Eretz Israel Tours' phone (ntfy). Sent from this browser; carries no personal details.
@@ -904,6 +932,11 @@ const DB = {
   async decide(id,status){
     if(!LIVE){ S.members.find(m=>m.id===id).status=status; return; }
     await rpc('member_decide',{p_id:id,p_status:status}); await DB.loadTeam();
+  },
+  // What a member sees: full, or limited to chosen sections (Eretz Israel Tours only).
+  async setAccess(id, a){
+    if(!LIVE){ Object.assign(S.members.find(m=>m.id===id), a, a.member_type==='full'?{sections:''}:{}); return; }
+    await rpc('member_set_access',{p_id:id,p_access:a}); await DB.loadTeam();
   },
   async newLink(id){
     if(!LIVE){ const m=S.members.find(x=>x.id===id); if(m.status==='revoked') m.status='approved'; return 'sample'+Math.random().toString(16).slice(2); }
@@ -929,7 +962,7 @@ function statusPill(v){
   return `<span class="pill ${s}">${s==='approved'?'Approved':s==='rejected'?'Rejected':'Pending review'}</span>`;
 }
 function priceLine(v){
-  const p = v.agentPrice || v.listedPrice; if(!p) return '';
+  const p = v.agentPrice || v.listedPrice; if(!p) return lim()&&v.category==='Guide'?'<span class="pill inactive">Ask for rate</span>':'';
   if(Number(p)===0) return `<b>Free</b><span>${esc((v.priceBasis||'').toLowerCase())}</span>`;
   const sign = CUR_SIGN[v.currency]||'';
   return `<b>${esc(sign)}${esc(Number(p).toLocaleString('en-US'))}</b><span>${esc((v.priceBasis||'').toLowerCase())}${v.agentPrice?'':' · listed'}</span>`;
@@ -951,11 +984,12 @@ function linkBox(id, url){
 }
 function wireCopy(root){ root.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>{ const i=root.querySelector('#'+b.dataset.copy); copyText(i.value,i); }); }
 
-const ROLES=['Licensed tour guide','Travel agent','Tour operator','Other'];
-const TERMS_VERSION='2026-10-03a';
+const ROLES=['Licensed tour guide','Travel agent','Tour operator',ORG_ROLE,'Other'];
+const TERMS_VERSION='2026-10-03b';
 const TERMS_HTML=`<p class="hint">Version ${TERMS_VERSION}. Plain-language summary. Draft: not yet reviewed by a lawyer.</p>
 <h4>1. Who runs this</h4><p>The Inner Circle – Israel Guide (until October 2026 called the Israel Suppliers Master List) is run by Eretz Israel Tours, which approves members and manages the list.</p>
 <h4>2. Who can join</h4><p>Licensed tour guides, travel agents, tour operators and other travel professionals approved by Eretz Israel Tours. You confirm the details and license you submit are yours and true. Eretz Israel Tours can decline, pause or remove access at any time.</p>
+<h4>2c. Organisations (limited members)</h4><p>People who book busses, guides or hotels for a school, a yeshiva or another organisation that is not in tourism can be approved as <b>limited members</b>, on what they write about their role instead of a license. Eretz Israel Tours chooses which sections each limited member sees. <b>A limited member never sees agent prices.</b> They see guides' and agents' reviews only where Eretz Israel Tours allows it: by default for transportation (drivers, bus companies, van drivers), and nowhere else. They see bus and van quotes without names, like everyone.</p><p><b>What a limited member adds is shown to every member</b>, limited members too: a rate they got (an "organisation rate") and a quote, without their name, and a review, with their name. Everything else in these terms applies to limited members as well.</p>
 <h4>2a. Use it and add to it</h4><p>This list is meant to help everyone, and it works only if everyone takes part. <b>Every member has to both use the list and add to it</b>: a supplier, a price, a quote, a note, a deal, a driver review or a correction. A member who has not done both for 3 months gets a reminder, and is removed if that does not change.</p>
 <h4>2b. Cost</h4><p><b>As of now, nobody pays to join, and you will not be asked to pay in the future.</b> If Eretz Israel Tours ever decides the costs are not worth bearing and a fee is introduced, founding members stay free. A founding member is anyone approved while the list is still free.</p>
 <h4>3. What you share</h4><p>Share supplier information you believe is accurate and that you're allowed to share. Don't post personal member codes, card or bank details, or personal details of your clients. Be fair in ratings and notes: describe your own experience. When you add a driver, add only the phone number he uses for work; it is there so colleagues can tell drivers apart.</p>
@@ -963,7 +997,7 @@ const TERMS_HTML=`<p class="hint">Version ${TERMS_VERSION}. Plain-language summa
 <h4>3b. Kosher restaurants only</h4><p><b>The list does not accept non-kosher restaurants.</b> Do not add one, as a supplier or as a food tip. Any that are found are removed. A restaurant that is kosher without a certificate is not accepted either, except as an exception that Eretz Israel Tours reviews and approves.</p>
 <h4>4. How you use it</h4><p>Use the list for your own professional work. Keep your personal link to yourself, and don't copy, resell or publish the list.</p><p><b>Never show the list to suppliers.</b> Don't show suppliers the app, screenshots, prices, notes or ratings from it. Anyone who does will lose access immediately.</p>
 <h4>5. Crowdsourced: no responsibility for mistakes</h4><p>This is a crowdsourced list built by colleagues. Eretz Israel Tours takes no responsibility for mistakes, missing or out-of-date information. Please take great care when you add or change anything, and if you see a mistake, let us know with the <b>Update this supplier</b> button or the Feedback box. Prices, terms and contacts come from colleagues and can change. Always confirm with the supplier before booking. Eretz Israel Tours isn't responsible for information shared by members or for suppliers' services.</p>
-<h4>6. Your data and privacy</h4><p>We store your name, email, phone, role, license number and license photo, what you add, when you last used the app, and which supplier contact buttons you tap (call, WhatsApp, email, website, maps and booking links), with the time. Colleagues see your name next to what you add, except quotes (see 6b). Your license photo is visible only to Eretz Israel Tours.</p><p><b>Eretz Israel Tours can see everything in the app, including items marked "private".</b> "Private" means hidden from other colleagues, not from Eretz Israel Tours.</p><p>Data is stored with Supabase (servers in Frankfurt, EU) and the app is hosted on GitHub Pages. You can ask Eretz Israel Tours at any time to see, correct or delete your data and account.</p>
+<h4>6. Your data and privacy</h4><p>We store your name, email, phone, role, license number and license photo (for an organisation: its name and what you wrote about your role), what you add, when you last used the app, and which supplier contact buttons you tap (call, WhatsApp, email, website, maps and booking links), with the time. Colleagues see your name next to what you add, except quotes (see 6b). Your license photo is visible only to Eretz Israel Tours.</p><p><b>Eretz Israel Tours can see everything in the app, including items marked "private".</b> "Private" means hidden from other colleagues, not from Eretz Israel Tours.</p><p>Data is stored with Supabase (servers in Frankfurt, EU) and the app is hosted on GitHub Pages. You can ask Eretz Israel Tours at any time to see, correct or delete your data and account.</p>
 <h4>6a. Email copies</h4><p><b>When you email a supplier with the app's Email button, Eretz Israel Tours is added as a BCC to help keep prices, bookings and supplier details up to date for everyone. You can see and remove it in each email, and you can opt out at any time under My settings.</b> WhatsApp messages and calls are not copied; the app only records that you tapped the button.</p>
 <h4>6b. Quotes are shared without your name</h4><p><b>A quote you add is shared with colleagues by default, without your name.</b> They see the supplier, the dates, the prices, what was included, what cost extra and the conditions. They never see who got the quote, the client or trip, the supplier's reference, your private note or your attachments. You can switch sharing off on any quote; then only you and Eretz Israel Tours see it. Eretz Israel Tours sees who added every quote. The averages in the Quotes tab are worked out from these quotes. Don't write client names or personal details in the conditions box.</p>
 <h4>6c. Booking sheets</h4><p><b>When you send a booking sheet, the bus or van company sees your name, your phone and the job</b>: date, passengers, vehicle, pick-up, outline of the day, drop-off and your notes to them. It never sees the client, your private note or anything else in this app. Once you confirm a sheet, its price and terms are shared with colleagues in the Quotes tab without your name, like any quote (6b). You can switch that off on each sheet. Eretz Israel Tours sees every booking sheet. A booking sheet records what you and the company agreed; it is not legal advice, and Eretz Israel Tours is not a party to your booking.</p>
@@ -984,13 +1018,21 @@ function renderGate(msg){
     <h1 class="mark">The Inner Circle</h1>
     <div class="cat" style="margin:0 0 12px;font-size:13px">Israel Guide</div>
     <p>A vendor list kept by colleagues, for colleagues. Guides and travel professionals share the hotels, drivers, sites and suppliers they trust, and warn each other about the ones they don't, so all of us work a little easier.</p><p>To keep it among professionals, joining needs proof that you work in tourism, like your license. Once approved, you get your own link. No password needed.</p>
+    <p class="hint" style="font-size:13.5px;margin-top:-10px">Not in tourism, but you book busses, guides or hotels for a school, a yeshiva or another organisation? Choose <b>${ORG_ROLE}</b> below.</p>
     <div class="f"><label for="gName">Your name <em>*</em></label><input id="gName" type="text" autocomplete="name" placeholder="Yossi Cohen" required></div>
     <div class="f"><label for="gEmail">Email <em>*</em></label><input id="gEmail" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com" required></div>
     <div class="f"><label for="gRole">What do you do? <em>*</em></label><select id="gRole"><option value="">Choose…</option>${ROLES.map(r=>`<option>${r}</option>`).join('')}</select></div>
+    <div id="orgWrap" hidden>
+      <p class="hint" style="margin:-4px 0 10px">You get the parts of the list Eretz Israel Tours opens for you: transportation, guides, hotels, sites and restaurants. Agent prices are for tour guides and agents.</p>
+      <div class="f"><label for="gOrg">Organisation <em>*</em></label><input id="gOrg" type="text" maxlength="120" placeholder="Name of the school, yeshiva or organisation"></div>
+      <div class="f"><label for="gCred">Your credentials <em>*</em></label><textarea id="gCred" rows="5" maxlength="1000" placeholder="Your role, what you book, and how Eretz Israel Tours can check who you are: who referred you, the office phone, a website."></textarea><span class="hint">In your own words. Only Eretz Israel Tours sees this. No license or upload needed.</span></div>
+    </div>
+    <div id="proWrap">
     <div class="f"><label for="gLic">License number <span class="hint">(optional)</span></label><input id="gLic" type="text" placeholder="Tour guide or travel agency license no."></div>
     <div class="f"><label for="gProof">Photo of your license or card <em id="proofReq">*</em></label><input id="gProof" type="file" accept="image/*,application/pdf"><span class="hint">Only Eretz Israel Tours can see it.</span></div>
     <label class="check" for="gNoProof"><input id="gNoProof" type="checkbox"><span><b>I can't add my license or proof right now</b><br><span class="hint">Ask Eretz Israel Tours to approve you without it. Approval is not guaranteed.</span></span></label>
     <div class="f" id="npWhy" hidden><label for="gWhy">Why, and how can Eretz Israel Tours check who you are? <em>*</em></label><textarea id="gWhy" rows="3" maxlength="240" placeholder="License is being renewed. I work with Eretz Israel Tours on Galilee groups, referred by Rachel."></textarea></div>
+    </div>
     <div class="f"><label for="gPhone">Phone</label><input id="gPhone" type="tel" autocomplete="tel" inputmode="tel" placeholder="+972 52 000 0000"></div>
     <div class="f"><label for="gNote">Anything else? (area, company, who referred you)</label><input id="gNote" type="text" placeholder="Galilee, referred by Rachel"></div>
     <label class="check" for="gTerms"><input id="gTerms" type="checkbox"><span>I agree to the <button type="button" class="linkbtn" id="gTermsLink">terms and privacy notice</button>, including that Eretz Israel Tours can see everything I add, also items I mark private.</span></label>
@@ -1001,7 +1043,8 @@ function renderGate(msg){
   document.getElementById('gTermsLink').onclick=openTerms;
   const role=document.getElementById('gRole');
   const np=document.getElementById('gNoProof');
-  const syncReq=()=>{ document.getElementById('proofReq').hidden=np.checked; document.getElementById('npWhy').hidden=!np.checked; };
+  const syncReq=()=>{ const isOrg=role.value===ORG_ROLE; document.getElementById('orgWrap').hidden=!isOrg; document.getElementById('proWrap').hidden=isOrg;
+    document.getElementById('proofReq').hidden=np.checked; document.getElementById('npWhy').hidden=!np.checked; };
   role.onchange=syncReq; np.onchange=syncReq;
   document.getElementById('gateForm').addEventListener('submit', async e=>{
     e.preventDefault();
@@ -1011,16 +1054,17 @@ function renderGate(msg){
     if(!v('gName')) probs.push('Add your name.');
     if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v('gEmail'))) probs.push('Enter a full email address.');
     if(!v('gRole')) probs.push('Choose what you do.');
-    const noProof=np.checked;
-    if(!noProof && !file) probs.push('Add a photo of your license or card.');
+    const isOrg=v('gRole')===ORG_ROLE, noProof=!isOrg&&np.checked;
+    if(isOrg){ if(v('gOrg').length<2) probs.push('Add the name of your organisation.'); if(v('gCred').length<20) probs.push('Write a few lines about your role and how Eretz Israel Tours can check who you are.'); }
+    if(!isOrg && !noProof && !file) probs.push('Add a photo of your license or card.');
     if(noProof && v('gWhy').length<10) probs.push('Say briefly why there is no proof and how we can check who you are.');
     if(!document.getElementById('gTerms').checked) probs.push('Please read and accept the terms.');
     if(probs.length){ out.innerHTML=`<div class="msg err">${probs.join(' ')}</div>`; return; }
     const b=document.getElementById('gSend'); b.disabled=true; b.textContent='Sending…';
     try{
       const note = noProof ? ('No proof: '+v('gWhy')+(v('gNote')?' | '+v('gNote'):'')).slice(0,300) : v('gNote');
-      await DB.requestAccess(v('gName'),v('gEmail'),v('gRole'),v('gLic'),v('gPhone'),note,TERMS_VERSION);
-      if(file) try{ await sendProof(file,out); }catch(err){ toast("Your request was sent, but the photo didn't upload. Try again on the next screen."); }
+      await DB.requestAccess(v('gName'),v('gEmail'),v('gRole'),isOrg?'':v('gLic'),v('gPhone'),note,TERMS_VERSION,isOrg?v('gOrg'):'',isOrg?v('gCred'):'');
+      if(file&&!isOrg) try{ await sendProof(file,out); }catch(err){ toast("Your request was sent, but the photo didn't upload. Try again on the next screen."); }
       await DB.loadMe(); boot();
     }catch(err){ b.disabled=false; b.textContent='Ask to join'; out.innerHTML=`<div class="msg err">${esc(err.message)}</div>`; }
   });
@@ -1041,7 +1085,7 @@ function renderWaiting(){
       : `<p>Thanks, ${esc(S.me.name.split(' ')[0])}. Eretz Israel Tours will review your request soon. This is your personal link. Save it, and use it to open the app on any phone or computer.</p>
          ${linkBox('myLink', personalLink(S.token))}
          <p class="hint">Keep it to yourself. Anyone with this link can use the app as you.</p>
-         ${S.me.has_proof?'':`<div class="dup" style="margin-top:12px">If you haven't yet, add a photo of your license or card to speed up approval.<div class="addrow" style="margin-top:8px"><input id="wProof" type="file" accept="image/*,application/pdf"><button class="btn primary" id="wSend" type="button">Upload</button></div><div id="wMsg"></div></div>`}
+         ${S.me.has_proof||S.me.role===ORG_ROLE?'':`<div class="dup" style="margin-top:12px">If you haven't yet, add a photo of your license or card to speed up approval.<div class="addrow" style="margin-top:8px"><input id="wProof" type="file" accept="image/*,application/pdf"><button class="btn primary" id="wSend" type="button">Upload</button></div><div id="wMsg"></div></div>`}
          <button class="btn soft" id="chk" style="margin-top:10px">Check if I'm approved</button>`}
     <button class="btn soft" id="out" style="margin-top:10px">Use a different link</button></div></div>`;
   wireCopy(app);
@@ -1113,7 +1157,8 @@ function viewVendors(){
       <div class="chips" role="group" aria-label="Vehicle size" style="padding-top:2px">${[['','Any vehicle'],...VEHICLES.map(x=>[x[0],x[2]])].map(([k,l])=>`<button class="chip" data-tveh="${k}" aria-pressed="${(S.tveh||'')===k}">${esc(l)}</button>`).join('')}</div>
       <button class="btn soft" id="drvStart" type="button" style="width:100%;margin-top:8px">+ Add or review a driver</button>`:''}
     <div id="favBox"></div>
-    <div id="results"></div>`;
+    <div id="results"></div>
+    ${lim()?`<p class="hint" style="margin:14px 2px 0">Your access covers ${esc(mySections().map(k=>secName(k).toLowerCase()).join(', '))}. Add suppliers, quotes, reviews and the rates you get as you go: everybody here contributes.</p>`:''}`;
   const favs=(S.myTop||[]).map(id=>S.vendors.find(v=>v.id===id)).filter(Boolean).slice(0,8);
   const fb=document.getElementById('favBox');
   if(favs.length && !S.q && S.cat==='All' && S.reg==='All'){
@@ -1346,14 +1391,15 @@ function viewTeam(){
       <p class="hint" style="margin:8px 0 0">Change it once you have tried it yourself. You can change it back; jobs and days already saved are kept.</p>
     </section>`:''}
     <section class="panel"><h3>Asking to join</h3>
-      ${pend.length? pend.map(m=>`<div class="rev"><div class="who2"><b>${esc(m.name)}</b><span>${esc(m.role||'Role not given')}${m.license_no?` · license <span class="mono">${esc(m.license_no)}</span>`:''}<br>${esc(m.email)}${m.phone?' · '+esc(m.phone):''}${m.note?'<br>'+(/^No proof:/.test(m.note)?`<b style="color:var(--warn)">⚠ Asked to join without proof.</b> ${esc(m.note.replace(/^No proof:\s*/,''))}`:esc(m.note)):''}</span></div>
-        <div class="btn-row">${m.has_proof?`<button class="btn soft" data-proof="${m.id}">View proof</button>`:'<span class="pill pending">No proof yet</span>'}<button class="btn soft" data-no="${m.id}">Decline</button><button class="btn primary" data-yes="${m.id}">Approve</button></div><span id="pf_${m.id}" style="flex-basis:100%"></span></div>`).join('')
+      ${pend.length? pend.map(m=>`<div class="rev"><div class="who2"><b>${esc(m.name)}</b><span>${esc(m.role||'Role not given')}${m.org?' · '+esc(m.org):''}${m.license_no?` · license <span class="mono">${esc(m.license_no)}</span>`:''}<br>${esc(m.email)}${m.phone?' · '+esc(m.phone):''}${m.note?'<br>'+(/^No proof:/.test(m.note)?`<b style="color:var(--warn)">⚠ Asked to join without proof.</b> ${esc(m.note.replace(/^No proof:\s*/,''))}`:esc(m.note)):''}</span></div>
+        ${m.credentials?`<div class="jnote" style="flex-basis:100%;margin:0"><b>Credentials, in their words</b><br>${esc(m.credentials)}</div>`:''}
+        <div class="btn-row">${m.has_proof?`<button class="btn soft" data-proof="${m.id}">View proof</button>`:(m.role===ORG_ROLE?'':'<span class="pill pending">No proof yet</span>')}<button class="btn soft" data-no="${m.id}">Decline</button><button class="btn primary" data-yes="${m.id}">${m.role===ORG_ROLE||m.member_type==='limited'?'Approve and choose access':'Approve'}</button></div><span id="pf_${m.id}" style="flex-basis:100%"></span></div>`).join('')
         : '<p style="margin:0">No one is waiting.</p>'}
     </section>
     <section class="panel"><h3>People with access (${active.length})</h3>
-      <p>If someone loses their link, make a new one and send it to them. The old link stops working.</p>
-      ${active.map(m=>`<div class="person"><span><b>${esc(m.name)}</b>${m.is_admin?' <span class="pill approved">admin</span>':''}<br><span class="hint">${esc(m.role||'')}${m.license_no?' · '+esc(m.license_no):''}${m.role||m.license_no?'<br>':''}${esc(m.email)} · last active ${ago(m.last_seen_at)}${m.is_admin?'':(m.terms_accepted_at?' · terms accepted '+fmtDate(m.terms_accepted_at):' · terms not yet accepted')}</span><span id="nl_${m.id}"></span></span>
-        ${m.is_admin?'':`<span class="btn-row"><button class="btn soft" data-link="${m.id}">New link</button><button class="btn danger" data-rm="${m.id}">Remove</button></span>`}</div>`).join('')}
+      <p>If someone loses their link, make a new one and send it to them. The old link stops working. A limited member sees only the sections you ticked, and never agent prices; change that any time with Change access.</p>
+      ${active.map(m=>`<div class="person" style="flex-wrap:wrap"><span style="flex-basis:100%"><b>${esc(m.name)}</b>${m.is_admin?' <span class="pill approved">admin</span>':(m.member_type==='limited'?' <span class="pill pending">Limited</span>':' <span class="pill approved">Full</span>')}<br><span class="hint">${esc(m.role||'')}${m.org?' · '+esc(m.org):''}${m.license_no?' · '+esc(m.license_no):''}${m.role||m.license_no?'<br>':''}${esc(m.email)} · last active ${ago(m.last_seen_at)}${m.is_admin?'':(m.terms_accepted_at?' · terms accepted '+fmtDate(m.terms_accepted_at):' · terms not yet accepted')}</span><span id="nl_${m.id}"></span></span>${accessSummary(m)}
+        ${m.is_admin?'':`<span class="btn-row" style="flex-basis:100%"><button class="btn soft" data-acc="${m.id}">Change access</button><button class="btn soft" data-link="${m.id}">New link</button><button class="btn danger" data-rm="${m.id}">Remove</button></span>`}</div>`).join('')}
     </section>
     <section class="panel" id="actPanel"><h3>Activity</h3><p>Taps on Call, WhatsApp, Email, Website, Waze, Maps, booking and deal links.</p><div id="actAll"><p class="hint">Loading…</p></div></section>
     ${gone.length?`<section class="panel"><h3>Removed</h3>${gone.map(m=>`<div class="person"><span><b>${esc(m.name)}</b><br><span class="hint">${esc(m.email)}</span><span id="nl_${m.id}"></span></span><button class="btn soft" data-link="${m.id}">Restore with new link</button></div>`).join('')}</section>`:''}`;
@@ -1374,7 +1420,8 @@ function viewTeam(){
   view.querySelectorAll('[data-proof]').forEach(b=>b.onclick=async()=>{ const slot=document.getElementById('pf_'+b.dataset.proof);
     if(!LIVE){ slot.innerHTML='<p class="hint" style="margin:8px 0 0">In the live app this opens their uploaded license.</p>'; return; }
     b.disabled=true; try{ const url=await DB.proofUrl(b.dataset.proof); slot.innerHTML=`<a class="btn accent" style="display:inline-block;margin-top:8px;text-decoration:none" href="${esc(url)}" target="_blank" rel="noopener">Open their license</a> <span class="hint">Link works for 10 minutes.</span>`; }catch(e){ toast(e.message); } b.disabled=false; });
-  view.querySelectorAll('[data-yes]').forEach(b=>b.onclick=async()=>{ const m=S.members.find(x=>x.id===b.dataset.yes); try{ await DB.decide(b.dataset.yes,'approved'); render(); if(m) openWelcome(m); else toast('Approved. Their link works now.'); }catch(e){ toast(e.message); } });
+  view.querySelectorAll('[data-acc]').forEach(b=>b.onclick=()=>openAccess(S.members.find(x=>x.id===b.dataset.acc), false));
+  view.querySelectorAll('[data-yes]').forEach(b=>b.onclick=async()=>{ const m=S.members.find(x=>x.id===b.dataset.yes); if(m&&(m.role===ORG_ROLE||m.member_type==='limited')) return openAccess(m, true); try{ await DB.decide(b.dataset.yes,'approved'); render(); if(m) openWelcome(m); else toast('Approved. Their link works now.'); }catch(e){ toast(e.message); } });
   view.querySelectorAll('[data-no]').forEach(b=>b.onclick=async()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again'; return; } try{ await DB.decide(b.dataset.no,'revoked'); toast('Declined'); render(); }catch(e){ toast(e.message); } });
   view.querySelectorAll('[data-rm]').forEach(b=>b.onclick=async()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again to remove'; return; } try{ await DB.decide(b.dataset.rm,'revoked'); toast('Removed. Their link no longer works.'); render(); }catch(e){ toast(e.message); } });
   view.querySelectorAll('[data-link]').forEach(b=>b.onclick=async()=>{
@@ -1382,6 +1429,57 @@ function viewTeam(){
       render(); const slot=document.getElementById('nl_'+id);
       if(slot){ slot.innerHTML=`<span class="hint" style="display:block;margin-top:6px">New link for ${esc(m?m.name:'them')}. Send it now; it won't be shown again.</span>${linkBox('lk_'+id, personalLink(t))}`; wireCopy(slot); }
     }catch(e){ toast(e.message); } });
+}
+
+// What a member sees: full, or limited to chosen sections (D-12). Opens when approving an organisation, and from
+// People with access. The database applies it; this screen only sets it.
+function accessBits(m){
+  const secs=String(m.sections||'').split(',').map(t=>t.trim()).filter(Boolean), bits=['no agent prices'];
+  if(secs.includes('transport')){ bits.push(m.see_quotes?'bus and van quotes shown':'bus and van quotes hidden'); bits.push(m.see_transport_reviews?'transportation reviews shown':'transportation reviews hidden'); }
+  if(secs.includes('guides')) bits.push(m.see_guide_rates?'guide rates shown':'guide rates hidden');
+  bits.push(m.see_reviews?'all other reviews shown':'elsewhere, reviews from organisations only');
+  return `<b>Sees:</b> ${esc(secs.map(secName).join(', '))}<br>${esc(bits.join(' · '))}<br>Can add suppliers, quotes, reviews and the rates they get, shown to everyone.`; }
+function accessSummary(m){ return m.member_type==='limited' ? `<span class="jnote" style="display:block;flex-basis:100%;margin:0">${accessBits(m)}</span>` : ''; }
+function openAccess(m, approving){
+  if(!m) return;
+  const wasLim=m.member_type==='limited', isLim=wasLim||(approving&&m.role===ORG_ROLE);
+  const have=new Set(String(wasLim&&m.sections?m.sections:DEF_SECTIONS).split(','));
+  const on=(k,def)=>wasLim?!!m[k]:def;
+  const row=(inner,id)=>`<label class="prow"${id?` id="${id}"`:''}>${inner}</label>`;
+  const body=`<div class="jnote"><b>${esc(m.name)}</b> · ${esc(m.role||'Role not given')}${m.org?' · '+esc(m.org):''}<br>${esc(m.email)}${m.phone?' · '+esc(m.phone):''}${m.credentials?`<br><br><b>Credentials, in their words</b><br>${esc(m.credentials)}`:''}</div>
+    <fieldset><legend>Member type</legend><div class="list">
+      ${row(`<input type="radio" name="acType" value="full" ${isLim?'':'checked'}><span class="pn"><b>Full member</b><span>Guide, agent or tour operator. Sees the whole list.</span></span>`)}
+      ${row(`<input type="radio" name="acType" value="limited" ${isLim?'checked':''}><span class="pn"><b>Limited member</b><span>Not in tourism. Sees only the sections you tick, without agent prices.</span></span>`)}
+    </div></fieldset>
+    <p class="hint" id="acFull" style="margin:0 0 14px">Sees every section, agent prices, reviews and the Quotes tab, like any colleague.</p>
+    <div id="acLim">
+      <fieldset><legend>Sections they can see</legend><div class="list">${SECTIONS.map(x=>row(`<input type="checkbox" data-sec="${x[0]}" ${have.has(x[0])?'checked':''}><span class="pn"><b>${esc(x[1])}</b><span>${esc(x[2])}</span></span>`)).join('')}</div></fieldset>
+      <fieldset><legend>Prices and reviews</legend><div class="list">
+        ${row(`<input type="checkbox" id="acQ" ${on('see_quotes',true)?'checked':''}><span class="pn"><b>Bus and van quotes</b><span>The Quotes tab and booking sheets.</span></span>`,'acQw')}
+        ${row(`<input type="checkbox" id="acG" ${on('see_guide_rates',false)?'checked':''}><span class="pn"><b>Guide rates</b><span>Off by default. Without it they see guide profiles and contacts only.</span></span>`,'acGw')}
+        ${row(`<input type="checkbox" id="acT" ${on('see_transport_reviews',true)?'checked':''}><span class="pn"><b>Read transportation reviews</b><span>On by default. Drivers, bus companies and van drivers.</span></span>`,'acTw')}
+        ${row(`<input type="checkbox" id="acR" ${on('see_reviews',false)?'checked':''}><span class="pn"><b>Read guides' and agents' reviews in other sections</b><span>Off by default. Reviews written by organisations always show.</span></span>`)}
+        <div class="prow" style="background:var(--wash)"><span class="pn"><b>What they add themselves</b><span>Their reviews and the rates they got are shown to everyone, limited members too. Rates are marked as an organisation rate, without the name.</span></span></div>
+        <div class="prow" style="background:var(--wash)"><span class="pn"><b>🔒 Agent prices</b><span>Never shown to limited members, hotels included. They see listed prices and organisation rates. Private prices stay private.</span></span></div>
+      </div></fieldset>
+      <div class="jnote warn" id="acSum"></div>
+    </div><div id="acErr"></div>`;
+  const w=sheet((approving?'Approve ':'Access: ')+m.name, body, `<button class="btn soft" id="acC" type="button">Cancel</button><button class="btn primary" id="acS" type="button">Save</button>`);
+  const read=()=>({member_type:w.querySelector('input[name="acType"]:checked').value, sections:[...w.querySelectorAll('[data-sec]:checked')].map(c=>c.dataset.sec).join(','),
+    see_quotes:w.querySelector('#acQ').checked, see_guide_rates:w.querySelector('#acG').checked, see_transport_reviews:w.querySelector('#acT').checked, see_reviews:w.querySelector('#acR').checked});
+  const sync=()=>{ const a=read(), l=a.member_type==='limited', secs=a.sections.split(',').filter(Boolean);
+    w.querySelector('#acLim').hidden=!l; w.querySelector('#acFull').hidden=l;
+    w.querySelector('#acQw').hidden=!secs.includes('transport'); w.querySelector('#acTw').hidden=!secs.includes('transport'); w.querySelector('#acGw').hidden=!secs.includes('guides');
+    w.querySelector('#acSum').innerHTML=secs.length?accessBits(a):'Tick at least one section.';
+    w.querySelector('#acS').textContent=approving?(l?'Approve as limited member':'Approve as full member'):'Save'; };
+  w.querySelectorAll('input').forEach(i=>i.onchange=sync); sync();
+  w.querySelector('#acC').onclick=closeSheet;
+  w.querySelector('#acS').onclick=async()=>{ const a=read(), b=w.querySelector('#acS'), err=w.querySelector('#acErr');
+    if(a.member_type==='limited'&&!a.sections){ err.innerHTML='<div class="msg err">Tick at least one section.</div>'; return; }
+    b.disabled=true;
+    try{ await DB.setAccess(m.id, a); if(approving) await DB.decide(m.id,'approved'); closeSheet(); render();
+      if(approving) openWelcome(m); else toast('Access saved'); }
+    catch(e){ b.disabled=false; err.innerHTML=`<div class="msg err">${esc(e.message)}</div>`; } };
 }
 
 // ---------- dates: day / month / year ----------
@@ -1473,7 +1571,8 @@ function bccPopup(em){
     location.href = mailHref(em, !out); });
 }
 function openMySettings(){
-  const body=`<p style="margin:0 0 12px;color:var(--ink-2)">${esc(S.me.name)} · ${esc(S.me.email)}${S.me.role?' · '+esc(S.me.role):''}</p>
+  const body=`<p style="margin:0 0 12px;color:var(--ink-2)">${esc(S.me.name)} · ${esc(S.me.email)}${S.me.role?' · '+esc(S.me.role):''}${S.me.org?' · '+esc(S.me.org):''}</p>
+    ${lim()?`<p class="hint" style="margin:0 0 12px">Your access: ${esc(mySections().map(k=>secName(k).toLowerCase()).join(', '))}. Agent prices are for tour guides and agents. What you add is shown to everyone on the list.</p>`:''}
     ${S.me.is_admin?'':`<label class="switch" for="myBcc"><input id="myBcc" type="checkbox" ${S.me.bcc_opt_out?'':'checked'}><span><b>Copy Eretz Israel Tours on supplier emails</b><br><span class="hint">Adds ${esc(S.me.bcc_email||'the Eretz Israel Tours address')} as a hidden copy when you use the Email button. Helps keep prices and bookings up to date.</span></span></label>`}
     <p style="margin-top:14px"><button type="button" class="btn soft" id="myTour">Take the welcome tour again</button></p>
     <p style="margin-top:14px"><button type="button" class="linkbtn" id="myTerms">Terms and privacy</button></p>`;
@@ -1556,19 +1655,21 @@ function openDetail(id, opt){
     ${contactBar(v)}
     <button class="btn red upd" id="upd" type="button">⚠ Update this supplier <span>closed, moved, wrong details</span></button>
     <div id="resBox"></div>
-    ${agentBox(v)}
+    ${lim()?'':agentBox(v)}
     <div id="reqBox"></div>
     <div id="sitesWrap"></div>
     <fieldset><div class="sec-head"><legend>Quotes</legend><button class="mini" id="addQuote" type="button">+ Add quote</button></div><div id="quotesBox"><p class="hint">Loading…</p></div></fieldset>
     ${isTr&&bookingsOn()?`<fieldset><div class="sec-head"><legend>Booking sheets</legend><button class="mini" id="addBooking" type="button">+ New booking sheet</button></div><div id="bookingsBox"><p class="hint">Loading…</p></div></fieldset>`:''}
     ${isTr?`<fieldset class="drv-pane keep"><div class="sec-head"><legend>${indep?'Driver':'Drivers of '+esc(v.name)}</legend><button class="mini" id="addDriver" type="button">+ Add or find a driver</button></div>
       <p class="hint" style="margin:0 0 10px">${indep?'An independent van driver. Reviews from colleagues who rode with him.':'Employed or contracted by this company. A driver keeps his reviews if he also drives for another company.'}</p><div id="driversBox"><p class="hint">Loading…</p></div></fieldset>`:''}
-    <fieldset><div class="sec-head"><legend>Standard prices</legend><button class="mini" id="addPrice" type="button">+ Add price</button></div>
+    <fieldset><div class="sec-head"><legend>${lim()?'Prices':'Standard prices'}</legend><button class="mini" id="addPrice" type="button">${lim()?'+ Add the rate you got':'+ Add price'}</button></div>
       ${S.admin?`<label class="switch" for="ppToggle" style="margin-bottom:10px"><input id="ppToggle" type="checkbox" ${v.prices_private?'checked':''}><span><b>Keep this supplier's prices private</b><br><span class="hint">Colleagues still see the supplier and contacts, but no prices. You can also mark single price lines private.</span></span></label>`:''}
       <div id="pricesBox"><p class="hint">Loading…</p></div></fieldset>
     <fieldset><div class="sec-head"><legend>Deals and discounts</legend><button class="mini" id="addDeal" type="button">+ Add deal</button></div><div id="dealsBox"><p class="hint">Loading…</p></div></fieldset>
-    <fieldset><legend>Notes from colleagues</legend>
-      <div class="addline"><textarea id="noteText" rows="1" placeholder="Add a tip, warning or update…"></textarea><button class="btn primary" id="noteAdd" type="button">Add</button></div>
+    <fieldset><legend>${lim()?'Reviews':'Notes from colleagues'}</legend>
+      ${lim()?`<p class="hint" style="margin:0 0 8px">${reviewsOpen(v)?'':'You see reviews written by organisations. '}Yours is read by everyone on the list, with your name. Keep it to what happened on your visit.</p>
+        <div class="stars" id="noteStars" role="group" aria-label="Your rating, 1 to 5" style="margin:0 0 8px">${[1,2,3,4,5].map(n=>`<button type="button" data-n="${n}" aria-pressed="false" aria-label="${n} out of 5">${n}</button>`).join('')}<span class="hint" style="align-self:center;margin-left:4px">Rating, optional</span></div>`:''}
+      <div class="addline"><textarea id="noteText" rows="${lim()?2:1}" placeholder="${lim()?'How did it go? Group size, what worked, what to know before going…':'Add a tip, warning or update…'}"></textarea><button class="btn primary" id="noteAdd" type="button">Add</button></div>
       <div id="notesBox"></div></fieldset>
     ${foodOk(v)?'':'<!--'}<details class="food" id="foodWrap"><summary>🍽 Food nearby <span class="hint" id="foodCount"></span></summary><div id="foodBox"><p class="hint">Loading…</p></div></details>${foodOk(v)?'':'-->'}
     <fieldset><legend>Photos, receipts and PDFs</legend><div id="filesBox"><p class="hint">Loading files…</p></div></fieldset>
@@ -1604,8 +1705,10 @@ function openDetail(id, opt){
   const sbd=w.querySelector('.sheet-body'), setVt=t=>{ sbd.classList.toggle('only-drivers',t==='drivers'); w.querySelectorAll('[data-vt]').forEach(x=>x.setAttribute('aria-selected', x.dataset.vt===t)); sbd.scrollTop=0; };
   w.querySelectorAll('[data-vt]').forEach(x=>x.onclick=()=>setVt(x.dataset.vt)); if(isTr&&opt&&opt.tab==='drivers') setVt('drivers');
   w.querySelector('#addDeal').onclick=()=>openDealForm(v);
+  let noteRating=''; const nst=w.querySelector('#noteStars');
+  if(nst) nst.querySelectorAll('button').forEach(b=>b.onclick=()=>{ noteRating = noteRating===b.dataset.n ? '' : b.dataset.n; nst.querySelectorAll('button').forEach(o=>o.setAttribute('aria-pressed', o.dataset.n===noteRating)); });
   w.querySelector('#noteAdd').onclick=async()=>{ const t=w.querySelector('#noteText'); const body=t.value.trim(); if(!body){ t.focus(); return; }
-    try{ await DB.addNote(v.id, body); t.value=''; toast('Note added'); drawExtras(v); }catch(e){ toast(e.message); } };
+    try{ await DB.addNote(v.id, body, noteRating); t.value=''; noteRating=''; if(nst) nst.querySelectorAll('button').forEach(o=>o.setAttribute('aria-pressed','false')); toast(lim()?'Review added. Thank you.':'Note added'); drawExtras(v); }catch(e){ toast(e.message); } };
   const a=w.querySelector('#appr'); if(a) a.onclick=async()=>{ try{await DB.setStatus(v.id,'approved'); closeSheet(); toast('Approved'); render();}catch(e){toast(e.message);} };
   const r=w.querySelector('#rej'); if(r) r.onclick=async()=>{ try{await DB.setStatus(v.id,'rejected'); closeSheet(); toast('Marked rejected'); render();}catch(e){toast(e.message);} };
   const d=w.querySelector('#del'); if(d) d.onclick=async()=>{ if(d.dataset.c!=='1'){ d.dataset.c='1'; d.textContent='Tap again to delete'; return; } try{await DB.remove(v.id); closeSheet(); toast('Deleted'); render();}catch(e){toast(e.message);} };
@@ -1616,12 +1719,12 @@ async function drawExtras(v){
   const me=(S.user.email||'').toLowerCase();
   const pb=document.getElementById('pricesBox'); if(!pb) return;
   const privNote = (!S.admin && det.prices_private) ? '<p class="hint" style="margin:0 0 10px">Eretz Israel Tours keeps its prices for this supplier private. You can still add your own prices: only you (and Eretz Israel Tours) see them.</p>' : '';
-  pb.innerHTML = privNote + (det.prices.length ? `<div class="prices">${det.prices.map(p=>`<div class="pl${p.by&&!p.by.admin?' colleague':''}">${fromBadge(p.by,p.by_date,p.owner?(p.mine?'Your own price ·':'Own price from'):'From')}
+  pb.innerHTML = privNote + (det.prices.length ? `<div class="prices">${det.prices.map((p,pi)=>`${p.org&&!(det.prices[pi-1]&&det.prices[pi-1].org)?'<div class="favs-h" style="margin:8px 2px 0">Organisation rates · what schools, yeshivas and other organisations were charged</div>':''}<div class="pl${p.by&&!p.by.admin?' colleague':''}">${fromBadge(p.by,p.by_date,p.org?(p.mine?'Your rate ·':'From'):(p.owner?(p.mine?'Your own price ·':'Own price from'):'From'))}
       <span class="who3">${esc(p.label||p.audience)}</span><span class="amt">${p.price?esc(money(p.currency,p.price)):'<span class="hint">Price to confirm</span>'}</span>
-      <span class="meta">${p.owner?'<span class="tag" style="background:var(--ochre-wash);color:var(--ochre)">Only '+(p.mine?'you':'them')+' and Eretz Israel Tours see this</span>':(p.private?'<span class="tag" style="background:var(--bad-wash);color:var(--bad)">Private</span>':'')}${p.is_agent?'<span class="tag agent">Agent rate</span>':'<span class="tag">Public price</span>'}${esc(priceWho(p))} · ${esc((p.basis||'').toLowerCase())}${vatLabel(p.vat)?' · '+esc(vatLabel(p.vat).toLowerCase()):''}${p.season?' · '+esc(p.season):''}</span>
+      <span class="meta">${p.org&&!p.private?'<span class="tag" style="background:var(--ochre-wash);color:var(--ink)">Organisation rate</span>':(p.owner||p.org?'<span class="tag" style="background:var(--ochre-wash);color:var(--ochre)">Only '+(p.mine?'you':'them')+' and Eretz Israel Tours see this</span>':(p.private?'<span class="tag" style="background:var(--bad-wash);color:var(--bad)">Private</span>':''))}${p.org?'':(p.is_agent?'<span class="tag agent">Agent rate</span>':'<span class="tag">Public price</span>')}${esc(priceWho(p))} · ${esc((p.basis||'').toLowerCase())}${vatLabel(p.vat)?' · '+esc(vatLabel(p.vat).toLowerCase()):''}${p.season?' · '+esc(p.season):''}</span>
       ${p.note||p.source||p.checked_on?`<span class="meta">${p.note?esc(p.note)+'<br>':''}${p.source?'Source: '+esc(p.source):''}${p.checked_on?' · checked '+esc(ilDate(p.checked_on)):''}</span>`:''}
-      <span class="ctl">${(S.admin&&!(p.owner&&!p.mine))||p.mine?`<button class="mini" data-pedit="${esc(p.id)}" type="button">Edit</button>`:(S.admin?'':`<button class="mini" data-pedit="${esc(p.id)}" type="button">Suggest change</button>`)}<button class="mini" data-pdel="${esc(p.id)}" type="button">${S.admin||p.mine?'Remove':'Suggest removing'}</button></span></div>`).join('')}</div>`
-    : (privNote?'':`<p class="hint" style="margin:0 0 10px">No price lines yet. Add adult, child, Israeli senior or group rates as separate lines.</p>`));
+      <span class="ctl">${p.org&&!p.mine&&!S.admin?'':`${(S.admin&&!(p.owner&&!p.mine))||p.mine?`<button class="mini" data-pedit="${esc(p.id)}" type="button">Edit</button>`:(S.admin?'':`<button class="mini" data-pedit="${esc(p.id)}" type="button">Suggest change</button>`)}<button class="mini" data-pdel="${esc(p.id)}" type="button">${S.admin||p.mine?'Remove':'Suggest removing'}</button>`}</span></div>`).join('')}</div>`
+    : (privNote?'':`<p class="hint" style="margin:0 0 10px">${lim()?'No prices yet. Add the rate you got: everyone on the list sees it, without your name.':'No price lines yet. Add adult, child, Israeli senior or group rates as separate lines.'}</p>`));
   pb.querySelectorAll('[data-pedit]').forEach(b=>b.onclick=()=>openPriceForm(v, det.prices.find(p=>p.id===b.dataset.pedit), null, det.prices_private));
   pb.querySelectorAll('[data-pdel]').forEach(b=>b.onclick=async()=>{
     if(S.admin || (det.prices.find(p=>p.id===b.dataset.pdel)||{}).mine){ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again'; return; } try{ await DB.deletePrice(v.id,b.dataset.pdel); toast('Price removed'); drawExtras(v); }catch(e){ toast(e.message); } return; }
@@ -1644,8 +1747,9 @@ function drawExtrasRest(v,det){
     : `<p class="hint" style="margin:0 0 10px">No deals yet. Share credit card club benefits (Cal, Max, Isracard, Hever), Cuponofesh-type vouchers, codes or group tricks.</p>`;
   db.querySelectorAll('[data-ddel]').forEach(b=>b.onclick=async()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again'; return; } try{ await DB.deleteDeal(v.id,b.dataset.ddel); toast('Deal removed'); drawExtras(v); }catch(e){ toast(e.message); } });
   const nb=document.getElementById('notesBox');
-  nb.innerHTML = det.notes.length ? det.notes.map(n=>`<div class="note"><span class="meta"><b>${esc(n.author_name||n.author)}</b> · ${fmtDate(n.created_at)}${S.admin||n.author===me?` · <button class="mini" style="padding:1px 8px" data-ndel="${esc(n.id)}" type="button">Delete</button>`:''}</span><p>${esc(n.body)}</p></div>`).join('')
-    : `<p class="hint" style="margin:0">No notes yet.</p>`;
+  nb.innerHTML = det.notes.length ? det.notes.map(n=>{ const nby=(det.note_by||{})[n.id];
+      return `<div class="note"><span class="meta">${n.rating?`<span class="st" role="img" aria-label="${esc(n.rating)} out of 5">${starsTxt(+n.rating)}</span> · `:''}<b>${esc(n.author_name||n.author)}</b>${n.org?` · ${esc(nby&&nby.role||'Organisation')} <span class="tag">Organisation</span>`:''} · ${fmtDate(n.created_at)}${S.admin||n.mine||n.author===me?` · <button class="mini" style="padding:1px 8px" data-ndel="${esc(n.id)}" type="button">Delete</button>`:''}</span><p>${esc(n.body)}</p></div>`; }).join('')
+    : `<p class="hint" style="margin:0">${lim()?'No reviews yet. Yours would be the first.':'No notes yet.'}</p>`;
   nb.querySelectorAll('[data-ndel]').forEach(b=>b.onclick=async()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again'; return; } try{ await DB.deleteNote(v.id,b.dataset.ndel); drawExtras(v); }catch(e){ toast(e.message); } });
   drawSiteBits(v,det);
   drawActivity(v);
@@ -1740,7 +1844,7 @@ function starsTxt(n){ n=Math.max(0,Math.min(5,Math.round(n))); return '★★★
 function fmtMonth(ym){ try{ return new Date(ym+'-15T12:00:00').toLocaleDateString('en-GB',{month:'short',year:'numeric'}); }catch(e){ return ym; } }
 function reviewHtml(r, v, hide, noDel){
   const tags=String(r.tags||'').split(',').map(t=>t.trim()).filter(Boolean), by=r.by||{name:'A colleague',role:''};
-  return `<div class="note drvrev"${hide?' hidden data-more':''}><span class="meta"><span class="st" role="img" aria-label="${esc(r.rating)} out of 5">${starsTxt(+r.rating)}</span> · <b>${esc(by.name)}</b>${by.role?' · '+esc(by.role):''} · ${esc(r.trip_month?fmtMonth(r.trip_month):fmtDate(r.created_at))}${r.vendor_name&&(!v||r.vendor_id!==v.id)?' · with '+esc(r.vendor_name):''}${(S.admin||r.mine)&&!noDel?` · <button class="mini" style="padding:1px 8px" data-rdel="${esc(r.id)}" type="button">Delete</button>`:''}</span>
+  return `<div class="note drvrev"${hide?' hidden data-more':''}><span class="meta"><span class="st" role="img" aria-label="${esc(r.rating)} out of 5">${starsTxt(+r.rating)}</span> · <b>${esc(by.name)}</b>${by.role?' · '+esc(by.role):''}${r.org?' <span class="tag">Organisation</span>':''} · ${esc(r.trip_month?fmtMonth(r.trip_month):fmtDate(r.created_at))}${r.vendor_name&&(!v||r.vendor_id!==v.id)?' · with '+esc(r.vendor_name):''}${(S.admin||r.mine)&&!noDel?` · <button class="mini" style="padding:1px 8px" data-rdel="${esc(r.id)}" type="button">Delete</button>`:''}</span>
     ${tags.length?`<div class="flags">${tags.map(t=>{ const bad=t.startsWith('!')||DRV_BAD.includes(t); return `<span class="flag ${bad?'extra':'incl'}">${bad?'⚠ ':'✓ '}${esc(t.replace(/^!\s*/,''))}</span>`; }).join('')}</div>`:''}
     ${r.body?`<p>${esc(r.body)}</p>`:''}</div>`;
 }
@@ -1759,7 +1863,7 @@ async function drawDrivers(v){
   const cnt=document.getElementById('drvCount'); if(cnt) cnt.textContent=ds.length?String(ds.length):'';
   const addB=document.getElementById('addDriver'); if(addB&&isIndep(v)) addB.hidden=ds.length>0;
   if(!ds.length){ box.innerHTML='<p class="hint" style="margin:0 0 10px">No drivers yet. Add the driver you rode with and his phone number. The number is how colleagues know it is the same driver, whichever company he is driving for.</p>'; return; }
-  box.innerHTML=ds.map((d,i)=>driverCard(d,i,v)).join('');
+  box.innerHTML=(ds.some(d=>d.some_hidden)?'<p class="hint" style="margin:0 0 10px">You see reviews written by organisations, and your own.</p>':'')+ds.map((d,i)=>driverCard(d,i,v)).join('');
   box.querySelectorAll('[data-drev]').forEach(b=>b.onclick=()=>openDriverReview(v, ds[+b.dataset.drev]));
   box.querySelectorAll('[data-dedit]').forEach(b=>b.onclick=()=>openDriverForm(v, ds[+b.dataset.dedit]));
   box.querySelectorAll('[data-dmore]').forEach(b=>b.onclick=()=>{ b.closest('.qcard').querySelectorAll('[data-more]').forEach(x=>x.hidden=false); b.remove(); });
@@ -1959,9 +2063,9 @@ function qStatusPill(st){ const c={Booked:'approved',Received:'pending',Requeste
 function quoteMine(q){ return q.mine!==undefined ? !!q.mine : q.owner===(S.user.email||'').toLowerCase(); }
 function quoteWho(q, v){
   const priv = v&&v.prices_private;
-  if(quoteMine(q)) return q.shared&&!priv ? 'Shared with colleagues, without '+(S.admin?'a name':'your name') : 'Private · only you'+(S.admin?'':' and Eretz Israel Tours');
-  if(S.admin) return q.shared&&!priv ? 'Shared with colleagues, without the name' : 'Private · colleagues don\'t see this';
-  return 'Shared by a colleague';
+  if(quoteMine(q)) return q.shared&&!priv ? (lim()?'Shared with everyone on the list, without your name':'Shared with colleagues, without '+(S.admin?'a name':'your name')) : 'Private · only you'+(S.admin?'':' and Eretz Israel Tours');
+  if(S.admin) return (q.shared&&!priv ? 'Shared with colleagues, without the name' : 'Private · colleagues don\'t see this')+(q.org?' · from an organisation':'');
+  return q.org?'From an organisation':'Shared by a colleague';
 }
 // What is included, what costs extra, and what the supplier never said.
 function optFlags(q,o,v){
@@ -1995,13 +2099,15 @@ function trackerRows(quotes){
   return rows;
 }
 // Averages use quotes from the last two years with a real price. Requested (unanswered) quotes don't count.
-function rateStats(rows){ const gr={}; rows.forEach(r=>{ if(!r.recent||r.q.status==='Requested') return;
+// A quote from an organisation is what an organisation paid, not a trade rate: guides' and agents' averages leave it out.
+const orgOut=q=>!!q.org&&!lim();
+function rateStats(rows){ const gr={}; rows.forEach(r=>{ if(!r.recent||r.q.status==='Requested'||orgOut(r.q)) return;
     r.rates.forEach(x=>{ const k=[r.svc,x.unit,r.q.currency].join('|'); const st=gr[k]=gr[k]||{svc:r.svc,unit:x.unit,cur:r.q.currency,all:[],high:[],reg:[],vats:new Set()};
       st.all.push(x.price); if(r.season) (r.season.high?st.high:st.reg).push(x.price); st.vats.add(r.q.vat||''); }); });
   return gr; }
 const avgOf=a=>Math.round(a.reduce((x,y)=>x+y,0)/a.length);
 const MIN_AVG=3;
-function vsPill(r,x,stats){ const st=stats[[r.svc,x.unit,r.q.currency].join('|')]; if(!st||!r.recent||r.q.status==='Requested') return '';
+function vsPill(r,x,stats){ const st=stats[[r.svc,x.unit,r.q.currency].join('|')]; if(!st||!r.recent||r.q.status==='Requested'||orgOut(r.q)) return '';
   let pool=st.all, lab='average'; if(r.season){ const sp=r.season.high?st.high:st.reg; if(sp.length>=MIN_AVG){ pool=sp; lab=r.season.high?'high-season average':'regular-season average'; } }
   if(pool.length<MIN_AVG) return ''; const a=avgOf(pool); if(!a) return ''; const pct=Math.round((x.price-a)/a*100);
   if(Math.abs(pct)<5) return `<span class="vs eq">≈ ${lab}</span>`;
@@ -2017,7 +2123,7 @@ function trackerCard(r,stats){ const q=r.q, o=r.o, old=!r.recent||['Expired','De
   const sub=[svcLabel(r.svc)+(o.seats?' · '+o.seats+' seats':''), o.name&&normN(o.name)!==normN(svcLabel(r.svc))?o.name:''].filter(Boolean).join(' · ');
   const tot=lineCalc(o.lines||[]).total;
   const by = q.owner_admin===false&&q.owner_name ? fromBadge({name:q.owner_name,role:q.owner_role||'',admin:false},q.updated_at,quoteMine(q)?'Your quote ·':'Quote from') : '';
-  const whoLine = quoteMine(q)||S.admin ? `<div class="qsub">${esc(quoteWho(q,r.v))}</div>` : '';
+  const whoLine = quoteMine(q)||S.admin ? `<div class="qsub">${esc(quoteWho(q,r.v))}</div>` : (q.org?`<div class="qsub">From an organisation${lim()?'':' · not counted in the averages'}</div>`:'');
   return `<div class="qcard${old?' old':''}">
     <div class="qhead"><button class="vlink" type="button" data-open="${esc(r.v.id)}">${esc(r.v.name)}</button>${qStatusPill(q.status)}</div>
     <div class="qsub">${esc(sub)}${r.v.region?' · '+esc(r.v.region):''}</div>
@@ -2716,17 +2822,19 @@ function openReasonSheet(title, prompt, onSend){
 }
 
 function openPriceForm(v, p, pre, pp){
-  const ownOnly = !S.admin && (pp || (p && p.mine)); const canChoose = !S.admin && !p && !pp;
-  const x=Object.assign({label:'',audience:'Adult',age_from:'',age_to:'',pax_min:'',pax_max:'',season:'',price:'',currency:v.currency||'ILS',vat:'',basis:v.priceBasis||'Per person',is_agent:true,source:'',checked_on:today(),note:''}, p||pre||{});
+  // A limited member's own line is an organisation rate: saved at once, shown to everyone without the name, never an agent rate.
+  const orgLine = lim() && (!p || p.mine);
+  const ownOnly = !S.admin && !orgLine && (pp || (p && p.mine)); const canChoose = !S.admin && !orgLine && !p && !pp;
+  const x=Object.assign({label:'',audience:'Adult',age_from:'',age_to:'',pax_min:'',pax_max:'',season:'',price:'',currency:v.currency||'ILS',vat:'',basis:v.priceBasis||'Per person',is_agent:!lim(),source:'',checked_on:today(),note:''}, p||pre||{});
   const opt=(arr,val)=>arr.map(o=>{const [k,t]=Array.isArray(o)?o:[o,o];return `<option value="${esc(k)}"${String(val)===k?' selected':''}>${esc(t)}</option>`}).join('');
   const body=`<form id="pf" novalidate>
-    ${S.admin?'':(ownOnly?`<div class="lockbar">This price is just for you. Only you and Eretz Israel Tours see it. It saves straight away.</div>`:
+    ${S.admin?'':orgLine?`<div class="lockbar">The rate you got from this supplier. ${pp?'This supplier\'s prices are kept private, so only you and Eretz Israel Tours see it.':'Everyone on the list sees it, without your name. Eretz Israel Tours sees who added it.'} It saves straight away.</div>`:(ownOnly?`<div class="lockbar">This price is just for you. Only you and Eretz Israel Tours see it. It saves straight away.</div>`:
       (canChoose?`<div class="chips" role="radiogroup" aria-label="Who sees it" style="padding-top:0;margin-bottom:10px"><button type="button" class="chip" data-who="me" aria-pressed="true">Just for me</button><button type="button" class="chip" data-who="all" aria-pressed="false">Suggest for everyone</button></div>
         <div class="lockbar" id="whoNote">Only you and Eretz Israel Tours see it. It saves straight away.</div>`:`<div class="lockbar">🔒 Shared prices are checked by Eretz Israel Tours before they appear. Your suggestion is sent with your reason.</div>`))}
     <div class="grid">
       <div class="f wide"><label for="pl_label">What is it?</label><input id="pl_label" value="${esc(x.label)}" placeholder="2-hour jeep tour, entrance ticket, half board…"></div>
       <div class="f"><label for="pl_aud">For</label><select id="pl_aud">${opt(AUDIENCES,x.audience)}</select></div>
-      <div class="f"><label for="pl_type">Type of price</label><select id="pl_type">${opt([['1','Agent rate (what we pay)'],['0','Public price']], x.is_agent?'1':'0')}</select></div>
+      <div class="f"${lim()?' hidden':''}><label for="pl_type">Type of price</label><select id="pl_type">${opt([['1','Agent rate (what we pay)'],['0','Public price']], x.is_agent?'1':'0')}</select></div>
       <div class="f" id="ageWrap"><label>Child ages</label><div style="display:flex;gap:6px"><input id="pl_af" inputmode="numeric" value="${esc(x.age_from)}" placeholder="from"><input id="pl_at" inputmode="numeric" value="${esc(x.age_to)}" placeholder="to"></div></div>
       <div class="f"><label>Group size (people)</label><div style="display:flex;gap:6px"><input id="pl_pmin" inputmode="numeric" value="${esc(x.pax_min)}" placeholder="min"><input id="pl_pmax" inputmode="numeric" value="${esc(x.pax_max)}" placeholder="max"></div></div>
       <div class="f"><label for="pl_price">Price</label><div style="display:flex;gap:6px"><input id="pl_price" inputmode="decimal" value="${esc(x.price)}" placeholder="Leave empty if unknown"><button type="button" class="mini" id="pl_free">Free</button></div></div>
@@ -2737,10 +2845,10 @@ function openPriceForm(v, p, pre, pp){
       <div class="f wide"><label for="pl_src">Where is this price from?</label><input id="pl_src" value="${esc(x.source)}" placeholder="Quote email, receipt, website, phone call with Moshe"></div>
       <div class="f"><label for="pl_chk">Checked on</label><input id="pl_chk" type="date" value="${esc(x.checked_on)}"></div>
       <div class="f wide"><label for="pl_note">Note</label><input id="pl_note" value="${esc(x.note)}" placeholder="Show Teudat Ezrach Vatik at the gate"></div>
-      ${S.admin?`<label class="check f wide" for="pl_priv"><input id="pl_priv" type="checkbox" ${x.private?'checked':''}><span><b>Private:</b> only you see this price</span></label>`:(ownOnly?'':`<div class="f wide" id="reasonWrapP" ${canChoose?'hidden':''}><label for="pl_reason">Why are you adding or changing it? <em>*</em></label><input id="pl_reason" placeholder="New price list received by email"></div>`)}
+      ${S.admin?`<label class="check f wide" for="pl_priv"><input id="pl_priv" type="checkbox" ${x.private?'checked':''}><span><b>Private:</b> only you see this price</span></label>`:(ownOnly||orgLine?'':`<div class="f wide" id="reasonWrapP" ${canChoose?'hidden':''}><label for="pl_reason">Why are you adding or changing it? <em>*</em></label><input id="pl_reason" placeholder="New price list received by email"></div>`)}
     </div><div id="plErr"></div></form>`;
-  const w=sheet(p?(S.admin||ownOnly?'Edit price':'Suggest a price change'):(S.admin?'Add price':'Add a price'), body,
-    `<button class="btn soft" id="pc" type="button">Cancel</button><button class="btn primary" id="ps" type="button">${S.admin||ownOnly||canChoose?'Save':'Send for approval'}</button>`);
+  const w=sheet(orgLine?(p?'Edit your rate':'Add the rate you got'):(p?(S.admin||ownOnly?'Edit price':'Suggest a price change'):(S.admin?'Add price':'Add a price')), body,
+    `<button class="btn soft" id="pc" type="button">Cancel</button><button class="btn primary" id="ps" type="button">${S.admin||ownOnly||canChoose||orgLine?'Save':'Send for approval'}</button>`);
   let forMe = ownOnly || canChoose;
   w.querySelectorAll('[data-who]').forEach(b=>b.onclick=()=>{ forMe=b.dataset.who==='me'; w.querySelectorAll('[data-who]').forEach(o=>o.setAttribute('aria-pressed',o===b));
     w.querySelector('#whoNote').textContent = forMe?'Only you and Eretz Israel Tours see it. It saves straight away.':'🔒 Shared prices are checked by Eretz Israel Tours before they appear. Say where the price comes from.';
@@ -2750,13 +2858,13 @@ function openPriceForm(v, p, pre, pp){
   w.querySelector('#pc').onclick=()=>openDetail(v.id);
   w.querySelector('#ps').onclick=async()=>{
     const g=id=>w.querySelector('#'+id).value.trim(); const err=w.querySelector('#plErr');
-    const line={id:p?p.id:undefined,label:g('pl_label'),audience:g('pl_aud'),age_from:g('pl_af'),age_to:g('pl_at'),pax_min:g('pl_pmin'),pax_max:g('pl_pmax'),price:g('pl_price').replace(/[,₪$€\s]/g,''),currency:g('pl_cur'),vat:g('pl_vat'),basis:g('pl_basis'),is_agent:g('pl_type')==='1',season:g('pl_season'),source:g('pl_src'),checked_on:g('pl_chk'),note:g('pl_note'),private:S.admin?w.querySelector('#pl_priv').checked:false};
+    const line={id:p?p.id:undefined,label:g('pl_label'),audience:g('pl_aud'),age_from:g('pl_af'),age_to:g('pl_at'),pax_min:g('pl_pmin'),pax_max:g('pl_pmax'),price:g('pl_price').replace(/[,₪$€\s]/g,''),currency:g('pl_cur'),vat:g('pl_vat'),basis:g('pl_basis'),is_agent:!lim()&&g('pl_type')==='1',season:g('pl_season'),source:g('pl_src'),checked_on:g('pl_chk'),note:g('pl_note'),private:S.admin?w.querySelector('#pl_priv').checked:false};
     if(line.price && !/^\d+(\.\d+)?$/.test(line.price)){ err.innerHTML='<div class="msg err">Enter the price as a number, like 360, or leave it empty.</div>'; return; }
     if(!line.price && !line.label){ err.innerHTML='<div class="msg err">Say what the price is for, even if you don\'t know the amount yet.</div>'; return; }
     line.mine = !S.admin && forMe;
-    const reason = (S.admin||forMe)?'':g('pl_reason');
-    if(!S.admin && !forMe && reason.length<3){ err.innerHTML='<div class="msg err">Add a short reason, like where the price came from.</div>'; return; }
-    try{ const r=await DB.savePrice(v.id,line,reason); toast(r&&r.request?'Sent for approval':(line.mine?'Saved. Only you see this price.':'Price saved')); openDetail(v.id); }
+    const reason = (S.admin||forMe||orgLine)?'':g('pl_reason');
+    if(!S.admin && !forMe && !orgLine && reason.length<3){ err.innerHTML='<div class="msg err">Add a short reason, like where the price came from.</div>'; return; }
+    try{ const r=await DB.savePrice(v.id,line,reason); toast(r&&r.request?'Sent for approval':(r&&r.org?(pp?'Saved. Only you and Eretz Israel Tours see it.':'Saved. Everyone on the list sees this rate, without your name.'):(line.mine?'Saved. Only you see this price.':'Price saved'))); openDetail(v.id); }
     catch(e){ err.innerHTML=`<div class="msg err">${esc(e.message)}</div>`; }
   };
 }
@@ -2936,6 +3044,7 @@ function wireQuickFill(f){
 }
 function openForm(v, preset){
   const x = Object.assign(blank(), {active:'Active',priceBasis:'Per person',currency:'ILS',category:''}, v||preset||{});
+  const noPrice = lim() && !!v && v.category==='Guide' && !S.me.see_guide_rates;   // a guide's prices are not shown to this member
   const guarded = !!v && !S.admin; const lk=k=>guarded && LOCKED.includes(k) ? ' <span class="lock">🔒</span>' : '';
   const inp=(k,label,type='text',ph='',wide=false,req=false)=>`<div class="f${wide?' wide':''}"><label for="f_${k}">${label}${req?' <em>*</em>':''}${lk(k)}</label><input id="f_${k}" name="${k}" type="${type}" value="${esc(x[k])}" placeholder="${esc(ph)}"${type==='number'?' inputmode="decimal" min="0" step="any"':''}${type==='tel'?' inputmode="tel"':''}></div>`;
   const sel=(k,label,opts,wide=false,req=false)=>`<div class="f${wide?' wide':''}"><label for="f_${k}">${label}${req?' <em>*</em>':''}${lk(k)}</label><select id="f_${k}" name="${k}">${opts.map(o=>{const [val,t]=Array.isArray(o)?o:[o,o];return `<option value="${esc(val)}"${String(x[k])===val?' selected':''}>${esc(t)}</option>`}).join('')}</select></div>`;
@@ -2950,7 +3059,7 @@ function openForm(v, preset){
     <fieldset><legend>Supplier</legend><div class="grid">
       ${inp('name','Vendor or company name','text','Golan Jeeps Ltd.',true,true)}
       <div id="dupBox" class="f wide" hidden></div>
-      ${sel('category','Main category',[['','Choose…'],...byUse('category',CATEGORIES)],false,true)}
+      ${sel('category','Main category',[['','Choose…'],...byUse('category',myCats())],false,true)}
       <div class="f wide"><label>Also offers <span class="hint">(optional, e.g. a guide who also drives jeep tours)</span></label><input type="hidden" id="f_also_categories" value="${esc(x.also_categories||'')}"><div class="presets" id="alsoSug" style="margin:6px 0 0"></div></div>
       <div class="f wide" id="fleetWrap" hidden><label>Vehicles they offer</label><div class="tgs" id="fleetPick" role="group" aria-label="Vehicles they offer" style="margin:0">${VEHICLES.map(x=>`<button class="tg" type="button" data-veh="${x[0]}" aria-pressed="false">${esc(x[1])}</button>`).join('')}</div><span class="hint">Tap every size they have. Vans go by seats.</span></div>
       <div class="f wide"><label for="f_tags">Type (separate with commas)</label><input id="f_tags" value="${esc(x.tags)}" placeholder="Jeep, ATV / RZR"><div class="presets" id="tagSug" style="margin:6px 0 0"></div></div>
@@ -2974,20 +3083,20 @@ function openForm(v, preset){
     </div></fieldset>
     <fieldset><legend>Pricing</legend><div class="grid">
       <div class="f wide" id="freeWrap"><button type="button" class="btn soft" id="freeBtn">🆓 It's free (no entrance fee)</button></div>
-      ${inp('agentPrice','Agent price (ours)','number','0')}${sel('agentPriceVatTreatment','Agent price VAT',VAT)}
-      ${inp('listedPrice','Listed price (public)','number','0')}${sel('listedPriceVatTreatment','Listed price VAT',VAT)}
+      ${lim()?'':`${inp('agentPrice','Agent price (ours)','number','0')}${sel('agentPriceVatTreatment','Agent price VAT',VAT)}`}
+      ${noPrice?'':`${inp('listedPrice',lim()?'Listed price':'Listed price (public)','number','0')}${sel('listedPriceVatTreatment','Listed price VAT',VAT)}`}
       ${sel('currency','Currency',['ILS','USD','EUR'])}${sel('priceBasis','Price basis',BASIS)}
-      ${inp('maxPax','Max people for this price','number','15')}${inp('payTerms','Payment terms','text','50% deposit, balance on arrival',true)}
+      ${noPrice?'':inp('maxPax','Max people for this price','number','15')}${inp('payTerms','Payment terms','text','50% deposit, balance on arrival',true)}
     </div><p class="hint" style="margin:8px 0 0">Leave VAT as Unknown if you're not sure.</p></fieldset>
     <fieldset><legend>Cancellation</legend><div class="grid">
       ${inp('cancelPolicy','Policy as written','text','Free cancellation until 48h before',true)}
       ${inp('cancelNoticeAmount','Notice','number','7')}${sel('cancelNoticeUnit','Unit',[['','—'],'Hours','Days'])}${sel('cancelDayType','Counted in',[['','Not specified'],'Calendar days','Business days'])}
       ${inp('cancelPenalty','Penalty','text','50% fee inside notice period')}${inp('cancelPolicyVerifiedDate','Policy checked on','date')}
     </div></fieldset>
-    <fieldset><legend>Your experience</legend><div class="grid">
+    ${lim()&&!(v&&reviewsOpen(v))?'':`<fieldset><legend>Your experience</legend><div class="grid">
       ${stars('rateReliability','Reliability')}${stars('rateService','Service')}${stars('rateValue','Value')}
       ${area('strengths','Strengths','Very punctual, great English…')}${area('weaknesses','Weaknesses','Sometimes overbooks…')}${area('notes','Notes','Ask for a group discount above 10 people…')}
-    </div></fieldset>
+    </div></fieldset>`}
     ${guarded?`<fieldset id="reasonWrap"><legend>Why the change?</legend><div class="f wide"><label for="f_reason">Needed only if you changed a 🔒 field</label><textarea id="f_reason" rows="2" placeholder="New price list from the supplier, see the receipt I attached"></textarea></div></fieldset>`:''}
     <div id="formErr"></div>
   </form>`;
@@ -2999,7 +3108,7 @@ function openForm(v, preset){
   const alsoIn=f.querySelector('#f_also_categories'), alsoSug=f.querySelector('#alsoSug');
   const curCats=()=>({category:f.querySelector('#f_category').value, also_categories:alsoIn.value});
   const drawAlso=()=>{ const main=f.querySelector('#f_category').value; const have=alsoIn.value.split(',').map(t=>t.trim()).filter(t=>t&&t!==main); alsoIn.value=have.join(', ');
-    alsoSug.innerHTML=CATEGORIES.filter(c=>c!==main).map(c=>`<button type="button" class="mini${have.includes(c)?' on':''}" data-also="${esc(c)}">${have.includes(c)?'✓ ':'+ '}${esc(c)}</button>`).join('');
+    alsoSug.innerHTML=myCats().filter(c=>c!==main).map(c=>`<button type="button" class="mini${have.includes(c)?' on':''}" data-also="${esc(c)}">${have.includes(c)?'✓ ':'+ '}${esc(c)}</button>`).join('');
     alsoSug.querySelectorAll('[data-also]').forEach(b=>b.onclick=()=>{ const c=b.dataset.also; const cur=alsoIn.value.split(',').map(t=>t.trim()).filter(Boolean); const i=cur.indexOf(c); if(i>=0) cur.splice(i,1); else cur.push(c); alsoIn.value=cur.join(', '); syncRel(); }); };
   const showIf=(el,on)=>{ if(el) el.hidden=!on; };
   const hrIn=f.querySelector('#f_hours'); f.querySelectorAll('[data-hr]').forEach(b=>b.onclick=()=>{ const p=b.dataset.hr, cur=hrIn.value.trim().replace(/[,;]\s*$/,''); if(cur.toLowerCase().includes(p.toLowerCase())) return; hrIn.value=(cur?cur+', ':'')+p; hrIn.focus(); });
@@ -3044,7 +3153,7 @@ function openForm(v, preset){
     kf.onchange=async()=>{ const f0=kf.files[0]; kf.value=''; if(!f0) return; kcb.disabled=true; km.textContent='Uploading…';
       try{ const fl=await shrink(f0); if(fl.size>10485760) throw new Error('That file is over 10 MB'); await DB.upload(v.id, fl, 'Kosher certificate', null, false); km.textContent='✓ Certificate added. It shows on the supplier page.'; toast('Kosher certificate added'); }
       catch(e){ km.textContent=e.message; } kcb.disabled=false; }; }
-  const fb=f.querySelector('#freeBtn'); if(fb) fb.onclick=()=>{ f.querySelector('#f_agentPrice').value='0'; f.querySelector('#f_listedPrice').value='0'; const vt=f.querySelector('#f_agentPriceVatTreatment'); if(vt) vt.value='not_applicable'; const lt=f.querySelector('#f_listedPriceVatTreatment'); if(lt) lt.value='not_applicable'; toast('Marked free'); };
+  const fb=f.querySelector('#freeBtn'); if(fb) fb.onclick=()=>{ const ap=f.querySelector('#f_agentPrice'); if(ap) ap.value='0'; const lp=f.querySelector('#f_listedPrice'); if(lp) lp.value='0'; const vt=f.querySelector('#f_agentPriceVatTreatment'); if(vt) vt.value='not_applicable'; const lt=f.querySelector('#f_listedPriceVatTreatment'); if(lt) lt.value='not_applicable'; toast('Marked free'); };
   const langIn=f.querySelector('#f_languages'), langSug=f.querySelector('#langSug');
   const langList=()=>langIn.value.split(',').map(t=>t.trim()).filter(Boolean);
   const drawLang=()=>{ const have=langList().map(t=>t.toLowerCase()); langSug.innerHTML=LANG_OPTS.map(l=>`<button type="button" class="mini${have.includes(l.toLowerCase())?' on':''}" data-lang="${esc(l)}">${have.includes(l.toLowerCase())?'✓ ':''}${esc(l)}</button>`).join('');
@@ -3091,7 +3200,7 @@ const JOB_PER=[['day','per day','ליום'],['job','for the whole job','לכל �
 const JOB_VAT={including_vat:['VAT included','כולל מע״מ'],plus_vat:['plus VAT','בתוספת מע״מ'],not_applicable:['no VAT','ללא מע״מ']};
 const WEEKDAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Shabbat'];
 const DAYS_STALE=21; // days before the app asks "are your days still right?"
-const jobsOn=()=>!LIVE||!!(S.me&&S.me.jobs);
+const jobsOn=()=>(!LIVE&&!lim())||!!(S.me&&S.me.jobs);
 const jobsPost=()=>!LIVE||!!(S.me&&S.me.jobs_post);
 const jLab=(list,k)=>{ const x=list.find(y=>y[0]===k); return x?x[1]:''; };
 const jKind=j=>jLab(JOB_KINDS,j.kind)||'Job';
@@ -3484,16 +3593,17 @@ function tourSteps(replay){
     chat:svg('<path d="M21 12a8 8 0 0 1-11.800 7L4 20l1.100-4.600A8 8 0 1 1 21 12z"/><path d="M9.500 12h.01M13 12h.01M16.500 12h.01"/>'), lock:svg('<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>') };
   const rule=(n,t,d)=>`<div class="tour-row"><div class="ti tour-num">${n}</div><div><b>${t}</b><span>${d}</span></div></div>`;
   const myLink = S.token ? linkBox('tourLink', personalLink(S.token)) : `<div class="addrow" style="margin:8px 0"><input type="text" readonly value="vendors.eretzisraeltours.com/?k=…" class="mono" style="font-size:13px" tabindex="-1"></div>`;
-  return [
+  const noBk=lim()&&!bookingsOn();   // a limited member without bus and van quotes has no booking sheets
+  const steps=[
   { html:`<div class="tour-hero"><b>The Inner Circle</b><small>Israel Guide · shared by colleagues</small></div>
     <div class="tour-kick">${replay||!first?'Welcome tour':"You're approved"}</div>
     <h2 style="margin-top:6px">Welcome${first?', '+esc(first):''}.</h2>
     <p>A supplier list kept by colleagues, for colleagues. It's free, and it works because everyone adds to it.</p>
     ${row(I.search,'Find a supplier','Hotels, guides, bus companies, drivers and sites. Call or WhatsApp in one tap.')}
     ${row(I.quote,'See real quotes','What colleagues were quoted per day and per hour, with every extra fee.')}
-    ${row(I.bus,'Book transport in writing',"A booking sheet both sides accept, so the price can't change afterwards.")}
+    ${noBk?'':row(I.bus,'Book transport in writing',"A booking sheet both sides accept, so the price can't change afterwards.")}
     ${row(I.plus,'Add what you know','Suppliers, prices, tips and driver reviews. The list is as good as what we all put in.')}
-    <p class="hint" style="margin:18px 0 0;font-size:13px">About two minutes. Eight short screens. <button type="button" class="linkbtn" data-t="skip">Skip to the house rules</button></p>` },
+    <p class="hint" style="margin:18px 0 0;font-size:13px">About two minutes. ${noBk?'Seven':'Eight'} short screens. <button type="button" class="linkbtn" data-t="skip">Skip to the house rules</button></p>` },
   { html:`<div class="tour-ex"><div class="favs-h" style="margin:0">Your personal link</div>${myLink}
       <div class="tour-row" style="margin-top:10px"><div class="ti">${I.phone}</div><div><b>Add it to your home screen</b><span>In your browser's menu, choose Add to Home Screen. It then opens like an app.</span></div></div></div>
     <h2>Your link is your login</h2>
@@ -3515,10 +3625,10 @@ function tourSteps(replay){
       <div class="actions"><span class="act">${ic.call}Call</span><span class="act">${bmark('whatsapp',ic.wa)}WhatsApp</span><span class="act">${ic.mail}Email</span><span class="act">${bmark('waze',ic.nav)}Waze</span><span class="act">${bmark('google-maps',ic.maps)}Google Maps</span></div>
       <div class="btn red upd" style="box-sizing:border-box;text-align:center">⚠ Update this supplier</div>
       <div class="favs-h" style="margin:10px 0 6px">Standard prices</div>
-      <div class="pl"><span class="who3">Adult <span class="tag agent">Agent</span></span><span class="amt">₪360</span><span class="meta">Per person · plus VAT · checked 14/08/2026</span></div>`, SAMPLE)+`
+      <div class="pl"><span class="who3">Adult ${lim()?'<span class="tag">Public price</span>':'<span class="tag agent">Agent</span>'}</span><span class="amt">₪360</span><span class="meta">Per person · plus VAT · checked 14/08/2026</span></div>`, SAMPLE)+`
     <h2>One page per supplier</h2>
     <p><b>Contact in one tap.</b> Call, WhatsApp, email, or navigate with Waze or Google Maps.</p>
-    <p><b>Scroll for the rest.</b> Prices and agent rates, deals, colleagues' notes, food nearby, the kosher certificate, photos and PDFs.</p>
+    <p><b>Scroll for the rest.</b> ${lim()?'Prices, organisation rates, deals, reviews':"Prices and agent rates, deals, colleagues' notes"}, food nearby, the kosher certificate, photos and PDFs.</p>
     <p><b>Something wrong?</b> The red button reports it: closed, moved, phone or prices changed.</p>` },
   { html:ex(`<div class="qstat"><div class="t">Bus (36–60 seats) · per day</div><div class="n">₪2,650<small>average of 4 quotes</small></div><div class="r">Lowest <b class="mono">₪2,400</b> · highest <b class="mono">₪3,000</b></div></div>
       <div class="qcard"><div class="qhead"><b>Galil Buses</b><span class="pill approved">Booked</span></div><div class="qsub">Bus · 50 seats · Galilee</div>
@@ -3526,7 +3636,7 @@ function tourSteps(replay){
         <div class="qsub" style="margin-top:6px">18/08/2026 · 45 people · plus VAT <span class="pill high">High season</span></div>
         <div class="flags"><span class="flag extra">⚠ Kvish 6: extra</span><span class="flag incl">✓ Parking included</span><span class="flag miss">? Overtime not stated</span></div></div>`, SAMPLE)+`
     <h2>See what others were quoted</h2>
-    <p><b>The Quotes tab.</b> Day and hour rates for buses, vans, guides, hotels and activities, in and out of high season. An average shows once there are three quotes.</p>
+    <p><b>The Quotes tab.</b> ${lim()?'What bus and van companies quoted per day and per hour, in and out of high season, and what other organisations were quoted.':'Day and hour rates for buses, vans, guides, hotels and activities, in and out of high season.'} An average shows once there are three quotes.</p>
     <p><b style="color:var(--bad)">Red</b> is charged extra, <b style="color:var(--ok)">green</b> is included, <b style="color:var(--warn)">amber</b> was never stated. Ask before you book.</p>
     <p><b>Add your own.</b> Your quotes are shared without your name. You can switch sharing off on any quote.</p>` },
   { html:`<div class="tour-sheet" aria-hidden="true" style="margin-top:6px"><div class="hd"><b lang="he" dir="rtl">דף הזמנת רכב</b><span class="hint">Vehicle booking sheet</span></div>
@@ -3552,7 +3662,7 @@ function tourSteps(replay){
     <h2>Add what you know</h2>
     <p><b>A supplier in a minute.</b> Quick fill reads a phone contact, a pasted signature or a contact card.</p>
     <p><b>Checked before it's shared.</b> New suppliers, and changes to names, contacts, main prices or cancellation terms, wait for approval by Eretz Israel Tours.</p>
-    <p><b>Your own prices.</b> A price you add for yourself is seen only by you and Eretz Israel Tours, unless you suggest it for everyone.</p>
+    ${lim()?'<p><b>The rate you got.</b> A price you add is shown to everyone on the list as an organisation rate, without your name.</p>':'<p><b>Your own prices.</b> A price you add for yourself is seen only by you and Eretz Israel Tours, unless you suggest it for everyone.</p>'}
     <p><b>Review your driver.</b> His phone number identifies him, so his reviews follow him from company to company.</p>` },
   { html:`<h2 style="margin-top:10px">Free, and built by all of us</h2>
     <div class="tour-card">${row(I.people,'Not for pay','As of now, nobody pays to join, and you will not be asked to pay in the future. If we ever decide the costs are not worth bearing, founding members stay free.')}</div>
@@ -3568,6 +3678,7 @@ function tourSteps(replay){
     <p class="hint" style="margin:16px 0 0;border-top:1px solid var(--line);padding-top:10px;font-size:13px">Emails sent with the Email button copy Eretz Israel Tours as a hidden BCC. You can turn that off under My settings.</p>
     <p style="margin:0"><button type="button" class="linkbtn" data-t="terms">Read the full terms and privacy notice</button></p>` }
   ];
+  return noBk ? steps.filter((x,i)=>i!==5) : steps;
 }
 function openTour(replay){
   closeSheet(); const old=document.getElementById('tourWrap'); if(old) old.remove();
