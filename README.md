@@ -251,6 +251,12 @@ Researched by web lookups per supplier (the supplier's own site first, a third-p
 - **Checks kept in the repository:** `supabase/tests/limited_members/` (`run.sh` for a local Postgres: 96 checks, the 74 from this change plus 22 added with D-12, D-14 and D-16 for the places where the two changes meet; `production_probe.sql` for the live database, rolled back). Run them after any change to a function that sends or accepts supplier data. The hand-off for the `guide-for-clients` branch, `docs/HANDOFF_guide-for-clients.md`, is done and kept as a record.
 - **Worth knowing:** approving a pending organisation sends the same automatic welcome email a guide gets (the `member_decide` hook from 1 Oct). Its text is not in this repository; check that it suits an organisation. If the jobs migration files from 3 Oct are ever run again, they would put back `whoami`, `_jobs_on`, `_jobs_post` and `_job_fits` without the limited-member rules; run `2026-10-03b_limited_members.sql` after them.
 
+## A supplier shows its type, not "Adventure" (3 Oct 2026, decision D-19)
+**Status: front end only; live when the branch `type-not-adventure` is merged.**
+- Wherever a supplier's category is printed, "Adventure" is replaced by the supplier's own types from its tags (`advTypes`, `catName`, `catMain`, `catLabel` in index.html): "Jeep", "Jeep, ATV / RZR", "Guide + Jeep". At most two types, then "…". With no type tag it still reads "Adventure".
+- The stored category does not change, so filters, limited-member sections, form fields and the R5 mapping work as before. The filter chip is still named "Adventure"; its name is the owner's open question.
+- **Tested** in preview at phone width: list rows, a guide's page ("Guide + Jeep"), most-used cards, the Adventure filter, the fallback. No page errors.
+
 ## Organisations see retail prices only (3 Oct 2026, decision D-18)
 **Status: the database line is live since 3 Oct 2026, about 22:45 (one helper, `_quote_visible`). The "See also" wording goes live when this is merged. No terms change.**
 - The owner's rule: an organisation sees retail prices only, never an agent price, and never what a guide, an agent or another member was quoted or paid. Transportation is the one exception. Organisations can add to everything they see.

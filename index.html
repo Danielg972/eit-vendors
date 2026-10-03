@@ -588,6 +588,12 @@ const D1_RULE='Only a driver with a D1 license can be listed as an Eshkol driver
 const tagList=v=>String(v&&v.tags||'').split(',').map(t=>t.trim()).filter(Boolean);
 const isShabbat=v=>tagList(v).some(t=>t.toLowerCase()===SHABBAT_TAG.toLowerCase());
 const tagsNoShab=v=>tagList(v).filter(t=>t.toLowerCase()!==SHABBAT_TAG.toLowerCase()).join(', ');
+// "Adventure" is not a word guides and agents use for a supplier: show what the supplier does (Jeep, Rappelling, Kayak & rafting…), taken from its type tags.
+// Falls back to the category name when no type is set. Used wherever a supplier's category is printed; the stored category does not change.
+const advTypes=v=>{ const have=tagList(v).map(t=>t.toLowerCase()); return TAG_SUGGEST.Adventure.filter(t=>have.includes(t.toLowerCase())); };
+const catName=(c,v)=>{ if(c!=='Adventure') return c; const t=advTypes(v); return t.length ? t.slice(0,2).join(', ')+(t.length>2?'…':'') : c; };
+const catMain=v=>catName(v.category, v);
+const catLabel=v=>catsOf(v).map(c=>catName(c,v)).join(' + ');
 const shabPill=v=>isShabbat(v)?'<span class="pill shab">Shomer Shabbat</span>':'';
 const notKosher=k=>/^\s*(not kosher|non[- ]?kosher|kosher[- ]style)/i.test(String(k||''));
 // A restaurant that is kosher without a certificate is an exception Eretz Israel Tours approves (the database enforces it too).
@@ -1270,7 +1276,7 @@ function viewVendors(){
   const favs=(S.myTop||[]).map(id=>S.vendors.find(v=>v.id===id)).filter(Boolean).slice(0,8);
   const fb=document.getElementById('favBox');
   if(favs.length && !S.q && S.cat==='All' && S.reg==='All'){
-    fb.innerHTML=`<div class="favs-h">⭐ Your most used</div><div class="favs">${favs.map(v=>`<button class="fav" type="button" data-fav="${esc(v.id)}"><span>${esc(v.category)}</span><b>${esc(v.name)}</b></button>`).join('')}</div>`;
+    fb.innerHTML=`<div class="favs-h">⭐ Your most used</div><div class="favs">${favs.map(v=>`<button class="fav" type="button" data-fav="${esc(v.id)}"><span>${esc(catMain(v))}</span><b>${esc(v.name)}</b></button>`).join('')}</div>`;
     fb.querySelectorAll('[data-fav]').forEach(b=>b.onclick=()=>openDetail(b.dataset.fav)); }
   const q=document.getElementById('q'), list=document.getElementById('sugList'); let hits=[], on=-1;
   const close=()=>{ list.hidden=true; q.setAttribute('aria-expanded','false'); on=-1; };
@@ -1313,7 +1319,7 @@ function drawList(){
     <button class="row" data-id="${esc(v.id)}">
       <span class="row-name">${esc(v.name)}</span>
       <span class="row-price">${priceLine(v)}</span>
-      <span class="row-meta"><span class="cat">${esc(v.category)}${v.also_categories?' + '+esc(v.also_categories):''}</span>${v.region||v.location?`<span>${esc(v.region||v.location)}</span>`:''}${tagsNoShab(v)?`<span class="hint">${esc(tagsNoShab(v))}</span>`:''}${shabPill(v)}${v.category==='Guide'&&v.experience_years?`<span class="hint">${esc(v.experience_years)} yrs</span>`:''}${v.reservation==='required'?'<span class="clip">📅 Reserve ahead</span>':''}${statusPill(v)}${v._prices?`<span class="clip">${v._prices} price${v._prices>1?'s':''}</span>`:''}${v._deals?`<span class="clip">🏷 ${v._deals} deal${v._deals>1?'s':''}</span>`:''}${v._notes?`<span class="clip">💬 ${v._notes}</span>`:''}${v._files?`<span class="clip">📎 ${v._files}</span>`:''}</span>
+      <span class="row-meta"><span class="cat">${esc(catLabel(v))}</span>${v.region||v.location?`<span>${esc(v.region||v.location)}</span>`:''}${tagsNoShab(v)?`<span class="hint">${esc(tagsNoShab(v))}</span>`:''}${shabPill(v)}${v.category==='Guide'&&v.experience_years?`<span class="hint">${esc(v.experience_years)} yrs</span>`:''}${v.reservation==='required'?'<span class="clip">📅 Reserve ahead</span>':''}${statusPill(v)}${v._prices?`<span class="clip">${v._prices} price${v._prices>1?'s':''}</span>`:''}${v._deals?`<span class="clip">🏷 ${v._deals} deal${v._deals>1?'s':''}</span>`:''}${v._notes?`<span class="clip">💬 ${v._notes}</span>`:''}${v._files?`<span class="clip">📎 ${v._files}</span>`:''}</span>
     </button>`).join('')}</div>` : `<div class="list"><div class="empty"><h3>Nothing matches</h3>Try a shorter search or pick “All”.</div></div>`);
   box.querySelectorAll('.row').forEach(r=>r.onclick=()=>openDetail(r.dataset.id));
 }
@@ -1448,7 +1454,7 @@ function viewReview(){
     </section>
     <section class="panel"><h3>New suppliers to check</h3>
       <p>Suppliers added by colleagues, and the ones I imported from your email. Imported suppliers stay hidden from colleagues until you approve them. Check each one's private note for the sources. Only approved suppliers go into the R5 export.</p>
-      ${pend.length? pend.map(v=>`<div class="rev"><div class="who2"><b>${esc(v.name)}</b><span>${esc(v.category)} · by ${esc(who(v.updated_by))} · ${fmtDate(v.updated_at)}</span>${kosherNeedsOk(v)?'<span style="color:var(--warn);font-weight:600">⚠ Kosher, no certificate. Approve only as an exception.</span>':''}${guideSpecialty(v)?'<span style="color:var(--warn);font-weight:600">⚠ Specialty guide, not licensed. Approve only as an exception.</span>':''}</div>
+      ${pend.length? pend.map(v=>`<div class="rev"><div class="who2"><b>${esc(v.name)}</b><span>${esc(catMain(v))} · by ${esc(who(v.updated_by))} · ${fmtDate(v.updated_at)}</span>${kosherNeedsOk(v)?'<span style="color:var(--warn);font-weight:600">⚠ Kosher, no certificate. Approve only as an exception.</span>':''}${guideSpecialty(v)?'<span style="color:var(--warn);font-weight:600">⚠ Specialty guide, not licensed. Approve only as an exception.</span>':''}</div>
         <div class="btn-row"><button class="btn soft" data-open="${esc(v.id)}">View</button><button class="btn primary" data-ok="${esc(v.id)}">Approve</button></div></div>`).join('') : '<div class="empty" style="padding:16px">All caught up.</div>'}
     </section>
     <section class="panel"><h3>Legacy R5 export <span class="hint">(backup only)</span></h3>
@@ -1757,7 +1763,7 @@ function openDetail(id, opt){
     ['Cancellation',rows([['Policy',esc(v.cancelPolicy)],['Notice',notice],['Penalty',esc(v.cancelPenalty)],['Checked',esc(ilDate(v.cancelPolicyVerifiedDate))]])],
     ['Experience',rows([['Ratings',rating],['Strengths',esc(v.strengths)],['Weaknesses',esc(v.weaknesses)],['Summary',esc(v.notes)]])]
   ].filter(s=>s[1] && !(v._own && s[0]==='Experience'));
-  const body=`${vtabs}<div class="keep" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px"><span class="cat">${esc(v.category)}${v.also_categories?' + '+esc(v.also_categories):''}</span>${v.region||v.location?`<span class="hint">${esc(v.region||v.location)}</span>`:''}${shabPill(v)}${statusPill(v)}${claimedPill(v)}${guideSpecialty(v)?'<span class="pill pending">Specialty guide · not licensed</span>':''}</div>
+  const body=`${vtabs}<div class="keep" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px"><span class="cat">${esc(catLabel(v))}</span>${v.region||v.location?`<span class="hint">${esc(v.region||v.location)}</span>`:''}${shabPill(v)}${statusPill(v)}${claimedPill(v)}${guideSpecialty(v)?'<span class="pill pending">Specialty guide · not licensed</span>':''}</div>
     ${ownBar(v)}
     <div class="hrs"><span class="hint">Opening hours</span>${v.hours?`<b>${esc(v.hours)}</b>`:`<span class="hint">· not added yet</span><button class="mini" id="addHours" type="button">+ Add hours</button>`}
       ${v.hours_last?`<span class="hint brk">Last entry and other times</span><b>${esc(v.hours_last)}</b>`:''}
@@ -2041,7 +2047,7 @@ function openVanDriver(){
       const pg=res.querySelector('#dpage'); if(pg) pg.onclick=async()=>{ try{ const r=await makePage(d.name,d.phone,''); go(r.v,d,false); toast('He now has his own page'); }catch(e){ fail(e); } };
       return; }
     const sv=S.vendors.find(v=>[v.phone,v.whatsapp].some(x=>String(x||'').split(/[;,/]/).some(y=>phoneNorm(y)===pn)));
-    if(sv&&!catsOf(sv).includes('Transport')){ res.innerHTML=`<div class="msg ok" style="margin:0 0 10px">This number belongs to <b>${esc(sv.name)}</b> (${esc(sv.category)}) on the list.</div>
+    if(sv&&!catsOf(sv).includes('Transport')){ res.innerHTML=`<div class="msg ok" style="margin:0 0 10px">This number belongs to <b>${esc(sv.name)}</b> (${esc(catMain(sv))}) on the list.</div>
         <div class="btn-row"><button class="btn primary" id="dsvo" type="button">Open ${esc(sv.name)}</button></div>
         <p class="hint" style="margin-top:10px">If he also drives a van for hire, edit his page and add Transport under "Also offers". Then add him as the driver there.</p>`;
       res.querySelector('#dsvo').onclick=()=>openDetail(sv.id); return; }
@@ -2318,7 +2324,7 @@ function openQuotePicker(){
   const inp=w.querySelector('#qpq'), list=w.querySelector('#qpList');
   const draw=()=>{ const n=normN(inp.value);
     const hits=S.vendors.filter(v=>!n||normN([v.name,v.category,v.also_categories,v.tags,v.region].join(' ')).includes(n)).sort((a,b)=>a.name.localeCompare(b.name)).slice(0,40);
-    list.innerHTML=hits.length?hits.map(v=>`<button class="pick" type="button" data-v="${esc(v.id)}"><b>${esc(v.name)}</b><span>${esc(v.category)}</span></button>`).join(''):'<p class="hint">No supplier with that name.</p>';
+    list.innerHTML=hits.length?hits.map(v=>`<button class="pick" type="button" data-v="${esc(v.id)}"><b>${esc(v.name)}</b><span>${esc(catMain(v))}</span></button>`).join(''):'<p class="hint">No supplier with that name.</p>';
     list.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{ const v=S.vendors.find(x=>x.id===b.dataset.v); if(v) openQuoteForm(v,null,'quotes'); }); };
   inp.addEventListener('input',draw); w.querySelector('#qpc').onclick=closeSheet; draw(); setTimeout(()=>inp.focus(),50);
 }
@@ -3308,7 +3314,7 @@ function openForm(v, preset){
     const val = hid.value===b.dataset.n?'':b.dataset.n; hid.value=val; g.querySelectorAll('button').forEach(o=>o.setAttribute('aria-pressed', o.dataset.n===val)); }));
   const dupCheck=()=>{ const n=normN(f.querySelector('#f_name').value); const box=f.querySelector('#dupBox');
     const hit = n && S.vendors.find(o=>o.id!==(v&&v.id) && normN(o.name)===n);
-    box.hidden=!hit; box.innerHTML = hit?`<div class="dup"><b>${esc(hit.name)}</b> is already on the list (${esc(hit.category)}). <button type="button" class="btn soft" style="padding:4px 10px;margin-left:4px" id="goDup">Open it</button></div>`:'';
+    box.hidden=!hit; box.innerHTML = hit?`<div class="dup"><b>${esc(hit.name)}</b> is already on the list (${esc(catMain(hit))}). <button type="button" class="btn soft" style="padding:4px 10px;margin-left:4px" id="goDup">Open it</button></div>`:'';
     const g=box.querySelector('#goDup'); if(g) g.onclick=()=>openDetail(hit.id); return hit; };
   f.querySelector('#f_name').addEventListener('input',dupCheck); dupCheck();
   w.querySelector('#saveBtn').onclick=async()=>{
@@ -3972,13 +3978,13 @@ function tourSteps(replay){
       <div class="chips"><span class="chip" aria-pressed="true">📍 All regions</span><span class="chip">Jerusalem</span><span class="chip">Galilee</span><span class="chip">Golan</span></div>
       <div class="favs-h">⭐ Your most used</div>
       <div class="favs"><div class="fav"><span>Transport</span><b>Galil Buses</b></div><div class="fav"><span>Guide</span><b>Ronit Katz</b></div></div>
-      <div class="list"><div class="row"><span class="row-name">Golan Heights Jeep Tours</span><span class="row-price"><b>₪360</b><span>per person</span></span><span class="row-meta"><span class="cat">Adventure</span><span>Golan</span><span class="clip">2 prices</span></span></div>
+      <div class="list"><div class="row"><span class="row-name">Golan Heights Jeep Tours</span><span class="row-price"><b>₪360</b><span>per person</span></span><span class="row-meta"><span class="cat">Jeep</span><span>Golan</span><span class="clip">2 prices</span></span></div>
         <div class="row"><span class="row-name">Eli Dahan</span><span class="row-meta"><span class="cat">Transport</span><span>Negev &amp; Arava</span><span class="hint">Van 9–10 seats</span></span></div></div>`, SAMPLE)+`
     <h2>Find a supplier fast</h2>
     <p>Search by name, region, type or contact person. Tap a category or a region to narrow the list.</p>
     <p>The suppliers you use most sit at the top. The rest is in mixed order that changes daily, so nobody is always first. Tap <b>Order</b> for A–Z.</p>` },
   { html:ex(`<div style="font-family:var(--f-display);font-size:20px;line-height:1.2">Golan Heights Jeep Tours</div>
-      <div style="margin-top:2px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="cat">Adventure</span><span class="hint">Golan</span><span class="pill shab">Shomer Shabbat</span></div>
+      <div style="margin-top:2px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="cat">Jeep</span><span class="hint">Golan</span><span class="pill shab">Shomer Shabbat</span></div>
       <div class="hrs"><span class="hint">Opening hours</span><b>Sun–Thu 8:00–17:00, Fri 8:00–13:00</b><span class="hv brk"><span class="pill pending">Unverified</span><span class="hint">From their website</span><span class="mini">☐ I verified these hours</span></span></div>
       <div class="actions"><span class="act">${ic.call}Call</span><span class="act">${bmark('whatsapp',ic.wa)}WhatsApp</span><span class="act">${ic.mail}Email</span><span class="act">${bmark('waze',ic.nav)}Waze</span><span class="act">${bmark('google-maps',ic.maps)}Google Maps</span></div>
       <div class="btn red upd" style="box-sizing:border-box;text-align:center">⚠ Update this supplier</div>
