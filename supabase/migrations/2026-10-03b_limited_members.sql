@@ -20,7 +20,7 @@
 -- Needs the jobs change (2026-10-03_jobs.sql: _csv_keys, _jobs_on, _jobs_post, _job_fits, whoami with jobs).
 -- This file only adds and replaces: it removes no column, constraint, function or row, and none of the functions it
 -- replaces removes rows. price_delete, quote_save, request_access, member_decide and the booking code are untouched.
--- Safe to run twice.
+-- Safe to run twice. Applied to production on 3 Oct 2026 through the Supabase connector, in two parts (columns and helpers, then RPCs).
 
 begin;
 

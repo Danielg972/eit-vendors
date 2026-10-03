@@ -13,9 +13,9 @@
 | App | https://vendors.eretzisraeltours.com (and `/b/?k=…`, the one-booking page a bus or van company sees) |
 | Repo | `Danielg972/eit-vendors`, branch `main` (cite by commit SHA) |
 | Database | Supabase project `wjuqtjlrtcywjaspjpwu` (org "EIT Vendors", Frankfurt) |
-| Schema record | `supabase/schema.sql` (tables, functions, grants), plus `supabase/functions/files/index.ts` (edge function v9) |
-| Terms version | `2026-10-03a` (draft, not yet reviewed by a lawyer; adds 6d, jobs between colleagues and My days) |
-| Decisions | `docs/DECISIONS.md` (D-1 Cockpit boundary; D-2 quote tracker; D-3 driver reviews; D-4 transport by vehicle size; D-5 booking sheets; D-6 welcome tour, name, use-and-add rule; D-7 Shomer Shabbat badge, kosher restaurants only; D-8 opening hours, no-certificate needs approval; D-9 verified hours, last entry, hours from websites; D-10 official buttons; D-11 jobs between colleagues and My days, live for Eretz Israel Tours only) |
+| Schema record | `supabase/schema.sql` (tables, functions, grants), plus `supabase/functions/files/index.ts` (edge function v10) |
+| Terms version | `2026-10-03b` (draft, not yet reviewed by a lawyer; adds 2c, organisations as limited members; `2026-10-03a` added 6d, jobs between colleagues and My days) |
+| Decisions | `docs/DECISIONS.md` (D-1 Cockpit boundary; D-2 quote tracker; D-3 driver reviews; D-4 transport by vehicle size; D-5 booking sheets; D-6 welcome tour, name, use-and-add rule; D-7 Shomer Shabbat badge, kosher restaurants only; D-8 opening hours, no-certificate needs approval; D-9 verified hours, last entry, hours from websites; D-10 official buttons; D-11 jobs between colleagues and My days, live for Eretz Israel Tours only; D-12 limited members: organisations that are not in tourism; D-13 food nearby only on places) |
 
 ## Integration with the Cockpit
 
@@ -33,7 +33,7 @@
 |---|---|
 | Suppliers | 100 total: 50 live, 50 hidden or pending review |
 | Price lines | 119 |
-| Members | 6 approved (7 rows), as counted 3 Oct 2026 |
+| Members | 6 approved (7 rows), all full members; 0 organisations, as counted 3 Oct 2026 |
 | Waiting for Eretz Israel Tours | 0 change requests, 0 supplier updates, 0 feedback |
 | Unverified imports | Old Providers Master List (33), Gmail sweep (17), remaining email-import items. All hidden until approved. |
 
@@ -41,7 +41,7 @@
 
 - **Keep-alive:** fixed 1 Oct 2026. The old ping read a blocked table and failed with HTTP 401. It now calls the `ping` function, which was tested and returned `ok:100`. Next run is in at most 3 days, or it can be run by hand in GitHub Actions.
 - **Join alerts:** push to Eretz Israel Tours' phone via the ntfy app (no personal details in the alert). Added 1 Oct 2026.
-- **Security:** 0 table grants to anon or authenticated, 0 RLS policies (re-checked on production 3 Oct 2026 after the jobs change). All access goes through token-checked RPCs and the `files` edge function. Colleague-privacy probe passed on 1 Oct 2026. From D-5: two functions, `booking_open` and `booking_answer`, are checked by a one-booking link key instead of a member token; they reach that booking only.
+- **Security:** 0 table grants to anon or authenticated, 0 RLS policies (re-checked on production 3 Oct 2026 after the jobs change and again after the limited-members change: 26 tables, 123 functions, 74 callable). All access goes through token-checked RPCs and the `files` edge function. Colleague-privacy probe passed on 1 Oct 2026. From D-12: what a limited member (an organisation) may see is decided in the database; a rolled-back probe on production on 3 Oct found no agent price, agent link or email in anything he receives. From D-5: two functions, `booking_open` and `booking_answer`, are checked by a one-booking link key instead of a member token; they reach that booking only.
 - **Change process:** changes are committed straight to `main` and deployed by GitHub Pages; there is no review gate. Schema changes must be re-exported to `supabase/schema.sql` in the same change. That rule was adopted 1 Oct 2026.
 
 ## Known risks
@@ -60,9 +60,14 @@
 12. From D-11: members' availability and job posts are personal data. A poster's name stays hidden from colleagues only inside the app; a WhatsApp message he sends himself shows who he is. Terms 6d is not reviewed by a lawyer.
 13. From D-11: terms 6d says "As of now, nothing is charged on a job". Whether a job is ever charged for is the owner's open decision.
 14. Schema record and production had drifted on `member_decide` (welcome email through a Google Apps Script since 1 Oct). The record is corrected; the README's older "nothing is sent automatically" line is out of date. Worth a look by the owner: a secret for that script sits in `app_settings`.
+15. From D-12: terms 2c is not reviewed by a lawyer. An organisation's credentials are free text and are personal data. Nothing checks them but Eretz Israel Tours reading them.
+16. From D-12: an organisation's rate saves without approval and shows to every member at once. A wrong or careless rate is visible until Eretz Israel Tours or the organisation removes it.
+17. From D-12: approving an organisation sends the same automatic welcome email as for a guide; its text lives in a Google Apps Script outside the repository and has not been checked for organisations.
+18. From D-12: re-running the jobs migration files of 3 Oct would put back `whoami`, `_jobs_on`, `_jobs_post` and `_job_fits` without the limited-member rules. Run `2026-10-03b_limited_members.sql` after them.
 
 ## Waiting for the owner
 
+- **Limited members (D-12): try it once on the live site.** Ask to join as an organisation from a second browser, approve it in the Team tab, and look at the list through that link. Tested on a local copy and by a probe on production, not yet by a person on the live site. Also: read the automatic welcome email with an organisation in mind.
 - **Jobs (D-11): when to open it to colleagues** (Team tab), and whether a job is ever charged for.
 - **Official logos on the WhatsApp, Waze and Google Maps buttons (D-10).** The buttons are ready and show a logo as soon as the brand owner's own file is in `brand/` in the repository (names and sources in `brand/README.md`). Needed from the owner: the WhatsApp logo from Meta's brand page; for Google Maps, Google's approval first (their brand page requires it), and the same is likely for Waze, whose rules are behind a sign-in.
 - **Emails for booking sheets: choose how the app sends email.** Asked for 2 Oct 15:16 ("if that's easy"): a copy by email when a sheet goes out, and an email to the guide when the company answers. Not built: the app has no email-sending service. Options: (a) a Resend account with the eretzisraeltours.com domain verified (DNS records at SiteGround), the route Supabase documents; (b) an Eretz Israel Tours mailbox at SiteGround used over SMTP, not yet confirmed to work from Supabase. Either needs a secret set in Supabase by the owner.
@@ -80,6 +85,7 @@
 
 ## Changes that would affect the Cockpit (log)
 
+- 2026-10-03: **Live (about 21:40):** limited members, organisations that are not in tourism (D-12), terms `2026-10-03b`, `files` function v10. `members` gains `member_type`, `sections`, four `see_*` switches, `org`, `credentials`; `vendor_prices`, `quotes`, `vendor_notes`, `driver_reviews` and `vendor_files` gain `org` (true when an organisation added the row); `vendor_notes` gains `rating`. New RPCs `request_access_org`, `review_add`, `member_set_access`. 26 tables, 123 functions. For a later Cockpit read of `vendor_prices`: a line with `org = true` is what an organisation was charged, not an agent rate and not a public price; it has `owner` set and `is_agent` false. No IDs or export formats changed.
 - 2026-10-03: **Live for Eretz Israel Tours only (21:04):** jobs between colleagues and My days (D-11), terms `2026-10-03a`. New tables `jobs`, `job_offers`, `member_days`; six new columns on `members`; eleven new RPCs; `whoami` gains `jobs`, `jobs_post`, `jobs_for`; setting `jobs_for`. 26 tables, 107 functions. Nothing Cockpit-facing: a job carries no trip or client id, and there is no export.
 - 2026-10-02: **Data only (evening):** website pass wrote hours for 63 suppliers, 200 unverified public price lines (`vendor_prices.created_by` = `import from websites (2 Oct 2026)`, `checked_on` 2026-10-02), contact details and notes. A Cockpit read of `vendor_prices` must not treat these as confirmed prices: check the `note` and `created_by`.
 - 2026-10-02: **Live (about 17:40):** verified hours (`hours_verify`, `hours_verified_*`), last entry and other times (`vendors.hours_last`), source of unverified hours (`vendors.hours_source`). Migration `2026-10-02f`, applied to production. 60 callable functions. Hours for 32 suppliers written from their websites, unverified. New readable fields for the Cockpit; treat `hours` as unconfirmed unless `hours_verified_how` is set. No IDs or export formats changed.
