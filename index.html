@@ -452,6 +452,22 @@ button.bkcard{display:block;width:100%;text-align:left;font:inherit;color:inheri
 .cal-k{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--ink-2);margin-top:10px}
 .cal-k i{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-2px;margin-right:6px;border:1px solid var(--line)}
 .mini[aria-pressed="true"]{background:var(--olive);border-color:var(--olive);color:var(--on-olive)}
+/* a guide's page: the part written for clients */
+.cbox{border:1px solid var(--line);border-radius:12px;padding:12px;margin:10px 0 18px;background:var(--card)}
+.cbox .ch{display:flex;align-items:center;gap:8px;margin-bottom:2px}
+.cbox .ch b{font-size:15px}
+.cbox .ch .mini{margin-left:auto}
+.cbox .cbio{margin:10px 0 0;font-size:15px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
+.cbox .cret{margin:10px 0 0;font-size:14px;overflow-wrap:anywhere}
+.cbox .cret b{font-weight:600}
+.cpics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px}
+.cpics:empty{display:none}
+.cpic{position:relative;aspect-ratio:1;max-width:100%;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--wash);display:flex;align-items:center;justify-content:center;min-width:0;color:var(--ink-2);text-decoration:none}
+.cpic img{width:100%;height:100%;object-fit:cover;display:block}
+.cpic.add{border-style:dashed;font-size:12px;text-align:center;padding:4px;cursor:pointer;flex-direction:column;gap:2px}
+.cpic.add b{font-size:22px;font-weight:400;line-height:1}
+.cpic .rm{position:absolute;top:4px;right:4px;border:0;border-radius:999px;background:var(--card);color:var(--bad);font-size:12px;padding:3px 8px;box-shadow:0 1px 4px rgba(0,0,0,.15)}
+.ccount{font-size:12px;color:var(--ink-3);text-align:right}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(140px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--ground);padding:10px 16px;border-radius:999px;font-size:14px;z-index:40;max-width:calc(100% - 32px)}
 </style>
 <style>
@@ -569,6 +585,8 @@ function sample(){
     v({id:'vendor_n3g7v2t',name:'Negev & Arava Transport',category:'Transport',contactPerson:'Eli',phone:'+972 54 000 9012',location:'Beer Sheva',region:'Negev & Arava',maxCap:'53',priceBasis:'Per day',tags:'Bus, Van 17–20 seats, Van 9–10 seats'}),
     v({id:'vendor_v4n0001',name:'Eli Dahan',category:'Transport',contactPerson:'Eli Dahan',phone:'050-000-3344',whatsapp:'050-000-3344',location:'Beer Sheva',region:'Negev & Arava',maxCap:'9',priceBasis:'Per day',tags:'Van 9–10 seats, Independent van driver'}),
     v({id:'vendor_q9x1b7e',name:'Machane Yehuda Food Walk',category:'Activity',location:'Jerusalem',kosher:'Mixed stalls, mostly Rabbanut',agentPrice:'220',priceBasis:'Per person',maxPax:'15',rateService:'5',rateValue:'5',strengths:'Families love it'}),
+    v({id:'vendor_n0a5h4l',name:'Noa Shalev',category:'Guide',tags:'Eshkol license, Owns an Eshkol vehicle',experience_years:'14',phone:'+972 52 555 0188',whatsapp:'+972 52 555 0188',location:'Jerusalem',region:'Jerusalem',languages:'English, Hebrew, Spanish',agentPrice:'1500',agentPriceVatTreatment:'plus_vat',priceBasis:'Per day',
+      client_bio:'Noa grew up in the Jerusalem hills and has guided families and small groups for fourteen years. She trained as an archaeologist, dug at the City of David, and still cannot walk past an open trench without stopping.\n\nShe guides in English, Hebrew and Spanish, and is at her best with mixed ages: grandparents who want the history, children who want the tunnels.',retail_price:'$650 a day, up to 9 hours. Vehicle and entrance fees extra.'}),
     v({id:'vendor_z2c8m1v',name:'Ronit Katz',category:'Guide',phone:'+972 50 777 2211',languages:'English, Hebrew, French',agentPrice:'1600',priceBasis:'Per day',active:'Inactive',notes:'On leave until spring'})
   ];
 }
@@ -603,6 +621,10 @@ const DB = {
   async init(){
     if(!LIVE){ S.user={email:OWNER}; S.me={name:'Eretz Israel Tours',email:OWNER,status:'approved',is_admin:true}; S.admin=true; S.contributor=true; S.vendors=sample();
       const dd=n=>new Date(Date.now()-n*86400000).toISOString();
+      // two sample pictures for the guide's client section: drawn here, not photographs
+      const pic=(a,b,c)=>'data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="${a}"/><circle cx="148" cy="56" r="22" fill="${c}"/><path d="M0 150 L50 96 L92 136 L134 84 L200 148 V200 H0Z" fill="${b}"/><text x="100" y="186" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#fff">Sample picture</text></svg>`);
+      S.files['vendor_n0a5h4l']=[['#c9a36b','#7a5a36','#f3e2b8'],['#8fb3c9','#3f5f4a','#fff4d6']].map((c,i)=>({id:'cp'+i,path:'cp'+i,vendor_id:'vendor_n0a5h4l',file_name:'sample-'+(i+1)+'.svg',mime_type:'image/svg+xml',size_bytes:900,kind:'Photo',for_clients:true,uploaded_by:OWNER,mine:true,created_at:dd(9-i),url:pic(c[0],c[1],c[2])}));
+      S.vendors.find(x=>x.id==='vendor_n0a5h4l')._files=2;
       S.demo['vendor_k3m9p2x']={
         prices:[
           {id:'p1',label:'2-hour jeep tour',audience:'Adult',price:'360',currency:'ILS',vat:'plus_vat',basis:'Per person',is_agent:true,pax_min:'',pax_max:'',season:'',source:'Quote from Moshe, WhatsApp',checked_on:'2026-08-14',note:''},
@@ -862,14 +884,26 @@ const DB = {
     return (await filesApi('list',{vendor_id:vid,quote_id:qid||undefined})).files;
   },
   async upload(vid, file, kind, qid, priv){
-    if(!LIVE){ const path=vid+'/'+Date.now(); (S.files[qid||vid]=S.files[qid||vid]||[]).unshift({id:path,path,vendor_id:vid,file_name:file.name,mime_type:file.type||'',size_bytes:file.size,kind,uploaded_by:S.user.email,created_at:new Date().toISOString(),url:URL.createObjectURL(file)}); }
+    let row;
+    if(!LIVE){ const path=vid+'/'+Date.now(); row={id:path,path,vendor_id:vid,file_name:file.name,mime_type:file.type||'',size_bytes:file.size,kind,uploaded_by:S.user.email,mine:true,created_at:new Date().toISOString(),url:URL.createObjectURL(file)}; (S.files[qid||vid]=S.files[qid||vid]||[]).unshift(row); }
     else {
       const sig = await filesApi('sign_upload',{vendor_id:vid,file_name:file.name,quote_id:qid||undefined});
       const up = await sb.storage.from('vendor-files').uploadToSignedUrl(sig.path, sig.upload_token, file, {contentType:file.type||undefined});
       if(up.error) throw new Error(up.error.message);
-      await filesApi('confirm',{vendor_id:vid,path:sig.path,file_name:file.name,mime_type:file.type||'',size_bytes:file.size,kind,quote_id:qid||undefined,private:!!priv});
+      row=(await filesApi('confirm',{vendor_id:vid,path:sig.path,file_name:file.name,mime_type:file.type||'',size_bytes:file.size,kind,quote_id:qid||undefined,private:!!priv})).file;
     }
     const v=S.vendors.find(x=>x.id===vid); if(v && !qid) v._files=(v._files||0)+1;
+    return row;
+  },
+  // A guide's page for clients: the bio and retail price, and which photos are the client pictures (four at most).
+  async setClient(vid, bio, retail){
+    if(!LIVE){ const v=S.vendors.find(x=>x.id===vid); Object.assign(v,{client_bio:bio,retail_price:retail,updated_at:new Date().toISOString(),updated_by:S.user.email}); return v; }
+    const r=await rpc('vendor_set_client',{p_vendor:vid,p_bio:bio,p_retail:retail}); const i=S.vendors.findIndex(v=>v.id===vid); if(i>=0) S.vendors[i]=Object.assign(S.vendors[i],r); return r;
+  },
+  async fileForClients(f, on){
+    if(!LIVE){ const list=S.files[f.vendor_id]||[], x=list.find(y=>y.id===f.id); if(!x) throw new Error('That picture no longer exists.');
+      if(on && list.filter(y=>y.for_clients&&y.id!==f.id).length>=CLIENT_PICS) throw new Error('Four pictures at most. Remove one first.'); x.for_clients=!!on; return; }
+    await rpc('file_for_clients',{p_file:f.id,p_on:!!on});
   },
   async removeFile(f){
     if(LIVE) await filesApi('delete',{file_id:f.id});
@@ -946,7 +980,7 @@ function linkBox(id, url){
 function wireCopy(root){ root.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>{ const i=root.querySelector('#'+b.dataset.copy); copyText(i.value,i); }); }
 
 const ROLES=['Licensed tour guide','Travel agent','Tour operator','Other'];
-const TERMS_VERSION='2026-10-03a';
+const TERMS_VERSION='2026-10-03b';
 const TERMS_HTML=`<p class="hint">Version ${TERMS_VERSION}. Plain-language summary. Draft: not yet reviewed by a lawyer.</p>
 <h4>1. Who runs this</h4><p>The Inner Circle – Israel Guide (until October 2026 called the Israel Suppliers Master List) is run by Eretz Israel Tours, which approves members and manages the list.</p>
 <h4>2. Who can join</h4><p>Licensed tour guides, travel agents, tour operators and other travel professionals approved by Eretz Israel Tours. You confirm the details and license you submit are yours and true. Eretz Israel Tours can decline, pause or remove access at any time.</p>
@@ -962,6 +996,7 @@ const TERMS_HTML=`<p class="hint">Version ${TERMS_VERSION}. Plain-language summa
 <h4>6b. Quotes are shared without your name</h4><p><b>A quote you add is shared with colleagues by default, without your name.</b> They see the supplier, the dates, the prices, what was included, what cost extra and the conditions. They never see who got the quote, the client or trip, the supplier's reference, your private note or your attachments. You can switch sharing off on any quote; then only you and Eretz Israel Tours see it. Eretz Israel Tours sees who added every quote. The averages in the Quotes tab are worked out from these quotes. Don't write client names or personal details in the conditions box.</p>
 <h4>6c. Booking sheets</h4><p><b>When you send a booking sheet, the bus or van company sees your name, your phone and the job</b>: date, passengers, vehicle, pick-up, outline of the day, drop-off and your notes to them. It never sees the client, your private note or anything else in this app. Once you confirm a sheet, its price and terms are shared with colleagues in the Quotes tab without your name, like any quote (6b). You can switch that off on each sheet. Eretz Israel Tours sees every booking sheet. A booking sheet records what you and the company agreed; it is not legal advice, and Eretz Israel Tours is not a party to your booking.</p>
 <h4>6d. Jobs between colleagues, and My days</h4><p><b>A job you post is shown to the colleagues it fits, or to the ones you pick.</b> Posted without your name, they see "Posted by a colleague"; your name and phone go only to the colleague you give the job to, and you get theirs. A message you send yourself on WhatsApp comes from your own number. <b>If you tap "I'm available", the colleague who posted sees your name and role.</b> Eretz Israel Tours sees every job and who posted it.</p><p><b>As of now, nothing is charged on a job.</b> The price shown is what the colleague is paid, directly by the one who posted. Eretz Israel Tours is not a party to the job, does not check the people or the work, and is not responsible for payment between you.</p><p>My days: you mark the days you are busy. A colleague posting a job sees only "Free", "Busy" or "Not marked" for the dates of that job, never what you are doing, and you can switch that off. The jobs you say you take, your languages and what you hold (license, vehicle) are shown to a colleague posting a job, with your name and role. Never your phone or email.</p>
+<h4>6e. A guide's page for clients</h4><p><b>A guide's page can hold a bio, up to four pictures and a retail price that are written for clients.</b> These are the one part of the list meant to leave it: a colleague may copy them and send them to a client. Everything else on the page stays between colleagues, including agent prices, quotes, notes, reviews and phone numbers.</p><p>Any member can add or change them. Add only pictures you have the right to share, and that the people in them are happy to have shown. If it is your page and something on it is wrong, change it or tell Eretz Israel Tours.</p>
 <h4>7. Sponsored content</h4><p>If supplier offers or promotions are ever paid for, they will be clearly labelled as sponsored. Ratings and notes are never for sale.</p>
 <h4>8. Changes</h4><p>If these terms change, you'll be asked to accept the new version.</p>`;
 function openTerms(){ sheet('Terms and privacy', `<div class="terms">${TERMS_HTML}</div>`, `<button class="btn primary" id="tOk" type="button">Close</button>`).querySelector('#tOk').onclick=closeSheet; }
@@ -1552,6 +1587,7 @@ function openDetail(id, opt){
     <div id="resBox"></div>
     ${agentBox(v)}
     <div id="reqBox"></div>
+    ${isGuide(v)?clientBox(v):''}
     <div id="sitesWrap"></div>
     <fieldset><div class="sec-head"><legend>Quotes</legend><button class="mini" id="addQuote" type="button">+ Add quote</button></div><div id="quotesBox"><p class="hint">Loading…</p></div></fieldset>
     ${isTr&&bookingsOn()?`<fieldset><div class="sec-head"><legend>Booking sheets</legend><button class="mini" id="addBooking" type="button">+ New booking sheet</button></div><div id="bookingsBox"><p class="hint">Loading…</p></div></fieldset>`:''}
@@ -1586,6 +1622,7 @@ function openDetail(id, opt){
   const ah=w.querySelector('#addHours'); if(ah) ah.onclick=()=>{ openForm(v); setTimeout(()=>{ const el=document.getElementById('f_hours'); if(el){ el.scrollIntoView({block:'center'}); el.focus(); } },80); };
   const aa=w.querySelector('#agentAsk'); if(aa) aa.onclick=()=>openAgentAsk(v);
   const ae=w.querySelector('#agentEdit'); if(ae) ae.onclick=()=>openAgentForm(v);
+  const ce=w.querySelector('#cliEdit'); if(ce) ce.onclick=()=>openClientForm(v);
   drawFiles(v);
   drawExtras(v);
   drawFood(v);
@@ -2841,6 +2878,7 @@ async function drawFiles(v, qid, boxId, canAdd){
   const redraw=()=>drawFiles(v, qid, boxId, canAdd);
   let files=[]; try{ files=await DB.listFiles(v.id, qid); }catch(e){ box.innerHTML=`<div class="msg err">Couldn't load files: ${esc(e.message)}</div>`; return; }
   const me=(S.user.email||'').toLowerCase();
+  if(!qid) drawClientPics(v, files);
   if(!qid){ const kc=document.getElementById('kcert'), cert=files.find(f=>f.kind==='Kosher certificate');
     if(kc){ kc.innerHTML = cert&&cert.url ? ` <a href="${esc(cert.url)}" target="_blank" rel="noopener">📄 See certificate</a>` : (canAdd?`<br><button type="button" class="btn soft" id="kcAdd" style="margin-top:6px">📷 Add kosher certificate</button>`:'');
       const ka=document.getElementById('kcAdd'); if(ka) ka.onclick=()=>{ const sel=document.getElementById(sid+'_kind'); if(sel) sel.value='Kosher certificate'; const inp=document.getElementById(sid+'_file'); if(inp) inp.click(); }; } }
@@ -2849,7 +2887,7 @@ async function drawFiles(v, qid, boxId, canAdd){
       const inner = img && f.url ? `<img src="${esc(f.url)}" alt="${esc(f.file_name)}" loading="lazy">` : `<span class="doc">${/pdf/.test(f.mime_type)?'PDF':'FILE'}</span>`;
       const canRm = S.admin || f.mine || f.uploaded_by===me;
       return `<div class="file"><a class="thumb" href="${esc(f.url||'#')}" target="_blank" rel="noopener">${inner}</a>
-        <span class="fkind">${esc(f.kind)}${f.private?' · 🔒':''}</span><span class="fname" title="${esc(f.file_name)}">${esc(f.file_name)}</span>${f.by&&!f.by.admin?`<span class="fname" style="color:var(--ochre)">👤 ${esc(f.by.name)}</span>`:''}
+        <span class="fkind">${esc(f.kind)}${f.for_clients?' · for clients':''}${f.private?' · 🔒':''}</span><span class="fname" title="${esc(f.file_name)}">${esc(f.file_name)}</span>${f.by&&!f.by.admin?`<span class="fname" style="color:var(--ochre)">👤 ${esc(f.by.name)}</span>`:''}
         ${canRm?`<button class="rm" data-i="${i}" type="button">Remove</button>`:''}</div>`; }).join('')}</div>`
     : `<p class="hint" style="margin:8px 0 10px">${qid?'No attachments yet. Add the quote email screenshot or PDF.':'No files yet. Add a photo of the place, a receipt, a price list or a contract.'}</p>`)
   + (canAdd?`<div class="upl"><select id="${sid}_kind" aria-label="What is it?">${KINDS.map(k=>`<option${qid&&k==='Quote'?' selected':''}>${k}</option>`).join('')}</select>
@@ -3073,6 +3111,85 @@ function openForm(v, preset){
       else { openDetail(saved.id); toast(saved._request?'Saved. Your 🔒 changes were sent for approval.':'Saved'); } }
     catch(e){ btn.disabled=false; btn.textContent=v?'Save changes':'Add supplier'; err.innerHTML=`<div class="msg err">Couldn't save: ${esc(e.message)}</div>`; }
   };
+}
+
+// ---------- a guide's page: the part written for clients (bio, up to four pictures, retail price) ----------
+// The one part of a page that is meant to leave the list: a colleague copies it and sends it to his client.
+const CLIENT_PICS=4, CLIENT_BIO_MAX=1500, CLIENT_RETAIL_MAX=200;
+const isGuide=v=>catsOf(v).includes('Guide');
+const clientPics=files=>(files||[]).filter(f=>f.for_clients&&!f.quote_id).sort((a,b)=>String(a.created_at||'').localeCompare(String(b.created_at||''))).slice(0,CLIENT_PICS);
+const clientText=v=>[v.name, v.client_bio].filter(Boolean).join('\n\n');
+function clientBox(v){
+  const has=!!(v.client_bio||v.retail_price);
+  return `<div class="cbox" id="cliBox"><div class="ch"><b>For clients</b><button class="mini" id="cliEdit" type="button">${has?'Edit':'+ Add'}</button></div>
+    <span class="hint">A bio, pictures and a retail price that you can pass on to a client. The rest of this page stays between colleagues.</span>
+    <div class="cpics" id="cliPics"></div>
+    ${v.client_bio?`<p class="cbio" dir="auto">${esc(v.client_bio)}</p>`:`<p class="hint" style="margin:10px 0 0">No bio yet. If this is you, or you know this guide well, add a short bio, up to four pictures and the retail price.</p>`}
+    ${v.retail_price?`<p class="cret"><span class="hint">Retail price${S.admin&&v.prices_private?' · private, only you see it':''}</span><br><b dir="auto">${esc(v.retail_price)}</b></p>`:''}
+    <div class="btn-row" id="cliActs" style="margin-top:10px"${v.client_bio?'':' hidden'}><button class="btn soft" id="cliCopy" type="button">Copy bio</button><button class="btn soft" id="cliShare" type="button" hidden>Share with a client</button></div></div>`;
+}
+// The pictures arrive with the supplier's other files (drawFiles calls this).
+const cliBlobs={};
+function drawClientPics(v, files){
+  const box=document.getElementById('cliPics'); if(!box) return; const pics=clientPics(files);
+  box.innerHTML=pics.map(f=>`<a class="cpic" href="${esc(f.url||'#')}" target="_blank" rel="noopener">${f.url?`<img src="${esc(f.url)}" alt="Picture of ${esc(v.name)}" loading="lazy">`:''}</a>`).join('');
+  const acts=document.getElementById('cliActs'), sh=document.getElementById('cliShare'); if(!acts) return;
+  const canShare=!!navigator.share && !!(v.client_bio||pics.length);
+  acts.hidden=!(v.client_bio||canShare);
+  const ed=document.getElementById('cliEdit'); if(ed && pics.length) ed.textContent='Edit';
+  const cp=document.getElementById('cliCopy'); if(cp){ cp.hidden=!v.client_bio; cp.onclick=()=>copyText(clientText(v)); }
+  if(sh && canShare){ sh.hidden=false; sh.onclick=()=>clientShare(v, pics);
+    // fetch the pictures ahead of the tap: a phone only lets a page share straight after a tap
+    pics.forEach(f=>{ if(f.url&&!cliBlobs[f.id]) fetch(f.url).then(r=>r.ok?r.blob():null).then(b=>{ if(b) cliBlobs[f.id]=new File([b], f.file_name||'picture.jpg', {type:b.type||f.mime_type||'image/jpeg'}); }).catch(()=>{}); }); }
+}
+async function clientShare(v, pics){
+  const text=clientText(v), files=pics.map(f=>cliBlobs[f.id]).filter(Boolean);
+  try{
+    if(files.length && navigator.canShare && navigator.canShare({files})) await navigator.share(text?{files,text}:{files});
+    else if(text) await navigator.share({text});
+    else toast('The pictures are not ready yet. Try again in a moment.');
+  }catch(e){ if(e&&e.name==='AbortError') return; if(text) copyText(text); else toast('This phone cannot share from here. Open a picture and save it.'); }
+}
+function openClientForm(v){
+  const priv=!!v.prices_private&&!S.admin, me=(S.user.email||'').toLowerCase();
+  const body=`<p style="margin:0 0 12px;color:var(--ink-2)">What a client may see about <b>${esc(v.name)}</b>. Colleagues can copy it and send it to their clients, so write it for clients: no agent rates, no phone number.</p>
+    <div class="f wide"><label for="cbBio">Bio for clients</label><textarea id="cbBio" rows="8" maxlength="${CLIENT_BIO_MAX}" dir="auto" placeholder="Who the guide is, in a few sentences: background, languages, what they love to show people, the kind of groups they guide.">${esc(v.client_bio||'')}</textarea><span class="ccount" id="cbN"></span></div>
+    <div class="f wide" style="margin-top:12px"><span class="lab">Pictures for clients · up to four</span><div class="cpics" id="cbPics"></div>
+      <input id="cbFile" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+      <span class="hint" id="cbMsg">JPEG or PNG. A picture is saved as soon as you add it. Use pictures you have the right to share, and that the people in them are happy to have shown.</span></div>
+    ${priv?'':`<div class="f wide" style="margin-top:12px"><label for="cbRet">Retail price <span class="hint">· optional</span></label><input id="cbRet" type="text" maxlength="${CLIENT_RETAIL_MAX}" dir="auto" value="${esc(v.retail_price||'')}" placeholder="$650 a day, up to 9 hours. Vehicle extra.">
+      <span class="hint">What a client pays when booking this guide directly, in your own words. ${S.admin&&v.prices_private?'Prices on this supplier are private, so only you see it.':'Every colleague on the list sees it.'}</span></div>`}
+    <div id="cbErr"></div>`;
+  const w=sheet('For clients', body, `<button class="btn soft" id="cbC" type="button">Back</button><button class="btn primary" id="cbS" type="button">Save</button>`);
+  const bio=w.querySelector('#cbBio'), cnt=w.querySelector('#cbN'), box=w.querySelector('#cbPics'), inp=w.querySelector('#cbFile'), msg=w.querySelector('#cbMsg');
+  const count=()=>{ cnt.textContent=bio.value.length+' / '+CLIENT_BIO_MAX; }; bio.oninput=count; count();
+  const say=(t,bad)=>{ if(!document.body.contains(msg)) return toast(t); msg.textContent=t; msg.style.color=bad?'var(--bad)':''; };
+  const drawPics=async()=>{
+    let files=[]; try{ files=await DB.listFiles(v.id); }catch(e){ box.innerHTML=''; say("Couldn't load the pictures: "+e.message, true); return; }
+    if(!document.body.contains(box)) return;
+    const pics=clientPics(files);
+    box.innerHTML=pics.map((f,i)=>`<div class="cpic">${f.url?`<img src="${esc(f.url)}" alt="Picture ${i+1}">`:''}<button class="rm" data-i="${i}" type="button">Remove</button></div>`).join('')
+      + (pics.length<CLIENT_PICS?`<label class="cpic add" for="cbFile" tabindex="0" role="button"><b aria-hidden="true">+</b>Add picture</label>`:'');
+    box.querySelectorAll('.rm').forEach(b=>b.onclick=async()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again'; return; }
+      const f=pics[+b.dataset.i]; b.disabled=true;
+      // the person who added the picture, or Eretz Israel Tours, removes the file; anyone else only takes it off the client pictures
+      try{ if(S.admin||f.mine||f.uploaded_by===me) await DB.removeFile(f); else await DB.fileForClients(f,false); say('Picture removed'); }catch(e){ say(e.message, true); }
+      drawPics(); });
+    const add=box.querySelector('.cpic.add'); if(add) add.onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); inp.click(); } };
+  };
+  inp.onchange=async()=>{ const f0=inp.files[0]; inp.value=''; if(!f0) return;
+    if(!/^image\/(jpeg|png|webp)$/.test(f0.type)) return say('Use a JPEG or PNG picture.', true);
+    say('Uploading…'); const f=await shrink(f0);
+    if(f.size>10485760) return say('That picture is over 10 MB.', true);
+    let row=null;
+    try{ row=await DB.upload(v.id, f, 'Photo'); await DB.fileForClients(row, true); say('Picture added'); }
+    catch(e){ say(row?'The picture was saved under Photos, but not as a client picture: '+e.message:e.message, true); }
+    drawPics(); };
+  drawPics();
+  w.querySelector('#cbC').onclick=()=>openDetail(v.id);
+  w.querySelector('#cbS').onclick=async()=>{ const b=w.querySelector('#cbS'), r=w.querySelector('#cbRet'); b.disabled=true;
+    try{ await DB.setClient(v.id, bio.value.trim(), r?r.value.trim():''); toast('Saved'); openDetail(v.id); }
+    catch(e){ b.disabled=false; w.querySelector('#cbErr').innerHTML=`<div class="msg err">${esc(e.message)}</div>`; } };
 }
 
 // ---------- jobs between colleagues, and My days ----------
