@@ -556,7 +556,7 @@ const VAT = [['','Unknown'],['including_vat','Including VAT'],['plus_vat','Plus 
 const CUR_SIGN = {ILS:'₪',USD:'$',EUR:'€'};
 
 const who = e => { const t=String(e||'').split(OWNER).join('Eretz Israel Tours').replace(/^import from EIT email \(Claude\)$/,'Imported by Eretz Israel Tours'); return (!S.admin && /@/.test(t)) ? 'A colleague' : t; };
-// Limited members (D-12): organisations that are not in tourism. Eretz Israel Tours chooses which sections each one sees.
+// Limited members (D-15): organisations that are not in tourism. Eretz Israel Tours chooses which sections each one sees.
 // The database enforces it (a limited member never receives an agent price); these helpers only shape the screen.
 const ORG_ROLE='Organisation, not in tourism';
 const SECTIONS=[['transport','Transportation','Bus companies, vans and drivers.',['Transport']],['guides','Guides','Profiles and contacts.',['Guide']],
@@ -985,7 +985,7 @@ function linkBox(id, url){
 function wireCopy(root){ root.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>{ const i=root.querySelector('#'+b.dataset.copy); copyText(i.value,i); }); }
 
 const ROLES=['Licensed tour guide','Travel agent','Tour operator',ORG_ROLE,'Other'];
-const TERMS_VERSION='2026-10-03b';
+const TERMS_VERSION='2026-10-03c';
 const TERMS_HTML=`<p class="hint">Version ${TERMS_VERSION}. Plain-language summary. Draft: not yet reviewed by a lawyer.</p>
 <h4>1. Who runs this</h4><p>The Inner Circle – Israel Guide (until October 2026 called the Israel Suppliers Master List) is run by Eretz Israel Tours, which approves members and manages the list.</p>
 <h4>2. Who can join</h4><p>Licensed tour guides, travel agents, tour operators and other travel professionals approved by Eretz Israel Tours. You confirm the details and license you submit are yours and true. Eretz Israel Tours can decline, pause or remove access at any time.</p>
@@ -1431,7 +1431,7 @@ function viewTeam(){
     }catch(e){ toast(e.message); } });
 }
 
-// What a member sees: full, or limited to chosen sections (D-12). Opens when approving an organisation, and from
+// What a member sees: full, or limited to chosen sections (D-15). Opens when approving an organisation, and from
 // People with access. The database applies it; this screen only sets it.
 function accessBits(m){
   const secs=String(m.sections||'').split(',').map(t=>t.trim()).filter(Boolean), bits=['no agent prices'];

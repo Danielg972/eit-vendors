@@ -1,4 +1,4 @@
--- Limited members: organisations that are not in tourism (decision D-12, 3 Oct 2026).
+-- Limited members: organisations that are not in tourism (decision D-15, 3 Oct 2026).
 -- People who book busses, guides or hotels for a school, a yeshiva or another organisation join as LIMITED members.
 -- Eretz Israel Tours chooses, per member, which sections of the list they see. The rules are enforced here, in the
 -- database, not only hidden in the app:
@@ -462,7 +462,7 @@ begin
   no_cert := is_rest and (clean->>'kosher') ~* '^\s*kosher\W+(no|without)\s+(certificate|certification|teuda|teudah|hechsher)';
   if coalesce(p_data->>'id','') = '' then
     if lim then
-      -- A limited member adds suppliers in his own sections, and never an agent price (D-12).
+      -- A limited member adds suppliers in his own sections, and never an agent price (D-15).
       if not public._can_see(m, clean->>'category', clean->>'also_categories') then raise exception 'You can add suppliers in the sections you have access to.'; end if;
       foreach f in array agent_fields loop clean := clean || jsonb_build_object(f, ''); end loop;
     end if;
@@ -484,7 +484,7 @@ begin
   end if;
   if cv.hidden or not public._can_see(m, cv.category, cv.also_categories) then raise exception 'That supplier is not available.'; end if;
   if lim then
-    -- Fields a limited member never receives come back empty from his form: leave what is stored (D-12).
+    -- Fields a limited member never receives come back empty from his form: leave what is stored (D-15).
     skip := agent_fields;
     if cv.category = 'Guide' and not m.see_guide_rates then skip := skip || array['listedPrice','listedPriceVatTreatment','maxPax']; end if;
     if not public._reviews_open(m, cv.category, cv.also_categories) then skip := skip || array['rateReliability','rateService','rateValue','strengths','weaknesses','notes']; end if;

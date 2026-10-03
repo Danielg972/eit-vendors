@@ -710,7 +710,7 @@ alter table public.member_days add constraint member_days_job_id_fkey FOREIGN KE
 
 -- ===== Functions (RPCs; all data access goes through these) =====
 
--- Limited members (organisations that are not in tourism, D-12, 3 Oct 2026): who may see what. Internal helpers, not RPCs.
+-- Limited members (organisations that are not in tourism, D-15, 3 Oct 2026): who may see what. Internal helpers, not RPCs.
 -- The member behind this call, as _auth saw him. Null before _auth has run.
 create or replace function public._me()
  returns public.members language sql stable security definer set search_path to ''
@@ -2031,7 +2031,7 @@ begin
   no_cert := is_rest and (clean->>'kosher') ~* '^\s*kosher\W+(no|without)\s+(certificate|certification|teuda|teudah|hechsher)';
   if coalesce(p_data->>'id','') = '' then
     if lim then
-      -- A limited member adds suppliers in his own sections, and never an agent price (D-12).
+      -- A limited member adds suppliers in his own sections, and never an agent price (D-15).
       if not public._can_see(m, clean->>'category', clean->>'also_categories') then raise exception 'You can add suppliers in the sections you have access to.'; end if;
       foreach f in array agent_fields loop clean := clean || jsonb_build_object(f, ''); end loop;
     end if;
@@ -2053,7 +2053,7 @@ begin
   end if;
   if cv.hidden or not public._can_see(m, cv.category, cv.also_categories) then raise exception 'That supplier is not available.'; end if;
   if lim then
-    -- Fields a limited member never receives come back empty from his form: leave what is stored (D-12).
+    -- Fields a limited member never receives come back empty from his form: leave what is stored (D-15).
     skip := agent_fields;
     if cv.category = 'Guide' and not m.see_guide_rates then skip := skip || array['listedPrice','listedPriceVatTreatment','maxPax']; end if;
     if not public._reviews_open(m, cv.category, cv.also_categories) then skip := skip || array['rateReliability','rateService','rateValue','strengths','weaknesses','notes']; end if;
@@ -2967,7 +2967,7 @@ revoke all on function my_usage(text) from public; grant execute on function my_
 revoke all on function vendor_set_agent(text,text,text,text) from public; grant execute on function vendor_set_agent(text,text,text,text) to anon, authenticated;
 revoke all on function hours_verify(text,text,text) from public; grant execute on function hours_verify(text,text,text) to anon, authenticated;
 revoke all on function vendor_detail(text,text) from public; grant execute on function vendor_detail(text,text) to anon, authenticated;
--- Limited members (D-12): the new helpers and the quotes trigger function are not RPCs; member_set_access (Eretz Israel
+-- Limited members (D-15): the new helpers and the quotes trigger function are not RPCs; member_set_access (Eretz Israel
 -- Tours only, checked inside), review_add and request_access_org are. _file_scope is called by the files edge function
 -- with the service key.
 revoke all on function public._me() from public, anon, authenticated;

@@ -1,6 +1,6 @@
 // Vendor files, quote attachments, join proofs and feedback screenshots: checks the caller's personal link token, then signs uploads/downloads with the service key.
-// Deployed as Supabase edge function "files" (verify_jwt = false). Version 10, 3 Oct 2026. Keep this file identical to the deployed source.
-// v10: limited members (organisations, D-12). A supplier outside the member's sections, or a hidden one, is closed; a limited
+// Deployed as Supabase edge function "files" (verify_jwt = false). Version 11, 3 Oct 2026. Keep this file identical to the deployed source.
+// v10, v11: limited members (organisations, D-15; v11 only corrects that decision number). A supplier outside the member's sections, or a hidden one, is closed; a limited
 // member sees his own files, other organisations' files, photos and kosher certificates, never a guide's or agent's price list,
 // receipt, contract, booking confirmation or quote. The rule itself lives in the database (_file_scope).
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";

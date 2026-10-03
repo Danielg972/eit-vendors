@@ -4,6 +4,10 @@
 
 Decisions that bind this project. Newest first. Each entry says who decided, when, and on what evidence.
 
+*D-12 (a guide's page for clients) and D-14 (claimed pages, disputes, reviews) are recorded on the branch `guide-for-clients`. They are built, not live, and join this file when that branch is merged. Read the clash note under D-15 first.*
+
+*D-15 (limited members) was first recorded as D-12 by mistake, for a few minutes on 3 Oct; D-12 was already taken on that branch.*
+
 ---
 
 ## D-13 · Food nearby only on entries with a physical address (live)
@@ -20,7 +24,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
-## D-12 · Limited members: organisations that are not in tourism (live)
+## D-15 · Limited members: organisations that are not in tourism (live)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session, 3 October 2026, over several messages: the idea, the rules, a mock-up of six phone screens, then the go-ahead to build and go live.
 
@@ -52,13 +56,15 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 - **Enforced in the database**, not only hidden in the app: a supplier outside the member's sections is refused by every function, and agent fields are never sent.
 - **Stored as role "Other" with the organisation's name**; the app shows "Organisation, not in tourism". The list of allowed roles in the database was left as it is.
 - **Every existing member stays a full member.** Any member can be switched between full and limited in the Team tab ("Change access").
-- **Terms** `2026-10-03b` add section 2c (organisations) and a line in section 6. Every member accepts again on next opening.
+- **Terms** `2026-10-03c` add section 2c (organisations) and a line in section 6. Every member accepts again on next opening.
+
+**Clash to settle before the branch `guide-for-clients` goes live:** The branch `guide-for-clients` (D-12 a guide's page for clients, D-14 claimed pages, disputes and reviews; built, not live) was written at the same time, from the code as it was before this change. Its two database files (`2026-10-03b_guide_for_clients.sql`, `2026-10-03c_claims.sql`) replace six functions that now carry the limited-member rules: `_vendor_view`, `vendor_detail`, `vendor_save`, `note_add`, `_driver_json` and `driver_review_add`. Its versions do not have those rules. Run on production as they are, they would send agent prices and guides' reviews to limited members. Before either file is run: bring the branch up to date with `main`, rewrite those six functions on top of the current ones, and repeat the limited-member probe on production. Its terms version is also `2026-10-03b`; it needs one later than `2026-10-03c`. Nothing from that branch is on production (checked 3 Oct, 21:50: no `vendor_set_client`, no `vendor_claim`).
 
 **Left as it was (known, small):** the function that asks to remove a price line (`price_delete`) was not changed. It works by the line's internal id, which a limited member is never sent for an agent line.
 
 **To check with a lawyer:** terms 2c; the credentials text is personal data now stored; showing what one organisation paid to others.
 
-**Status:** live since 3 Oct 2026, about 21:40. Database change on production (two connector migrations, `limited_members_2026_10_03b_part1_columns_helpers` and `_part2_rpcs`), `files` function v10 deployed, code on `main`. Tested on a local database (74 checks as an organisation, a guide and Eretz Israel Tours; guides' and Eretz Israel Tours' results unchanged), in a browser against that database, and by a rolled-back probe on production; see README. Not yet tried on the live site by a person.
+**Status:** live since 3 Oct 2026, about 21:40. Database change on production (connector migrations `limited_members_2026_10_03b_part1_columns_helpers`, `_part2_rpcs`, and `_part3_decision_number`, which only corrects two comments), `files` function v11 deployed (v10 at go-live; v11 corrects a comment), code on `main`. Tested on a local database (74 checks as an organisation, a guide and Eretz Israel Tours; guides' and Eretz Israel Tours' results unchanged), in a browser against that database, and by a rolled-back probe on production; see README. Not yet tried on the live site by a person.
 
 ---
 
