@@ -452,6 +452,14 @@ button.bkcard{display:block;width:100%;text-align:left;font:inherit;color:inheri
 .cal-k{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--ink-2);margin-top:10px}
 .cal-k i{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-2px;margin-right:6px;border:1px solid var(--line)}
 .mini[aria-pressed="true"]{background:var(--olive);border-color:var(--olive);color:var(--on-olive)}
+/* a member's own page, claims, and notes that are private or waiting */
+.ownbar{border:1px solid var(--ochre);background:var(--ochre-wash);border-radius:12px;padding:12px;margin:0 0 14px;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.ownbar .btn-row{margin-top:4px}
+.claimline{margin:0 0 12px;font-size:13px}
+.ntag{display:inline-block;font-size:11px;font-weight:600;border-radius:999px;padding:2px 8px;margin:0 6px 4px 0;background:var(--wash);color:var(--ink-2)}
+.ntag.warn{background:var(--warn-wash);color:var(--warn)}
+.ntag.bad{background:var(--bad-wash);color:var(--bad)}
+.demo-bar select{margin-left:6px;max-width:100%;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font-size:13px;padding:4px 6px}
 /* a guide's page: the part written for clients */
 .cbox{border:1px solid var(--line);border-radius:12px;padding:12px;margin:10px 0 18px;background:var(--card)}
 .cbox .ch{display:flex;align-items:center;gap:8px;margin-bottom:2px}
@@ -687,7 +695,18 @@ const DB = {
       const d=n=>new Date(Date.now()-n*86400000).toISOString();
       S.members=[{id:'m1',name:'Eretz Israel Tours',email:OWNER,status:'approved',is_admin:true,created_at:d(30),last_seen_at:d(0)},
         {id:'m2',name:'Yossi Ben-David',email:'yossi.guide@gmail.com',phone:'+972 52 111 2233',note:'Galilee and Golan',role:'Licensed tour guide',license_no:'12345',has_proof:true,status:'pending',is_admin:false,created_at:d(0)},
-        {id:'m3',name:'Rachel Amar',email:'rachel.ops@gmail.com',role:'Travel agent',license_no:'TA-2291',has_proof:true,status:'approved',is_admin:false,created_at:d(6),last_seen_at:d(1)}];
+        {id:'m3',name:'Rachel Amar',email:'rachel.ops@gmail.com',role:'Travel agent',license_no:'TA-2291',has_proof:true,status:'approved',is_admin:false,created_at:d(6),last_seen_at:d(1)},
+        {id:'m4',name:'Noa Shalev',email:'noa.shalev@example.com',role:'Licensed tour guide',license_no:'8841',has_proof:true,status:'approved',is_admin:false,created_at:d(5),last_seen_at:d(0)},
+        {id:'m5',name:'Avi Mizrahi',email:'avi.mizrahi@example.com',role:'Licensed tour guide',license_no:'7730',has_proof:true,status:'approved',is_admin:false,created_at:d(4),last_seen_at:d(2)},
+        {id:'m6',name:'Ronit Katz',email:'ronit.katz@example.com',role:'Licensed tour guide',license_no:'6512',has_proof:true,status:'approved',is_admin:false,created_at:d(1),last_seen_at:d(0)}];
+      // claimed pages: Noa has claimed hers; Ronit's claim is waiting; one note about Noa by another guide is waiting too
+      Object.assign(S.vendors.find(x=>x.id==='vendor_n0a5h4l'),{claimed_by:'noa.shalev@example.com',claimed_name:'Noa Shalev',rateReliability:'5',rateService:'5',rateValue:'4',strengths:'Wonderful with children',weaknesses:'Tends to run over time',_notes:1});
+      await DB.detail('vendor_n0a5h4l'); S.demo['vendor_n0a5h4l'].notes=[
+        {id:'n2',vendor_id:'vendor_n0a5h4l',body:'She cancelled on me two days before a tour in July.',author:'avi.mizrahi@example.com',author_name:'Avi Mizrahi',private:false,status:'pending',created_at:d(1)},
+        {id:'n1',vendor_id:'vendor_n0a5h4l',body:'Booked her for a bar mitzvah family in August. Brilliant with the kids. Ran 20 minutes over at the Kotel tunnels.',author:'rachel.ops@gmail.com',author_name:'Rachel Amar',private:false,status:'approved',created_at:d(12)}];
+      S.claims=[{id:'c1',vendor_id:'vendor_z2c8m1v',vendor_name:'Ronit Katz',category:'Guide',member:'ronit.katz@example.com',member_name:'Ronit Katz',role:'Licensed tour guide',note:'This is me. The phone number on the page is mine.',match:true,created_at:d(0)}];
+      S.demoClaims={'vendor_z2c8m1v|ronit.katz@example.com':true};
+      demoFlags(); await DB.loadPendingNotes();
       try{ S.jobs=await DB.loadJobs(); }catch(e){} return; }
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {auth:{persistSession:false,autoRefreshToken:false}});
     S.token = readToken();
@@ -698,12 +717,16 @@ const DB = {
     if(error) throw new Error(error.message);
     S.me = data; S.user = data?{email:data.email}:null;
     S.contributor = !!(data && data.status==='approved'); S.admin = !!(data && data.is_admin && S.contributor);
-    if(S.contributor){ await DB.loadVendors(); if(jobsOn()){ try{ S.jobs=await DB.loadJobs(); }catch(e){ S.jobs=null; } } try{ await DB.loadFeedback(); }catch(e){} if(S.admin){ await DB.loadTeam(); try{ await DB.loadRequests(); }catch(e){} try{ await DB.loadReports(); }catch(e){} } }
+    if(S.contributor){ await DB.loadVendors(); if(jobsOn()){ try{ S.jobs=await DB.loadJobs(); }catch(e){ S.jobs=null; } } try{ await DB.loadFeedback(); }catch(e){} if(S.admin){ await DB.loadTeam(); try{ await DB.loadRequests(); }catch(e){} try{ await DB.loadReports(); }catch(e){} try{ await DB.loadClaims(); await DB.loadPendingNotes(); }catch(e){} } }
   },
   async loadVendors(){ if(!LIVE) return; try{ S.vendors = await rpc('vendors_list'); }catch(e){ toast('Could not load vendors: '+e.message); } try{ S.myTop = await rpc('my_top'); }catch(e){ S.myTop=[]; } try{ S.usage = await rpc('my_usage'); }catch(e){} },
   async loadTeam(){ if(!LIVE) return; S.members = await rpc('members_list'); },
   async detail(vid){
-    if(!LIVE){ return S.demo[vid] || (S.demo[vid]={prices:[],deals:[],notes:[],requests:[],sites:S.vendors.filter(x=>x.parent_id===vid).map(x=>({id:x.id,name:x.name,location:x.location,reservation:x.reservation})),parent:(()=>{const v=S.vendors.find(x=>x.id===vid); const pv=v&&v.parent_id&&S.vendors.find(x=>x.id===v.parent_id); return pv?{id:pv.id,name:pv.name}:null;})(),res_reports:[],res_answered:false}); }
+    if(!LIVE){ const d=S.demo[vid] || (S.demo[vid]={prices:[],deals:[],notes:[],requests:[],sites:S.vendors.filter(x=>x.parent_id===vid).map(x=>({id:x.id,name:x.name,location:x.location,reservation:x.reservation})),parent:(()=>{const v=S.vendors.find(x=>x.id===vid); const pv=v&&v.parent_id&&S.vendors.find(x=>x.id===v.parent_id); return pv?{id:pv.id,name:pv.name}:null;})(),res_reports:[],res_answered:false});
+      // what the database would send to whoever is looking (see demoAs)
+      const v=S.vendors.find(x=>x.id===vid)||{}, cm=(S.members||[]).find(x=>x.email&&x.email===v.claimed_by);
+      return Object.assign({}, d, {notes:v._own?[]:(d.notes||[]).filter(demoNoteSeen).map(n=>Object.assign({},n,{mine:n.author===S.user.email})), note_by:{}, own:!!v._own,
+        my_claim:!!((S.demoClaims||{})[vid+'|'+S.user.email]), claimer:S.admin&&cm?{id:cm.id,name:cm.name,role:cm.role}:null, matches:[]}); }
     return await rpc('vendor_detail',{p_id:vid});
   },
   async savePrice(vid, line, reason){
@@ -722,9 +745,39 @@ const DB = {
     if(!LIVE){ const d=await DB.detail(vid); d.deals=d.deals.filter(x=>x.id!==id); bump(vid,'_deals',-1); return; }
     await rpc('deal_delete',{p_id:id}); await DB.refreshVendor(vid);
   },
-  async addNote(vid, body){
-    if(!LIVE){ const d=await DB.detail(vid); d.notes.unshift({id:'n'+Date.now(),body,author:S.user.email,author_name:S.me.name,created_at:new Date().toISOString()}); bump(vid,'_notes',1); return; }
-    await rpc('note_add',{p_vendor:vid,p_body:body}); await DB.refreshVendor(vid);
+  async addNote(vid, body, priv){
+    if(!LIVE){ const v=S.vendors.find(x=>x.id===vid), st=(!priv&&guideOnGuide(v))?'pending':'approved';
+      S.demo[vid].notes.unshift({id:'n'+Date.now(),vendor_id:vid,body,author:S.user.email,author_name:S.me.name,private:!!priv,status:st,created_at:new Date().toISOString()}); if(!priv&&st==='approved') bump(vid,'_notes',1); return {status:st,private:!!priv}; }
+    const r=await rpc('note_post',{p_vendor:vid,p_body:body,p_private:!!priv}); await DB.refreshVendor(vid); return r;
+  },
+  // Claimed pages and the two review queues (Eretz Israel Tours only): claims, and guides' notes about other guides.
+  async loadClaims(){ if(!LIVE){ S.claims=S.claims||[]; return S.claims; } S.claims=await rpc('claims_list'); return S.claims; },
+  async claim(vid, note){
+    if(!LIVE){ const v=S.vendors.find(x=>x.id===vid); (S.demoClaims=S.demoClaims||{})[vid+'|'+S.user.email]=true;
+      (S.claims=S.claims||[]).push({id:'c'+Date.now(),vendor_id:vid,vendor_name:v.name,category:v.category,member:S.user.email,member_name:S.me.name,role:S.me.role||'',note:note||'',match:false,created_at:new Date().toISOString()}); return; }
+    await rpc('vendor_claim',{p_vendor:vid,p_note:note||''});
+  },
+  async decideClaim(id, yes){
+    if(!LIVE){ const c=(S.claims||[]).find(x=>x.id===id); S.claims=(S.claims||[]).filter(x=>x.id!==id);
+      if(c){ if(S.demoClaims) delete S.demoClaims[c.vendor_id+'|'+c.member]; if(yes){ const v=S.vendors.find(x=>x.id===c.vendor_id); if(v){ v.claimed_by=c.member; v.claimed_name=c.member_name; } S.claims=S.claims.filter(x=>x.vendor_id!==c.vendor_id); demoFlags(); } } return; }
+    await rpc('claim_decide',{p_id:id,p_approve:!!yes}); await DB.loadVendors();
+  },
+  async setClaim(vid, memberId){
+    if(!LIVE){ const v=S.vendors.find(x=>x.id===vid), m=(S.members||[]).find(x=>x.id===memberId); v.claimed_by=m?m.email:''; v.claimed_name=m?m.name:''; if(m) S.claims=(S.claims||[]).filter(x=>x.vendor_id!==vid); demoFlags(); return v; }
+    const r=await rpc('vendor_set_claim',{p_vendor:vid,p_member:memberId||null}); const i=S.vendors.findIndex(v=>v.id===vid); if(i>=0) S.vendors[i]=Object.assign(S.vendors[i],r); try{ await DB.loadClaims(); }catch(e){} return r;
+  },
+  async dispute(vid, msg){
+    if(!LIVE){ const v=S.vendors.find(x=>x.id===vid); (S.reports=S.reports||[]).unshift({id:'r'+Date.now(),vendor_id:vid,vendor_name:v?v.name:'',kind:'Mistake',message:msg,anonymous:false,by_owner:true,author_name:S.me.name,status:'New',created_at:new Date().toISOString()}); return; }
+    await rpc('vendor_dispute',{p_vendor:vid,p_message:msg});
+  },
+  async loadPendingNotes(){
+    if(!LIVE){ S.noteQueue=Object.keys(S.demo).flatMap(vid=>((S.demo[vid]&&S.demo[vid].notes)||[]).filter(n=>n.status==='pending').map(n=>{ const v=S.vendors.find(x=>x.id===vid), who=Object.values(DEMO_PEOPLE).find(p=>p.email===n.author);
+      return {id:n.id,vendor_id:vid,vendor_name:v?v.name:'',body:n.body,author_name:n.author_name,by:{name:n.author_name,role:who?who.role:''},created_at:n.created_at}; })); return S.noteQueue; }
+    S.noteQueue=await rpc('notes_pending'); return S.noteQueue;
+  },
+  async decideNote(id, yes, vid){
+    if(!LIVE){ const n=((S.demo[vid]||{}).notes||[]).find(x=>x.id===id); if(n){ n.status=yes?'approved':'rejected'; if(yes) bump(vid,'_notes',1); } return; }
+    await rpc('note_decide',{p_id:id,p_approve:!!yes}); if(vid) await DB.refreshVendor(vid);
   },
   async deleteNote(vid, id){
     if(!LIVE){ const d=await DB.detail(vid); d.notes=d.notes.filter(x=>x.id!==id); bump(vid,'_notes',-1); return; }
@@ -1002,7 +1055,8 @@ const TERMS_HTML=`<p class="hint">Version ${TERMS_VERSION}. Plain-language summa
 <h4>6b. Quotes are shared without your name</h4><p><b>A quote you add is shared with colleagues by default, without your name.</b> They see the supplier, the dates, the prices, what was included, what cost extra and the conditions. They never see who got the quote, the client or trip, the supplier's reference, your private note or your attachments. You can switch sharing off on any quote; then only you and Eretz Israel Tours see it. Eretz Israel Tours sees who added every quote. The averages in the Quotes tab are worked out from these quotes. Don't write client names or personal details in the conditions box.</p>
 <h4>6c. Booking sheets</h4><p><b>When you send a booking sheet, the bus or van company sees your name, your phone and the job</b>: date, passengers, vehicle, pick-up, outline of the day, drop-off and your notes to them. It never sees the client, your private note or anything else in this app. Once you confirm a sheet, its price and terms are shared with colleagues in the Quotes tab without your name, like any quote (6b). You can switch that off on each sheet. Eretz Israel Tours sees every booking sheet. A booking sheet records what you and the company agreed; it is not legal advice, and Eretz Israel Tours is not a party to your booking.</p>
 <h4>6d. Jobs between colleagues, and My days</h4><p><b>A job you post is shown to the colleagues it fits, or to the ones you pick.</b> Posted without your name, they see "Posted by a colleague"; your name and phone go only to the colleague you give the job to, and you get theirs. A message you send yourself on WhatsApp comes from your own number. <b>If you tap "I'm available", the colleague who posted sees your name and role.</b> Eretz Israel Tours sees every job and who posted it.</p><p><b>As of now, nothing is charged on a job.</b> The price shown is what the colleague is paid, directly by the one who posted. Eretz Israel Tours is not a party to the job, does not check the people or the work, and is not responsible for payment between you.</p><p>My days: you mark the days you are busy. A colleague posting a job sees only "Free", "Busy" or "Not marked" for the dates of that job, never what you are doing, and you can switch that off. The jobs you say you take, your languages and what you hold (license, vehicle) are shown to a colleague posting a job, with your name and role. Never your phone or email.</p>
-<h4>6e. A guide's page for clients</h4><p><b>A guide's page can hold a bio, up to four pictures and a retail price that are written for clients.</b> These are the one part of the list meant to leave it: a colleague may copy them and send them to a client. Everything else on the page stays between colleagues, including agent prices, quotes, notes, reviews and phone numbers.</p><p>Any member can add or change them. Add only pictures you have the right to share, and that the people in them are happy to have shown. If it is your page and something on it is wrong, change it or tell Eretz Israel Tours.</p>
+<h4>6e. A guide's page for clients</h4><p><b>A guide's page can hold a bio, up to four pictures and a retail price that are written for clients.</b> These are the one part of the list meant to leave it: a colleague may copy them and send them to a client. Everything else on the page stays between colleagues, including agent prices, quotes, notes, reviews and phone numbers.</p><p>Until the guide claims the page, any member can add or change them. Once the guide has claimed it, only the guide and Eretz Israel Tours can. Add only pictures you have the right to share, and that the people in them are happy to have shown.</p>
+<h4>6f. Your own page, and reviews</h4><p>If you, or your business, are on the list, you can claim that page. Eretz Israel Tours approves the claim. <b>What colleagues wrote about your own page is hidden from you:</b> its ratings, strengths, weaknesses and notes, the notes thread, and reviews of you or of your company's drivers. Other colleagues still see them. The same holds, without a claim, for a page that carries your own phone number or email. You cannot rate or review your own page. You can dispute anything on it: the dispute goes to Eretz Israel Tours, who checks it and decides.</p><p><b>A guide's review of another guide is read by Eretz Israel Tours before colleagues see it:</b> a note on a guide's page, or a change to its ratings and remarks. Any note or driver review can be kept private; then only you and Eretz Israel Tours see it.</p>
 <h4>7. Sponsored content</h4><p>If supplier offers or promotions are ever paid for, they will be clearly labelled as sponsored. Ratings and notes are never for sale.</p>
 <h4>8. Changes</h4><p>If these terms change, you'll be asked to accept the new version.</p>`;
 function openTerms(){ sheet('Terms and privacy', `<div class="terms">${TERMS_HTML}</div>`, `<button class="btn primary" id="tOk" type="button">Close</button>`).querySelector('#tOk').onclick=closeSheet; }
@@ -1099,7 +1153,7 @@ function useBump(kind, val){ if(!val||val==='All') return; /* order updates next
 function mixKey(v){ const seed=(S.user&&S.user.email||'')+new Date().toISOString().slice(0,10)+v.id; let h=2166136261; for(let i=0;i<seed.length;i++){ h^=seed.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
 
 function render(){
-  const pending = S.vendors.filter(v=>v.review_status==='pending').length + (S.requests||[]).length + (S.admin?(S.feedback||[]).filter(f=>f.status==='New').length+(S.reports||[]).filter(r=>r.status==='New').length:0);
+  const pending = S.vendors.filter(v=>v.review_status==='pending').length + (S.requests||[]).length + (S.admin?(S.feedback||[]).filter(f=>f.status==='New').length+(S.reports||[]).filter(r=>r.status==='New').length+(S.claims||[]).length+(S.noteQueue||[]).length:0);
   const waiting = S.members.filter(m=>m.status==='pending').length;
   const tabs = [['vendors','Suppliers',icons.list],['quotes','Quotes',icons.quote]];
   if(jobsOn()) tabs.push(['jobs','Jobs',icons.jobs]); else if(S.tab==='jobs') S.tab='vendors';
@@ -1110,7 +1164,7 @@ function render(){
       <div class="brand">The Inner Circle<small>Israel Guide · shared by colleagues</small></div>
       <div class="who"><button class="ghost-btn" id="fbBtn" type="button">Feedback</button><button class="ghost-btn" id="meBtn" type="button" style="border:0;max-width:40vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(S.me?S.me.name:S.user.email)} ⚙</button>${LIVE?'<button class="ghost-btn" id="signOut">Sign out</button>':''}</div>
     </div></header>
-    ${LIVE?'':'<div class="demo-bar">Preview with sample suppliers. Changes here aren\'t saved.</div>'}
+    ${LIVE?'':`<div class="demo-bar">Preview with sample suppliers. Changes here aren't saved. <label style="white-space:nowrap">View as<select id="demoAs">${Object.keys(DEMO_PEOPLE).map(k=>`<option value="${k}"${(S.demoAs||'admin')===k?' selected':''}>${esc(DEMO_PEOPLE[k].label)}</option>`).join('')}</select></label></div>`}
     ${S.me&&S.me.reminder_due?`<div style="padding:0 16px"><div class="rule" role="note"><span>🔒 <b>Colleagues only.</b> Never show this list to suppliers: not the app, screenshots, prices or notes. Anyone who does loses access.</span><button class="mini" id="ruleOk" type="button">Got it</button></div></div>`:''}
     <main id="view"></main>
     ${S.tab==='vendors'?'<button class="fab" id="add">+ Add supplier</button>':''}${S.tab==='quotes'?(bookingsOn()&&S.qview==='bookings'?'<button class="fab" id="addB">+ New booking sheet</button>':'<button class="fab" id="addQ">+ Add quote</button>'):''}${S.tab==='jobs'&&jobsPost()&&S.jview!=='days'?'<button class="fab" id="addJ">+ Post a job</button>':''}
@@ -1120,12 +1174,13 @@ function render(){
   const ro=document.getElementById('ruleOk'); if(ro) ro.onclick=async()=>{ S.me.reminder_due=false; render(); if(LIVE){ try{ await sb.rpc('ack_reminder',{p_token:S.token}); }catch(e){} } };
   const so=document.getElementById('signOut'); if(so) so.onclick=()=>{ if(so.dataset.c!=='1'){ so.dataset.c='1'; so.textContent='Tap again. You\'ll need your link to return.'; return; } forgetToken(); boot(); };
   app.querySelectorAll('.tab').forEach(t=>t.onclick=async()=>{ S.tab=t.dataset.tab; if(S.tab==='quotes'){ S.quotes=null; S.bookings=null; } if(S.tab==='jobs'&&LIVE) S.jobs=null; render();
-    if(LIVE && S.tab==='review'){ try{ await DB.loadVendors(); await DB.loadRequests(); await DB.loadFeedback(); try{ await DB.loadReports(); }catch(e){} render(); }catch(e){} }
+    if(LIVE && S.tab==='review'){ try{ await DB.loadVendors(); await DB.loadRequests(); await DB.loadFeedback(); try{ await DB.loadReports(); }catch(e){} try{ await DB.loadClaims(); await DB.loadPendingNotes(); }catch(e){} render(); }catch(e){} }
     if(LIVE && S.tab==='team'){ try{ await DB.loadTeam(); render(); }catch(e){} } });
   const add=document.getElementById('add'); if(add) add.onclick=()=>openForm(null);
   const addQ=document.getElementById('addQ'); if(addQ) addQ.onclick=()=>openQuotePicker();
   const addB=document.getElementById('addB'); if(addB) addB.onclick=()=>bkExplain(openBookingPicker);
   const addJ=document.getElementById('addJ'); if(addJ) addJ.onclick=()=>openJobForm(null);
+  const das=document.getElementById('demoAs'); if(das) das.onchange=()=>demoAs(das.value);
   ({vendors:viewVendors, quotes:viewQuotes, jobs:viewJobs, review:viewReview, team:viewTeam})[S.tab]();
 }
 
@@ -1287,7 +1342,7 @@ function reportsPanel(){
   const list=S.reports||[]; const open=list.filter(r=>r.status==='New');
   return `<section class="panel"><h3>Supplier updates${open.length?` <span class="badge">${open.length}</span>`:''}</h3>
     <p>Colleagues' reports from the red <b>Update this supplier</b> button: closed, moved, changed or wrong details. Fix the supplier, then mark the report done.</p>
-    ${list.length? list.map(r=>`<div class="rev" style="display:block;${r.status==='New'?'':'opacity:.6'}"><div class="who2"><b>${esc((REPORT_KINDS.find(k=>k[0]===r.kind)||[0,r.kind])[1])}: ${esc(r.vendor_name)}</b><span>${r.anonymous?'Anonymous colleague':esc(r.author_name||who(r.author))} · ${fmtDate(r.created_at)}${r.status!=='New'?' · '+esc(r.status):''}</span></div>
+    ${list.length? list.map(r=>`<div class="rev" style="display:block;${r.status==='New'?'':'opacity:.6'}"><div class="who2"><b>${r.by_owner?'Dispute from the page\'s owner':esc((REPORT_KINDS.find(k=>k[0]===r.kind)||[0,r.kind])[1])}: ${esc(r.vendor_name)}</b><span>${r.anonymous?'Anonymous colleague':esc(r.author_name||who(r.author))} · ${fmtDate(r.created_at)}${r.status!=='New'?' · '+esc(r.status):''}</span></div>
       ${r.message?`<p style="margin:4px 0 8px;font-size:14px">${esc(r.message)}</p>`:''}
       <div class="btn-row"><button class="btn soft" data-open="${esc(r.vendor_id)}">Open supplier</button>${r.status==='New'?`<button class="btn soft" data-rp="${esc(r.id)}" data-st="Dismissed">Dismiss</button><button class="btn primary" data-rp="${esc(r.id)}" data-st="Fixed">Done</button>`:''}</div></div>`).join('') : '<div class="empty" style="padding:16px">No updates waiting.</div>'}
   </section>`;
@@ -1318,6 +1373,8 @@ function viewReview(){
   const pend=S.vendors.filter(v=>v.review_status==='pending');
   const appr=S.vendors.filter(v=>v.review_status==='approved');
   view.innerHTML = `
+    ${claimsPanel()}
+    ${notesPanel()}
     ${reportsPanel()}
     ${feedbackPanel()}
     <section class="panel"><h3>Suggested changes</h3>
@@ -1341,6 +1398,7 @@ function viewReview(){
   const decide=async(b,yes)=>{ b.disabled=true; try{ await DB.decideRequest(yes?b.dataset.ryes:b.dataset.rno, yes); await DB.loadRequests(); toast(yes?'Approved and applied':'Rejected'); render(); }catch(e){ b.disabled=false; toast(e.message); } };
   view.querySelectorAll('[data-ryes]').forEach(b=>b.onclick=()=>decide(b,true));
   wireFeedbackPanel(view);
+  wireReviewQueues(view);
   view.querySelectorAll('[data-rp]').forEach(b=>b.onclick=async()=>{ b.disabled=true; try{ await DB.setReport(b.dataset.rp,b.dataset.st); toast(b.dataset.st==='Fixed'?'Marked done':'Dismissed'); render(); }catch(e){ b.disabled=false; toast(e.message); } });
   view.querySelectorAll('[data-rno]').forEach(b=>b.onclick=()=>decide(b,false));
   document.getElementById('exp').onclick=()=>exportR5(appr);
@@ -1581,8 +1639,9 @@ function openDetail(id, opt){
     [S.admin?(v.prices_private?'Main price (goes to R5) · private':'Main price (goes to R5)'):'Main price',rows([['Agent price',price(v.agentPrice,v.agentPriceVatTreatment)],['Listed price',price(v.listedPrice,v.listedPriceVatTreatment)],['Basis',esc(v.priceBasis)],['Max people',esc(v.maxPax)],['Payment terms',esc(v.payTerms)]])],
     ['Cancellation',rows([['Policy',esc(v.cancelPolicy)],['Notice',notice],['Penalty',esc(v.cancelPenalty)],['Checked',esc(ilDate(v.cancelPolicyVerifiedDate))]])],
     ['Experience',rows([['Ratings',rating],['Strengths',esc(v.strengths)],['Weaknesses',esc(v.weaknesses)],['Summary',esc(v.notes)]])]
-  ].filter(s=>s[1]);
-  const body=`${vtabs}<div class="keep" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px"><span class="cat">${esc(v.category)}${v.also_categories?' + '+esc(v.also_categories):''}</span>${v.region||v.location?`<span class="hint">${esc(v.region||v.location)}</span>`:''}${shabPill(v)}${statusPill(v)}</div>
+  ].filter(s=>s[1] && !(v._own && s[0]==='Experience'));
+  const body=`${vtabs}<div class="keep" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px"><span class="cat">${esc(v.category)}${v.also_categories?' + '+esc(v.also_categories):''}</span>${v.region||v.location?`<span class="hint">${esc(v.region||v.location)}</span>`:''}${shabPill(v)}${statusPill(v)}${claimedPill(v)}</div>
+    ${ownBar(v)}
     <div class="hrs"><span class="hint">Opening hours</span>${v.hours?`<b>${esc(v.hours)}</b>`:`<span class="hint">· not added yet</span><button class="mini" id="addHours" type="button">+ Add hours</button>`}
       ${v.hours_last?`<span class="hint brk">Last entry and other times</span><b>${esc(v.hours_last)}</b>`:''}
       ${hoursCheck(v)}</div>
@@ -1603,15 +1662,18 @@ function openDetail(id, opt){
       ${S.admin?`<label class="switch" for="ppToggle" style="margin-bottom:10px"><input id="ppToggle" type="checkbox" ${v.prices_private?'checked':''}><span><b>Keep this supplier's prices private</b><br><span class="hint">Colleagues still see the supplier and contacts, but no prices. You can also mark single price lines private.</span></span></label>`:''}
       <div id="pricesBox"><p class="hint">Loading…</p></div></fieldset>
     <fieldset><div class="sec-head"><legend>Deals and discounts</legend><button class="mini" id="addDeal" type="button">+ Add deal</button></div><div id="dealsBox"><p class="hint">Loading…</p></div></fieldset>
-    <fieldset><legend>Notes from colleagues</legend>
+    ${v._own?'':`<fieldset><legend>Notes from colleagues</legend>
       <div class="addline"><textarea id="noteText" rows="1" placeholder="Add a tip, warning or update…"></textarea><button class="btn primary" id="noteAdd" type="button">Add</button></div>
-      <div id="notesBox"></div></fieldset>
+      <label class="check" for="notePriv" style="margin:6px 0 8px"><input id="notePriv" type="checkbox"><span>Only me and Eretz Israel Tours see this note</span></label>
+      ${guideOnGuide(v)?'<p class="hint" style="margin:0 0 8px">You are a guide writing about another guide. Eretz Israel Tours reads your note before colleagues see it, unless you keep it private.</p>':''}
+      <div id="notesBox"></div></fieldset>`}
     ${foodOk(v)?'':'<!--'}<details class="food" id="foodWrap"><summary>🍽 Food nearby <span class="hint" id="foodCount"></span></summary><div id="foodBox"><p class="hint">Loading…</p></div></details>${foodOk(v)?'':'-->'}
     <fieldset><legend>Photos, receipts and PDFs</legend><div id="filesBox"><p class="hint">Loading files…</p></div></fieldset>
     ${S.admin?'<div id="actBox"></div>':''}
     <div id="siteSettings"></div>
     ${S.admin?`<fieldset><legend>Private note · only you see this</legend><div class="f wide"><textarea id="adminNote" rows="5" placeholder="Clients, trips, commissions, anything colleagues shouldn't see"></textarea></div><div class="btn-row" style="margin-top:8px"><button class="mini" id="adminNoteSave" type="button">Save private note</button></div></fieldset>`:''}
     ${sections.map(([h,dl])=>`<fieldset><legend>${h}</legend><dl class="dl">${dl}</dl></fieldset>`).join('')}
+    <div id="claimBox"></div>
     <div class="disclaim"><b>Shared by colleagues.</b> This list is crowdsourced. Eretz Israel Tours takes no responsibility for mistakes. Always confirm details with the supplier before booking, and take care when you add or change information. See a mistake? Tap the red <b>Update this supplier</b> button at the top, or use Feedback.</div>
     <p class="stamp">Added by ${esc(who(v.created_by))} on ${fmtDate(v.created_at)}. Last changed by ${esc(who(v.updated_by))} on ${fmtDate(v.updated_at)}. <span class="idtag">${esc(v.id)}</span></p>`;
   let foot=`<button class="btn primary" id="edit">${S.admin?'Edit':'Edit or suggest a change'}</button>`;
@@ -1629,6 +1691,7 @@ function openDetail(id, opt){
   const aa=w.querySelector('#agentAsk'); if(aa) aa.onclick=()=>openAgentAsk(v);
   const ae=w.querySelector('#agentEdit'); if(ae) ae.onclick=()=>openAgentForm(v);
   const ce=w.querySelector('#cliEdit'); if(ce) ce.onclick=()=>openClientForm(v);
+  const dsb=w.querySelector('#disputeBtn'); if(dsb) dsb.onclick=()=>openDispute(v);
   drawFiles(v);
   drawExtras(v);
   drawFood(v);
@@ -1641,8 +1704,9 @@ function openDetail(id, opt){
   const sbd=w.querySelector('.sheet-body'), setVt=t=>{ sbd.classList.toggle('only-drivers',t==='drivers'); w.querySelectorAll('[data-vt]').forEach(x=>x.setAttribute('aria-selected', x.dataset.vt===t)); sbd.scrollTop=0; };
   w.querySelectorAll('[data-vt]').forEach(x=>x.onclick=()=>setVt(x.dataset.vt)); if(isTr&&opt&&opt.tab==='drivers') setVt('drivers');
   w.querySelector('#addDeal').onclick=()=>openDealForm(v);
-  w.querySelector('#noteAdd').onclick=async()=>{ const t=w.querySelector('#noteText'); const body=t.value.trim(); if(!body){ t.focus(); return; }
-    try{ await DB.addNote(v.id, body); t.value=''; toast('Note added'); drawExtras(v); }catch(e){ toast(e.message); } };
+  const nab=w.querySelector('#noteAdd'); if(nab) nab.onclick=async()=>{ const t=w.querySelector('#noteText'), pv=w.querySelector('#notePriv'); const body=t.value.trim(); if(!body){ t.focus(); return; }
+    try{ const r=await DB.addNote(v.id, body, pv.checked)||{}; t.value=''; pv.checked=false;
+      toast(r.private?'Saved. Only you and Eretz Israel Tours see it.':r.status==='pending'?'Sent to Eretz Israel Tours. Colleagues see it once it is approved.':'Note added'); drawExtras(v); }catch(e){ toast(e.message); } };
   const a=w.querySelector('#appr'); if(a) a.onclick=async()=>{ try{await DB.setStatus(v.id,'approved'); closeSheet(); toast('Approved'); render();}catch(e){toast(e.message);} };
   const r=w.querySelector('#rej'); if(r) r.onclick=async()=>{ try{await DB.setStatus(v.id,'rejected'); closeSheet(); toast('Marked rejected'); render();}catch(e){toast(e.message);} };
   const d=w.querySelector('#del'); if(d) d.onclick=async()=>{ if(d.dataset.c!=='1'){ d.dataset.c='1'; d.textContent='Tap again to delete'; return; } try{await DB.remove(v.id); closeSheet(); toast('Deleted'); render();}catch(e){toast(e.message);} };
@@ -1681,9 +1745,16 @@ function drawExtrasRest(v,det){
     : `<p class="hint" style="margin:0 0 10px">No deals yet. Share credit card club benefits (Cal, Max, Isracard, Hever), Cuponofesh-type vouchers, codes or group tricks.</p>`;
   db.querySelectorAll('[data-ddel]').forEach(b=>b.onclick=async()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again'; return; } try{ await DB.deleteDeal(v.id,b.dataset.ddel); toast('Deal removed'); drawExtras(v); }catch(e){ toast(e.message); } });
   const nb=document.getElementById('notesBox');
-  nb.innerHTML = det.notes.length ? det.notes.map(n=>`<div class="note"><span class="meta"><b>${esc(n.author_name||n.author)}</b> · ${fmtDate(n.created_at)}${S.admin||n.author===me?` · <button class="mini" style="padding:1px 8px" data-ndel="${esc(n.id)}" type="button">Delete</button>`:''}</span><p>${esc(n.body)}</p></div>`).join('')
-    : `<p class="hint" style="margin:0">No notes yet.</p>`;
-  nb.querySelectorAll('[data-ndel]').forEach(b=>b.onclick=async()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again'; return; } try{ await DB.deleteNote(v.id,b.dataset.ndel); drawExtras(v); }catch(e){ toast(e.message); } });
+  if(nb){
+    nb.innerHTML = det.notes.length ? det.notes.map(n=>`<div class="note"><span class="meta"><b>${esc(n.author_name||n.author)}</b> · ${fmtDate(n.created_at)}${S.admin||n.mine||n.author===me?` · <button class="mini" style="padding:1px 8px" data-ndel="${esc(n.id)}" type="button">Delete</button>`:''}</span>
+        ${noteTags(n)?`<div>${noteTags(n)}</div>`:''}<p>${esc(n.body)}</p>
+        ${S.admin&&n.status==='pending'?`<div class="btn-row" style="margin:0 0 6px"><button class="mini" data-nno="${esc(n.id)}" type="button">Turn down</button><button class="mini" data-nyes="${esc(n.id)}" type="button">Approve</button></div>`:''}</div>`).join('')
+      : `<p class="hint" style="margin:0">No notes yet.</p>`;
+    nb.querySelectorAll('[data-ndel]').forEach(b=>b.onclick=async()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again'; return; } try{ await DB.deleteNote(v.id,b.dataset.ndel); drawExtras(v); }catch(e){ toast(e.message); } });
+    const nd=async(b,yes)=>{ b.disabled=true; try{ await DB.decideNote(yes?b.dataset.nyes:b.dataset.nno, yes, v.id); try{ await DB.loadPendingNotes(); }catch(e){} toast(yes?'Approved. Colleagues see it now.':'Turned down'); drawExtras(v); }catch(e){ b.disabled=false; toast(e.message); } };
+    nb.querySelectorAll('[data-nyes]').forEach(b=>b.onclick=()=>nd(b,true)); nb.querySelectorAll('[data-nno]').forEach(b=>b.onclick=()=>nd(b,false));
+  }
+  drawClaim(v,det);
   drawSiteBits(v,det);
   drawActivity(v);
   const an=document.getElementById('adminNote');
@@ -1779,14 +1850,14 @@ function reviewHtml(r, v, hide, noDel){
   const tags=String(r.tags||'').split(',').map(t=>t.trim()).filter(Boolean), by=r.by||{name:'A colleague',role:''};
   return `<div class="note drvrev"${hide?' hidden data-more':''}><span class="meta"><span class="st" role="img" aria-label="${esc(r.rating)} out of 5">${starsTxt(+r.rating)}</span> · <b>${esc(by.name)}</b>${by.role?' · '+esc(by.role):''} · ${esc(r.trip_month?fmtMonth(r.trip_month):fmtDate(r.created_at))}${r.vendor_name&&(!v||r.vendor_id!==v.id)?' · with '+esc(r.vendor_name):''}${(S.admin||r.mine)&&!noDel?` · <button class="mini" style="padding:1px 8px" data-rdel="${esc(r.id)}" type="button">Delete</button>`:''}</span>
     ${tags.length?`<div class="flags">${tags.map(t=>{ const bad=t.startsWith('!')||DRV_BAD.includes(t); return `<span class="flag ${bad?'extra':'incl'}">${bad?'⚠ ':'✓ '}${esc(t.replace(/^!\s*/,''))}</span>`; }).join('')}</div>`:''}
-    ${r.body?`<p>${esc(r.body)}</p>`:''}</div>`;
+    ${r.private?`<div><span class="ntag">🔒 ${S.admin&&!r.mine?'Private: only its author and you':'Only you and Eretz Israel Tours'}</span></div>`:''}${r.body?`<p>${esc(r.body)}</p>`:''}</div>`;
 }
 function driverCard(d, i, v, bare){
   const others=(d.vendors||[]).filter(x=>!v||bare||x.id!==v.id).map(x=>x.name), revs=d.reviews||[];
   return `<div class="qcard">
-    <div class="qhead"><b>${esc(d.name)}</b>${d.n?`<span class="rate"><span class="st" aria-hidden="true">★</span> ${esc(Number(d.avg).toFixed(1))}</span><span class="hint">${d.n} review${d.n>1?'s':''}</span>`:'<span class="hint">No reviews yet</span>'}</div>
+    <div class="qhead"><b>${esc(d.name)}</b>${d.reviews_hidden?'<span class="hint">Reviews are hidden from you</span>':d.n?`<span class="rate"><span class="st" aria-hidden="true">★</span> ${esc(Number(d.avg).toFixed(1))}</span><span class="hint">${d.n} review${d.n>1?'s':''}</span>`:'<span class="hint">No reviews yet</span>'}</div>
     <div class="qsub"><span class="mono">${esc(d.phone)}</span>${d.drives?' · '+esc(d.drives):''}${others.length?' · '+(bare?'drives for ':'also drives for ')+esc(others.join(', ')):''}</div>
-    ${bare?'':`<div class="btn-row" style="margin-top:8px"><a class="mini" href="tel:${esc(d.phone)}">Call</a><a class="mini" href="https://wa.me/${esc(intlDigits(d.phone))}" target="_blank" rel="noopener">WhatsApp</a><button class="mini" data-drev="${i}" type="button">+ Review</button>${d.can_edit?`<button class="mini" data-dedit="${i}" type="button">Edit</button>`:''}</div>`}
+    ${bare?'':`<div class="btn-row" style="margin-top:8px"><a class="mini" href="tel:${esc(d.phone)}">Call</a><a class="mini" href="https://wa.me/${esc(intlDigits(d.phone))}" target="_blank" rel="noopener">WhatsApp</a>${d.reviews_hidden?'':`<button class="mini" data-drev="${i}" type="button">+ Review</button>`}${d.can_edit?`<button class="mini" data-dedit="${i}" type="button">Edit</button>`:''}</div>`}
     ${revs.map((r,ri)=>reviewHtml(r, bare?null:v, !bare&&ri>=3, bare)).join('')}
     ${!bare&&revs.length>3?`<button class="mini" data-dmore type="button" style="margin-top:8px">Show all ${revs.length} reviews</button>`:''}</div>`;
 }
@@ -1931,6 +2002,7 @@ function openDriverReview(v, d){
     <div class="ownrow"><input id="dbadx" maxlength="40" autocomplete="off" placeholder="Something else? Type it" aria-label="Something else that went wrong"><button class="mini" id="dbadadd" type="button">Add</button></div>
     <div class="grid"><div class="f"><label for="dmon">Month of the trip</label><input id="dmon" type="month" value="${esc(today().slice(0,7))}" max="${esc(today().slice(0,7))}"></div>
       <div class="f wide"><label for="dbody">In your own words</label><textarea id="dbody" rows="4" maxlength="1500" placeholder="Write anything about the trip: timing, driving, how he was with the group."></textarea></div></div>
+    <label class="check" for="dpriv" style="margin:10px 0 0"><input id="dpriv" type="checkbox"><span>Only me and Eretz Israel Tours see this review</span></label>
     <p class="hint" style="margin-top:10px">Your name shows next to your review. Keep it to what happened on your trip; see "Fair, objective feedback" in the terms.</p><div id="derr"></div>`,
     `<button class="btn soft" id="dcancel" type="button">Cancel</button><button class="btn primary" id="dsave" type="button">Save review</button>`);
   const g=id=>w.querySelector('#'+id); wireToggles(w); let rating='';
@@ -1945,7 +2017,7 @@ function openDriverReview(v, d){
   g('dsave').onclick=async()=>{ if(!rating){ g('derr').innerHTML='<div class="msg err">Give an overall rating from 1 to 5.</div>'; return; }
     own('dgood',false); own('dbad',true);
     const b=g('dsave'); b.disabled=true; b.textContent='Saving…';
-    try{ await DB.addDriverReview(d.id, v.id, {rating,tags:[pressed(w,'#dgood'),pressed(w,'#dbad')].filter(Boolean).join(', '),body:g('dbody').value.trim(),trip_month:g('dmon').value}); toast('Review added'); openDetail(v.id,{tab:'drivers'}); }
+    try{ await DB.addDriverReview(d.id, v.id, {rating,tags:[pressed(w,'#dgood'),pressed(w,'#dbad')].filter(Boolean).join(', '),body:g('dbody').value.trim(),trip_month:g('dmon').value,private:g('dpriv').checked?'true':''}); toast(g('dpriv').checked?'Saved. Only you and Eretz Israel Tours see it.':'Review added'); openDetail(v.id,{tab:'drivers'}); }
     catch(e){ b.disabled=false; b.textContent='Save review'; g('derr').innerHTML=`<div class="msg err">${esc(e.message)}</div>`; } };
 }
 
@@ -2974,11 +3046,12 @@ function wireQuickFill(f){
 }
 function openForm(v, preset){
   const x = Object.assign(blank(), {active:'Active',priceBasis:'Per person',currency:'ILS',category:''}, v||preset||{});
-  const guarded = !!v && !S.admin; const lk=k=>guarded && LOCKED.includes(k) ? ' <span class="lock">🔒</span>' : '';
+  const guarded = !!v && !S.admin; const gogF = guarded && guideOnGuide(v);   // a guide editing another guide's page: ratings and remarks need approval too
+  const lk=k=>guarded && (LOCKED.includes(k) || (gogF && REVIEW_FIELDS.includes(k))) ? ' <span class="lock">🔒</span>' : '';
   const inp=(k,label,type='text',ph='',wide=false,req=false)=>`<div class="f${wide?' wide':''}"><label for="f_${k}">${label}${req?' <em>*</em>':''}${lk(k)}</label><input id="f_${k}" name="${k}" type="${type}" value="${esc(x[k])}" placeholder="${esc(ph)}"${type==='number'?' inputmode="decimal" min="0" step="any"':''}${type==='tel'?' inputmode="tel"':''}></div>`;
   const sel=(k,label,opts,wide=false,req=false)=>`<div class="f${wide?' wide':''}"><label for="f_${k}">${label}${req?' <em>*</em>':''}${lk(k)}</label><select id="f_${k}" name="${k}">${opts.map(o=>{const [val,t]=Array.isArray(o)?o:[o,o];return `<option value="${esc(val)}"${String(x[k])===val?' selected':''}>${esc(t)}</option>`}).join('')}</select></div>`;
-  const area=(k,label,ph)=>`<div class="f wide"><label for="f_${k}">${label}</label><textarea id="f_${k}" name="${k}" rows="2" placeholder="${esc(ph)}">${esc(x[k])}</textarea></div>`;
-  const stars=(k,label)=>`<div class="f"><label>${label}</label><div class="stars" data-k="${k}">${[1,2,3,4,5].map(n=>`<button type="button" data-n="${n}" aria-pressed="${x[k]===String(n)}" aria-label="${label} ${n}">${n}</button>`).join('')}</div><input type="hidden" id="f_${k}" name="${k}" value="${esc(x[k])}"></div>`;
+  const area=(k,label,ph)=>`<div class="f wide"><label for="f_${k}">${label}${REVIEW_FIELDS.includes(k)?lk(k):''}</label><textarea id="f_${k}" name="${k}" rows="2" placeholder="${esc(ph)}">${esc(x[k])}</textarea></div>`;
+  const stars=(k,label)=>`<div class="f"><label>${label}${lk(k)}</label><div class="stars" data-k="${k}">${[1,2,3,4,5].map(n=>`<button type="button" data-n="${n}" aria-pressed="${x[k]===String(n)}" aria-label="${label} ${n}">${n}</button>`).join('')}</div><input type="hidden" id="f_${k}" name="${k}" value="${esc(x[k])}"></div>`;
   const body=`<form id="vf" novalidate>
     ${guarded?'<div class="lockbar">🔒 Name, contact details, the main price and cancellation terms are checked by Eretz Israel Tours. Change them here and say why, and the change shows once approved. Everything else saves straight away.</div>':''}
     <div class="quickfill"><b>⚡ Quick fill</b> <span class="hint">Fill the form from a contact or text instead of typing.</span>
@@ -3022,10 +3095,11 @@ function openForm(v, preset){
       ${inp('cancelNoticeAmount','Notice','number','7')}${sel('cancelNoticeUnit','Unit',[['','—'],'Hours','Days'])}${sel('cancelDayType','Counted in',[['','Not specified'],'Calendar days','Business days'])}
       ${inp('cancelPenalty','Penalty','text','50% fee inside notice period')}${inp('cancelPolicyVerifiedDate','Policy checked on','date')}
     </div></fieldset>
-    <fieldset><legend>Your experience</legend><div class="grid">
+    ${x._own?`<fieldset><legend>Your experience</legend><p class="hint" style="margin:0;font-size:13px">Ratings and remarks on your own page are hidden from you, and you cannot change them.</p></fieldset>`:`<fieldset><legend>Your experience</legend>
+      ${gogF?'<p class="hint" style="margin:0 0 10px;font-size:13px">You are a guide writing about another guide. Eretz Israel Tours approves a change to these ratings and remarks before colleagues see it. Say why at the bottom.</p>':''}<div class="grid">
       ${stars('rateReliability','Reliability')}${stars('rateService','Service')}${stars('rateValue','Value')}
       ${area('strengths','Strengths','Very punctual, great English…')}${area('weaknesses','Weaknesses','Sometimes overbooks…')}${area('notes','Notes','Ask for a group discount above 10 people…')}
-    </div></fieldset>
+    </div></fieldset>`}
     ${guarded?`<fieldset id="reasonWrap"><legend>Why the change?</legend><div class="f wide"><label for="f_reason">Needed only if you changed a 🔒 field</label><textarea id="f_reason" rows="2" placeholder="New price list from the supplier, see the receipt I attached"></textarea></div></fieldset>`:''}
     <div id="formErr"></div>
   </form>`;
@@ -3108,8 +3182,8 @@ function openForm(v, preset){
     const probs=[]; if(!data.name.trim()) probs.push('Add the supplier name.');
     if(catsOf(data).includes('Restaurant') && notKosher(data.kosher)) probs.push('The list does not accept non-kosher restaurants.'); if(!data.category) probs.push('Choose a category.');
     if(!v && dupCheck()) probs.push('This supplier is already on the list. Open it and edit it instead.');
-    let reason=''; if(guarded){ const changed=LOCKED.concat(kosherNeedsOk(data)?['kosher']:[]).filter(k=>String(data[k]||'').trim()!==String(v[k]||'').trim()); reason=f.querySelector('#f_reason').value.trim();
-      if(changed.length && reason.length<3) probs.push('You changed '+changed.map(k=>FIELD_LABEL[k]||k).join(', ')+'. Say briefly why, at the bottom.'); }
+    let reason=''; if(guarded){ const changed=LOCKED.concat(kosherNeedsOk(data)?['kosher']:[]).concat(gogF?REVIEW_FIELDS:[]).filter(k=>String(data[k]||'').trim()!==String(v[k]||'').trim()); reason=f.querySelector('#f_reason').value.trim();
+      if(changed.length && reason.length<3) probs.push('You changed '+changed.map(k=>FIELD_LABEL[k]||REVIEW_LABEL[k]||k).join(', ')+'. Say briefly why, at the bottom.'); }
     if(probs.length){ err.innerHTML=`<div class="msg err">${probs.join(' ')}</div>`; err.scrollIntoView({block:'center'}); return; }
     const btn=w.querySelector('#saveBtn'); btn.disabled=true; btn.textContent='Saving…';
     try{ const saved=await DB.save(data, reason); if(!v && preset && preset.parent_id && S.admin){ try{ await DB.setSite(saved.id, preset.parent_id, preset.reservation||''); }catch(e){} } closeSheet(); S.tab='vendors'; render();
@@ -3119,6 +3193,110 @@ function openForm(v, preset){
   };
 }
 
+// ---------- claimed pages, disputes, and reviews that wait for approval ----------
+// A member can claim the page that is his own. What colleagues wrote about that page is not sent to him by the
+// database (ratings, remarks, notes, driver reviews); the app only explains that. A guide's review of another guide
+// waits for approval by Eretz Israel Tours. A note or driver review can be kept private.
+const REVIEW_FIELDS=['rateReliability','rateService','rateValue','strengths','weaknesses','notes'];
+const REVIEW_LABEL={rateReliability:'Reliability rating',rateService:'Service rating',rateValue:'Value rating',strengths:'Strengths',weaknesses:'Weaknesses',notes:'Notes'};
+const guideMember=()=>!S.admin && !!S.me && (S.me.role==='Licensed tour guide' || S.vendors.some(v=>v._mine&&isGuide(v)));
+const guideOnGuide=v=>!!v && guideMember() && isGuide(v) && !v._own;
+function ownBar(v){
+  if(!v._own) return '';
+  return `<div class="ownbar"><b>${v._mine?'This is your page.':'This looks like your own page.'}</b>
+    <span>${v._mine?'':'Your phone number or email is on it. '}Colleagues' notes, ratings and reviews of it are hidden from you. Other colleagues still see them.</span>
+    <div class="btn-row"><button class="btn soft" id="disputeBtn" type="button">Dispute something on this page</button><span id="ownClaim" style="display:contents"></span></div></div>`;
+}
+const claimedPill=v=>v._claimed?`<span class="pill reg">✓ Claimed${v._mine?' by you':''}</span>`:'';
+// Filled in when the page's details arrive: whether my claim is waiting and, for Eretz Israel Tours, whose page it is.
+function drawClaim(v, det){
+  const oc=document.getElementById('ownClaim');
+  if(oc && !v._mine) oc.innerHTML = det.my_claim ? '<span class="hint" style="align-self:center">Your claim is waiting for Eretz Israel Tours.</span>' : (v._claimed?'':'<button class="btn primary" id="claimBtn" type="button">Claim this page</button>');
+  const box=document.getElementById('claimBox');
+  if(box){
+    if(S.admin){
+      const mem=(S.members||[]).filter(m=>m.status==='approved'&&!m.is_admin), cur=det.claimer, mt=det.matches||[], wait=(S.claims||[]).filter(c=>c.vendor_id===v.id).length;
+      box.innerHTML=`<fieldset><legend>Whose page is this · only you</legend>
+        <p class="hint" style="margin:0 0 8px;font-size:13px">${cur?`Claimed by <b>${esc(cur.name)}</b>${cur.role?' · '+esc(cur.role):''}. ${isGuide(v)?'Only they and you write the section for clients. ':''}Colleagues' notes, ratings and reviews of this page are hidden from them.`:'Not claimed. Link it to the member whose page it is.'}</p>
+        ${mt.length?`<p class="hint" style="margin:0 0 8px;font-size:13px;color:var(--warn)">The phone or email on this page matches ${mt.map(x=>'<b>'+esc(x.name)+'</b>').join(', ')}. Reviews of it are already hidden from them.</p>`:''}
+        ${wait?`<p class="hint" style="margin:0 0 8px;font-size:13px;color:var(--warn)">${wait} claim${wait>1?'s':''} waiting in the Review tab.</p>`:''}
+        <div class="grid"><div class="f"><label for="clSel">Belongs to</label><select id="clSel"><option value="">No one</option>${mem.map(m=>`<option value="${esc(m.id)}"${cur&&cur.id===m.id?' selected':''}>${esc(m.name)}${m.role?' · '+esc(m.role):''}</option>`).join('')}</select></div></div>
+        <div class="btn-row" style="margin-top:8px"><button class="mini" id="clSave" type="button">Save</button></div></fieldset>`;
+      box.querySelector('#clSave').onclick=async()=>{ try{ await DB.setClaim(v.id, box.querySelector('#clSel').value||null); toast('Saved'); openDetail(v.id); }catch(e){ toast(e.message); } };
+    }
+    else if(!v._own && !v._claimed) box.innerHTML = det.my_claim ? '<p class="hint claimline">Your claim to this page is waiting for Eretz Israel Tours.</p>' : '<p class="hint claimline">Is this you, or your business? <button class="linkbtn" id="claimBtn" type="button">Claim this page</button></p>';
+    else box.innerHTML='';
+  }
+  const cb=document.getElementById('claimBtn'); if(cb) cb.onclick=()=>openClaim(v);
+}
+function openClaim(v){
+  const body=`<p style="margin:0 0 8px;color:var(--ink-2)">Tell Eretz Israel Tours that <b>${esc(v.name)}</b> is you, or your business. Once it is approved:</p>
+    <ul style="margin:0 0 4px;padding-left:20px;color:var(--ink-2);font-size:14px;line-height:1.5">
+      <li>${isGuide(v)?'only you write what clients see: your bio, pictures and retail price':'the page is marked as yours'}</li>
+      <li>you can dispute anything written on the page</li>
+      <li>colleagues' notes, ratings and reviews of the page are hidden from you, and stay visible to other colleagues</li></ul>
+    <div class="f wide" style="margin-top:12px"><label for="clNote">Anything that helps confirm it <span class="hint">· optional</span></label><textarea id="clNote" rows="2" maxlength="500" placeholder="The phone number on the page is mine"></textarea></div><div id="clErr"></div>`;
+  const w=sheet('Claim this page', body, `<button class="btn soft" id="clC" type="button">Back</button><button class="btn primary" id="clS" type="button">Send claim</button>`);
+  w.querySelector('#clC').onclick=()=>openDetail(v.id);
+  w.querySelector('#clS').onclick=async()=>{ const b=w.querySelector('#clS'); b.disabled=true;
+    try{ await DB.claim(v.id, w.querySelector('#clNote').value.trim()); toast('Claim sent to Eretz Israel Tours'); openDetail(v.id); }
+    catch(e){ b.disabled=false; w.querySelector('#clErr').innerHTML=`<div class="msg err">${esc(e.message)}</div>`; } };
+}
+function openDispute(v){
+  const body=`<p style="margin:0 0 10px;color:var(--ink-2)">Tell Eretz Israel Tours what is wrong on <b>${esc(v.name)}</b>, and what it should say. They check it and decide. Colleagues do not see your dispute.</p>
+    <div class="f wide"><label for="dsMsg">What is wrong, and what should it be?</label><textarea id="dsMsg" rows="5" maxlength="2000" placeholder="The day rate shown is from 2024. My rate is now…"></textarea></div><div id="dsErr"></div>`;
+  const w=sheet('Dispute something', body, `<button class="btn soft" id="dsC" type="button">Back</button><button class="btn primary" id="dsS" type="button">Send</button>`);
+  w.querySelector('#dsC').onclick=()=>openDetail(v.id);
+  w.querySelector('#dsS').onclick=async()=>{ const b=w.querySelector('#dsS'), t=w.querySelector('#dsMsg').value.trim();
+    if(t.length<5){ w.querySelector('#dsErr').innerHTML='<div class="msg err">Say what is wrong, and what it should be.</div>'; return; } b.disabled=true;
+    try{ await DB.dispute(v.id, t); toast('Sent to Eretz Israel Tours'); openDetail(v.id); }
+    catch(e){ b.disabled=false; w.querySelector('#dsErr').innerHTML=`<div class="msg err">${esc(e.message)}</div>`; } };
+}
+// Review tab, for Eretz Israel Tours: claims waiting, and guides' notes about other guides waiting.
+function claimsPanel(){
+  const list=S.claims||[]; if(!list.length) return '';
+  return `<section class="panel"><h3>Claims <span class="badge">${list.length}</span></h3>
+    <p>A member says a page is theirs. Once approved, colleagues' notes, ratings and reviews of that page are hidden from them, and on a guide's page only they write the section for clients.</p>
+    ${list.map(c=>`<div class="rev" style="display:block"><div class="who2"><b>${esc(c.member_name)} says this page is theirs: ${esc(c.vendor_name)}</b><span>${esc(c.role||'Member')} · ${fmtDate(c.created_at)}</span>
+        <span style="font-weight:600;color:var(${c.match?'--ok':'--warn'})">${c.match?'✓ Their phone or email is on the page':'⚠ Their phone and email are not on the page. Check before approving.'}</span></div>
+      ${c.note?`<p style="margin:4px 0 8px;font-size:14px">${esc(c.note)}</p>`:''}
+      <div class="btn-row"><button class="btn soft" data-open="${esc(c.vendor_id)}">Open supplier</button><button class="btn soft" data-cno="${esc(c.id)}">Reject</button><button class="btn primary" data-cyes="${esc(c.id)}">Approve</button></div></div>`).join('')}
+  </section>`;
+}
+function notesPanel(){
+  const list=S.noteQueue||[]; if(!list.length) return '';
+  return `<section class="panel"><h3>Reviews to approve <span class="badge">${list.length}</span></h3>
+    <p>A guide wrote about another guide. Colleagues see it only after you approve it. Turned down, it stays visible to you and to its author only.</p>
+    ${list.map(n=>`<div class="rev" style="display:block"><div class="who2"><b>${esc(n.vendor_name)}</b><span>by ${esc((n.by&&n.by.name)||n.author_name||'A colleague')}${n.by&&n.by.role?' · '+esc(n.by.role):''} · ${fmtDate(n.created_at)}</span></div>
+      <p style="margin:4px 0 8px;font-size:14px;white-space:pre-wrap">${esc(n.body)}</p>
+      <div class="btn-row"><button class="btn soft" data-open="${esc(n.vendor_id)}">Open supplier</button><button class="btn soft" data-nno="${esc(n.id)}" data-v="${esc(n.vendor_id)}">Turn down</button><button class="btn primary" data-nyes="${esc(n.id)}" data-v="${esc(n.vendor_id)}">Approve</button></div></div>`).join('')}
+  </section>`;
+}
+function wireReviewQueues(view){
+  const cd=async(b,yes)=>{ b.disabled=true; try{ await DB.decideClaim(yes?b.dataset.cyes:b.dataset.cno, yes); await DB.loadClaims(); toast(yes?'Approved. The page is theirs.':'Rejected'); render(); }catch(e){ b.disabled=false; toast(e.message); } };
+  view.querySelectorAll('[data-cyes]').forEach(b=>b.onclick=()=>cd(b,true)); view.querySelectorAll('[data-cno]').forEach(b=>b.onclick=()=>cd(b,false));
+  const nd=async(b,yes)=>{ b.disabled=true; try{ await DB.decideNote(yes?b.dataset.nyes:b.dataset.nno, yes, b.dataset.v); await DB.loadPendingNotes(); toast(yes?'Approved. Colleagues see it now.':'Turned down'); render(); }catch(e){ b.disabled=false; toast(e.message); } };
+  view.querySelectorAll('[data-nyes]').forEach(b=>b.onclick=()=>nd(b,true)); view.querySelectorAll('[data-nno]').forEach(b=>b.onclick=()=>nd(b,false));
+}
+// One note in the thread: who sees it, and whether it is waiting.
+function noteTags(n){
+  return (n.private?`<span class="ntag">🔒 ${S.admin&&!n.mine?'Private: only its author and you':'Only you and Eretz Israel Tours'}</span>`:'')
+    + (n.status==='pending'?`<span class="ntag warn">Waiting for approval${S.admin?'':' by Eretz Israel Tours'}</span>`:'')
+    + (n.status==='rejected'?'<span class="ntag bad">Not approved: colleagues do not see it</span>':'');
+}
+
+// Preview only: look at the list as Eretz Israel Tours, as a guide on her own claimed page, as another guide, or as a travel agent.
+const DEMO_PEOPLE={
+  admin:{label:'Eretz Israel Tours',name:'Eretz Israel Tours',email:OWNER,is_admin:true,role:''},
+  owner:{label:'Noa Shalev, a guide (her own page is claimed)',name:'Noa Shalev',email:'noa.shalev@example.com',is_admin:false,role:'Licensed tour guide'},
+  guide:{label:'Avi Mizrahi, another guide',name:'Avi Mizrahi',email:'avi.mizrahi@example.com',is_admin:false,role:'Licensed tour guide'},
+  agent:{label:'Rachel Amar, a travel agent',name:'Rachel Amar',email:'rachel.ops@gmail.com',is_admin:false,role:'Travel agent'}};
+function demoFlags(){ S.vendors.forEach(v=>{ v._claimed=!!v.claimed_by; v._mine=!S.admin&&!!v.claimed_by&&v.claimed_by===S.user.email; v._own=v._mine; if(!v._claimed) v.claimed_name=''; }); }
+function demoAs(k){ const p=DEMO_PEOPLE[k]||DEMO_PEOPLE.admin; S.demoAs=k; S.user={email:p.email};
+  S.me={name:p.name,email:p.email,status:'approved',is_admin:p.is_admin,role:p.role}; S.admin=p.is_admin; S.contributor=true;
+  if(!S.admin && (S.tab==='review'||S.tab==='team')) S.tab='vendors'; demoFlags(); if(S.admin) DB.loadPendingNotes(); closeSheet(); render(); }
+function demoNoteSeen(n){ return S.admin || n.author===S.user.email || (!n.private && n.status!=='pending' && n.status!=='rejected'); }
+
 // ---------- a guide's page: the part written for clients (bio, up to four pictures, retail price) ----------
 // The one part of a page that is meant to leave the list: a colleague copies it and sends it to his client.
 const CLIENT_PICS=4, CLIENT_BIO_MAX=1500, CLIENT_RETAIL_MAX=200;
@@ -3126,11 +3304,15 @@ const isGuide=v=>catsOf(v).includes('Guide');
 const clientPics=files=>(files||[]).filter(f=>f.for_clients&&!f.quote_id).sort((a,b)=>String(a.created_at||'').localeCompare(String(b.created_at||''))).slice(0,CLIENT_PICS);
 const clientText=v=>[v.name, v.client_bio].filter(Boolean).join('\n\n');
 function clientBox(v){
-  const has=!!(v.client_bio||v.retail_price);
-  return `<div class="cbox" id="cliBox"><div class="ch"><b>For clients</b><button class="mini" id="cliEdit" type="button">${has?'Edit':'+ Add'}</button></div>
-    <span class="hint">A bio, pictures and a retail price that you can pass on to a client. The rest of this page stays between colleagues.</span>
+  const has=!!(v.client_bio||v.retail_price), locked=!!v._claimed&&!v._mine&&!S.admin;   // once claimed, only the guide and Eretz Israel Tours write it
+  const lead=v._mine?'Your bio, pictures and retail price for clients. Colleagues can pass them on to their clients. The rest of this page stays between colleagues.'
+    :locked?`Written by ${esc(v.claimed_name||'the guide')}. You can pass it on to a client. The rest of this page stays between colleagues.`
+    :'A bio, pictures and a retail price that you can pass on to a client. The rest of this page stays between colleagues.';
+  const none=locked?'Nothing here yet.':v._mine?'No bio yet. Add a short bio, up to four pictures and your retail price.':'No bio yet. Until this guide claims the page, anyone who knows them well can add a short bio, up to four pictures and the retail price.';
+  return `<div class="cbox" id="cliBox"><div class="ch"><b>For clients</b>${locked?'':`<button class="mini" id="cliEdit" type="button">${has?'Edit':'+ Add'}</button>`}</div>
+    <span class="hint">${lead}</span>
     <div class="cpics" id="cliPics"></div>
-    ${v.client_bio?`<p class="cbio" dir="auto">${esc(v.client_bio)}</p>`:`<p class="hint" style="margin:10px 0 0">No bio yet. If this is you, or you know this guide well, add a short bio, up to four pictures and the retail price.</p>`}
+    ${v.client_bio?`<p class="cbio" dir="auto">${esc(v.client_bio)}</p>`:`<p class="hint" style="margin:10px 0 0">${none}</p>`}
     ${v.retail_price?`<p class="cret"><span class="hint">Retail price${S.admin&&v.prices_private?' · private, only you see it':''}</span><br><b dir="auto">${esc(v.retail_price)}</b></p>`:''}
     <div class="btn-row" id="cliActs" style="margin-top:10px"${v.client_bio?'':' hidden'}><button class="btn soft" id="cliCopy" type="button">Copy bio</button><button class="btn soft" id="cliShare" type="button" hidden>Share with a client</button></div></div>`;
 }
