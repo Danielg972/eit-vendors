@@ -6,6 +6,39 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-14 · Claimed pages, disputes, reviews hidden from the person they are about, approval of a guide's review of a guide, private reviews (built on a branch; not live)
+
+**Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session, 3 October 2026, 21:15 and 21:25 Israel time.
+
+**In his words (21:15), answering whether any member may fill in a guide's page:** "no - An unclaimed entry can have their info written in including their retail charge - when someone joins they can claim their entry - and ask to dispute their info. reviews should be blocked from them but available for others. that includes all users that also have a vender file." **(21:25):** "also guide reviews about other guides needs admin approval to go live. there should be a keep private option for reviews if it doesnt already exist".
+
+**Decisions:**
+
+1. **An unclaimed entry can be written in by others, retail price included.**
+2. **A member can claim his own entry.**
+3. **He can ask to dispute the information on it.**
+4. **Reviews of an entry are blocked from the member it belongs to, and available to everyone else.** This covers every member who also has a supplier entry, not only guides.
+5. **A guide's review of another guide needs approval by Eretz Israel Tours before it shows.**
+6. **Reviews can be kept private.**
+
+**Implementation choices (not owner decisions; change on request):**
+
+- **"Reviews" means** the ratings, strengths, weaknesses and notes fields of a page, its notes thread, and driver reviews. It does not include quotes and prices colleagues recorded from that supplier.
+- **A claim needs approval by Eretz Israel Tours**, who can also link a page to a member directly. One member per page.
+- **A page that carries a member's own phone or email counts as his even without a claim**, for hiding reviews only. Otherwise a member could keep reading his reviews by not claiming.
+- **Once a guide has claimed his page, only he and Eretz Israel Tours write the section for clients.** Other fields are edited as before, and he disputes what he disagrees with.
+- **He cannot rate or note his own page**, or review himself or his company's drivers.
+- **"A guide"** is a member whose role is Licensed tour guide, or who has claimed a guide's page. **"A review of another guide"** is a note on a guide's page, or a change to its ratings and remarks. A driver review is not included.
+- **A note turned down** stays visible to its author and Eretz Israel Tours, marked "Not approved".
+- **Private** exists for notes and driver reviews. Eretz Israel Tours sees private ones (house rule 4). A private note skips approval.
+- **A dispute** arrives with the supplier updates in Review, marked as coming from the page's owner.
+
+**To check with a lawyer:** terms 6f. A member is told that remarks about him exist and are kept from him; under privacy law a person may have a right to see information held about him.
+
+**Status:** on the branch `guide-for-clients` (migration `2026-10-03c_claims.sql`, front end, terms `2026-10-03b`). Not applied to production, not merged. Tested on a local database and in preview mode; see README.
+
+---
+
 ## D-13 · Food nearby only on entries with a physical address (asked for; in pull request #8)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session, 3 October 2026, 21:16 Israel time.
@@ -29,11 +62,11 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 2. **Up to four pictures.**
 3. **A retail price, optional, in free text.**
 
-**How it was read (his to correct):** "every guide" was taken as every supplier in the Guide category, on that supplier's page, because that is where colleagues look a guide up. It was not built on members' own profiles; a guide who is a member fills in his own page on the list. "Client-facing" was taken as material a colleague sends to his client, not a page a client opens by himself.
+**How it was read:** confirmed by him at 21:15 ("1. correct"): "every guide" was taken as every supplier in the Guide category, on that supplier's page, because that is where colleagues look a guide up. It was not built on members' own profiles; a guide who is a member fills in his own page on the list. "Client-facing" was taken as material a colleague sends to his client, not a page a client opens by himself.
 
 **Implementation choices (not owner decisions; change on request):**
 
-- **Any approved member can fill it in**, like other open fields, without approval by Eretz Israel Tours.
+- **Who fills it in:** first built as any approved member; he said no to that at 21:15. Now anyone while the page is unclaimed, and only the guide and Eretz Israel Tours once it is claimed (D-14).
 - **These three things may leave the list**; everything else on the page stays between colleagues. Terms 6e says so. This is a deliberate exception to "never show the list to anyone outside".
 - **The retail price follows "Keep this supplier's prices private"**: colleagues then neither see it nor change it.
 - **Copy bio** copies the name and the bio, not the price, so a colleague who adds his own margin is not undercut by his own message. **Share with a client** uses the phone's share sheet.
