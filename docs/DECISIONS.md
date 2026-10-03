@@ -156,7 +156,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
-## D-11 · Jobs between colleagues, and My days (live for Eretz Israel Tours only)
+## D-11 · Jobs between colleagues, and My days (live; colleagues receive jobs, Eretz Israel Tours posts)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session, 2 October 2026, 17:16 Israel time (the idea) and 3 October 2026, 20:02–20:47 (the mock-up, the go-ahead to build, and the go-ahead to go live).
 
@@ -170,6 +170,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 4. **Availability is kept by tapping days, and filled in automatically when a job is given.** Jobs can be added to the member's own calendar. Reading members' calendars through a pasted link comes later.
 5. **Build it in preview first, to try before it goes live.**
 6. **Live as a beta, for Eretz Israel Tours only** (3 Oct, 20:47). Colleagues do not see it until he changes the setting.
+7. **Colleagues receive jobs; only Eretz Israel Tours posts.** He changed the setting himself in the Team tab later on 3 October, and confirmed it on 3 October at 22:05 when asked "should colleagues already receive jobs?": "yes".
 
 **Not decided yet (his to decide):**
 
@@ -188,7 +189,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 **To check with a lawyer:** terms 6d; members' availability is personal data now stored; if a job is ever charged for, the payment-services and tax points in the research.
 
-**Status:** live since 3 Oct 2026, 21:04, for Eretz Israel Tours only (terms `2026-10-03a`). The session that built it was not allowed to push to `main` or to apply SQL containing DELETE, so the owner merged pull request #7 and ran `supabase/migrations/2026-10-03_jobs_last_step.sql` in the SQL editor himself. Checked afterwards on production: 107 functions, all as tested, and the whole flow passed in a rolled-back probe; see README.
+**Status:** live since 3 Oct 2026, 21:04 (terms `2026-10-03a`), at first for Eretz Israel Tours only. Since later the same evening colleagues receive jobs and Eretz Israel Tours posts (`jobs_for` = `receive`, set by the owner; decision 7). The session that built it was not allowed to push to `main` or to apply SQL containing DELETE, so the owner merged pull request #7 and ran `supabase/migrations/2026-10-03_jobs_last_step.sql` in the SQL editor himself. Checked afterwards on production: 107 functions, all as tested, and the whole flow passed in a rolled-back probe; see README.
 
 ---
 
