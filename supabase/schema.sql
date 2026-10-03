@@ -918,6 +918,14 @@ AS $function$
 $function$
 ;
 
+-- Is this supplier a guide? Main category Guide, or Guide under "also offers".
+create or replace function public._is_guide(v public.vendors)
+ returns boolean language sql immutable set search_path to ''
+as $function$
+  select v.category = 'Guide' or coalesce(v.also_categories,'') ~* '(^|,)\s*Guide\s*(,|$)'
+$function$
+;
+
 -- Is this supplier page the member's own? He claimed it, or his own phone number or email is on it.
 -- Never true for Eretz Israel Tours, who sees everything.
 create or replace function public._is_own(v public.vendors, m public.members)
@@ -2676,12 +2684,6 @@ end $function$;
 
 
 -- ===== A guide's page for clients: bio, retail price, up to four pictures (3 Oct 2026, D-12) =====
-
-create or replace function public._is_guide(v public.vendors)
- returns boolean language sql immutable set search_path to ''
-as $function$
-  select v.category = 'Guide' or coalesce(v.also_categories,'') ~* '(^|,)\s*Guide\s*(,|$)'
-$function$;
 
 -- Save the bio and the retail price on a guide's page.
 create or replace function public.vendor_set_client(p_token text, p_vendor text, p_bio text, p_retail text)
