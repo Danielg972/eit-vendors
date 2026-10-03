@@ -4,9 +4,117 @@
 
 Decisions that bind this project. Newest first. Each entry says who decided, when, and on what evidence.
 
+*D-12, D-14 and D-16 were built on the branch `guide-for-clients` at the same time as D-15, and rebuilt on top of it before anything of theirs touched production. See the note under D-15.*
+
+*D-15 (limited members) was first recorded as D-12 by mistake, for a few minutes on 3 Oct; D-12 was already taken on that branch.*
+
 ---
 
-## D-13 · Food nearby only on entries with a physical address (asked for; in pull request #8)
+## D-16 · Licensed guides only, D1 for Eshkol, malicious posts (database live; app waits for the owner's merge)
+
+**Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session, 3 October 2026, 21:41 Israel time.
+
+**In his words:** "add to all relevant places that the rules is only licesned guides are allowed to be used except for specialties like shuk tours, or graffiti tours etc.  any malicious post will be removed and used will be banned.  only drivers with a D1 license will be allowed to be listed as an eshkol driver/guide"
+
+**Decisions:**
+
+1. **Only licensed guides are used**, except specialties such as shuk tours or graffiti tours.
+2. **A malicious post is removed and its author is banned.**
+3. **Only a driver with a D1 license is listed as an Eshkol driver or guide.**
+
+**Implementation choices (not owner decisions; change on request):**
+
+- **Stated with tags, not checked against a license.** `Licensed tour guide` or `Specialty guide` on a guide; `D1 license` next to any Eshkol tag. The form and the database both ask.
+- **A specialty guide is an exception Eretz Israel Tours approves**, the way "Kosher, no certificate" is.
+- **Entries already on the list are not blocked** from other edits and are not marked. Going through them is still to do.
+- **"All relevant places"** was taken as: terms 3a and 3c, the welcome tour's house rules, the supplier form, the Review tab, the note box, the driver review form, the job form and "Jobs I take". A new job starts with "Licensed guide" ticked; the poster can untick it for a specialty.
+- **"Banned" is done by hand:** Eretz Israel Tours removes the post and revokes the member in the Team tab. Nothing detects a malicious post.
+
+**Status:** the rule in `vendor_save` is on production since 3 Oct 2026, about 22:00. The form, terms `2026-10-03d` and house rules go live when the owner merges `guide-for-clients`. Until then the live form does not offer the two buttons, so a new guide entry is refused unless the tag is typed by hand.
+
+---
+
+## D-15 · Limited members: organisations that are not in tourism (live)
+
+**Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session, 3 October 2026, over several messages: the idea, the rules, a mock-up of six phone screens, then the go-ahead to build and go live.
+
+**In his words:** "Is there's an option to create a partial version of the app for people not fully in tourism, but use buses and hotels, like people that run yeshivas, so they won't see the site listings. But they'll see transportation and hotels". Then: "Don't show them hotel rates. But show them guides. Or rather give admin the option to choose what they see with transportation and guides as the default". Then: "they can add suppliers and quotes. Also, let them see sites and activities, but don't give them access to any agent rate pricing or reviews. But allow them to leave reviews. They can also see restaurants, wineries, but no agent rates." Then: "Add hotels but don't give them agent rates. Give them an option to add agent rates that everyone can see including them?" On reviews: "Let reviews be on for transportation" and "Make sure their reviews show up for everyone even limited access people". On proof: "Let them write their credentials as proof in free text". On the mock-up: "Build it and make it live".
+
+**Decisions:**
+
+1. **A limited kind of member**, for people who are not in tourism but book busses, guides and hotels for a school, a yeshiva or another organisation.
+2. **Eretz Israel Tours chooses, per member, which sections of the list they see.** The standard set is Transportation, Guides, Hotels, Sites and activities, Restaurants and wineries.
+3. **A limited member never gets an agent rate**, hotels included. They see listed prices.
+4. **They do not read guides' and agents' reviews, except on transportation**, where reviews are on.
+5. **They can leave reviews, and their reviews show for everyone**, other limited members included.
+6. **They can add suppliers and quotes.**
+7. **They can add the rates they were given, and everyone sees those rates**, them included.
+8. **To join, they write their credentials in free text.** No license number and no upload.
+
+**Implementation choices (not owner decisions; change on request):**
+
+- **"The rates they add" are called organisation rates, not agent rates.** A rate a school or yeshiva was given is not an agent rate, and a limited member must never be sent one. Their lines are stored as their own kind, never marked as agent, and shown in their own block ("Organisation rates: what schools, yeshivas and other organisations were charged").
+- **An organisation rate saves straight away, without approval.** A guide's suggested price still waits for Eretz Israel Tours. The organisation's own line is only changed or removed by them or by Eretz Israel Tours.
+- **Rates and quotes from organisations show without a name; reviews show the person and the organisation**, the way a guide's note shows his name. Eretz Israel Tours sees who added everything.
+- **Six sections:** Transportation; Guides; Hotels; Sites and activities (Attraction / Site, Activity, Adventure, National Parks); Restaurants and wineries; Agents and other (everything else, off in the standard set). A supplier that offers several things shows if any of them is in the member's sections.
+- **Four switches per limited member**, with these defaults: bus and van quotes shown (also opens booking sheets); guide rates hidden (a guide's price shows as "Ask for rate"); transportation reviews shown; reviews elsewhere hidden.
+- **Where reviews are hidden, so are the supplier's summary ratings, strengths, weaknesses and notes**, which are written by guides and agents. Notes copied from the supplier's own website stay.
+- **Guides' and agents' quotes:** a limited member sees bus and van quotes with that switch, guide quotes with the guide-rates switch, and never a guide's or agent's quote for a hotel, a site or an activity.
+- **Organisations' quotes are left out of the averages guides and agents see** in the quote tracker, and shown tagged "From an organisation".
+- **Files:** a limited member sees photos, kosher certificates, what he uploaded and what other organisations uploaded. Not price lists, receipts, contracts, booking confirmations or quotes from guides and agents.
+- **No Jobs tab** for limited members: they are never offered a job and never appear in the list of people a job fits.
+- **Enforced in the database**, not only hidden in the app: a supplier outside the member's sections is refused by every function, and agent fields are never sent.
+- **Stored as role "Other" with the organisation's name**; the app shows "Organisation, not in tourism". The list of allowed roles in the database was left as it is.
+- **Every existing member stays a full member.** Any member can be switched between full and limited in the Team tab ("Change access").
+- **Terms** `2026-10-03c` add section 2c (organisations) and a line in section 6. Every member accepts again on next opening.
+
+**Clash to settle before the branch `guide-for-clients` goes live:** The branch `guide-for-clients` (D-12 a guide's page for clients, D-14 claimed pages, disputes and reviews; built, not live) was written at the same time, from the code as it was before this change. Its two database files (`2026-10-03b_guide_for_clients.sql`, `2026-10-03c_claims.sql`) replace six functions that now carry the limited-member rules: `_vendor_view`, `vendor_detail`, `vendor_save`, `note_add`, `_driver_json` and `driver_review_add`. Its versions do not have those rules. Run on production as they are, they would send agent prices and guides' reviews to limited members. Before either file is run: bring the branch up to date with `main`, rewrite those six functions on top of the current ones, and repeat the limited-member probe on production. Its terms version is also `2026-10-03b`; it needs one later than `2026-10-03c`. Nothing from that branch is on production (checked 3 Oct, 21:50: no `vendor_set_client`, no `vendor_claim`).
+
+**Settled 3 Oct 2026, about 22:00:** the two files were never run. The branch was brought up to date with `main`, the six functions were rewritten on top of the limited-member versions (through `_note_visible` and `_vendor_for`, where the rules now live), and the three files became one, `2026-10-03c_guides_claims_reviews.sql`. It was probed locally as two organisations and on production (rolled back) before and after applying. Its terms version is `2026-10-03d`.
+
+**Left as it was (known, small):** the function that asks to remove a price line (`price_delete`) was not changed. It works by the line's internal id, which a limited member is never sent for an agent line.
+
+**To check with a lawyer:** terms 2c; the credentials text is personal data now stored; showing what one organisation paid to others.
+
+**Status:** live since 3 Oct 2026, about 21:40. Database change on production (connector migrations `limited_members_2026_10_03b_part1_columns_helpers`, `_part2_rpcs`, and `_part3_decision_number`, which only corrects two comments), `files` function v11 deployed (v10 at go-live; v11 corrects a comment), code on `main`. Tested on a local database (74 checks as an organisation, a guide and Eretz Israel Tours; guides' and Eretz Israel Tours' results unchanged), in a browser against that database, and by a rolled-back probe on production; see README. Not yet tried on the live site by a person.
+
+---
+
+## D-14 · Claimed pages, disputes, reviews hidden from the person they are about, approval of a guide's review of a guide, private reviews (database live; app waits for the owner's merge)
+
+**Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session, 3 October 2026, 21:15 and 21:25 Israel time.
+
+**In his words (21:15), answering whether any member may fill in a guide's page:** "no - An unclaimed entry can have their info written in including their retail charge - when someone joins they can claim their entry - and ask to dispute their info. reviews should be blocked from them but available for others. that includes all users that also have a vender file." **(21:25):** "also guide reviews about other guides needs admin approval to go live. there should be a keep private option for reviews if it doesnt already exist".
+
+**Decisions:**
+
+1. **An unclaimed entry can be written in by others, retail price included.**
+2. **A member can claim his own entry.**
+3. **He can ask to dispute the information on it.**
+4. **Reviews of an entry are blocked from the member it belongs to, and available to everyone else.** This covers every member who also has a supplier entry, not only guides.
+5. **A guide's review of another guide needs approval by Eretz Israel Tours before it shows.**
+6. **Reviews can be kept private.**
+
+**Implementation choices (not owner decisions; change on request):**
+
+- **"Reviews" means** the ratings, strengths, weaknesses and notes fields of a page, its notes thread, and driver reviews. It does not include quotes and prices colleagues recorded from that supplier.
+- **A claim needs approval by Eretz Israel Tours**, who can also link a page to a member directly. One member per page.
+- **A page that carries a member's own phone or email counts as his even without a claim**, for hiding reviews only. Otherwise a member could keep reading his reviews by not claiming.
+- **Once a guide has claimed his page, only he and Eretz Israel Tours write the section for clients.** Other fields are edited as before, and he disputes what he disagrees with.
+- **He cannot rate or note his own page**, or review himself or his company's drivers.
+- **"A guide"** is a member whose role is Licensed tour guide, or who has claimed a guide's page. **"A review of another guide"** is a note on a guide's page, or a change to its ratings and remarks. A driver review is not included.
+- **A note turned down** stays visible to its author and Eretz Israel Tours, marked "Not approved".
+- **Private** exists for notes and driver reviews. Eretz Israel Tours sees private ones (house rule 4). A private note skips approval.
+- **A dispute** arrives with the supplier updates in Review, marked as coming from the page's owner.
+- **Where this meets limited members (D-15)**, chosen by the two sessions, the owner to say if he wants otherwise: a guide's retail price follows the organisation's "guide rates" switch (off by default, so it is not sent); an organisation does not write a guide's section for clients and does not claim a page; an organisation's review shows at once and never waits for approval, and it may keep one private; the owner of a page sees no notes on it, organisations' included.
+
+**To check with a lawyer:** terms 6f. A member is told that remarks about him exist and are kept from him; under privacy law a person may have a right to see information held about him.
+
+**Status:** the database change is on production since 3 Oct 2026, about 22:00, rebuilt on top of limited members (D-15); see README. The app code (terms `2026-10-03d`) goes live when the owner merges `guide-for-clients` into `main`. His go-ahead, 21:41: "yes add changes". Tested on a local database (96 checks with the limited-member ones), in preview mode as five kinds of member, and by two rolled-back probes on production.
+
+---
+
+## D-13 · Food nearby only on entries with a physical address (live)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session, 3 October 2026, 21:16 Israel time.
 
@@ -16,7 +124,35 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 **Implementation choices (not owner decisions; change on request):** "a place" is decided by category (Hotel, Restaurant, Winery, Attraction / Site, National Parks), plus Activity and Other unless the entry is tagged jeep, ATV / RZR or rappelling. The whole Adventure category counts as a service provider. Tips already saved on service providers stay in the database, unseen.
 
-**Status:** front end only; live when pull request #8 is merged.
+**Status:** front end only; live since 3 Oct 2026 (pull request #8 merged).
+
+---
+
+## D-12 · A guide's page for clients: bio, up to four pictures, retail price (database live; app waits for the owner's merge)
+
+**Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session, 3 October 2026, 20:45 Israel time.
+
+**In his words:** "Every guide should have a client-facing bio and place to put up to four pictures. And an option to add their retail price. in a free text."
+
+**Decisions:**
+
+1. **Every guide has a bio written for clients.**
+2. **Up to four pictures.**
+3. **A retail price, optional, in free text.**
+
+**How it was read:** confirmed by him at 21:15 ("1. correct"): "every guide" was taken as every supplier in the Guide category, on that supplier's page, because that is where colleagues look a guide up. It was not built on members' own profiles; a guide who is a member fills in his own page on the list. "Client-facing" was taken as material a colleague sends to his client, not a page a client opens by himself.
+
+**Implementation choices (not owner decisions; change on request):**
+
+- **Who fills it in:** first built as any approved member; he said no to that at 21:15. Now anyone while the page is unclaimed, and only the guide and Eretz Israel Tours once it is claimed (D-14).
+- **These three things may leave the list**; everything else on the page stays between colleagues. Terms 6e says so. This is a deliberate exception to "never show the list to anyone outside".
+- **The retail price follows "Keep this supplier's prices private"**: colleagues then neither see it nor change it.
+- **Copy bio** copies the name and the bio, not the price, so a colleague who adds his own margin is not undercut by his own message. **Share with a client** uses the phone's share sheet.
+- **Pictures:** JPEG, PNG or WebP; never a file marked "only me". They sit with the supplier's other photos, marked "for clients".
+
+**To check with a lawyer:** terms 6e; pictures of people, and of guides who are not members, passed on to clients.
+
+**Status:** the database change is on production since 3 Oct 2026, about 22:00, rebuilt on top of limited members (D-15); see README. The app code (terms `2026-10-03d`) goes live when the owner merges `guide-for-clients` into `main`. Tested on a local database, in preview mode, and by a rolled-back probe on production.
 
 ---
 
