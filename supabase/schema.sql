@@ -1315,10 +1315,23 @@ CREATE OR REPLACE FUNCTION public.member_decide(p_token text, p_id uuid, p_statu
  SECURITY DEFINER
  SET search_path TO ''
 AS $function$
+declare prev text; m public.members; u text; s text;
 begin
   perform public._auth(p_token, true);
   if p_status not in ('approved','revoked') then raise exception 'Unknown decision'; end if;
-  update public.members set status = p_status, decided_at = now() where id = p_id and not is_admin;
+  select status into prev from public.members where id = p_id;
+  update public.members set status = p_status, decided_at = now() where id = p_id and not is_admin returning * into m;
+  if p_status = 'approved' and prev = 'pending' and m.id is not null then
+    select value into u from public.app_settings where key = 'welcome_url';
+    select value into s from public.app_settings where key = 'welcome_secret';
+    if coalesce(u,'') like 'https://script.google.com/%' then
+      begin
+        perform net.http_post(url := u, body := jsonb_build_object('secret', s, 'to', m.email, 'name', m.name),
+          headers := '{"Content-Type":"application/json"}'::jsonb, timeout_milliseconds := 10000);
+      exception when others then null; -- a failed email never blocks an approval
+      end;
+    end if;
+  end if;
 end $function$
 ;
 

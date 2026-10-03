@@ -6,11 +6,11 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
-## D-11 · Jobs between colleagues, and My days (built on a branch; not live)
+## D-11 · Jobs between colleagues, and My days (live for Eretz Israel Tours only; one database step open)
 
-**Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session, 2 October 2026, 17:16 Israel time (the idea) and 3 October 2026, 20:02–20:19 (the mock-up and the go-ahead).
+**Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session, 2 October 2026, 17:16 Israel time (the idea) and 3 October 2026, 20:02–20:47 (the mock-up, the go-ahead to build, and the go-ahead to go live).
 
-**In his words:** "I would like to have an option, starting with myself and later with other people, to have anonymous requests for tour guides or other providers that might be on the site. The price will be listed, as will the details of the job. Each participant will get a notification or perhaps I will get to choose from a list of relevant guides based on the filters. It will be sent to them by WhatsApp or by a notification from the app." On availability: "if I had Google Calendar integration for the people in the app so I could see at a glance their availability and they can share their availability." On the mock-up (3 Oct, 20:13): "it looks good. Is there other calendar integration that makes sense outside of Google calendars? Is there an easy way for them to update their calendar availability?" On the suggestion to build tap-and-automatic availability and an "Add to my calendar" button now, and a pasted calendar link later (20:19): "OK let's do that. I'll take your suggestion".
+**In his words:** "I would like to have an option, starting with myself and later with other people, to have anonymous requests for tour guides or other providers that might be on the site. The price will be listed, as will the details of the job. Each participant will get a notification or perhaps I will get to choose from a list of relevant guides based on the filters. It will be sent to them by WhatsApp or by a notification from the app." On availability: "if I had Google Calendar integration for the people in the app so I could see at a glance their availability and they can share their availability." On the mock-up (3 Oct, 20:13): "it looks good. Is there other calendar integration that makes sense outside of Google calendars? Is there an easy way for them to update their calendar availability?" On the suggestion to build tap-and-automatic availability and an "Add to my calendar" button now, and a pasted calendar link later (20:19): "OK let's do that. I'll take your suggestion". On the preview (20:47): "Looks good. Let's make it live for beta version. Make it live for me".
 
 **Decisions:**
 
@@ -19,10 +19,11 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 3. **A job goes either to everyone it fits or to people the poster picks from a filtered list.**
 4. **Availability is kept by tapping days, and filled in automatically when a job is given.** Jobs can be added to the member's own calendar. Reading members' calendars through a pasted link comes later.
 5. **Build it in preview first, to try before it goes live.**
+6. **Live as a beta, for Eretz Israel Tours only** (3 Oct, 20:47). Colleagues do not see it until he changes the setting.
 
 **Not decided yet (his to decide):**
 
-- **Whether the app ever takes a cut of a job.** He wrote "I have to make a decision: whether I will use this as an opportunity to monetize by taking 5% of any booking that comes to the site or 10%. Research needs to be done." The research (Claude Doc "Inner Circle monetization research", 2 Oct) advises neither, and flat fees paid first by suppliers. He has not answered in his own words. Terms 6d on the branch says "Nothing is charged on a job"; that line needs his yes before the branch goes live.
+- **Whether the app ever takes a cut of a job.** He wrote "I have to make a decision: whether I will use this as an opportunity to monetize by taking 5% of any booking that comes to the site or 10%. Research needs to be done." The research (Claude Doc "Inner Circle monetization research", 2 Oct) advises neither, and flat fees paid first by suppliers. He has not answered in his own words. He was asked about the line "Nothing is charged on a job" in terms 6d and answered "Looks good. Let's make it live". To keep his decision open, the line went live as "As of now, nothing is charged on a job", the wording the welcome tour already uses for joining.
 - **Whether founding members stay free for every later paid feature**, or only for the list.
 
 **Implementation choices (not owner decisions; change on request):**
@@ -37,7 +38,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 **To check with a lawyer:** terms 6d; members' availability is personal data now stored; if a job is ever charged for, the payment-services and tax points in the research.
 
-**Status:** on the branch `jobs-preview` (database change, front end, terms `2026-10-03a`). Not applied to production, not merged. Tested on a local database and in preview mode; see README.
+**Status:** live since 3 Oct 2026, about 21:00, for Eretz Israel Tours only (terms `2026-10-03a`). The database change is on production except four functions that contain a DELETE (`job_save`, `job_set_status`, `job_delete`, `my_days_set`): the Supabase connector asks the owner to confirm those and the confirmation was cancelled three times. They wait in `supabase/migrations/2026-10-03_jobs_last_step.sql` for him to run in the SQL editor. Until then posting, closing or deleting a job and marking a day show an error. Tested on a local database, in preview mode, and by a rolled-back probe on production; see README.
 
 ---
 
