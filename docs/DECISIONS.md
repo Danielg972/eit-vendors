@@ -10,6 +10,43 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-18 · Organisations see retail prices only; transport quotes are the one exception; a guide who also runs jeeps is two entries (live)
+
+**Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 3 October 2026, 22:23, 22:34, 22:52 and 22:59 Israel time.
+
+**In his words (22:23):** "yeshivas and outside organizers ONLY see retail pricing NEVER pricing thats agent or pricing history of any guides or others users, the only exception is transportation. they can contribute to all". On a guide's page showing an organisation "Ask for rate": "Correct. yes". **(22:34),** asked about a supplier who is listed for jeeps and also guides, whose retail price an organisation could still see: "Really I think he should be two different entries. One guide one jeep".
+
+**Decisions:**
+
+1. **An organisation (limited member) sees retail prices only.** Never an agent price.
+2. **It never sees what a guide, an agent or another member was quoted or paid,** except for transportation (bus and van quotes).
+3. **A guide's own prices stay behind "Ask for rate"** unless Eretz Israel Tours switches guide rates on for that member.
+4. **Organisations can add to everything they see.**
+5. **Someone who guides and also runs jeep tours is two entries:** one as a guide, one for the jeeps.
+6. **A guide may still offer other services on his guide entry, and have another page for that service; the two link to each other.** (22:52) "No guide can offer those and have a link to that page." Asked whether that meant a guide entry may not tick another category, he corrected the reading (22:59): "No, what I meant to say is, Guide is allowed to offer those. He can offer other services and still have another page for that service."
+7. **A business that itself offers several activities stays one entry.** (22:52) Of a supplier whose business is jeeps and rappelling: "that's what his business does. So he should remain one entry."
+
+**What changed, and what did not:**
+
+- **Changed (database, one helper):** with the guide-rates switch on, an organisation used to see guides' and agents' quotes for a guide as well (an implementation choice under D-15). It no longer does: `_quote_visible` now lets an organisation see a guide's or agent's quote only when it is a bus or van quote. The switch still shows a guide's listed price and retail price.
+- **Already so:** agent prices, agent links, other members' own price lines, and guides' and agents' quotes for hotels, sites and activities were never sent to an organisation.
+- **Done on the list (decisions 5 and 6), 3 Oct about 23:00, after his "I think so" to splitting them now:** the two entries that combined Guide and Adventure are now four. In each pair the entry that already held the history kept its id; the new one got the same contact details. Where the pair was hidden and pending, both still are. Each jeep entry points to its guide entry through the existing `parent_id` link, so the guide's page lists the jeep entry and the jeep page links back. What each entry looked like before is written in its private note.
+- **App (decision 6):** the link was built for national-park sites and said "Part of" and "Sites". For any other pair it now says "See also". The "+ Add site" button shows only on a national-parks entry.
+- **"Also offers" stays as it is (decision 6):** the form and the database go on letting a guide tick another category. On one of the two split guide entries the master agent had taken "also offers Adventure" off, on a wrong reading of his 22:52 sentence; it was put back at 23:00. The jeep entries do not carry "also offers Guide": a jeep page is not a guide page.
+- **Still to do:** the new guide entry carries neither "Licensed tour guide" nor "Specialty guide", and its Eshkol tag has no "D1 license" (D-16): someone who knows has to mark it.
+
+**Implementation choices (not owner decisions; change on request):**
+
+- **"Pricing history" was read as quotes and members' own price lines.**
+- **What organisations add themselves is still shown to other organisations** (organisation rates and quotes), as he decided in D-15 ("everyone can see including them"). If "others users" was meant to include other organisations, that is one more line to change.
+- **"They can contribute to all"** was read as what D-15 already allows: suppliers in their sections, quotes, reviews, rates, photos. No change.
+
+**Numbering:** D-17 is kept for the parked AI assistant (recorded as a second D-6 on the branch `ask-assistant`).
+
+**Status:** the database line is live since 3 Oct 2026, about 22:45. Connector migration `org_retail_only_2026_10_03d`; file `supabase/migrations/2026-10-03d_org_retail_only.sql`. It was applied by the master agent on its reading of the 22:23 rule, before the owner had been asked about that specific line; he was told at once and said at 22:34 to push the records. No terms change (2c already says only bus and van quotes). Checked before applying: production equalled `main` in all 137 functions. Checked after: production equals the tested copy in all 137 functions; `_quote_visible` is not callable from outside; 0 table grants. `run.sh`: 98 passed, 0 failed (two checks added). No organisation has joined yet, so nobody saw the earlier behaviour.
+
+---
+
 ## D-16 · Licensed guides only, D1 for Eshkol, malicious posts (database live; app waits for the owner's merge)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session, 3 October 2026, 21:41 Israel time.
