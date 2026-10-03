@@ -377,6 +377,15 @@ button.bkcard{display:block;width:100%;text-align:left;font:inherit;color:inheri
 .tour-body .linkbtn{color:var(--tab-on);min-height:44px}
 .tour-ex{background:var(--ground);border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:6px}
 .tour-ex .chips{padding:8px 0 0;overflow:hidden}
+/* Wide screens (a mouse cannot swipe a row whose scrollbar is hidden): let the filter rows and the most-used cards wrap, so every chip and card can be reached. The tour's examples keep one clipped row on purpose. */
+@media (min-width:700px){
+  .chips,.favs{flex-wrap:wrap;overflow:visible}
+  .chips{padding-top:10px}
+  .chips .chip{padding:7px 14px;min-height:0;font-size:14px}   /* smaller on a wide screen, so a full set of categories or regions takes two rows, not three */
+  .fav{width:calc((100% - 24px)/4);box-sizing:border-box}      /* four cards to a row */
+  .tour-ex .chips{flex-wrap:nowrap;overflow:hidden}
+  .tour-ex .fav{width:150px}
+}
 .tour-ex .chip{padding:7px 14px;min-height:0;font-size:14px}
 .tour-ex .actions{margin:10px 0 0;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
 .tour-ex .act{font-size:11.5px;padding:9px 2px}
@@ -487,7 +496,7 @@ button.bkcard{display:block;width:100%;text-align:left;font:inherit;color:inheri
 </style>
 <style>
 /* Base reset (the Claude preview adds this itself; the live site needs it) */
-html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;scrollbar-gutter:stable}
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 body{margin:0}
 img{max-width:100%}
