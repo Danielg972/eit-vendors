@@ -10,7 +10,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
-## D-20 · Choose two or more categories at once; subcategories under a category (built; waiting for the owner to see the preview)
+## D-20 · Choose two or more categories at once; subcategories under a category (live)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 4 October 2026, 18:26 Israel time.
 
@@ -34,7 +34,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 **Not changed:** the stored categories, the supplier form, the database, the terms, what a limited member receives.
 
-**Status:** built on the branch `multi-category-filter`, front end only. Not live. Tested in preview only (sample suppliers), as Eretz Israel Tours and as an organisation, at phone and desktop size, with no page errors. Not tested on the live site.
+**Status:** live since 4 October 2026, about 19:00 (pull request #15), front end only. The owner saw the preview pictures and said at 18:55: "Go live". Tested in preview only (sample suppliers), as Eretz Israel Tours and as an organisation, at phone and desktop size, with no page errors. Not tested on the live site.
 
 ---
 

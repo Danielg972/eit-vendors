@@ -72,7 +72,7 @@
 
 ## Waiting for the owner
 
-- **Several categories at once, and subcategories (D-20, 4 Oct):** built on the branch `multi-category-filter`, front end only, not live. Waiting for him to look at the preview pictures and say whether it goes live, and whether Activity keeps the subcategories it was given (he named Extreme only).
+- **Several categories at once, and subcategories (D-20):** live since 4 Oct, about 19:00, on his word. Front end only. His to say if he wants otherwise: Activity was given subcategories too (he named Extreme only). Not yet tried by a person on the live site.
 - **Merge the branch `guide-for-clients` (pull request #11).** Merge it before the welcome-tour branch (pull request #9), which clashes with it in six places and has to be brought up to date afterwards by its own session. Its database change is already on production, rebuilt on top of limited members. Until it is merged the live form has no "licensed or specialty" buttons, so adding a new guide is refused, and the client section, claims, disputes and private notes have no screens.
 - **Limited members (D-15): try it once on the live site.** Ask to join as an organisation from a second browser, approve it in the Team tab, and look at the list through that link. Tested on a local copy and by a probe on production, not yet by a person on the live site. Also: read the automatic welcome email with an organisation in mind.
 - **Guides already on the list (D-16):** the 6 guide entries have neither "Licensed tour guide" nor "Specialty guide". Someone who knows has to tag them. One entry carries an Eshkol tag without "D1 license"; the same goes for it.

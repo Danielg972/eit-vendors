@@ -252,7 +252,7 @@ Researched by web lookups per supplier (the supplier's own site first, a third-p
 - **Worth knowing:** approving a pending organisation sends the same automatic welcome email a guide gets (the `member_decide` hook from 1 Oct). Its text is not in this repository; check that it suits an organisation. If the jobs migration files from 3 Oct are ever run again, they would put back `whoami`, `_jobs_on`, `_jobs_post` and `_job_fits` without the limited-member rules; run `2026-10-03b_limited_members.sql` after them.
 
 ## Several categories at once, and subcategories (4 Oct 2026, decision D-20)
-**Status: built on the branch `multi-category-filter`; not live; waiting for the owner. Front end only.**
+**Status: live since 4 Oct 2026, about 19:00 (pull request #15), on the owner's word at 18:55 ("Go live"). Front end only.**
 - The category buttons on the supplier list switch on and off one by one (`S.cats`, an array; it replaces `S.cat`). A supplier shows if it belongs to any chosen category (`catOk`). "All" clears them.
 - Under a chosen category a second row narrows it (`SUBCATS`, `subHit`, `subOk`, `S.subs`). Each subcategory is a group of existing type tags: under Extreme, Jeeps, ATVs, Water (Kayak & rafting, Boat, Snorkelling), Rappelling, and Zipline, Bikes, Horses, Camels, Shooting; under Activity, Workshops, Food & wine, Farms, Family, Volunteering, Archaeology, Shooting. A button shows only when a supplier has that type. Several subcategories together show any of them, and a subcategory narrows its own category only.
 - Guide and Transport keep their own second rows; they now apply whenever that category is among the chosen ones. Regions are still one at a time.
