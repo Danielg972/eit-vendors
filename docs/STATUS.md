@@ -4,7 +4,7 @@
 
 *Short, factual status for the Cockpit Steward and other EIT projects. Updated by the Vendor Master session after any change that matters to them. The commit that last changed this file is its version.*
 
-**As of:** 3 October 2026
+**As of:** 4 October 2026
 
 ## Identity
 
@@ -72,6 +72,7 @@
 
 ## Waiting for the owner
 
+- **Several categories at once, and subcategories (D-20):** live since 4 Oct, about 19:00, on his word. Front end only. His to say if he wants otherwise: Activity was given subcategories too (he named Extreme only). Not yet tried by a person on the live site.
 - **Merge the branch `guide-for-clients` (pull request #11).** Merge it before the welcome-tour branch (pull request #9), which clashes with it in six places and has to be brought up to date afterwards by its own session. Its database change is already on production, rebuilt on top of limited members. Until it is merged the live form has no "licensed or specialty" buttons, so adding a new guide is refused, and the client section, claims, disputes and private notes have no screens.
 - **Limited members (D-15): try it once on the live site.** Ask to join as an organisation from a second browser, approve it in the Team tab, and look at the list through that link. Tested on a local copy and by a probe on production, not yet by a person on the live site. Also: read the automatic welcome email with an organisation in mind.
 - **Guides already on the list (D-16):** the 6 guide entries have neither "Licensed tour guide" nor "Specialty guide". Someone who knows has to tag them. One entry carries an Eshkol tag without "D1 license"; the same goes for it.

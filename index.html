@@ -581,6 +581,13 @@ const SHABBAT_TAG='Shomer Shabbat';
 // like) that Eretz Israel Tours approves; an Eshkol driver or guide needs a D1 license. Both are stated with tags.
 const GUIDE_LICENSED='Licensed tour guide', GUIDE_SPECIALTY='Specialty guide', D1_TAG='D1 license';
 const tagHas=(tags,t)=>String(tags||'').split(',').map(x=>x.trim().toLowerCase()).includes(t.toLowerCase());
+// Subcategories (D-20): a second row of buttons under a chosen category. Each one is a group of the type tags suppliers already carry
+// (Water = kayaks, boats, snorkelling), so nothing in the database changes. A button shows only when a supplier on the list has that type.
+const SUBCATS = {
+  Adventure:[['Jeeps',['Jeep']],['ATVs',['ATV / RZR','ATV','RZR']],['Water',['Kayak & rafting','Boat','Snorkelling']],['Rappelling',['Rappelling']],['Zipline',['Zipline']],['Bikes',['Bikes']],['Horses',['Horse riding']],['Camels',['Camels']],['Shooting',['Shooting']]],
+  Activity:[['Workshops',['Workshop']],['Food & wine',['Food & wine']],['Farms',['Farm']],['Family',['Family']],['Volunteering',['Volunteering']],['Archaeology',['Archaeology']],['Shooting',['Shooting']]]
+};
+const subHit=(v,c,name)=>{ const g=(SUBCATS[c]||[]).find(x=>x[0]===name); return !!g && g[1].some(t=>tagHas(v.tags,t)); };
 const eshkolListed=tags=>/eshkol (license|driver|guide)/i.test(String(tags||''));
 const guideSpecialty=v=>catsOf(v).includes('Guide') && tagHas(v.tags, GUIDE_SPECIALTY);
 const GUIDE_RULE='Only licensed tour guides are listed, except specialties such as shuk tours or graffiti tours.';
@@ -637,14 +644,18 @@ function sample(){
   const now = Date.now(), d = n => new Date(now - n*86400000).toISOString();
   const v = (o)=>Object.assign(blank(),{active:'Active',priceBasis:'Per person',currency:'ILS',review_status:'approved',created_by:'daniel@eretzisraeltours.com',updated_by:'daniel@eretzisraeltours.com',created_at:d(20),updated_at:d(3)},o);
   return [
-    v({id:'vendor_k3m9p2x',name:'Golan Heights Jeep Tours',category:'Activity',tags:'Jeep, Shomer Shabbat',hours:'Sun–Thu 8:00–17:00, Fri 8:00–13:00, closed Shabbat',hours_last:'Last tour starts 15:30',hours_source:'their website, 2 Oct 2026',contactPerson:'Moshe Levi',phone:'+972 52 555 0142',whatsapp:'+972 52 555 0142',location:'Golan Heights',languages:'English, Hebrew',maxCap:'28',listedPrice:'450',listedPriceVatTreatment:'including_vat',agentPrice:'360',agentPriceVatTreatment:'plus_vat',priceBasis:'Per person',payTerms:'Invoice after the tour',cancelPolicy:'Free cancellation up to 72 hours before',cancelNoticeAmount:'72',cancelNoticeUnit:'Hours',cancelPenalty:'Full charge inside 72h',cancelPolicyVerifiedDate:'2026-08-14',rateReliability:'5',rateService:'4',rateValue:'4',strengths:'Punctual, drivers speak good English',notes:'Book 2 weeks ahead in Sukkot'}),
+    v({id:'vendor_k3m9p2x',name:'Golan Heights Jeep Tours',category:'Adventure',tags:'Jeep, Shomer Shabbat',hours:'Sun–Thu 8:00–17:00, Fri 8:00–13:00, closed Shabbat',hours_last:'Last tour starts 15:30',hours_source:'their website, 2 Oct 2026',contactPerson:'Moshe Levi',phone:'+972 52 555 0142',whatsapp:'+972 52 555 0142',location:'Golan Heights',languages:'English, Hebrew',maxCap:'28',listedPrice:'450',listedPriceVatTreatment:'including_vat',agentPrice:'360',agentPriceVatTreatment:'plus_vat',priceBasis:'Per person',payTerms:'Invoice after the tour',cancelPolicy:'Free cancellation up to 72 hours before',cancelNoticeAmount:'72',cancelNoticeUnit:'Hours',cancelPenalty:'Full charge inside 72h',cancelPolicyVerifiedDate:'2026-08-14',rateReliability:'5',rateService:'4',rateValue:'4',strengths:'Punctual, drivers speak good English',notes:'Book 2 weeks ahead in Sukkot'}),
     v({id:'vendor_a81qz0c',name:'Dan Panorama Jerusalem',category:'Hotel',contactPerson:'Group desk',phone:'+972 2 569 5695',email:'groups@example-hotel.co.il',location:'Jerusalem',kosher:'Rabbanut',maxCap:'290',agentPrice:'1150',agentPriceVatTreatment:'not_applicable',listedPrice:'1400',priceBasis:'Per group',currency:'USD',payTerms:'30% deposit, balance 14 days before',cancelNoticeAmount:'21',cancelNoticeUnit:'Days',cancelDayType:'Calendar days',rateReliability:'4',rateService:'4',rateValue:'3'}),
     v({id:'vendor_7tt2w4n',reservation:'required',name:'Ein Gedi Nature Reserve',category:'National Parks',location:'Dead Sea',npResLink:'https://www.parks.org.il',listedPrice:'33',listedPriceVatTreatment:'including_vat',agentPrice:'29',agentPriceVatTreatment:'including_vat',priceBasis:'Per person',review_status:'pending',created_by:'yossi.guide@gmail.com',updated_by:'yossi.guide@gmail.com',updated_at:d(1)}),
     v({id:'vendor_p0lk5sd',name:'Shomron Bus Lines',category:'Transport',contactPerson:'Avi',phone:'+972 54 000 1234',location:'Ariel',maxCap:'50',agentPrice:'2400',agentPriceVatTreatment:'plus_vat',priceBasis:'Per day',payTerms:'Cash or transfer on the day',rateReliability:'3',review_status:'pending',created_by:'rachel.ops@gmail.com',updated_by:'rachel.ops@gmail.com',updated_at:d(0)}),
     v({id:'vendor_g4l1c0a',name:'Galil Buses',category:'Transport',contactPerson:'Dudu',phone:'+972 54 000 5678',location:'Tiberias',region:'Galilee',maxCap:'55',priceBasis:'Per day',tags:'Bus, Midibus'}),
     v({id:'vendor_n3g7v2t',name:'Negev & Arava Transport',category:'Transport',contactPerson:'Eli',phone:'+972 54 000 9012',location:'Beer Sheva',region:'Negev & Arava',maxCap:'53',priceBasis:'Per day',tags:'Bus, Van 17–20 seats, Van 9–10 seats'}),
     v({id:'vendor_v4n0001',name:'Eli Dahan',category:'Transport',contactPerson:'Eli Dahan',phone:'050-000-3344',whatsapp:'050-000-3344',location:'Beer Sheva',region:'Negev & Arava',maxCap:'9',priceBasis:'Per day',tags:'Van 9–10 seats, Independent van driver'}),
-    v({id:'vendor_q9x1b7e',name:'Machane Yehuda Food Walk',category:'Activity',location:'Jerusalem',kosher:'Mixed stalls, mostly Rabbanut',agentPrice:'220',priceBasis:'Per person',maxPax:'15',rateService:'5',rateValue:'5',strengths:'Families love it'}),
+    v({id:'vendor_q9x1b7e',name:'Machane Yehuda Food Walk',category:'Activity',tags:'Food & wine, Family',location:'Jerusalem',region:'Jerusalem',kosher:'Mixed stalls, mostly Rabbanut',agentPrice:'220',priceBasis:'Per person',maxPax:'15',rateService:'5',rateValue:'5',strengths:'Families love it'}),
+    v({id:'vendor_x7atv01',name:'Arava ATV Trails',category:'Adventure',tags:'ATV / RZR, Jeep',contactPerson:'Gal',phone:'+972 52 555 0161',location:'Tzukim',region:'Negev & Arava',agentPrice:'280',agentPriceVatTreatment:'plus_vat',priceBasis:'Per person'}),
+    v({id:'vendor_x7kyk02',name:'Upper Jordan Kayaks',category:'Adventure',tags:'Kayak & rafting, Boat',contactPerson:'Office',phone:'+972 4 555 0172',location:'Kfar Blum',region:'Galilee',listedPrice:'120',listedPriceVatTreatment:'including_vat',priceBasis:'Per person'}),
+    v({id:'vendor_x7rap03',name:'Judean Desert Rappelling',category:'Adventure',tags:'Rappelling',contactPerson:'Itai',phone:'+972 54 555 0183',location:'Metzoke Dragot',region:'Dead Sea & Judean Desert',agentPrice:'1800',agentPriceVatTreatment:'plus_vat',priceBasis:'Per group'}),
+    v({id:'vendor_x7wsh04',name:'Shiloh Pottery Workshop',category:'Activity',tags:'Workshop, Family',contactPerson:'Tamar',phone:'+972 50 555 0194',location:'Shilo',region:'Binyamin & Shomron',agentPrice:'90',agentPriceVatTreatment:'including_vat',priceBasis:'Per person'}),
     v({id:'vendor_n0a5h4l',name:'Noa Shalev',category:'Guide',tags:'Eshkol license, Owns an Eshkol vehicle',experience_years:'14',phone:'+972 52 555 0188',whatsapp:'+972 52 555 0188',location:'Jerusalem',region:'Jerusalem',languages:'English, Hebrew, Spanish',agentPrice:'1500',agentPriceVatTreatment:'plus_vat',priceBasis:'Per day',
       client_bio:'Noa grew up in the Jerusalem hills and has guided families and small groups for fourteen years. She trained as an archaeologist, dug at the City of David, and still cannot walk past an open trench without stopping.\n\nShe guides in English, Hebrew and Spanish, and is at her best with mixed ages: grandparents who want the history, children who want the tunnels.',retail_price:'$650 a day, up to 9 hours. Vehicle and entrance fees extra.'}),
     v({id:'vendor_z2c8m1v',name:'Ronit Katz',category:'Guide',phone:'+972 50 777 2211',languages:'English, Hebrew, French',agentPrice:'1600',priceBasis:'Per day',active:'Inactive',notes:'On leave until spring'})
@@ -652,7 +663,7 @@ function sample(){
 }
 
 // ---------- state ----------
-const S = { jobs:null, jview:'open', jkind:'All', bookings:null, qview:'tracker', demoBookings:[], usage:{category:{},region:{}}, myTop:[], reg:'All', quotes:null, qt:{grp:'All',svc:'All',season:'All',q:'',sort:'new'}, demoDrivers:[], demoQuotes:{}, feedback:[], openVendor:null, files:{}, demo:{}, demoRequests:[], requests:[], token:null, members:[], user:null, admin:false, contributor:false, vendors:[], team:[], tab:'vendors', q:'', cat:'All', busy:false };
+const S = { jobs:null, jview:'open', jkind:'All', bookings:null, qview:'tracker', demoBookings:[], usage:{category:{},region:{}}, myTop:[], reg:'All', quotes:null, qt:{grp:'All',svc:'All',season:'All',q:'',sort:'new'}, demoDrivers:[], demoQuotes:{}, feedback:[], openVendor:null, files:{}, demo:{}, demoRequests:[], requests:[], token:null, members:[], user:null, admin:false, contributor:false, vendors:[], team:[], tab:'vendors', q:'', cats:[], subs:{}, busy:false };
 let sb = null;
 
 function bump(vid,k,n){ const v=S.vendors.find(x=>x.id===vid); if(v) v[k]=Math.max(0,(v[k]||0)+n); }
@@ -1210,9 +1221,17 @@ function renderWaiting(){
   document.getElementById('out').onclick=()=>{ forgetToken(); boot(); };
 }
 
+// Categories (D-20): any number can be on at once, and a supplier shows if it belongs to any of them. A second row narrows one
+// category only: with Extreme and Activity both on and Jeeps picked, the list is the jeep suppliers plus every activity.
+const catsOn=()=>S.cats||[];
+function subOk(c,v){
+  if(c==='Transport') return (!S.tat||(S.tat==='van')===isIndep(v)) && (!S.tveh||fleetOf(v).has(S.tveh));
+  if(c==='Guide') return !(S.gat||[]).length || S.gat.every(a=>tagHas(v.tags,a));
+  const subs=(S.subs||{})[c]||[]; return !subs.length || subs.some(n=>subHit(v,c,n)); }
+function catOk(v){ const on=catsOn(); if(!on.length) return true; const mine=catsOf(v); return on.some(c=>mine.includes(c) && subOk(c,v)); }
 function filtered(){
   const q=normN(S.q);
-  return S.vendors.filter(v=>(S.cat==='All'||catsOf(v).includes(S.cat)) && (S.reg==='All'||(v.region||'')===S.reg) && (S.cat!=='Transport'||!S.tat||(S.tat==='van')===isIndep(v)) && (S.cat!=='Transport'||!S.tveh||fleetOf(v).has(S.tveh)) && (S.cat!=='Guide'||!(S.gat||[]).length||S.gat.every(a=>String(v.tags||'').toLowerCase().split(',').map(t=>t.trim()).includes(a.toLowerCase()))) && (!q || normN([v.name,v.location,v.region,v.tags,v.contactPerson,v.category,catsOf(v).map(catDisp).join(' '),v.notes].join(' ')).includes(q)))
+  return S.vendors.filter(v=>catOk(v) && (S.reg==='All'||(v.region||'')===S.reg) && (!q || normN([v.name,v.location,v.region,v.tags,v.contactPerson,v.category,catsOf(v).map(catDisp).join(' '),v.notes].join(' ')).includes(q)))
     .sort(S.sort==='az' ? (a,b)=>a.name.localeCompare(b.name) : (a,b)=>mixKey(a)-mixKey(b));
 }
 // Mixed order: a shuffle that is different for each person and changes every day, so no supplier sits at the top
@@ -1263,13 +1282,19 @@ function suggestTerms(){
 function viewVendors(){
   const view=document.getElementById('view');
   const cats=['All',...byUse('category',CATEGORIES.filter(c=>S.vendors.some(v=>catsOf(v).includes(c))))];
+  S.cats=catsOn().filter(c=>cats.includes(c)); const sel=S.cats;   // a category nobody on this person's list has cannot stay switched on
+  const subRow=c=>{ const opts=(SUBCATS[c]||[]).filter(g=>S.vendors.some(v=>catsOf(v).includes(c)&&subHit(v,c,g[0]))); if(!opts.length) return '';
+    const cur=((S.subs||{})[c]||[]).filter(n=>opts.some(g=>g[0]===n)); (S.subs=S.subs||{})[c]=cur;
+    return `<div class="chips" role="group" aria-label="${esc(catDisp(c))}: narrow by type" style="padding-top:2px"><button class="chip" data-sub="${esc(c)}" data-subv="" aria-pressed="${!cur.length}">All ${esc(catDisp(c).toLowerCase())}</button>${opts.map(g=>`<button class="chip" data-sub="${esc(c)}" data-subv="${esc(g[0])}" aria-pressed="${cur.includes(g[0])}">${cur.includes(g[0])?'✓ ':''}${esc(g[0])}</button>`).join('')}</div>`; };
+  const keep=[...view.querySelectorAll('.chips')].map(e=>[e.getAttribute('aria-label'),e.scrollLeft]);   // a row scrolled sideways stays where it was after a tap
   view.innerHTML = `
     <div class="sug"><label class="search" for="q">${icons.search}<input id="q" type="search" placeholder="Search name, region, type, contact" value="${esc(S.q)}" autocomplete="off" role="combobox" aria-autocomplete="list" aria-controls="sugList" aria-expanded="false"></label>
     <div class="sug-list" id="sugList" role="listbox" hidden></div></div>
-    <div class="chips" role="group" aria-label="Filter by category">${cats.map(c=>`<button class="chip" data-cat="${esc(c)}" aria-pressed="${S.cat===c}">${esc(catDisp(c))}</button>`).join('')}</div>
+    <div class="chips" role="group" aria-label="Filter by category">${cats.map(c=>`<button class="chip" data-cat="${esc(c)}" aria-pressed="${c==='All'?!sel.length:sel.includes(c)}">${sel.includes(c)?'✓ ':''}${esc(catDisp(c))}</button>`).join('')}</div>
     <div class="chips" role="group" aria-label="Filter by region" style="padding-top:2px">${['All',...byUse('region',[...new Set(REGIONS.filter(r=>S.vendors.some(v=>v.region===r)).concat(S.vendors.map(v=>v.region).filter(r=>r&&!REGIONS.includes(r))))])].map(r=>`<button class="chip" data-reg="${esc(r)}" aria-pressed="${S.reg===r}">${r==='All'?'📍 All regions':esc(r)}</button>`).join('')}</div>
-    ${S.cat==='Guide'?`<div class="chips" role="group" aria-label="Guide details" style="padding-top:2px">${GUIDE_ATTRS.map(a=>`<button class="chip" data-gat="${esc(a)}" aria-pressed="${(S.gat||[]).includes(a)}">${(S.gat||[]).includes(a)?'✓ ':''}${esc(a)}</button>`).join('')}</div>`:''}
-    ${S.cat==='Transport'?`<div class="chips" role="group" aria-label="Kind of transport supplier" style="padding-top:2px">${[['','All transport'],['bus','Bus companies'],['van','Independent van drivers']].map(([k,l])=>`<button class="chip" data-tat="${k}" aria-pressed="${(S.tat||'')===k}">${esc(l)}</button>`).join('')}</div>
+    ${sel.filter(c=>SUBCATS[c]).map(subRow).join('')}
+    ${sel.includes('Guide')?`<div class="chips" role="group" aria-label="Guide details" style="padding-top:2px">${GUIDE_ATTRS.map(a=>`<button class="chip" data-gat="${esc(a)}" aria-pressed="${(S.gat||[]).includes(a)}">${(S.gat||[]).includes(a)?'✓ ':''}${esc(a)}</button>`).join('')}</div>`:''}
+    ${sel.includes('Transport')?`<div class="chips" role="group" aria-label="Kind of transport supplier" style="padding-top:2px">${[['','All transport'],['bus','Bus companies'],['van','Independent van drivers']].map(([k,l])=>`<button class="chip" data-tat="${k}" aria-pressed="${(S.tat||'')===k}">${esc(l)}</button>`).join('')}</div>
       <div class="chips" role="group" aria-label="Vehicle size" style="padding-top:2px">${[['','Any vehicle'],...VEHICLES.map(x=>[x[0],x[2]])].map(([k,l])=>`<button class="chip" data-tveh="${k}" aria-pressed="${(S.tveh||'')===k}">${esc(l)}</button>`).join('')}</div>
       <button class="btn soft" id="drvStart" type="button" style="width:100%;margin-top:8px">+ Add or review a driver</button>`:''}
     <div id="favBox"></div>
@@ -1277,12 +1302,12 @@ function viewVendors(){
     ${lim()?`<p class="hint" style="margin:14px 2px 0">Your access covers ${esc(mySections().map(k=>secName(k).toLowerCase()).join(', '))}. Add suppliers, quotes, reviews and the rates you get as you go: everybody here contributes.</p>`:''}`;
   const favs=(S.myTop||[]).map(id=>S.vendors.find(v=>v.id===id)).filter(Boolean).slice(0,8);
   const fb=document.getElementById('favBox');
-  if(favs.length && !S.q && S.cat==='All' && S.reg==='All'){
+  if(favs.length && !S.q && !sel.length && S.reg==='All'){
     fb.innerHTML=`<div class="favs-h">⭐ Your most used</div><div class="favs">${favs.map(v=>`<button class="fav" type="button" data-fav="${esc(v.id)}"><span>${esc(catMain(v))}</span><b>${esc(v.name)}</b></button>`).join('')}</div>`;
     fb.querySelectorAll('[data-fav]').forEach(b=>b.onclick=()=>openDetail(b.dataset.fav)); }
   const q=document.getElementById('q'), list=document.getElementById('sugList'); let hits=[], on=-1;
   const close=()=>{ list.hidden=true; q.setAttribute('aria-expanded','false'); on=-1; };
-  const pick=h=>{ if(h.kind==='Region'&&REGIONS.concat(S.vendors.map(v=>v.region)).includes(h.t)){ S.reg=h.t; S.q=''; viewVendors(); return; } if(h.kind==='Category'&&CATEGORIES.some(c=>catDisp(c)===h.t)){ S.cat=CATEGORIES.find(c=>catDisp(c)===h.t); S.q=''; viewVendors(); return; }
+  const pick=h=>{ if(h.kind==='Region'&&REGIONS.concat(S.vendors.map(v=>v.region)).includes(h.t)){ S.reg=h.t; S.q=''; viewVendors(); return; } if(h.kind==='Category'&&CATEGORIES.some(c=>catDisp(c)===h.t)){ S.cats=[CATEGORIES.find(c=>catDisp(c)===h.t)]; S.subs={}; S.q=''; viewVendors(); return; }
     q.value=h.t; S.q=h.t; close(); drawList(); if(h.kind==='Supplier'){ const v=S.vendors.find(x=>x.name===h.t); if(v) openDetail(v.id); } };
   const show=()=>{
     const n=normN(q.value); if(!n){ close(); return; }
@@ -1304,7 +1329,12 @@ function viewVendors(){
     else if(e.key==='Escape') close();
   });
   q.addEventListener('blur',()=>setTimeout(close,120));
-  view.querySelectorAll('[data-cat]').forEach(c=>c.onclick=()=>{S.cat=c.dataset.cat; if(S.cat!=='All') useBump('category',S.cat); viewVendors();});
+  keep.forEach(([l,x])=>{ if(!x) return; const e=[...view.querySelectorAll('.chips')].find(n=>n.getAttribute('aria-label')===l); if(e) e.scrollLeft=x; });
+  view.querySelectorAll('[data-cat]').forEach(c=>c.onclick=()=>{ const k=c.dataset.cat, now=catsOn();
+    if(k==='All'){ S.cats=[]; S.subs={}; } else if(now.includes(k)){ S.cats=now.filter(x=>x!==k); if(S.subs) delete S.subs[k]; } else { S.cats=[...now,k]; useBump('category',k); }
+    viewVendors(); });
+  view.querySelectorAll('[data-sub]').forEach(c=>c.onclick=()=>{ const k=c.dataset.sub, n=c.dataset.subv; S.subs=S.subs||{}; const cur=S.subs[k]||[];
+    S.subs[k]=!n?[]:cur.includes(n)?cur.filter(x=>x!==n):[...cur,n]; viewVendors(); });
   view.querySelectorAll('[data-reg]').forEach(c=>c.onclick=()=>{S.reg=c.dataset.reg; if(S.reg!=='All') useBump('region',S.reg); viewVendors();});
   view.querySelectorAll('[data-tat]').forEach(c=>c.onclick=()=>{ S.tat=c.dataset.tat; viewVendors(); });
   view.querySelectorAll('[data-tveh]').forEach(c=>c.onclick=()=>{ S.tveh=c.dataset.tveh; viewVendors(); });
@@ -3983,7 +4013,7 @@ function tourSteps(replay){
       <div class="list"><div class="row"><span class="row-name">Golan Heights Jeep Tours</span><span class="row-price"><b>₪360</b><span>per person</span></span><span class="row-meta"><span class="cat">Jeep</span><span>Golan</span><span class="clip">2 prices</span></span></div>
         <div class="row"><span class="row-name">Eli Dahan</span><span class="row-meta"><span class="cat">Transport</span><span>Negev &amp; Arava</span><span class="hint">Van 9–10 seats</span></span></div></div>`, SAMPLE)+`
     <h2>Find a supplier fast</h2>
-    <p>Search by name, region, type or contact person. Tap a category or a region to narrow the list.</p>
+    <p>Search by name, region, type or contact person. Tap one or more categories, or a region, to narrow the list. Some categories open a second row: under Extreme, pick Jeeps, ATVs, Water or Rappelling.</p>
     <p>The suppliers you use most sit at the top. The rest is in mixed order that changes daily, so nobody is always first. Tap <b>Order</b> for A–Z.</p>` },
   { html:ex(`<div style="font-family:var(--f-display);font-size:20px;line-height:1.2">Golan Heights Jeep Tours</div>
       <div style="margin-top:2px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="cat">Jeep</span><span class="hint">Golan</span><span class="pill shab">Shomer Shabbat</span></div>

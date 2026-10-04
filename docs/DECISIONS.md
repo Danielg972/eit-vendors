@@ -10,6 +10,34 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-20 · Choose two or more categories at once; subcategories under a category (live)
+
+**Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 4 October 2026, 18:26 Israel time.
+
+**In his words:** "I want to be able to choose two or more categories from top. Like extreme, activity etc" and "I think I also want subcategories - extreme should have jeeps, atvs, water, rappelling, etc".
+
+**Decisions:**
+
+1. **More than one category can be chosen at the top of the supplier list**, for example Extreme and Activity together.
+2. **A category can have subcategories.** Extreme has Jeeps, ATVs, Water, Rappelling and so on.
+
+**Implementation choices (not owner decisions; change on request):**
+
+- **Two categories together show the suppliers of either one** (Extreme or Activity), not only suppliers that are both.
+- **A subcategory is a group of the type tags suppliers already carry.** Jeeps = Jeep; ATVs = ATV / RZR; Water = Kayak & rafting, Boat, Snorkelling; Rappelling = Rappelling; then Zipline, Bikes, Horses, Camels, Shooting. A subcategory button shows only when a supplier on the list has that type. Nothing in the database changes and nothing new is sent to anyone.
+- **Two subcategories together show either one** (Jeeps or Water). A subcategory narrows its own category only: with Extreme and Activity on and Jeeps picked, the list is the jeep suppliers plus every activity.
+- **Activity got subcategories too**, from the types already on its list (Workshops, Food & wine, Farms, Family, Volunteering, Archaeology, Shooting). The owner named Extreme only; this was added so the two rows behave alike, and it comes out on his word.
+- **Guide and Transport keep the second rows they had** (guide details; bus company or van driver; vehicle size).
+- **Regions are still one at a time.** He asked for categories.
+- **"All" clears every category and subcategory.** Tapping a chosen category again switches it off.
+- **A supplier with no type tag** shows under its category and under no subcategory. On 4 October one Extreme supplier (hidden, in review) has none of the listed types.
+
+**Not changed:** the stored categories, the supplier form, the database, the terms, what a limited member receives.
+
+**Status:** live since 4 October 2026, about 19:00 (pull request #15), front end only. The owner saw the preview pictures and said at 18:55: "Go live". Tested in preview only (sample suppliers), as Eretz Israel Tours and as an organisation, at phone and desktop size, with no page errors. Not tested on the live site.
+
+---
+
 ## D-19 · A supplier shows what it does, not the word "Adventure"; the category is called Extreme (live)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 3 October 2026, 23:02, 23:05 and 23:08 Israel time.

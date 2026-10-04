@@ -251,6 +251,16 @@ Researched by web lookups per supplier (the supplier's own site first, a third-p
 - **Checks kept in the repository:** `supabase/tests/limited_members/` (`run.sh` for a local Postgres: 96 checks, the 74 from this change plus 22 added with D-12, D-14 and D-16 for the places where the two changes meet; `production_probe.sql` for the live database, rolled back). Run them after any change to a function that sends or accepts supplier data. The hand-off for the `guide-for-clients` branch, `docs/HANDOFF_guide-for-clients.md`, is done and kept as a record.
 - **Worth knowing:** approving a pending organisation sends the same automatic welcome email a guide gets (the `member_decide` hook from 1 Oct). Its text is not in this repository; check that it suits an organisation. If the jobs migration files from 3 Oct are ever run again, they would put back `whoami`, `_jobs_on`, `_jobs_post` and `_job_fits` without the limited-member rules; run `2026-10-03b_limited_members.sql` after them.
 
+## Several categories at once, and subcategories (4 Oct 2026, decision D-20)
+**Status: live since 4 Oct 2026, about 19:00 (pull request #15), on the owner's word at 18:55 ("Go live"). Front end only.**
+- The category buttons on the supplier list switch on and off one by one (`S.cats`, an array; it replaces `S.cat`). A supplier shows if it belongs to any chosen category (`catOk`). "All" clears them.
+- Under a chosen category a second row narrows it (`SUBCATS`, `subHit`, `subOk`, `S.subs`). Each subcategory is a group of existing type tags: under Extreme, Jeeps, ATVs, Water (Kayak & rafting, Boat, Snorkelling), Rappelling, and Zipline, Bikes, Horses, Camels, Shooting; under Activity, Workshops, Food & wine, Farms, Family, Volunteering, Archaeology, Shooting. A button shows only when a supplier has that type. Several subcategories together show any of them, and a subcategory narrows its own category only.
+- Guide and Transport keep their own second rows; they now apply whenever that category is among the chosen ones. Regions are still one at a time.
+- A chip row scrolled sideways keeps its place after a tap, so a second category far to the right can be chosen without scrolling back.
+- No database change, no new field, no change to what anyone receives: the filter works on the suppliers the person already has. `log_filter` is still called once for each category switched on.
+- Sample data: four sample suppliers added and two retagged, so the preview shows the subcategories.
+- **Tested** in preview (sample suppliers) at phone (390 px) and desktop (1440 px) width, as Eretz Israel Tours and as an organisation (`?as=limited`): one category, two, three; subcategories on and off; Guide and Transport rows alongside; "All"; the search suggestion "Extreme"; the row keeping its scroll position. No page errors. **Not tested:** the live site, the real list, a real phone.
+
 ## A supplier shows its type, not "Adventure"; the category is called Extreme (3 Oct 2026, decision D-19)
 **Status: live since 3 Oct 2026, about 23:30 (pull request #14). Front end only.**
 - Wherever a supplier's category is printed, "Adventure" is replaced by the supplier's own types from its tags (`advTypes`, `catName`, `catMain`, `catLabel` in index.html): "Jeep", "Jeep, ATV / RZR", "Guide + Jeep". At most two types, then "…". With no type tag it still reads "Adventure".
