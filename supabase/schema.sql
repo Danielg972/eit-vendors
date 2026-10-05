@@ -82,6 +82,7 @@ create table public.bookings (
   company_ok_via text default ''::text not null,
   seen_guide jsonb,
   seen_company jsonb,
+  days text default ''::text not null,
   constraint bookings_pkey primary key (id),
   constraint bookings_company_ok_via_check check (company_ok_via = any (array[''::text, 'link'::text, 'guide'::text])),
   constraint bookings_link_key_key unique (link_key),
@@ -89,6 +90,7 @@ create table public.bookings (
   constraint bookings_terms_by_check check (terms_by = any (array[''::text, 'company'::text, 'guide'::text])),
   constraint bookings_date_from_check check (date_from = ''::text or date_from ~ '^\d{4}-\d{2}-\d{2}$'::text),
   constraint bookings_date_to_check check (date_to = ''::text or date_to ~ '^\d{4}-\d{2}-\d{2}$'::text),
+  constraint bookings_days_check check (days = ''::text or (length(days) <= 700 and days ~ '^\d{4}-\d{2}-\d{2}(,\d{4}-\d{2}-\d{2})+$'::text)),
   constraint bookings_seats_check check (seats = ''::text or seats ~ '^\d{1,3}$'::text),
   constraint bookings_service_check check (service = any (array[''::text, 'bus'::text, 'midibus'::text, 'van20'::text, 'van16'::text, 'van10'::text, 'van8'::text, 'car'::text, 'jeep_vehicle'::text, 'transfer'::text])),
   constraint bookings_lengths_check check (length(client_ref) <= 160 and length(booker_name) <= 80 and length(booker_phone) <= 40 and length(pax) <= 20
@@ -2313,7 +2315,7 @@ create or replace function public._booking_json(b public.bookings)
 as $function$
   select json_build_object('id',b.id,'vendor_id',b.vendor_id,'vendor_name',(select v.name from public.vendors v where v.id = b.vendor_id),
     'key',b.link_key,'status',b.status,'client_ref',b.client_ref,'booker_name',b.booker_name,'booker_phone',b.booker_phone,
-    'date_from',b.date_from,'date_to',b.date_to,'pax',b.pax,'service',b.service,'seats',b.seats,'tourists',b.tourists,
+    'date_from',b.date_from,'date_to',b.date_to,'days',b.days,'pax',b.pax,'service',b.service,'seats',b.seats,'tourists',b.tourists,
     'pickup_time',b.pickup_time,'pickup_place',b.pickup_place,'route',b.route,'dropoff_time',b.dropoff_time,'dropoff_place',b.dropoff_place,
     'note',b.note,'private_note',b.private_note,'proposed',b.proposed,'terms',b.terms,'terms_by',b.terms_by,
     'answered_by',b.answered_by,'answered_at',b.answered_at,'confirmed_at',b.confirmed_at,'shared',b.shared,'in_tracker',b.quote_id is not null,
@@ -2336,7 +2338,8 @@ begin
     insert into public.quotes (vendor_id, owner, owner_name) values (b.vendor_id, b.owner, b.owner_name) returning id into qid;
   end if;
   begin
-    if b.date_from <> '' and b.date_to <> '' and b.date_to >= b.date_from then days := (b.date_to::date - b.date_from::date) + 1; end if;
+    if b.days <> '' then days := array_length(string_to_array(b.days, ','), 1);   -- D-21: separate days inside the period
+    elsif b.date_from <> '' and b.date_to <> '' and b.date_to >= b.date_from then days := (b.date_to::date - b.date_from::date) + 1; end if;
   exception when others then days := 1; end;
   lab := case b.service when 'bus' then 'Bus' when 'midibus' then 'Midibus' when 'van20' then 'Van' when 'van16' then 'Van' when 'van10' then 'Van'
     when 'van8' then 'Van' when 'car' then 'Car' when 'jeep_vehicle' then 'Jeep / 4x4' when 'transfer' then 'Transfer' else 'Vehicle' end;
@@ -2350,6 +2353,7 @@ begin
     case when t ? 'extras' then 'Other extras: ' || (t->>'extras') end,
     case when t ? 'cancel' then 'Cancellation policy: ' || (t->>'cancel') else 'Cancellation policy: none given.' end,
     case when t ? 'payment' then 'Payment: ' || (t->>'payment') end,
+    case when b.days <> '' then days::text || ' separate days between these dates.' end,
     'From a booking sheet accepted by both sides.');
   update public.quotes set title = b.client_ref, date_from = b.date_from, date_to = b.date_to, pax = b.pax, units = '1 vehicle',
     received_on = to_char(coalesce(b.answered_at, now()), 'YYYY-MM-DD'), status = 'Booked', currency = coalesce(t->>'currency','ILS'),
@@ -2363,6 +2367,27 @@ begin
   insert into public.quote_lines (option_id, label, kind, price, unit, qty, times, sort)
   values (oid, lab || ' with driver', 'Base', t->>'price', 'per vehicle per day', '1', days::text, 0);
   return qid;
+end $function$;
+
+-- D-21 (5 Oct 2026): the days of a booking when the guide chose separate days inside a period.
+-- Returns a sorted comma list of real dates inside p_from..p_to, at most 62, or '' when that is every day of the period
+-- (or fewer than two days): '' always means "every day from the first date to the last".
+create or replace function public._booking_days_clean(p_days text, p_from text, p_to text)
+ returns text language plpgsql stable set search_path to ''
+as $function$
+declare d text; picked text[] := '{}'; last_day text := coalesce(nullif(p_to,''), p_from); n int;
+begin
+  if coalesce(p_days,'') = '' or coalesce(p_from,'') = '' then return ''; end if;
+  for d in select distinct x from unnest(string_to_array(left(p_days, 4000), ',')) x
+           where x ~ '^\d{4}-\d{2}-\d{2}$' and x >= p_from and x <= last_day order by 1 limit 62 loop
+    begin
+      if to_char(d::date, 'YYYY-MM-DD') = d then picked := picked || d; end if;
+    exception when others then null; end;
+  end loop;
+  n := coalesce(array_length(picked, 1), 0);
+  if n < 2 then return ''; end if;
+  if n = (picked[n]::date - picked[1]::date) + 1 then return ''; end if;
+  return array_to_string(picked, ',');
 end $function$;
 
 -- The guide saves. Saving a version is accepting it (guide_ok_at). If the sheet's content changed after the company
@@ -2406,6 +2431,14 @@ begin
     shared = coalesce((p_booking->>'shared')::boolean, true), updated_at = now()
   where id = bid returning * into b;
   if b.booker_name = '' then update public.bookings set booker_name = m.name where id = bid returning * into b; end if;
+  -- D-21: separate days inside the period. A copy of the app from before D-21 sends no "days": they are kept unless it moved the dates.
+  update public.bookings set days = public._booking_days_clean(
+      case when p_booking ? 'days' then p_booking->>'days'
+           when prev.id is not null and prev.date_from = b.date_from and prev.date_to = b.date_to then prev.days else '' end, b.date_from, b.date_to)
+  where id = bid returning * into b;
+  if b.days <> '' then   -- the first and the last chosen day are the period
+    update public.bookings set date_from = split_part(b.days, ',', 1), date_to = reverse(split_part(reverse(b.days), ',', 1)) where id = bid returning * into b;
+  end if;
   if jsonb_typeof(p_booking->'terms') = 'object' then
     if coalesce(public._terms_clean(p_booking->'terms')->>'price','') = '' then raise exception 'Add the price.'; end if;
     agreed := coalesce((p_booking->>'company_agreed')::boolean, false);
@@ -2495,7 +2528,7 @@ begin
     'booker_name',b.booker_name,
     'booker_role',(select case when mm.org <> '' then mm.org else mm.role end from public.members mm where mm.email = b.owner limit 1),
     'booker_phone',b.booker_phone,
-    'date_from',b.date_from,'date_to',b.date_to,'pax',b.pax,'service',b.service,'seats',b.seats,'tourists',b.tourists,
+    'date_from',b.date_from,'date_to',b.date_to,'days',b.days,'pax',b.pax,'service',b.service,'seats',b.seats,'tourists',b.tourists,
     'pickup_time',b.pickup_time,'pickup_place',b.pickup_place,'route',b.route,'dropoff_time',b.dropoff_time,'dropoff_place',b.dropoff_place,
     'note',b.note,'proposed',b.proposed,'terms',b.terms,'terms_by',b.terms_by,'answered_by',b.answered_by,
     'answered_at',b.answered_at,'confirmed_at',b.confirmed_at,
@@ -2533,6 +2566,7 @@ as $function$
   select jsonb_build_object('date_from',b.date_from,'date_to',b.date_to,'pax',b.pax,'service',b.service,'seats',b.seats,'tourists',b.tourists,
     'pickup_time',b.pickup_time,'pickup_place',b.pickup_place,'route',b.route,'dropoff_time',b.dropoff_time,'dropoff_place',b.dropoff_place,
     'note',b.note,'terms',b.terms)
+    || case when b.days <> '' then jsonb_build_object('days', b.days) else '{}'::jsonb end   -- D-21; left out when empty, so sheets from before it compare as they did
 $function$;
 
 -- The company accepts the sheet as it stands (after the guide changed the job or proposed other terms).
@@ -3205,6 +3239,7 @@ revoke all on function public.booking_delete(text,uuid) from public; grant execu
 revoke all on function public.booking_open(text) from public; grant execute on function public.booking_open(text) to anon, authenticated;
 revoke all on function public.booking_answer(text,jsonb,text) from public; grant execute on function public.booking_answer(text,jsonb,text) to anon, authenticated;
 revoke all on function public._booking_content(public.bookings) from public, anon, authenticated;
+revoke all on function public._booking_days_clean(text,text,text) from public, anon, authenticated;
 revoke all on function public.booking_accept(text,text) from public; grant execute on function public.booking_accept(text,text) to anon, authenticated;
 revoke all on function public._jobs_on(public.members) from public, anon, authenticated;
 revoke all on function public._jobs_post(public.members) from public, anon, authenticated;
