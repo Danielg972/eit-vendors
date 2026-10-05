@@ -10,6 +10,28 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-28 · Gaza Envelope is a region (built; waits for the owner's word)
+
+**Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 5 October 2026, 17:37 Israel time.
+
+**In his words:** "add Gaza Envelope - עוטף עזה as a region".
+
+**Decision:** the region list gains **Gaza Envelope - עוטף עזה**, written as he wrote it.
+
+**What was changed (implementation choices; change on request):**
+
+- It sits after "Negev & Arava" in the list. It is offered wherever a region is chosen: the supplier form, where a driver is based, and a job.
+- As with every region, its button on the supplier list appears once a supplier a member can see is in it.
+- Front end only (`index.html`, one line). The database takes any region text up to 60 characters, so nothing changes there.
+
+**Not done, his to decide:** no supplier was moved. Four suppliers now under "Negev & Arava" are in the Gaza Envelope, all four hidden and waiting for review: Burnt Vehicles Compound (Tkuma), Garden of Heroism and Remembrance (Sderot), Nova Festival Memorial Site (Re'im), The Salad Trail (Talmei Yosef).
+
+**Checked:** in preview at phone and desktop size: the region is offered on the supplier form and is saved as chosen; with one sample supplier placed in it, its button shows on the list and filters to that supplier. No page errors. **Not checked:** on the live site.
+
+**Status:** built on branch `region-gaza-envelope`; not live. No terms change.
+
+---
+
 ## D-27 · "Did they check your reservation?" is asked at national parks only (live)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 5 October 2026, 17:23 Israel time.
