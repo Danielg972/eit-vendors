@@ -109,6 +109,20 @@ function bkDayList(days,he){ if(!days.length) return ''; const ds=days.map(x=>ne
 // The date line of a booking sheet: the chosen days, or the period with its number of days.
 function bkDates(b,he){ const p=bkPicked(b); if(p.length>1) return bkDayList(p,he); if(p.length===1) return bkDate(p[0],he);
   const r=bkRange(b,he), n=bkDayCount(b); return r&&n>1 ? r+' · '+n+(he?' ימים':' days') : r; }
+// Each day's own times (D-24). b.day_plan = {'2026-10-20':{start:'08:30',end:'18:00',route:'Dead Sea'}, …}: only on a booking
+// of more than one day, and only when the days differ. Empty = the pick-up and drop-off times of the sheet apply to every day.
+// A finish time is always shown as an estimate.
+const bkPlan=b=>{ const p=b&&b.day_plan; return p&&typeof p==='object'&&!Array.isArray(p)?p:{}; };
+const bkHasPlan=b=>Object.keys(bkPlan(b)).length>0;
+const bkAllDays=b=>{ const p=bkPicked(b); return p.length?p:bkSpan(b.date_from,b.date_to,62); };
+function bkDayLabel(iso,he){ const d=new Date(iso+'T12:00:00'); if(isNaN(d)) return iso; if(he) return BK_WD_HE[d.getDay()]+' '+d.getDate()+'.'+(d.getMonth()+1);
+  try{ return d.toLocaleDateString('en-GB',{weekday:'short'})+' '+d.getDate()+' '+d.toLocaleDateString('en-GB',{month:'short'}); }catch(e){ return iso; } }
+function bkDayLine(x,he){ x=x||{}; const a=[];
+  if(x.start) a.push(he?'איסוף '+x.start:'pick-up '+x.start);
+  if(x.end) a.push(he?'סיום משוער '+x.end:'finish about '+x.end); else if(x.start) a.push(he?'שעת סיום תימסר':'finish time to follow');
+  if(x.route) a.push(x.route);
+  return a.length?a.join(' · '):(he?'שעות יימסרו':'times to follow'); }
+const bkDayRows=b=>{ if(!bkHasPlan(b)) return []; const p=bkPlan(b); return bkAllDays(b).map(d=>[bkDayLabel(d,true),bkDayLabel(d,false),bkDayLine(p[d],true),bkDayLine(p[d],false)]); };
 function bkVehicle(b,he){ const v=BK_VEH[b.service];
   if(!v) return b.seats?(he?b.seats+' מקומות':b.seats+' seats'):'';
   if(b.seats&&/^(bus|midibus|van)/.test(b.service)){
@@ -118,6 +132,7 @@ function bkVehicle(b,he){ const v=BK_VEH[b.service];
 // Rows are [Hebrew label, English label, Hebrew value, English value]. English value null = the same typed text.
 function bkJobRows(b,all){ return [
   ['תאריך','Date',bkDates(b,true),bkDates(b,false)],
+  ...bkDayRows(b),
   ['נוסעים','Passengers',b.pax?b.pax+(b.tourists?' · תיירים מחו״ל':''):(b.tourists?'תיירים מחו״ל':''),b.pax?b.pax+(b.tourists?' · tourists from abroad':''):(b.tourists?'tourists from abroad':'')],
   ['רכב','Vehicle',bkVehicle(b,true),bkVehicle(b,false)],
   ['איסוף','Pick-up',[b.pickup_time,b.pickup_place].filter(Boolean).join(', '),null],
@@ -141,10 +156,18 @@ function bkTermRows(t){ t=t||{}; const m=x=>bkMoney(t,x), vat=BK_VAT[t.vat];
     ['תוספות אחרות','Other extras',t.extras||'',null],
     ['תשלום','Payment',t.payment||'',null],
     ['הערות החברה','Notes from the company',t.note||'',null]]; }
-// What a price without these still leaves open: where surprise charges come from.
-function bkMissing(t){ t=t||{}; const out=[];
-  if(!t.vat) out.push(['מע״מ','VAT']); if(!t.hours_incl) out.push(['שעות ביום','hours in a day']); if(!t.km_incl) out.push(['ק״מ כלולים','km included']);
-  if(!t.overtime) out.push(['שעה נוספת','extra hour']); if(!t.extra_km&&t.km_incl) out.push(['ק״מ נוסף','extra km']); if(!t.tolls) out.push(['כביש 6','Highway 6']); if(!t.tip) out.push(['טיפ','tip']); if(!t.cancel) out.push(['מדיניות ביטול','cancellation policy']);
+// Terms left off the sheet (D-25). b.terms_off is a comma list of these groups. A group left off is not asked of the company,
+// is not on either side's sheet and is not warned about as missing. The price and its VAT are always on the sheet.
+// [key, the terms it covers, Hebrew name, English name]
+const BK_GROUPS=[['hours',['hours_incl','hours_from','overtime'],'שעות ושעה נוספת','Hours and overtime'],['km',['km_incl','extra_km'],'קילומטרים','Mileage'],['tolls',['tolls','tolls_note'],'כביש 6 ואגרות','Kvish 6 and tolls'],['parking',['parking'],'חניה','Parking'],
+  ['tip',['tip','tip_amt'],'טיפ לנהג','Driver tip'],['cancel',['cancel'],'מדיניות ביטול','Cancellation policy'],['extras',['extras'],'תוספות אחרות','Other extras'],['payment',['payment'],'תשלום','Payment']];
+const bkOff=b=>{ const o=String((b&&b.terms_off)||'').split(',').map(x=>x.trim()); return BK_GROUPS.map(g=>g[0]).filter(k=>o.includes(k)); };
+const BK_ROW_GROUP={'Hours counted from':'hours','Extra hour':'hours','Extra km':'km','Highway 6 and tolls':'tolls','Parking':'parking','Driver tip':'tip','Cancellation policy':'cancel','Other extras':'extras','Payment':'payment'};
+const bkRowOff=(r,off)=>!!off&&off.length>0&&(r[1]==='Price includes'?off.includes('hours')&&off.includes('km'):off.includes(BK_ROW_GROUP[r[1]]));
+// What a price without these still leaves open: where surprise charges come from. off = the groups left off this sheet.
+function bkMissing(t,off){ t=t||{}; off=off||[]; const out=[], on=k=>!off.includes(k);
+  if(!t.vat) out.push(['מע״מ','VAT']); if(!t.hours_incl&&on('hours')) out.push(['שעות ביום','hours in a day']); if(!t.km_incl&&on('km')) out.push(['ק״מ כלולים','km included']);
+  if(!t.overtime&&on('hours')) out.push(['שעה נוספת','extra hour']); if(!t.extra_km&&t.km_incl&&on('km')) out.push(['ק״מ נוסף','extra km']); if(!t.tolls&&on('tolls')) out.push(['כביש 6','Highway 6']); if(!t.tip&&on('tip')) out.push(['טיפ','tip']); if(!t.cancel&&on('cancel')) out.push(['מדיניות ביטול','cancellation policy']);
   return out; }
 const BK_MUST=9; // the first rows of bkTermRows always show, "not stated" when empty
 const bkWhen=iso=>{ try{ const d=new Date(iso); return d.getDate()+'.'+(d.getMonth()+1)+'.'+d.getFullYear(); }catch(e){ return ''; } };
@@ -165,7 +188,7 @@ function bkSheetHtml(b,t,o){ o=o||{}; const has=!!(t&&t.price), comp=b.company||
   const row=(r,old,cls)=>{ const w=was(old,r);
     return `<div class="bks-r${r[2]?'':' ns'}${w!=null?' chg':''}${cls||''}"><dt>${esc(r[0])}<small dir="ltr">${esc(r[1])}</small></dt><dd dir="auto">${r[2]?esc(r[2]):'לא צוין'}${r[2]?(r[3]&&r[3]!==r[2]?`<small dir="ltr">${esc(r[3])}</small>`:''):'<small dir="ltr">not stated</small>'}${perDay(r)}${w!=null?`<small class="was" dir="auto">קודם · was: ${esc(w)}</small>`:''}</dd></div>`; };
   const jobs=bkJobRows(b,true).filter(r=>r[2]||was(oldJob,r)!=null);
-  const terms=has?bkTermRows(t).filter((r,i)=>r[2]||i<BK_MUST||was(oldTerm,r)!=null):[];
+  const off=bkOff(b), terms=has?bkTermRows(t).filter((r,i)=>!bkRowOff(r,off)&&(r[2]||i<BK_MUST||was(oldTerm,r)!=null)):[];
   const ok=has?bkOkRows(b):null;
   const who=[['מזמין','Booked by',[b.booker_name,b.booker_phone].filter(Boolean).join(' · ')],['חברה','Company',comp],
     has&&!ok?[b.terms_by==='guide'?'נרשם ע״י המזמין':'מולא ע״י','Filled in by',b.terms_by==='guide'?'לפי תשובת החברה'+(b.answered_by?' ('+b.answered_by+')':''):[b.answered_by,b.answered_at?bkWhen(b.answered_at):''].filter(Boolean).join(' · '),b.terms_by==='guide'?'entered by the guide from the company\'s answer':null]:null,
@@ -180,7 +203,7 @@ function bkSheetHtml(b,t,o){ o=o||{}; const has=!!(t&&t.price), comp=b.company||
 // How many rows the other side changed (same rule as the red rows above).
 function bkChanged(b,t,seen,loose){ if(!seen) return 0; let n=0;
   if('date_from' in seen){ const o=Object.fromEntries(bkJobRows(seen,true).map(r=>[r[1],r[2]])); bkJobRows(b,true).forEach(r=>{ if((o[r[1]]||'')!==(r[2]||'')) n++; }); }
-  const st=seen.terms; if(st&&Object.keys(st).length&&t){ const o=Object.fromEntries(bkTermRows(st).map(r=>[r[1],r[2]])); bkTermRows(t).forEach(r=>{ const p=o[r[1]]||''; if(p!==(r[2]||'')&&!(loose&&!p)) n++; }); }
+  const st=seen.terms; if(st&&Object.keys(st).length&&t){ const o=Object.fromEntries(bkTermRows(st).map(r=>[r[1],r[2]])); const off=bkOff(b); bkTermRows(t).forEach(r=>{ if(bkRowOff(r,off)) return; const p=o[r[1]]||''; if(p!==(r[2]||'')&&!(loose&&!p)) n++; }); }
   return n; }
 // Plain text for WhatsApp or email. ask = short note with the link; template = no link, blanks to fill in; summary = the filled sheet.
 function bkText(b,t,mode,link){ const L=[], comp=b.company||b.vendor_name||'';
@@ -195,13 +218,14 @@ function bkText(b,t,mode,link){ const L=[], comp=b.company||b.vendor_name||'';
   L.push(''); bkJobRows(b).forEach(two);
   if(mode==='template'){
     L.push(''); L.push('*נא למלא ולהחזיר · Please fill in and send back:*');
-    [['מחיר ליום: ₪ ____ (כולל מע״מ / בתוספת / ללא)','Price per day: ₪ ____ (incl. VAT / plus VAT / none)'],['כולל עד __ שעות ועד __ ק״מ','Includes up to __ hours and __ km'],['השעות נספרות מ: האיסוף / החניון','Hours counted from: pick-up / depot'],
-     ['שעה נוספת: ₪ ____','Extra hour: ₪ ____'],['ק״מ נוסף: ₪ ____','Extra km: ₪ ____'],['כביש 6 ואגרות: כלול / בנוסף','Highway 6 and tolls: included / extra'],['חניה: כלול / בנוסף','Parking: included / extra'],
-     ['טיפ לנהג: לא מצופה / ₪ ____ ליום','Driver tip: not expected / ₪ ____ a day'],['תוספות אחרות (לינה, לילה, שבת): ____','Other extras (overnight, night, Shabbat): ____'],['מדיניות ביטול: ____','Cancellation policy: ____'],['תשלום: ____','Payment: ____'],['הערות: ____','Notes: ____']]
-      .forEach(p=>{ L.push(p[0]); L.push(p[1]); });
+    const off=bkOff(b), on=k=>!off.includes(k), inc=[on('hours')?['__ שעות','__ hours']:null,on('km')?['__ ק״מ','__ km']:null].filter(Boolean);
+    [['מחיר ליום: ₪ ____ (כולל מע״מ / בתוספת / ללא)','Price per day: ₪ ____ (incl. VAT / plus VAT / none)'],inc.length&&['כולל עד '+inc.map(x=>x[0]).join(' ועד '),'Includes up to '+inc.map(x=>x[1]).join(' and ')],on('hours')&&['השעות נספרות מ: האיסוף / החניון','Hours counted from: pick-up / depot'],
+     on('hours')&&['שעה נוספת: ₪ ____','Extra hour: ₪ ____'],on('km')&&['ק״מ נוסף: ₪ ____','Extra km: ₪ ____'],on('tolls')&&['כביש 6 ואגרות: כלול / בנוסף','Highway 6 and tolls: included / extra'],on('parking')&&['חניה: כלול / בנוסף','Parking: included / extra'],
+     on('tip')&&['טיפ לנהג: לא מצופה / ₪ ____ ליום','Driver tip: not expected / ₪ ____ a day'],on('extras')&&['תוספות אחרות (לינה, לילה, שבת): ____','Other extras (overnight, night, Shabbat): ____'],on('cancel')&&['מדיניות ביטול: ____','Cancellation policy: ____'],on('payment')&&['תשלום: ____','Payment: ____'],['הערות: ____','Notes: ____']]
+      .filter(Boolean).forEach(p=>{ L.push(p[0]); L.push(p[1]); });
   } else if(t&&t.price){
     L.push(''); L.push('*מחיר ותנאים · Price and terms*');
-    const nd=bkDayCount(b); bkTermRows(t).forEach((r,i)=>{ if(r[2]) two(i===0&&nd>1?[r[0],r[1],r[2]+' × '+nd+' ימים',r[3]+' × '+nd+' days']:r); else if(i<BK_MUST){ L.push(r[0]+': לא צוין'); L.push(r[1]+': not stated'); } });
+    const nd=bkDayCount(b), off=bkOff(b); bkTermRows(t).forEach((r,i)=>{ if(bkRowOff(r,off)) return; if(r[2]) two(i===0&&nd>1?[r[0],r[1],r[2]+' × '+nd+' ימים',r[3]+' × '+nd+' days']:r); else if(i<BK_MUST){ L.push(r[0]+': לא צוין'); L.push(r[1]+': not stated'); } });
   }
   L.push(''); L.push('*'+BK_STMT[0]+'*'); L.push(BK_STMT[1]);
   L.push(''); L.push('מזמין · Booked by: '+[b.booker_name,b.booker_phone].filter(Boolean).join(', '));
@@ -240,6 +264,9 @@ let demo = {status:'waiting',company:'Galil Buses',booker_name:'Yael Levi',booke
 // ?demo=changed shows the page after the guide changed the job: red rows and the Accept button
 // ?demo=days shows a booking for separate days inside a period; ?demo=dayschanged the same after the guide dropped a day
 if(/^days/.test(qs.get('demo')||'')){ demo=Object.assign({},demo,{date_from:'2026-11-18',date_to:'2026-11-26',days:'2026-11-18,2026-11-19,2026-11-22,2026-11-24,2026-11-26'});
+  // ?demo=daystimes: every day with its own pick-up time, estimated finish and where to (D-24)
+  if(qs.get('off')) demo=Object.assign({},demo,{terms_off:qs.get('off'),proposed:{price:'3000',currency:'ILS',vat:'not_applicable',hours_incl:'10',overtime:'200',tolls:'incl'}});
+  if(qs.get('demo')==='daystimes') demo=Object.assign({},demo,{pickup_time:'',dropoff_time:'',route:'',day_plan:{'2026-11-18':{start:'08:30',end:'18:00',route:'ים המלח: מצדה, עין גדי, קומראן'},'2026-11-19':{start:'10:30',route:'שומרון: שילה, הר גריזים'},'2026-11-22':{start:'10:15',end:'19:00',route:'גוש עציון, חברון, קבר רחל'},'2026-11-24':{start:'09:00',end:'18:00',route:'עוטף עזה: שדרות, רעים'},'2026-11-26':{start:'09:30',end:'17:00',route:'העיר העתיקה'}}});
   if(qs.get('demo')==='dayschanged'){ const t={price:'3000',currency:'ILS',vat:'not_applicable',hours_incl:'10',km_incl:'250',overtime:'200',tolls:'incl',tip:'none'};
     const was=Object.assign({},demo,{terms:t,date_to:'2026-11-27',days:'2026-11-18,2026-11-19,2026-11-22,2026-11-24,2026-11-26,2026-11-27'}); demo=Object.assign({},demo,{terms:t,terms_by:'company',answered_by:'דודו',answered_at:new Date().toISOString(),seen:was}); } }
 if(qs.get('demo')==='changed'){ const t={price:'3000',currency:'ILS',vat:'not_applicable',hours_incl:'10',km_incl:'250',overtime:'200',tolls:'incl',tip:'none'};
@@ -270,6 +297,7 @@ function seg(k, opts, t, cols){ return `<div class="seg ${cols===3?'three':'two'
 function field(k, he, en, t, mode, ph){ return `<div><label for="t_${k}">${two(he,en)}</label><input id="t_${k}" data-t="${k}" type="text" ${mode?`inputmode="${mode}"`:''} dir="auto" value="${esc(t[k]||'')}" placeholder="${esc(ph||'')}" autocomplete="off"></div>`; }
 function formView(){
   const answered=!!(B.terms&&B.terms.price), t=answered?B.terms:(B.proposed||{}), pre=!answered&&Object.keys(t).length>0;
+  const off=bkOff(B), on=k=>!off.includes(k), pair=(a,b)=>a&&b?`<div class="two">${a}${b}</div>`:(a||b||'');   // D-25: terms the guide left off are not asked
   app.innerHTML=`${header()}${jobCard(false)}
     <div class="sec"><h2>מחיר ותנאים<span class="en">Price and terms · filled in by the bus company</span></h2>
     ${pre?`<p class="note sub">${two('חלק מהשדות מולאו מראש לפי מה שהמזמין מצפה. שנו מה שצריך.','Some fields are filled in with what the guide expects. Change anything that is different.')}</p>`:''}
@@ -279,18 +307,18 @@ function formView(){
         <select data-t="currency" aria-label="מטבע · Currency">${['ILS','USD','EUR'].map(c=>`<option value="${c}"${(t.currency||'ILS')===c?' selected':''}>${BK_SIGN[c]} ${c}</option>`).join('')}</select></div>
         ${bkDayCount(B)>1?`<p class="note sub" style="margin:6px 0 0">${two('ההזמנה היא ל־'+bkDayCount(B)+' ימים. המחיר הוא ליום אחד.','This booking is for '+bkDayCount(B)+' days. The price is for one day.')}</p>`:''}
         <fieldset class="sub"><legend class="lab" style="font-weight:400;font-size:13px;color:var(--ink-2)">מע״מ · VAT</legend>${seg('vat',[['including_vat','כולל מע״מ','incl. VAT'],['plus_vat','בתוספת מע״מ','plus VAT'],['not_applicable','ללא מע״מ, תיירים','no VAT, tourists']],t,3)}</fieldset></div>
-      <div class="two">${field('hours_incl','כולל עד שעות','Hours included',t,'decimal','10')}${field('km_incl','כולל עד ק״מ','Km included',t,'numeric','250')}</div>
-      <fieldset><legend class="lab">${two('השעות נספרות מ־','Hours counted from')}</legend>${seg('hours_from',[['pickup','נקודת האיסוף','the pick-up'],['depot','היציאה מהחניון','leaving the depot']],t)}</fieldset>
-      <div class="two">${field('overtime','שעה נוספת','Extra hour',t,'decimal','200')}${field('extra_km','ק״מ נוסף','Extra km',t,'decimal','5')}</div>
-      <fieldset><legend class="lab">${two('כביש 6 ואגרות','Highway 6 and tolls')}</legend>${seg('tolls',[['incl','כלול במחיר','included'],['extra','בנוסף','extra']],t)}
-        <input class="sub" data-t="tolls_note" type="text" dir="auto" aria-label="הערה לכביש 6 · Highway 6 note" value="${esc(t.tolls_note||'')}" placeholder="למשל: לפי חשבון · e.g. by the bill"></fieldset>
-      <fieldset><legend class="lab">${two('חניה','Parking')}</legend>${seg('parking',[['incl','כלול במחיר','included'],['extra','בנוסף, לפי קבלה','extra, by receipt']],t)}</fieldset>
-      <fieldset><legend class="lab">${two('טיפ לנהג','Driver tip')}</legend>${seg('tip',[['none','לא מצופה','not expected'],['customary','מקובל','customary']],t)}
-        <input class="sub" data-t="tip_amt" type="text" inputmode="decimal" aria-label="סכום מקובל ליום · Customary amount a day" value="${esc(t.tip_amt||'')}" placeholder="סכום מקובל ליום · amount a day"></fieldset>
-      <div><label for="t_cancel">${two('מדיניות ביטול','Cancellation policy')}</label>
-        <textarea id="t_cancel" data-t="cancel" dir="auto" maxlength="1500" placeholder="אפשר להדביק כאן את מדיניות הביטול שלכם · Paste your cancellation policy here">${esc(t.cancel||'')}</textarea></div>
-      ${field('extras','תוספות אחרות: לינה, לילה, שבת','Other extras: overnight, night, Shabbat',t,'','')}
-      ${field('payment','תשלום: איך ומתי','Payment: how and when',t,'','העברה בנקאית אחרי הנסיעה')}
+      ${pair(on('hours')&&field('hours_incl','כולל עד שעות','Hours included',t,'decimal','10'),on('km')&&field('km_incl','כולל עד ק״מ','Km included',t,'numeric','250'))}
+      ${on('hours')?`<fieldset><legend class="lab">${two('השעות נספרות מ־','Hours counted from')}</legend>${seg('hours_from',[['pickup','נקודת האיסוף','the pick-up'],['depot','היציאה מהחניון','leaving the depot']],t)}</fieldset>`:''}
+      ${pair(on('hours')&&field('overtime','שעה נוספת','Extra hour',t,'decimal','200'),on('km')&&field('extra_km','ק״מ נוסף','Extra km',t,'decimal','5'))}
+      ${on('tolls')?`<fieldset><legend class="lab">${two('כביש 6 ואגרות','Highway 6 and tolls')}</legend>${seg('tolls',[['incl','כלול במחיר','included'],['extra','בנוסף','extra']],t)}
+        <input class="sub" data-t="tolls_note" type="text" dir="auto" aria-label="הערה לכביש 6 · Highway 6 note" value="${esc(t.tolls_note||'')}" placeholder="למשל: לפי חשבון · e.g. by the bill"></fieldset>`:''}
+      ${on('parking')?`<fieldset><legend class="lab">${two('חניה','Parking')}</legend>${seg('parking',[['incl','כלול במחיר','included'],['extra','בנוסף, לפי קבלה','extra, by receipt']],t)}</fieldset>`:''}
+      ${on('tip')?`<fieldset><legend class="lab">${two('טיפ לנהג','Driver tip')}</legend>${seg('tip',[['none','לא מצופה','not expected'],['customary','מקובל','customary']],t)}
+        <input class="sub" data-t="tip_amt" type="text" inputmode="decimal" aria-label="סכום מקובל ליום · Customary amount a day" value="${esc(t.tip_amt||'')}" placeholder="סכום מקובל ליום · amount a day"></fieldset>`:''}
+      ${on('cancel')?`<div><label for="t_cancel">${two('מדיניות ביטול','Cancellation policy')}</label>
+        <textarea id="t_cancel" data-t="cancel" dir="auto" maxlength="1500" placeholder="אפשר להדביק כאן את מדיניות הביטול שלכם · Paste your cancellation policy here">${esc(t.cancel||'')}</textarea></div>`:''}
+      ${on('extras')?field('extras','תוספות אחרות: לינה, לילה, שבת','Other extras: overnight, night, Shabbat',t,'',''):''}
+      ${on('payment')?field('payment','תשלום: איך ומתי','Payment: how and when',t,'','העברה בנקאית אחרי הנסיעה'):''}
       <div><label for="t_note">${two('הערות','Anything else · free text')}</label><textarea id="t_note" data-t="note" dir="auto">${esc(t.note||'')}</textarea></div>
       <div><label for="by">${two('השם שלך','Your name')}</label><input id="by" type="text" dir="auto" value="${esc(B.answered_by||'')}" autocomplete="name"></div>
     </form></div>
@@ -323,7 +351,7 @@ async function send(noPolicyOk){
   const pat={price:/^\d{1,7}(\.\d{1,2})?$/,hours_incl:/^\d{1,2}(\.\d)?$/,km_incl:/^\d{1,4}$/,overtime:/^\d{1,7}(\.\d{1,2})?$/,extra_km:/^\d{1,7}(\.\d{1,2})?$/,tip_amt:/^\d{1,7}(\.\d{1,2})?$/};
   const bad=BK_NUM.find(k=>t[k]&&!pat[k].test(t[k]));
   if(bad) return fail('בשדות המחיר, השעות והק״מ יש לכתוב מספר בלבד.','Price, hours and km fields take a number only.', bad==='tip_amt'?null:'t_'+bad);
-  if(!t.cancel&&!noPolicyOk) return noCancelWarn(()=>send(true), ()=>{ err.innerHTML=''; const c=app.querySelector('#t_cancel'); c.scrollIntoView({block:'center'}); c.focus(); }, ['שליחה בלי מדיניות ביטול','Send without a cancellation policy']);
+  if(!t.cancel&&!noPolicyOk&&!bkOff(B).includes('cancel')) return noCancelWarn(()=>send(true), ()=>{ err.innerHTML=''; const c=app.querySelector('#t_cancel'); c.scrollIntoView({block:'center'}); c.focus(); }, ['שליחה בלי מדיניות ביטול','Send without a cancellation policy']);
   btn.disabled=true; err.innerHTML='';
   try{ B=await api('booking_answer',{p_key:KEY,p_terms:t,p_name:app.querySelector('#by').value.trim()}); editing=false; draw(true); window.scrollTo(0,0); }
   catch(e){ btn.disabled=false; err.innerHTML=`<div class="err">${esc(e.message)}</div>`; }
@@ -355,7 +383,7 @@ function reviewView(){
     <p class="foot">${two('אחרי אישור שני הצדדים הדף ננעל.','Once both sides accept, the sheet is locked.')}</p>`;
   const toForm=()=>{ editing=true; draw(); window.scrollTo(0,0); };
   const accept=async(noPolicyOk)=>{ const err=app.querySelector('#err'), btn=app.querySelector('#accept');
-    if(!(B.terms&&B.terms.cancel)&&!noPolicyOk) return noCancelWarn(()=>accept(true), toForm, ['אישור בלי מדיניות ביטול','Accept without a cancellation policy']);
+    if(!(B.terms&&B.terms.cancel)&&!noPolicyOk&&!bkOff(B).includes('cancel')) return noCancelWarn(()=>accept(true), toForm, ['אישור בלי מדיניות ביטול','Accept without a cancellation policy']);
     btn.disabled=true; err.innerHTML='';
     try{ B=await api('booking_accept',{p_key:KEY,p_name:B.answered_by||''}); draw(true); window.scrollTo(0,0); }
     catch(e){ btn.disabled=false; err.innerHTML=`<div class="err">${esc(e.message)}</div>`; } };

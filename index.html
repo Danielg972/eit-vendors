@@ -475,6 +475,24 @@ button.bkcard{display:block;width:100%;text-align:left;font:inherit;color:inheri
 .bkdays .cal-g button{display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.05}
 .bkdays .cal-g button small{font-size:9.5px;font-family:inherit;opacity:.85}
 .bkdays .cal-g button[aria-pressed="false"]{color:var(--ink-2);text-decoration:line-through}
+/* booking sheet: which terms are on the sheet */
+.bkon{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 12px;margin:10px 0 4px;padding:10px 12px;background:var(--card);border:1px solid var(--line);border-radius:10px}
+.bkon .lab,.bkon .hint{grid-column:1/-1;margin:0}
+.bkon .hint{margin-top:4px}
+.bkon label{display:flex;align-items:center;gap:8px;min-height:40px;font-size:14.5px}
+.bkon input{width:20px;height:20px;flex:none;accent-color:var(--olive-2)}
+/* booking sheet: times for each day */
+.bkplan{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:4px 10px 10px}
+.bkplan-r{padding:10px 0;border-bottom:1px solid var(--line)}
+.bkplan-r b{display:block;font-weight:600;font-size:14px;margin-bottom:6px}
+.bkplan-r .t{display:flex;align-items:center;gap:8px;min-width:0;margin-bottom:6px}
+.bkplan-r .t span{font-size:13px;color:var(--ink-2);white-space:nowrap}
+.bkplan-r .t input{flex:1;min-width:0}
+.bkplan-r input[type=text]{width:100%;box-sizing:border-box}
+@media (min-width:700px){
+  .bkplan-r{display:grid;grid-template-columns:96px 370px minmax(0,1fr);gap:10px;align-items:center}
+  .bkplan-r b,.bkplan-r .t{margin-bottom:0}
+}
 .cal-k i{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-2px;margin-right:6px;border:1px solid var(--line)}
 .mini[aria-pressed="true"]{background:var(--olive);border-color:var(--olive);color:var(--on-olive)}
 /* a member's own page, claims, and notes that are private or waiting */
@@ -932,7 +950,7 @@ const DB = {
   async saveBooking(vid, b){
     if(!LIVE){ const now=new Date().toISOString(), v=S.vendors.find(y=>y.id===vid); let x=b.id&&S.demoBookings.find(y=>y.id===b.id);
       const job=['date_from','date_to','pax','service','seats','tourists','pickup_time','pickup_place','route','dropoff_time','dropoff_place','note'];
-      const content=y=>JSON.parse(JSON.stringify(Object.assign(Object.fromEntries(job.map(k=>[k,y[k]===undefined?'':y[k]])),{terms:y.terms||{}},y.days?{days:y.days}:{})));
+      const content=y=>JSON.parse(JSON.stringify(Object.assign(Object.fromEntries(job.map(k=>[k,y[k]===undefined?'':y[k]])),{terms:y.terms||{}},y.days?{days:y.days}:{},y.day_plan&&Object.keys(y.day_plan).length?{day_plan:y.day_plan}:{},y.terms_off?{terms_off:y.terms_off}:{})));
       if(!x){ x={id:'b'+Date.now(),vendor_id:vid,vendor_name:v?v.name:'',key:'demo',status:'waiting',terms:{},terms_by:'',answered_by:'',answered_at:null,confirmed_at:null,guide_ok_at:now,company_ok_at:null,company_ok_via:'',seen:null,mine:true,owner_name:S.me.name,owner_admin:true,in_tracker:false,created_at:now}; S.demoBookings.unshift(x); }
       const before=JSON.stringify(content(x)), was=x.status;
       const keep={id:x.id,status:x.status,key:x.key,terms:x.terms,terms_by:x.terms_by,answered_by:x.answered_by,answered_at:x.answered_at,guide_ok_at:x.guide_ok_at,company_ok_at:x.company_ok_at,company_ok_via:x.company_ok_via,seen:x.seen,confirmed_at:x.confirmed_at};
@@ -2580,6 +2598,20 @@ function bkDayList(days,he){ if(!days.length) return ''; const ds=days.map(x=>ne
 // The date line of a booking sheet: the chosen days, or the period with its number of days.
 function bkDates(b,he){ const p=bkPicked(b); if(p.length>1) return bkDayList(p,he); if(p.length===1) return bkDate(p[0],he);
   const r=bkRange(b,he), n=bkDayCount(b); return r&&n>1 ? r+' · '+n+(he?' ימים':' days') : r; }
+// Each day's own times (D-24). b.day_plan = {'2026-10-20':{start:'08:30',end:'18:00',route:'Dead Sea'}, …}: only on a booking
+// of more than one day, and only when the days differ. Empty = the pick-up and drop-off times of the sheet apply to every day.
+// A finish time is always shown as an estimate.
+const bkPlan=b=>{ const p=b&&b.day_plan; return p&&typeof p==='object'&&!Array.isArray(p)?p:{}; };
+const bkHasPlan=b=>Object.keys(bkPlan(b)).length>0;
+const bkAllDays=b=>{ const p=bkPicked(b); return p.length?p:bkSpan(b.date_from,b.date_to,62); };
+function bkDayLabel(iso,he){ const d=new Date(iso+'T12:00:00'); if(isNaN(d)) return iso; if(he) return BK_WD_HE[d.getDay()]+' '+d.getDate()+'.'+(d.getMonth()+1);
+  try{ return d.toLocaleDateString('en-GB',{weekday:'short'})+' '+d.getDate()+' '+d.toLocaleDateString('en-GB',{month:'short'}); }catch(e){ return iso; } }
+function bkDayLine(x,he){ x=x||{}; const a=[];
+  if(x.start) a.push(he?'איסוף '+x.start:'pick-up '+x.start);
+  if(x.end) a.push(he?'סיום משוער '+x.end:'finish about '+x.end); else if(x.start) a.push(he?'שעת סיום תימסר':'finish time to follow');
+  if(x.route) a.push(x.route);
+  return a.length?a.join(' · '):(he?'שעות יימסרו':'times to follow'); }
+const bkDayRows=b=>{ if(!bkHasPlan(b)) return []; const p=bkPlan(b); return bkAllDays(b).map(d=>[bkDayLabel(d,true),bkDayLabel(d,false),bkDayLine(p[d],true),bkDayLine(p[d],false)]); };
 // Short form for a card: the period, and how many days of it when separate days were chosen.
 const bkShort=b=>{ const p=bkPicked(b), r=bkRange(b,false); return p.length>1&&r ? r+' · '+p.length+' days' : r; };
 function bkVehicle(b,he){ const v=BK_VEH[b.service];
@@ -2591,6 +2623,7 @@ function bkVehicle(b,he){ const v=BK_VEH[b.service];
 // Rows are [Hebrew label, English label, Hebrew value, English value]. English value null = the same typed text.
 function bkJobRows(b,all){ return [
   ['תאריך','Date',bkDates(b,true),bkDates(b,false)],
+  ...bkDayRows(b),
   ['נוסעים','Passengers',b.pax?b.pax+(b.tourists?' · תיירים מחו״ל':''):(b.tourists?'תיירים מחו״ל':''),b.pax?b.pax+(b.tourists?' · tourists from abroad':''):(b.tourists?'tourists from abroad':'')],
   ['רכב','Vehicle',bkVehicle(b,true),bkVehicle(b,false)],
   ['איסוף','Pick-up',[b.pickup_time,b.pickup_place].filter(Boolean).join(', '),null],
@@ -2614,10 +2647,18 @@ function bkTermRows(t){ t=t||{}; const m=x=>bkMoney(t,x), vat=BK_VAT[t.vat];
     ['תוספות אחרות','Other extras',t.extras||'',null],
     ['תשלום','Payment',t.payment||'',null],
     ['הערות החברה','Notes from the company',t.note||'',null]]; }
-// What a price without these still leaves open: where surprise charges come from.
-function bkMissing(t){ t=t||{}; const out=[];
-  if(!t.vat) out.push(['מע״מ','VAT']); if(!t.hours_incl) out.push(['שעות ביום','hours in a day']); if(!t.km_incl) out.push(['ק״מ כלולים','km included']);
-  if(!t.overtime) out.push(['שעה נוספת','extra hour']); if(!t.extra_km&&t.km_incl) out.push(['ק״מ נוסף','extra km']); if(!t.tolls) out.push(['כביש 6','Highway 6']); if(!t.tip) out.push(['טיפ','tip']); if(!t.cancel) out.push(['מדיניות ביטול','cancellation policy']);
+// Terms left off the sheet (D-25). b.terms_off is a comma list of these groups. A group left off is not asked of the company,
+// is not on either side's sheet and is not warned about as missing. The price and its VAT are always on the sheet.
+// [key, the terms it covers, Hebrew name, English name]
+const BK_GROUPS=[['hours',['hours_incl','hours_from','overtime'],'שעות ושעה נוספת','Hours and overtime'],['km',['km_incl','extra_km'],'קילומטרים','Mileage'],['tolls',['tolls','tolls_note'],'כביש 6 ואגרות','Kvish 6 and tolls'],['parking',['parking'],'חניה','Parking'],
+  ['tip',['tip','tip_amt'],'טיפ לנהג','Driver tip'],['cancel',['cancel'],'מדיניות ביטול','Cancellation policy'],['extras',['extras'],'תוספות אחרות','Other extras'],['payment',['payment'],'תשלום','Payment']];
+const bkOff=b=>{ const o=String((b&&b.terms_off)||'').split(',').map(x=>x.trim()); return BK_GROUPS.map(g=>g[0]).filter(k=>o.includes(k)); };
+const BK_ROW_GROUP={'Hours counted from':'hours','Extra hour':'hours','Extra km':'km','Highway 6 and tolls':'tolls','Parking':'parking','Driver tip':'tip','Cancellation policy':'cancel','Other extras':'extras','Payment':'payment'};
+const bkRowOff=(r,off)=>!!off&&off.length>0&&(r[1]==='Price includes'?off.includes('hours')&&off.includes('km'):off.includes(BK_ROW_GROUP[r[1]]));
+// What a price without these still leaves open: where surprise charges come from. off = the groups left off this sheet.
+function bkMissing(t,off){ t=t||{}; off=off||[]; const out=[], on=k=>!off.includes(k);
+  if(!t.vat) out.push(['מע״מ','VAT']); if(!t.hours_incl&&on('hours')) out.push(['שעות ביום','hours in a day']); if(!t.km_incl&&on('km')) out.push(['ק״מ כלולים','km included']);
+  if(!t.overtime&&on('hours')) out.push(['שעה נוספת','extra hour']); if(!t.extra_km&&t.km_incl&&on('km')) out.push(['ק״מ נוסף','extra km']); if(!t.tolls&&on('tolls')) out.push(['כביש 6','Highway 6']); if(!t.tip&&on('tip')) out.push(['טיפ','tip']); if(!t.cancel&&on('cancel')) out.push(['מדיניות ביטול','cancellation policy']);
   return out; }
 const BK_MUST=9; // the first rows of bkTermRows always show, "not stated" when empty
 const bkWhen=iso=>{ try{ const d=new Date(iso); return d.getDate()+'.'+(d.getMonth()+1)+'.'+d.getFullYear(); }catch(e){ return ''; } };
@@ -2638,7 +2679,7 @@ function bkSheetHtml(b,t,o){ o=o||{}; const has=!!(t&&t.price), comp=b.company||
   const row=(r,old,cls)=>{ const w=was(old,r);
     return `<div class="bks-r${r[2]?'':' ns'}${w!=null?' chg':''}${cls||''}"><dt>${esc(r[0])}<small dir="ltr">${esc(r[1])}</small></dt><dd dir="auto">${r[2]?esc(r[2]):'לא צוין'}${r[2]?(r[3]&&r[3]!==r[2]?`<small dir="ltr">${esc(r[3])}</small>`:''):'<small dir="ltr">not stated</small>'}${perDay(r)}${w!=null?`<small class="was" dir="auto">קודם · was: ${esc(w)}</small>`:''}</dd></div>`; };
   const jobs=bkJobRows(b,true).filter(r=>r[2]||was(oldJob,r)!=null);
-  const terms=has?bkTermRows(t).filter((r,i)=>r[2]||i<BK_MUST||was(oldTerm,r)!=null):[];
+  const off=bkOff(b), terms=has?bkTermRows(t).filter((r,i)=>!bkRowOff(r,off)&&(r[2]||i<BK_MUST||was(oldTerm,r)!=null)):[];
   const ok=has?bkOkRows(b):null;
   const who=[['מזמין','Booked by',[b.booker_name,b.booker_phone].filter(Boolean).join(' · ')],['חברה','Company',comp],
     has&&!ok?[b.terms_by==='guide'?'נרשם ע״י המזמין':'מולא ע״י','Filled in by',b.terms_by==='guide'?'לפי תשובת החברה'+(b.answered_by?' ('+b.answered_by+')':''):[b.answered_by,b.answered_at?bkWhen(b.answered_at):''].filter(Boolean).join(' · '),b.terms_by==='guide'?'entered by the guide from the company\'s answer':null]:null,
@@ -2653,7 +2694,7 @@ function bkSheetHtml(b,t,o){ o=o||{}; const has=!!(t&&t.price), comp=b.company||
 // How many rows the other side changed (same rule as the red rows above).
 function bkChanged(b,t,seen,loose){ if(!seen) return 0; let n=0;
   if('date_from' in seen){ const o=Object.fromEntries(bkJobRows(seen,true).map(r=>[r[1],r[2]])); bkJobRows(b,true).forEach(r=>{ if((o[r[1]]||'')!==(r[2]||'')) n++; }); }
-  const st=seen.terms; if(st&&Object.keys(st).length&&t){ const o=Object.fromEntries(bkTermRows(st).map(r=>[r[1],r[2]])); bkTermRows(t).forEach(r=>{ const p=o[r[1]]||''; if(p!==(r[2]||'')&&!(loose&&!p)) n++; }); }
+  const st=seen.terms; if(st&&Object.keys(st).length&&t){ const o=Object.fromEntries(bkTermRows(st).map(r=>[r[1],r[2]])); const off=bkOff(b); bkTermRows(t).forEach(r=>{ if(bkRowOff(r,off)) return; const p=o[r[1]]||''; if(p!==(r[2]||'')&&!(loose&&!p)) n++; }); }
   return n; }
 // Plain text for WhatsApp or email. ask = short note with the link; template = no link, blanks to fill in; summary = the filled sheet.
 function bkText(b,t,mode,link){ const L=[], comp=b.company||b.vendor_name||'';
@@ -2668,13 +2709,14 @@ function bkText(b,t,mode,link){ const L=[], comp=b.company||b.vendor_name||'';
   L.push(''); bkJobRows(b).forEach(two);
   if(mode==='template'){
     L.push(''); L.push('*נא למלא ולהחזיר · Please fill in and send back:*');
-    [['מחיר ליום: ₪ ____ (כולל מע״מ / בתוספת / ללא)','Price per day: ₪ ____ (incl. VAT / plus VAT / none)'],['כולל עד __ שעות ועד __ ק״מ','Includes up to __ hours and __ km'],['השעות נספרות מ: האיסוף / החניון','Hours counted from: pick-up / depot'],
-     ['שעה נוספת: ₪ ____','Extra hour: ₪ ____'],['ק״מ נוסף: ₪ ____','Extra km: ₪ ____'],['כביש 6 ואגרות: כלול / בנוסף','Highway 6 and tolls: included / extra'],['חניה: כלול / בנוסף','Parking: included / extra'],
-     ['טיפ לנהג: לא מצופה / ₪ ____ ליום','Driver tip: not expected / ₪ ____ a day'],['תוספות אחרות (לינה, לילה, שבת): ____','Other extras (overnight, night, Shabbat): ____'],['מדיניות ביטול: ____','Cancellation policy: ____'],['תשלום: ____','Payment: ____'],['הערות: ____','Notes: ____']]
-      .forEach(p=>{ L.push(p[0]); L.push(p[1]); });
+    const off=bkOff(b), on=k=>!off.includes(k), inc=[on('hours')?['__ שעות','__ hours']:null,on('km')?['__ ק״מ','__ km']:null].filter(Boolean);
+    [['מחיר ליום: ₪ ____ (כולל מע״מ / בתוספת / ללא)','Price per day: ₪ ____ (incl. VAT / plus VAT / none)'],inc.length&&['כולל עד '+inc.map(x=>x[0]).join(' ועד '),'Includes up to '+inc.map(x=>x[1]).join(' and ')],on('hours')&&['השעות נספרות מ: האיסוף / החניון','Hours counted from: pick-up / depot'],
+     on('hours')&&['שעה נוספת: ₪ ____','Extra hour: ₪ ____'],on('km')&&['ק״מ נוסף: ₪ ____','Extra km: ₪ ____'],on('tolls')&&['כביש 6 ואגרות: כלול / בנוסף','Highway 6 and tolls: included / extra'],on('parking')&&['חניה: כלול / בנוסף','Parking: included / extra'],
+     on('tip')&&['טיפ לנהג: לא מצופה / ₪ ____ ליום','Driver tip: not expected / ₪ ____ a day'],on('extras')&&['תוספות אחרות (לינה, לילה, שבת): ____','Other extras (overnight, night, Shabbat): ____'],on('cancel')&&['מדיניות ביטול: ____','Cancellation policy: ____'],on('payment')&&['תשלום: ____','Payment: ____'],['הערות: ____','Notes: ____']]
+      .filter(Boolean).forEach(p=>{ L.push(p[0]); L.push(p[1]); });
   } else if(t&&t.price){
     L.push(''); L.push('*מחיר ותנאים · Price and terms*');
-    const nd=bkDayCount(b); bkTermRows(t).forEach((r,i)=>{ if(r[2]) two(i===0&&nd>1?[r[0],r[1],r[2]+' × '+nd+' ימים',r[3]+' × '+nd+' days']:r); else if(i<BK_MUST){ L.push(r[0]+': לא צוין'); L.push(r[1]+': not stated'); } });
+    const nd=bkDayCount(b), off=bkOff(b); bkTermRows(t).forEach((r,i)=>{ if(bkRowOff(r,off)) return; if(r[2]) two(i===0&&nd>1?[r[0],r[1],r[2]+' × '+nd+' ימים',r[3]+' × '+nd+' days']:r); else if(i<BK_MUST){ L.push(r[0]+': לא צוין'); L.push(r[1]+': not stated'); } });
   }
   L.push(''); L.push('*'+BK_STMT[0]+'*'); L.push(BK_STMT[1]);
   L.push(''); L.push('מזמין · Booked by: '+[b.booker_name,b.booker_phone].filter(Boolean).join(', '));
@@ -2767,24 +2809,24 @@ function openBookingPicker(){
   inp.addEventListener('input',draw); w.querySelector('#bpc').onclick=closeSheet; draw(); setTimeout(()=>inp.focus(),50);
 }
 // The price-and-terms fields, used for "terms you expect" and for typing in the company's answer.
-function bkTermsForm(t,p){ t=t||{};
+function bkTermsForm(t,p,off){ t=t||{}; off=off||[]; const on=k=>!off.includes(k);
   const seg=(k,opts)=>`<div class="tgs seg" data-seg="${k}" role="group">${opts.map(([val,l])=>`<button class="tg" type="button" data-val="${val}" aria-pressed="${t[k]===val}">${esc(l)}</button>`).join('')}</div>`;
   const inp=(k,label,ph,mode)=>`<div class="f"><label for="${p}${k}">${label}</label><input id="${p}${k}" data-t="${k}" ${mode?`inputmode="${mode}"`:''} value="${esc(t[k]||'')}" placeholder="${esc(ph||'')}"></div>`;
   return `<div class="grid bkterms">
     ${inp('price','Price per day','3000','decimal')}
     <div class="f"><label for="${p}currency">Currency</label><select id="${p}currency" data-t="currency">${['ILS','USD','EUR'].map(c=>`<option value="${c}"${(t.currency||'ILS')===c?' selected':''}>${c}</option>`).join('')}</select></div>
     <div class="f wide"><span class="lab">VAT</span>${seg('vat',[['including_vat','Including VAT'],['plus_vat','Plus VAT'],['not_applicable','No VAT (tourists)']])}</div>
-    ${inp('hours_incl','Hours included in a day','10','decimal')}
-    ${inp('km_incl','Km included in a day','250','numeric')}
-    <div class="f wide"><span class="lab">Hours counted from</span>${seg('hours_from',[['pickup','The pick-up'],['depot','Leaving the depot']])}</div>
-    ${inp('overtime','Extra hour','200','decimal')}
-    ${inp('extra_km','Extra km','5','decimal')}
-    <div class="f wide"><span class="lab">Kvish 6 and tolls</span>${seg('tolls',[['incl','Included'],['extra','Extra']])}<input data-t="tolls_note" aria-label="Kvish 6 note" value="${esc(t.tolls_note||'')}" placeholder="Note, e.g. by the bill"></div>
-    <div class="f wide"><span class="lab">Parking</span>${seg('parking',[['incl','Included'],['extra','Extra, by receipt']])}</div>
-    <div class="f wide"><span class="lab">Driver tip</span>${seg('tip',[['none','Not expected'],['customary','Customary']])}<input data-t="tip_amt" inputmode="decimal" aria-label="Customary tip a day" value="${esc(t.tip_amt||'')}" placeholder="Customary amount a day"></div>
-    <div class="f wide"><label for="${p}cancel">Cancellation policy</label><textarea id="${p}cancel" data-t="cancel" rows="3" maxlength="1500" placeholder="Paste the company's cancellation policy, e.g. free until 48 hours before, then 50%">${esc(t.cancel||'')}</textarea></div>
-    <div class="f wide"><label for="${p}extras">Other extras: driver overnight, night, Shabbat</label><input id="${p}extras" data-t="extras" value="${esc(t.extras||'')}" placeholder="Driver overnight ₪350"></div>
-    <div class="f wide"><label for="${p}payment">Payment: how and when</label><input id="${p}payment" data-t="payment" value="${esc(t.payment||'')}" placeholder="Bank transfer after the trip"></div>
+    ${on('hours')?inp('hours_incl','Hours included in a day','10','decimal'):''}
+    ${on('km')?inp('km_incl','Km included in a day','250','numeric'):''}
+    ${on('hours')?`<div class="f wide"><span class="lab">Hours counted from</span>${seg('hours_from',[['pickup','The pick-up'],['depot','Leaving the depot']])}</div>`:''}
+    ${on('hours')?inp('overtime','Extra hour','200','decimal'):''}
+    ${on('km')?inp('extra_km','Extra km','5','decimal'):''}
+    ${on('tolls')?`<div class="f wide"><span class="lab">Kvish 6 and tolls</span>${seg('tolls',[['incl','Included'],['extra','Extra']])}<input data-t="tolls_note" aria-label="Kvish 6 note" value="${esc(t.tolls_note||'')}" placeholder="Note, e.g. by the bill"></div>`:''}
+    ${on('parking')?`<div class="f wide"><span class="lab">Parking</span>${seg('parking',[['incl','Included'],['extra','Extra, by receipt']])}</div>`:''}
+    ${on('tip')?`<div class="f wide"><span class="lab">Driver tip</span>${seg('tip',[['none','Not expected'],['customary','Customary']])}<input data-t="tip_amt" inputmode="decimal" aria-label="Customary tip a day" value="${esc(t.tip_amt||'')}" placeholder="Customary amount a day"></div>`:''}
+    ${on('cancel')?`<div class="f wide"><label for="${p}cancel">Cancellation policy</label><textarea id="${p}cancel" data-t="cancel" rows="3" maxlength="1500" placeholder="Paste the company's cancellation policy, e.g. free until 48 hours before, then 50%">${esc(t.cancel||'')}</textarea></div>`:''}
+    ${on('extras')?`<div class="f wide"><label for="${p}extras">Other extras: driver overnight, night, Shabbat</label><input id="${p}extras" data-t="extras" value="${esc(t.extras||'')}" placeholder="Driver overnight ₪350"></div>`:''}
+    ${on('payment')?`<div class="f wide"><label for="${p}payment">Payment: how and when</label><input id="${p}payment" data-t="payment" value="${esc(t.payment||'')}" placeholder="Bank transfer after the trip"></div>`:''}
     <div class="f wide"><label for="${p}note">Anything else</label><textarea id="${p}note" data-t="note" rows="2" placeholder="Free text">${esc(t.note||'')}</textarea></div>
   </div>`; }
 function bkWireTerms(root){ root.querySelectorAll('.seg .tg').forEach(b=>b.onclick=()=>{ const on=b.getAttribute('aria-pressed')==='true'; b.parentNode.querySelectorAll('.tg').forEach(x=>x.setAttribute('aria-pressed','false')); b.setAttribute('aria-pressed',String(!on)); }); }
@@ -2814,13 +2856,14 @@ function openBookingForm(v, b0, back){
       <div class="f"><label for="b_from">Date <em>*</em></label><input id="b_from" type="date" value="${esc(b.date_from)}"></div>
       <div class="f"><label for="b_to">Until (more than one day)</label><input id="b_to" type="date" value="${esc(b.date_to)}"></div>
       <div class="f wide" id="bDaysWrap" hidden><span class="lab">Which days</span><div class="bkdays" id="bDays"></div></div>
+      <div class="f wide" id="bPlanWrap" hidden><span class="lab">Times for each day</span><div class="bkplan" id="bPlan"></div></div>
       <div class="f"><label for="b_pax">Passengers</label><input id="b_pax" inputmode="numeric" value="${esc(b.pax)}" placeholder="24"></div>
       <div class="f"><label for="b_seats">Seats needed</label><input id="b_seats" inputmode="numeric" value="${esc(b.seats)}" placeholder="30"></div>
       <div class="f wide"><label for="b_svc">Vehicle <em>*</em></label><select id="b_svc">${opt([['','Choose…'],...BK_SERVICES],b.service)}</select></div>
-      <div class="f"><label for="b_ptime">Pick-up time</label><input id="b_ptime" type="time" value="${esc(b.pickup_time)}"></div>
+      <div class="f" id="bPtW"><label for="b_ptime">Pick-up time</label><input id="b_ptime" type="time" value="${esc(b.pickup_time)}"></div>
       <div class="f"><label for="b_pplace">Pick-up place</label><input id="b_pplace" list="bkPlaces" value="${esc(b.pickup_place)}" placeholder="Hotel, Jerusalem"></div>
       <div class="f wide"><label for="b_route">Outline of the day</label><textarea id="b_route" rows="3" placeholder="Caesarea, Zichron Yaakov, back to Jerusalem">${esc(b.route)}</textarea></div>
-      <div class="f"><label for="b_dtime">Drop-off time, about</label><input id="b_dtime" type="time" value="${esc(b.dropoff_time)}"></div>
+      <div class="f" id="bDtW"><label for="b_dtime">Drop-off time, about</label><input id="b_dtime" type="time" value="${esc(b.dropoff_time)}"></div>
       <div class="f"><label for="b_dplace">Drop-off place</label><input id="b_dplace" list="bkPlaces" value="${esc(b.dropoff_place)}" placeholder="Same as pick-up"></div>
       <div class="f wide"><label for="b_note">Notes for the company</label><textarea id="b_note" rows="2" placeholder="Free text: strong air conditioning, luggage, child seats…">${esc(b.note)}</textarea></div>
     </div><datalist id="bkPlaces">${places.map(p=>`<option value="${esc(p)}">`).join('')}</datalist>
@@ -2830,7 +2873,9 @@ function openBookingForm(v, b0, back){
       <div class="f"><label for="b_phone">Your phone <em>*</em></label><input id="b_phone" type="tel" value="${esc(b.booker_phone)}" placeholder="050-000-0000" autocomplete="tel"></div>
     </div><p class="hint" style="margin:6px 0 0">The company sees these, so it knows who is asking and can answer you on WhatsApp.</p></fieldset>
     <details class="bkexp" id="bkExp"${Object.keys(b.proposed||{}).length?' open':''}><summary>Terms you expect <span class="hint">optional · the company sees them filled in and confirms or changes them</span></summary>
-      <p class="hint" id="bkExpNote" style="margin:8px 0"></p>${bkTermsForm(b.proposed,'bp_')}</details>
+      <div class="bkon" id="bkOn" role="group" aria-label="Terms on this sheet"><span class="lab">On this sheet</span>${BK_GROUPS.map(x=>`<label><input type="checkbox" data-g="${x[0]}" ${bkOff(b).includes(x[0])?'':'checked'}><span>${esc(x[3])}</span></label>`).join('')}
+        <p class="hint">Untick what this booking doesn't need. The company is not asked about it and it is left off the sheet. The price and VAT always stay.</p></div>
+      <p class="hint" id="bkExpNote" style="margin:8px 0"></p>${bkTermsForm(b.proposed,'bp_',bkOff(b))}</details>
     <fieldset><legend>Only for you</legend><div class="grid">
       <div class="f wide"><label for="b_ref">For which trip or client? (private)</label><input id="b_ref" value="${esc(b.client_ref)}" placeholder="Jacobs family, Oct 2026"></div>
       <div class="f wide"><label for="b_priv">Private note</label><textarea id="b_priv" rows="2" placeholder="Only you${S.admin?'':' and Eretz Israel Tours'} can see this">${esc(b.private_note)}</textarea></div>
@@ -2840,13 +2885,16 @@ function openBookingForm(v, b0, back){
   const w=sheet(isNew?'New booking sheet · '+v.name:'Edit booking sheet', body, `<button class="btn soft" id="bc" type="button">Cancel</button><button class="btn primary" id="bs" type="button">${isNew?'Save and send':'Save'}</button>`);
   const g=id=>w.querySelector('#'+id), exp=g('bkExp');
   bkWireTerms(exp);
-  const setTerms=(t,from)=>{ exp.querySelector('.bkterms').outerHTML=bkTermsForm(t,'bp_'); bkWireTerms(exp); exp.open=true; g('bkExpNote').textContent=from?'Filled in from '+from+'. Change what is different.':''; };
+  // Terms left off this sheet (D-25): unticking a box takes its fields out of the form below, keeping what is typed in the rest.
+  const offNow=()=>[...g('bkOn').querySelectorAll('[data-g]')].filter(c=>!c.checked).map(c=>c.dataset.g);
+  const setTerms=(t,from)=>{ exp.querySelector('.bkterms').outerHTML=bkTermsForm(t,'bp_',offNow()); bkWireTerms(exp); exp.open=true; g('bkExpNote').textContent=from?'Filled in from '+from+'. Change what is different.':''; };
+  g('bkOn').querySelectorAll('[data-g]').forEach(c=>c.onchange=()=>{ const cur=bkReadTerms(exp), note=g('bkExpNote').textContent; exp.querySelector('.bkterms').outerHTML=bkTermsForm(cur,'bp_',offNow()); bkWireTerms(exp); g('bkExpNote').textContent=note; });
   g('b_seats').onblur=()=>{ const k=vehicleBySeats(g('b_seats').value.trim()); if(k&&(!g('b_svc').value||VEH[g('b_svc').value])) g('b_svc').value=k; };
   // Which days (D-21): every day of the period starts switched on; tap one to leave it out. off = the days left out.
   const BK_PICK_MAX=62, off=new Set((p=>p.length?bkSpan(b.date_from,b.date_to,BK_PICK_MAX).filter(d=>!p.includes(d)):[])(bkPicked(b)));
   const bkPeriod=()=>{ const f=g('b_from').value, t=g('b_to').value; return bkSpan(f,t,BK_PICK_MAX+1); };
-  const drawPick=()=>{ const wrap=g('bDaysWrap'), box=g('bDays'), sp=bkPeriod();
-    if(sp.length<2||sp.length>BK_PICK_MAX){ wrap.hidden=true; box.innerHTML=''; return; }
+  const drawPick=()=>{ const wrap=g('bDaysWrap'), box=g('bDays'), sp=bkPeriod(); if(g('bPlan').firstChild) planRead();
+    if(sp.length<2||sp.length>BK_PICK_MAX){ wrap.hidden=true; box.innerHTML=''; drawPlan(); return; }
     const on=sp.filter(d=>!off.has(d)), lead=new Date(sp[0]+'T12:00:00').getDay();
     const cells=Array.from({length:lead},()=>'<span></span>').concat(sp.map(iso=>{ const d=new Date(iso+'T12:00:00'), is=!off.has(iso), mark=iso===sp[0]||d.getDate()===1;
       return `<button type="button" data-d="${iso}" aria-pressed="${is}" aria-label="${esc(bkDate(iso,false))}${is?'':', left out'}">${d.getDate()}${mark?`<small>${d.toLocaleDateString('en-GB',{month:'short'})}</small>`:''}</button>`; }));
@@ -2854,7 +2902,21 @@ function openBookingForm(v, b0, back){
     box.innerHTML=`<div class="cal-g">${WEEKDAYS.map(d=>`<span class="dn">${d==='Shabbat'?'Sat':d}</span>`).join('')}${cells.join('')}</div>
       <p class="hint" style="margin:8px 0 0">${on.length===sp.length?`<b>All ${sp.length} days.</b> Tap a day to leave it out.`:on.length?`<b>${on.length} of ${sp.length} days.</b> The company is asked for these days only. <button class="linkbtn" type="button" data-all>All days</button>`:`<b>No day chosen.</b> Tap the days you need. <button class="linkbtn" type="button" data-all>All days</button>`}</p>`;
     box.querySelectorAll('[data-d]').forEach(el=>el.onclick=()=>{ const iso=el.dataset.d; if(off.has(iso)) off.delete(iso); else off.add(iso); drawPick(); });
-    const all=box.querySelector('[data-all]'); if(all) all.onclick=()=>{ off.clear(); drawPick(); }; };
+    const all=box.querySelector('[data-all]'); if(all) all.onclick=()=>{ off.clear(); drawPick(); };
+    drawPlan(); };
+  // Times for each day (D-24): with more than one day, every chosen day gets its own pick-up time, estimated finish and
+  // (optional) where to. The single pick-up and drop-off time fields are hidden then; a new row starts from their values.
+  const BK_PLAN_MAX=31, plan=new Map(Object.entries(bkPlan(b)).map(([d,x])=>[d,{start:x.start||'',end:x.end||'',route:x.route||''}]));
+  const planRead=()=>{ g('bPlan').querySelectorAll('[data-d]').forEach(r=>plan.set(r.dataset.d,{start:r.querySelector('[data-k="start"]').value,end:r.querySelector('[data-k="end"]').value,route:r.querySelector('[data-k="route"]').value.trim()})); };
+  const drawPlan=()=>{ const wrap=g('bPlanWrap'), box=g('bPlan'), sp=bkPeriod(), on=sp.length<=BK_PICK_MAX?sp.filter(d=>!off.has(d)):sp;
+    const multi=on.length>1&&on.length<=BK_PLAN_MAX; wrap.hidden=!multi; g('bPtW').hidden=multi; g('bDtW').hidden=multi;
+    if(!multi){ box.innerHTML=''; return; }
+    const seed={start:g('b_ptime').value,end:g('b_dtime').value,route:''};
+    box.innerHTML=on.map(d=>{ const x=plan.get(d)||seed, lab=bkDayLabel(d,false);
+      return `<div class="bkplan-r" data-d="${d}"><b>${esc(lab)}</b><span class="t"><input type="time" data-k="start" value="${esc(x.start)}" aria-label="Pick-up time, ${esc(lab)}"><span>to about</span><input type="time" data-k="end" value="${esc(x.end)}" aria-label="Estimated finish, ${esc(lab)}"></span><input type="text" data-k="route" value="${esc(x.route)}" maxlength="300" placeholder="Where to (optional)" aria-label="Where to, ${esc(lab)}"></div>`; }).join('')
+      +`<p class="hint" style="margin:8px 0 0">Pick-up time and about when the day ends. The company sees every finish time as an estimate. Leave a finish empty if you don't know it yet. <button class="linkbtn" type="button" data-same>Same times every day</button></p>`;
+    box.querySelectorAll('input').forEach(i=>i.addEventListener('input',planRead));
+    box.querySelector('[data-same]').onclick=()=>{ planRead(); const f=plan.get(on[0])||seed; on.forEach(d=>{ const x=plan.get(d)||{route:''}; plan.set(d,{start:f.start,end:f.end,route:x.route||''}); }); drawPlan(); }; };
   ['b_from','b_to'].forEach(id=>['change','input'].forEach(ev=>g(id).addEventListener(ev,drawPick))); drawPick();
   // Autofill: earlier sheets with this company, and its quotes.
   (async()=>{ const box=g('bkFill'); if(!box) return; let mine=[], quotes=[];
@@ -2894,6 +2956,12 @@ function openBookingForm(v, b0, back){
       if(sp.length>1&&sp.length<=BK_PICK_MAX&&on.length<sp.length){
         if(!on.length) probs.push('Choose at least one day.');
         else { out.date_from=on[0]; out.date_to=on[on.length-1]; if(bkSpan(on[0],on[on.length-1],BK_PICK_MAX).length!==on.length) out.days=on.join(','); } } }
+    // Times for each day: when every day has the same times and no "where to", they are the sheet's one pick-up and drop-off time.
+    out.terms_off=offNow().join(',');
+    out.day_plan={}; if(!g('bPlanWrap').hidden){ planRead(); const rows=[...g('bPlan').querySelectorAll('[data-d]')].map(r=>Object.assign({d:r.dataset.d},plan.get(r.dataset.d)));
+      if(rows.length>1){ const f=rows[0];
+        if(rows.every(x=>x.start===f.start&&x.end===f.end&&!x.route)){ out.pickup_time=f.start; out.dropoff_time=f.end; }
+        else { out.pickup_time=''; out.dropoff_time=''; rows.forEach(x=>{ const o={}; if(x.start) o.start=x.start; if(x.end) o.end=x.end; if(x.route) o.route=x.route; if(Object.keys(o).length) out.day_plan[x.d]=o; }); } } }
     if(out.seats&&!/^\d{1,3}$/.test(out.seats)) probs.push('Seats must be a number.');
     const bt=bkBadTerms(proposed); if(bt) probs.push(bt);
     if(probs.length){ err.innerHTML=`<div class="msg err">${probs.map(esc).join(' ')}</div>`; err.scrollIntoView({block:'center'}); return; }
@@ -2945,7 +3013,7 @@ async function bkReload(b, quiet){
 }
 function openBookingView(b){
   const v=bkVendor(b), t=b.terms||{}, p=b.proposed||{}, has=!!t.price, closed=b.status==='confirmed'||b.status==='cancelled';
-  const miss=has?bkMissing(t):[];
+  const miss=has?bkMissing(t,bkOff(b)):[];
   // On the guide's turn: mark what the company changed since the version he last saw, or (first answer) what differs from the terms he expected.
   const full=!!(b.seen&&b.seen.terms&&b.seen.terms.price), seen=b.status==='answered'?(full?b.seen:(Object.keys(p).length?{terms:p}:null)):null, loose=!full;
   const nChg=seen?bkChanged(b,t,seen,loose):0;
@@ -2992,7 +3060,7 @@ function openBookingAnswer(b){
   const v=bkVendor(b), had=!!(b.terms&&b.terms.price); const start=had?b.terms:(b.proposed||{});
   const w=sheet((had?'Change the terms · ':'Their answer · ')+(b.vendor_name||''), `<label class="switch" for="ba_ok" style="margin-bottom:12px"><input id="ba_ok" type="checkbox" ${had?'':'checked'}><span><b>The company already agreed to this, by phone or WhatsApp</b><br><span class="hint" id="ba_hint"></span></span></label>
     <div class="f" id="ba_byWrap" style="margin-bottom:10px"><label for="ba_by">Who agreed</label><input id="ba_by" value="${esc(b.answered_by||'')}" placeholder="Dudu, by phone"></div>
-    <div id="baTerms">${bkTermsForm(start,'ba_')}</div><div id="baErr"></div>`, `<button class="btn soft" id="bac" type="button">Cancel</button><button class="btn primary" id="bas" type="button">Save</button>`);
+    <div id="baTerms">${bkTermsForm(start,'ba_',bkOff(b))}</div><div id="baErr"></div>`, `<button class="btn soft" id="bac" type="button">Cancel</button><button class="btn primary" id="bas" type="button">Save</button>`);
   const ok=w.querySelector('#ba_ok'), sync=()=>{ w.querySelector('#ba_hint').textContent=ok.checked?'The sheet will say the company\'s acceptance was told to you. Then you accept, and it locks.':'These terms go back to the company. It sees what you changed in red and has to accept.'; w.querySelector('#ba_byWrap').hidden=!ok.checked; };
   ok.onchange=sync; sync();
   bkWireTerms(w); w.querySelector('#bac').onclick=()=>openBookingView(b);
