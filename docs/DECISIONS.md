@@ -23,12 +23,35 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 - **On a computer**, Email opens a small box with the address and four buttons: **Open in Gmail** (a new tab with the message started), **Open my mail program** (the old behaviour), **Copy the address**, **Cancel**. "A computer" means a device with a mouse; a phone or tablet behaves exactly as before and opens its mail app at once.
 - **The same box** is used for the other three places the app starts an email: asking a supplier for agent prices, the welcome message to a new member, and sending a booking sheet by email. Subject and message carry over to Gmail.
 - **The hidden copy to Eretz Israel Tours is unchanged:** it is added for the same members as before, in Gmail as in the mail program, and the box says so. The first-time notice about the hidden copy still comes first.
-- **The choice is not remembered:** the box shows each time. A "don't ask again on this computer" could be added.
-- Only Gmail is offered as a browser mailbox. Outlook.com and others were not added.
+- **"Don't ask again on this computer"** (the owner, 11:42, offered it: "yes pls"): a tick box in the box. Ticked, the choice of Gmail or the mail program is kept on that computer only (in the browser, like the welcome tour) and Email then opens that way at once. My settings shows "On this computer, Email opens Gmail" with **Ask me each time** to undo it. Copy and Cancel are never remembered. If the browser blocks the Gmail tab, the box shows again.
+- **Only Gmail is offered as a browser mailbox** (the owner, 11:42: "thats fine").
 
 **Checked:** in preview at desktop size as Eretz Israel Tours and as an organisation (box shows, Gmail and mail-program links correct, copy works, box closes), and at phone size (no box, mail app link as before). The links were checked with a subject, a message and a hidden copy. **Not checked:** on the live site; on his computer; Gmail itself opening (no internet access from the test); the hidden copy in the running app (the demo members have none); by a session other than the one that built it.
 
-**Status:** on the branch `email-choice`, front end only (`index.html`). No database change, no terms change. It touches one line that the branch `booking-days` (D-21) also changes, the booking sheet's Email button: whichever goes live second is brought up to date with `main` first (G11).
+**Status:** on the branch `email-choice`, front end only (`index.html`). No database change, no terms change. Brought up to date with `main` after D-21 went live (the one shared line, the booking sheet's Email button, keeps both changes).
+## D-21 · A booking sheet for separate days inside a period (live)
+
+**Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 5 October 2026, 11:07 and 11:12 Israel time.
+
+**In his words:** "booking sheet - it only has full dates example nov 18 -27 what if i need only 5 dates during that period? how do i delinieate days?" Told that the sheet could not do it, and asked whether to prepare a preview of a "Which days" picker: "yes".
+
+**Go-live:** he saw the preview pictures (11:29, "looks good") and, asked whether to put it live, said at 11:30: "yes".
+
+**What was built (implementation choices; change on request):**
+
+- **The form keeps Date and Until.** When the two are more than one day apart, a small calendar of that period appears under them, "Which days", with every day switched on. Tapping a day leaves it out. Periods longer than 62 days get no calendar.
+- **What is stored:** one new column, `bookings.days`, a comma list of the chosen days. Empty means every day from the first date to the last, so every sheet made before this is unchanged. The first and last chosen day become the sheet's dates. Chosen days that are all in a row are stored as a plain period, with no list.
+- **What the company sees:** the date line lists the days with their weekday, in Hebrew and in English ("5 ימים: ד׳ 18.11, ה׳ 19.11, …" / "5 days: Wed 18 Nov, Thu 19 Nov, …"), also in the WhatsApp message and the plain-message version. A plain period now also says how many days it is ("… · 10 days").
+- **The number of days is written beside the price per day** ("× 5 days") on the sheet, and above the price box on the company's page ("This booking is for 5 days. The price is for one day."). No total is worked out: overtime, extra km and tolls make a total a guess.
+- **The days are part of what both sides accept.** Changing a day after the company accepted clears its acceptance and comes back to it in red with the earlier days, the same rule as any other change (D-5, item 10).
+- **The quote a confirmed sheet leaves in the Quotes tab** counts the chosen days, not the period, and its conditions say "5 separate days between these dates."
+- **Who can use it:** whoever can use booking sheets today, organisations included, on their own sheets. Nothing new is sent to anyone else. No terms change: 6c already says the company sees the date of the job.
+
+**Not built, his to ask for:** a different time, pick-up or outline for each day (the sheet still has one of each for all days); a total price.
+
+**Checked:** `supabase/tests/booking_days/run.sh` (26 checks: the change file run twice on the earlier schema gives the same functions and columns as the schema record; a sheet made before the change reads exactly as it did; junk, repeats, impossible dates and days outside the period are dropped; an old copy of the app keeps the days unless it moves the dates; a day dropped after acceptance goes back to waiting; the quote counts the chosen days; an organisation sees only its own sheets). The 98 limited-member checks still pass. In preview, at phone and desktop size, as Eretz Israel Tours: fill in, save, send, reopen, and the company's page. **Not checked:** on the live site; on a real phone; by a session other than the one that built it; in preview as an organisation.
+
+**Status:** live since 5 Oct 2026. The connector's approval prompt was cancelled twice, so the owner ran `supabase/migrations/2026-10-05_booking_days.sql` himself in the Supabase SQL editor at about 11:42 (G5). Checked on production straight after: 27 tables, 138 functions, 0 table grants, 0 policies; every function's fingerprint equals the tested copy (`supabase/tests/production_fingerprints.txt`); the helper cannot be called from outside; and a rolled-back probe as a guide and as an organisation (`supabase/tests/booking_days/production_probe.sql`) came back as expected: the days are kept and reach the company's page, the company's page gets no private field, each sees only its own sheet. Then the branch was merged. Before the change production had 137 functions and no booking sheets.
 
 ---
 

@@ -91,6 +91,24 @@ const bkMoney=(t,x)=>(BK_SIGN[(t&&t.currency)||'ILS']||'₪')+Number(x).toLocale
 function bkDate(iso,he){ if(!iso) return ''; const d=new Date(iso+'T12:00:00'); if(isNaN(d)) return iso;
   try{ return he ? d.toLocaleDateString('he-IL',{weekday:'short',day:'numeric',month:'numeric',year:'numeric'}) : d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'}); }catch(e){ return iso; } }
 const bkRange=(b,he)=> b.date_to&&b.date_to!==b.date_from ? bkDate(b.date_from,he)+' – '+bkDate(b.date_to,he) : bkDate(b.date_from,he);
+// Separate days inside a period (D-21). b.days is a comma list of yyyy-mm-dd, set only when the guide left some days of
+// the period out; empty means every day from the first date to the last.
+const bkIso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const bkPicked=b=>[...new Set(String((b&&b.days)||'').split(',').filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)))].sort();
+function bkSpan(from,to,max){ const out=[]; if(!/^\d{4}-\d{2}-\d{2}$/.test(from||'')) return out; const d=new Date(from+'T12:00:00'), end=/^\d{4}-\d{2}-\d{2}$/.test(to||'')&&to>from?to:from;
+  for(let i=0;i<(max||400);i++){ const iso=bkIso(d); if(iso>end) break; out.push(iso); d.setDate(d.getDate()+1); } return out; }
+function bkDayCount(b){ const p=bkPicked(b); if(p.length) return p.length; if(!b||!b.date_from) return 0; if(!b.date_to||b.date_to<=b.date_from) return 1;
+  const n=Math.round((new Date(b.date_to+'T12:00:00')-new Date(b.date_from+'T12:00:00'))/86400000)+1; return n>0?n:1; }
+const BK_WD_HE=['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'];
+// "5 ימים: ד׳ 18.11, ה׳ 19.11, א׳ 22.11.2026" · "5 days: Wed 18 Nov, Thu 19 Nov, Sun 22 Nov 2026"
+function bkDayList(days,he){ if(!days.length) return ''; const ds=days.map(x=>new Date(x+'T12:00:00')), oneYear=ds.every(d=>d.getFullYear()===ds[0].getFullYear());
+  const one=(d,i)=>{ const yr=!oneYear||i===ds.length-1;
+    if(he) return BK_WD_HE[d.getDay()]+' '+d.getDate()+'.'+(d.getMonth()+1)+(yr?'.'+d.getFullYear():'');
+    let s; try{ s=d.toLocaleDateString('en-GB',{weekday:'short'})+' '+d.getDate()+' '+d.toLocaleDateString('en-GB',{month:'short'}); }catch(e){ s=days[i]; } return s+(yr?' '+d.getFullYear():''); };
+  return (he?days.length+' ימים: ':days.length+' days: ')+ds.map(one).join(', '); }
+// The date line of a booking sheet: the chosen days, or the period with its number of days.
+function bkDates(b,he){ const p=bkPicked(b); if(p.length>1) return bkDayList(p,he); if(p.length===1) return bkDate(p[0],he);
+  const r=bkRange(b,he), n=bkDayCount(b); return r&&n>1 ? r+' · '+n+(he?' ימים':' days') : r; }
 function bkVehicle(b,he){ const v=BK_VEH[b.service];
   if(!v) return b.seats?(he?b.seats+' מקומות':b.seats+' seats'):'';
   if(b.seats&&/^(bus|midibus|van)/.test(b.service)){
@@ -99,7 +117,7 @@ function bkVehicle(b,he){ const v=BK_VEH[b.service];
   return v[he?0:1]; }
 // Rows are [Hebrew label, English label, Hebrew value, English value]. English value null = the same typed text.
 function bkJobRows(b,all){ return [
-  ['תאריך','Date',bkRange(b,true),bkRange(b,false)],
+  ['תאריך','Date',bkDates(b,true),bkDates(b,false)],
   ['נוסעים','Passengers',b.pax?b.pax+(b.tourists?' · תיירים מחו״ל':''):(b.tourists?'תיירים מחו״ל':''),b.pax?b.pax+(b.tourists?' · tourists from abroad':''):(b.tourists?'tourists from abroad':'')],
   ['רכב','Vehicle',bkVehicle(b,true),bkVehicle(b,false)],
   ['איסוף','Pick-up',[b.pickup_time,b.pickup_place].filter(Boolean).join(', '),null],
@@ -143,8 +161,9 @@ function bkSheetHtml(b,t,o){ o=o||{}; const has=!!(t&&t.price), comp=b.company||
   const oldJob=seen&&('date_from' in seen)?Object.fromEntries(bkJobRows(seen,true).map(r=>[r[1],r[2]])):null;
   const st=seen&&seen.terms, oldTerm=st&&Object.keys(st).length?Object.fromEntries(bkTermRows(st).map(r=>[r[1],r[2]])):null;
   const was=(old,r)=>{ if(!old) return null; const prev=old[r[1]]||''; if(prev===(r[2]||'')) return null; if(o.loose&&!prev) return null; return prev||'—'; };
+  const nd=bkDayCount(b), perDay=r=>r[1]==='Price per day'&&r[2]&&nd>1?`<small class="xd" dir="rtl">× ${nd} ימים</small><small class="xd" dir="ltr">× ${nd} days</small>`:'';
   const row=(r,old,cls)=>{ const w=was(old,r);
-    return `<div class="bks-r${r[2]?'':' ns'}${w!=null?' chg':''}${cls||''}"><dt>${esc(r[0])}<small dir="ltr">${esc(r[1])}</small></dt><dd dir="auto">${r[2]?esc(r[2]):'לא צוין'}${r[2]?(r[3]&&r[3]!==r[2]?`<small dir="ltr">${esc(r[3])}</small>`:''):'<small dir="ltr">not stated</small>'}${w!=null?`<small class="was" dir="auto">קודם · was: ${esc(w)}</small>`:''}</dd></div>`; };
+    return `<div class="bks-r${r[2]?'':' ns'}${w!=null?' chg':''}${cls||''}"><dt>${esc(r[0])}<small dir="ltr">${esc(r[1])}</small></dt><dd dir="auto">${r[2]?esc(r[2]):'לא צוין'}${r[2]?(r[3]&&r[3]!==r[2]?`<small dir="ltr">${esc(r[3])}</small>`:''):'<small dir="ltr">not stated</small>'}${perDay(r)}${w!=null?`<small class="was" dir="auto">קודם · was: ${esc(w)}</small>`:''}</dd></div>`; };
   const jobs=bkJobRows(b,true).filter(r=>r[2]||was(oldJob,r)!=null);
   const terms=has?bkTermRows(t).filter((r,i)=>r[2]||i<BK_MUST||was(oldTerm,r)!=null):[];
   const ok=has?bkOkRows(b):null;
@@ -167,10 +186,10 @@ function bkChanged(b,t,seen,loose){ if(!seen) return 0; let n=0;
 function bkText(b,t,mode,link){ const L=[], comp=b.company||b.vendor_name||'';
   const two=r=>{ if(r[3]==null||r[3]===r[2]) L.push(r[0]+' · '+r[1]+': '+r[2]); else { L.push(r[0]+': '+r[2]); L.push(r[1]+': '+r[3]); } };
   if(mode==='ask'){
-    L.push('שלום, יש לי הזמנת רכב: '+[bkRange(b,true),bkVehicle(b,true),b.pax?b.pax+' נוסעים':''].filter(Boolean).join(', ')+'.');
+    L.push('שלום, יש לי הזמנת רכב: '+[bkDates(b,true),bkVehicle(b,true),b.pax?b.pax+' נוסעים':''].filter(Boolean).join(', ')+'.');
     if(b.pickup_time||b.pickup_place) L.push('איסוף: '+[b.pickup_time,b.pickup_place].filter(Boolean).join(', ')+'.');
     L.push('נא למלא מחיר ותנאים בקישור, זה לוקח דקה:'); L.push(link); L.push('תודה, '+(b.booker_name||''));
-    L.push(''); L.push('Vehicle booking for '+bkRange(b,false)+'. Please fill in the price and terms at the link. Thanks, '+(b.booker_name||''));
+    L.push(''); L.push('Vehicle booking for '+bkDates(b,false)+'. Please fill in the price and terms at the link. Thanks, '+(b.booker_name||''));
     return L.join('\n'); }
   L.push('*דף הזמנת רכב · Vehicle booking sheet*'); if(comp) L.push(comp);
   L.push(''); bkJobRows(b).forEach(two);
@@ -182,7 +201,7 @@ function bkText(b,t,mode,link){ const L=[], comp=b.company||b.vendor_name||'';
       .forEach(p=>{ L.push(p[0]); L.push(p[1]); });
   } else if(t&&t.price){
     L.push(''); L.push('*מחיר ותנאים · Price and terms*');
-    bkTermRows(t).forEach((r,i)=>{ if(r[2]) two(r); else if(i<BK_MUST){ L.push(r[0]+': לא צוין'); L.push(r[1]+': not stated'); } });
+    const nd=bkDayCount(b); bkTermRows(t).forEach((r,i)=>{ if(r[2]) two(i===0&&nd>1?[r[0],r[1],r[2]+' × '+nd+' ימים',r[3]+' × '+nd+' days']:r); else if(i<BK_MUST){ L.push(r[0]+': לא צוין'); L.push(r[1]+': not stated'); } });
   }
   L.push(''); L.push('*'+BK_STMT[0]+'*'); L.push(BK_STMT[1]);
   L.push(''); L.push('מזמין · Booked by: '+[b.booker_name,b.booker_phone].filter(Boolean).join(', '));
@@ -202,6 +221,7 @@ const BKS_CSS=`.bks{background:#fff;color:#16261e;border:1px solid #cfd6cd;borde
 .bks-r.chg{background:#f8e3df;box-shadow:-6px 0 0 #f8e3df,6px 0 0 #f8e3df}
 .bks-r.chg dd{color:#a63b2e;font-weight:600}
 .bks .was{color:#a63b2e;font-weight:400}
+.bks .xd{color:#16261e;font-weight:600}
 .bks-sec{margin:12px 0 2px;padding:5px 8px;background:#e8ede5;border-radius:6px;font-weight:600;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .bks-sec small{display:inline}
 .bks-stmt{margin-top:12px;border:2px solid #16261e;border-radius:6px;padding:8px 10px;font-weight:700}
@@ -218,6 +238,10 @@ let demo = {status:'waiting',company:'Galil Buses',booker_name:'Yael Levi',booke
   pickup_time:'08:00',pickup_place:'מלון בירושלים',route:'קיסריה ← זכרון יעקב ← חזרה לירושלים',dropoff_time:'18:00',dropoff_place:'מלון בירושלים',note:'מזגן חזק',
   proposed:{price:'3000',currency:'ILS',vat:'not_applicable',hours_incl:'10',km_incl:'250',overtime:'200',tolls:'incl'},terms:{},terms_by:'',answered_by:'',answered_at:null,confirmed_at:null,guide_ok_at:new Date().toISOString(),company_ok_at:null,company_ok_via:'',seen:null};
 // ?demo=changed shows the page after the guide changed the job: red rows and the Accept button
+// ?demo=days shows a booking for separate days inside a period; ?demo=dayschanged the same after the guide dropped a day
+if(/^days/.test(qs.get('demo')||'')){ demo=Object.assign({},demo,{date_from:'2026-11-18',date_to:'2026-11-26',days:'2026-11-18,2026-11-19,2026-11-22,2026-11-24,2026-11-26'});
+  if(qs.get('demo')==='dayschanged'){ const t={price:'3000',currency:'ILS',vat:'not_applicable',hours_incl:'10',km_incl:'250',overtime:'200',tolls:'incl',tip:'none'};
+    const was=Object.assign({},demo,{terms:t,date_to:'2026-11-27',days:'2026-11-18,2026-11-19,2026-11-22,2026-11-24,2026-11-26,2026-11-27'}); demo=Object.assign({},demo,{terms:t,terms_by:'company',answered_by:'דודו',answered_at:new Date().toISOString(),seen:was}); } }
 if(qs.get('demo')==='changed'){ const t={price:'3000',currency:'ILS',vat:'not_applicable',hours_incl:'10',km_incl:'250',overtime:'200',tolls:'incl',tip:'none'};
   const was=Object.assign({},demo,{terms:t}); demo=Object.assign({},demo,{terms:t,terms_by:'company',answered_by:'דודו',answered_at:new Date().toISOString(),pickup_time:'07:00',pax:'28',seen:was}); }
 async function api(fn, args){
@@ -253,6 +277,7 @@ function formView(){
       <div><label for="t_price">${two('מחיר ליום','Price per day')}</label>
         <div class="price"><input id="t_price" data-t="price" type="text" inputmode="decimal" value="${esc(t.price||'')}" placeholder="3000" autocomplete="off">
         <select data-t="currency" aria-label="מטבע · Currency">${['ILS','USD','EUR'].map(c=>`<option value="${c}"${(t.currency||'ILS')===c?' selected':''}>${BK_SIGN[c]} ${c}</option>`).join('')}</select></div>
+        ${bkDayCount(B)>1?`<p class="note sub" style="margin:6px 0 0">${two('ההזמנה היא ל־'+bkDayCount(B)+' ימים. המחיר הוא ליום אחד.','This booking is for '+bkDayCount(B)+' days. The price is for one day.')}</p>`:''}
         <fieldset class="sub"><legend class="lab" style="font-weight:400;font-size:13px;color:var(--ink-2)">מע״מ · VAT</legend>${seg('vat',[['including_vat','כולל מע״מ','incl. VAT'],['plus_vat','בתוספת מע״מ','plus VAT'],['not_applicable','ללא מע״מ, תיירים','no VAT, tourists']],t,3)}</fieldset></div>
       <div class="two">${field('hours_incl','כולל עד שעות','Hours included',t,'decimal','10')}${field('km_incl','כולל עד ק״מ','Km included',t,'numeric','250')}</div>
       <fieldset><legend class="lab">${two('השעות נספרות מ־','Hours counted from')}</legend>${seg('hours_from',[['pickup','נקודת האיסוף','the pick-up'],['depot','היציאה מהחניון','leaving the depot']],t)}</fieldset>
