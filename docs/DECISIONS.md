@@ -10,6 +10,48 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-23 · Photographer is a subcategory under Other (live)
+
+**Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 5 October 2026, 11:43 to 12:02 Israel time.
+
+**In his words:** "also add as a supplier photgrapher". Offered its own category (which needs a database file he runs) or a type under Other (no database change), he first said "Photographer own category" (12:01) and a minute later settled it: "photgrapher sub category under other" (12:02).
+
+**Decision:** a photographer is listed under the category Other, with the type Photographer. It is not a category of its own.
+
+**What was built (implementation choices; change on request):**
+
+- **The supplier form** offers "+ Photographer" as a type when the category is Other.
+- **The supplier list:** when Other is switched on, a second row appears with **All other** and **Photographers**, the same way Extreme and Activity have theirs (D-20). The button shows once a photographer is on the list.
+- **A photographer's entry reads "Photographer"** where it would have said "Other", the same idea as D-19.
+- **No food nearby** on a photographer's page: it is a service that comes to the client, not a place (E7).
+- **Organisations** see photographers only if Eretz Israel Tours gives that organisation the Other section. By default they do not, the same as every supplier under Other.
+- A sample photographer was added to the preview's sample list. The live list is untouched: no photographer exists on it until someone adds one.
+
+**Checked:** in preview at desktop and phone size as Eretz Israel Tours (filter, entry, page, form) and as an organisation (does not see it). **Not checked:** on the live site; by a session other than the one that built it.
+
+**Status:** live since 5 Oct 2026, about 15:30. He saw the preview picture and, asked whether to put all three changes of the branch `email-choice` live, said at 15:27: "yes". Front end only. No database change, no terms change. The live list has no photographer yet, so the Photographers button shows once someone adds one.
+
+---
+
+## D-22 · The Email button on a computer offers Gmail, the mail program, or copying the address (live)
+
+**Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 5 October 2026, 11:30 to 11:37 Israel time.
+
+**In his words:** "also when i click email for a vender nothing happens", then "email was on cpu", and, offered a fix in the app for everyone (tapping Email offers Open in Gmail, Open mail app or Copy address, with a preview first): "yes - fix now".
+
+**Cause, read in the code:** the Email button was an ordinary email link, which asks the device to open its own mail program. A computer where none is set for email links (Gmail used only in the browser, for example) does nothing. Nothing in the app blocked it. Not reproduced on his computer.
+
+**What was built (implementation choices; change on request):**
+
+- **On a computer**, Email opens a small box with the address and four buttons: **Open in Gmail** (a new tab with the message started), **Open my mail program** (the old behaviour), **Copy the address**, **Cancel**. "A computer" means a device with a mouse; a phone or tablet behaves exactly as before and opens its mail app at once.
+- **The same box** is used for the other three places the app starts an email: asking a supplier for agent prices, the welcome message to a new member, and sending a booking sheet by email. Subject and message carry over to Gmail.
+- **The hidden copy to Eretz Israel Tours is unchanged:** it is added for the same members as before, in Gmail as in the mail program, and the box says so. The first-time notice about the hidden copy still comes first.
+- **"Don't ask again on this computer"** (the owner, 11:42, offered it: "yes pls"): a tick box in the box. Ticked, the choice of Gmail or the mail program is kept on that computer only (in the browser, like the welcome tour) and Email then opens that way at once. My settings shows "On this computer, Email opens Gmail" with **Ask me each time** to undo it. Copy and Cancel are never remembered. If the browser blocks the Gmail tab, the box shows again.
+- **Only Gmail is offered as a browser mailbox** (the owner, 11:42: "thats fine").
+
+**Checked:** in preview at desktop size as Eretz Israel Tours and as an organisation (box shows, Gmail and mail-program links correct, copy works, box closes), and at phone size (no box, mail app link as before). The links were checked with a subject, a message and a hidden copy. **Not checked:** on the live site; on his computer; Gmail itself opening (no internet access from the test); the hidden copy in the running app (the demo members have none); by a session other than the one that built it.
+
+**Status:** live since 5 Oct 2026, about 15:30, on his word at 15:27 ("yes" to putting the Email box, the narrow-window row fix and Photographer live together). Front end only (`index.html`). No database change, no terms change. Brought up to date with `main` after D-21 went live (the one shared line, the booking sheet's Email button, keeps both changes). Not yet tried on his computer.
 ## D-21 · A booking sheet for separate days inside a period (live)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 5 October 2026, 11:07 and 11:12 Israel time.

@@ -377,13 +377,17 @@ button.bkcard{display:block;width:100%;text-align:left;font:inherit;color:inheri
 .tour-body .linkbtn{color:var(--tab-on);min-height:44px}
 .tour-ex{background:var(--ground);border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:6px}
 .tour-ex .chips{padding:8px 0 0;overflow:hidden}
-/* Wide screens (a mouse cannot swipe a row whose scrollbar is hidden): let the filter rows and the most-used cards wrap, so every chip and card can be reached. The tour's examples keep one clipped row on purpose. */
-@media (min-width:700px){
-  .chips,.favs{flex-wrap:wrap;overflow:visible}
+/* A mouse cannot swipe a row whose scrollbar is hidden: on a wide screen, and on ANY device with a mouse however narrow its window (a browser beside another app, or zoomed in), let the filter rows, the view tabs and the most-used cards wrap, so every chip and card can be reached. The tour's examples keep one clipped row on purpose. */
+@media (min-width:700px), (hover:hover) and (pointer:fine){
+  .chips,.favs,.otabs{flex-wrap:wrap;overflow:visible}
   .chips{padding-top:10px}
-  .chips .chip{padding:7px 14px;min-height:0;font-size:14px}   /* smaller on a wide screen, so a full set of categories or regions takes two rows, not three */
+  .chips .chip{padding:7px 14px;min-height:0;font-size:14px}   /* smaller, so a full set of categories or regions takes two rows, not three */
   .fav{width:calc((100% - 24px)/4);box-sizing:border-box}      /* four cards to a row */
   .tour-ex .chips{flex-wrap:nowrap;overflow:hidden}
+  .tour-ex .fav{width:150px}
+}
+@media (max-width:699.98px) and (hover:hover) and (pointer:fine){
+  .fav{width:calc((100% - 8px)/2)}                              /* a narrow window with a mouse: two cards to a row */
   .tour-ex .fav{width:150px}
 }
 .tour-ex .chip{padding:7px 14px;min-height:0;font-size:14px}
@@ -563,13 +567,13 @@ const REL = {
 };
 const catsOf = v => [v.category, ...String(v.also_categories||'').split(',').map(t=>t.trim()).filter(Boolean)];
 const rel = (field, v) => catsOf(v).some(c=>REL[field].includes(c));
-// Food nearby is only for a place you can stand at. A guide, a bus or van company, or a jeep, ATV or rappelling
-// outfit comes to the client and has no "nearby", so it gets no food section.
+// Food nearby is only for a place you can stand at. A guide, a bus or van company, a photographer, or a jeep, ATV or
+// rappelling outfit comes to the client and has no "nearby", so it gets no food section.
 const PLACE_CATS=['Hotel','Restaurant','Winery','Attraction / Site','National Parks'];
 function foodOk(v){ const c=catsOf(v);
   if(c.some(x=>PLACE_CATS.includes(x))) return true;
   if(!c.some(x=>x==='Activity'||x==='Other')) return false;
-  return !/(^|,)\s*(jeep|atv|rzr|rappel)/i.test(String(v.tags||'')); }
+  return !/(^|,)\s*(jeep|atv|rzr|rappel|photograph)/i.test(String(v.tags||'')); }
 const REGIONS = ['Jerusalem','Gush Etzion & Judea','Binyamin & Shomron','Dead Sea & Judean Desert','Negev & Arava','Eilat','Tel Aviv & Center','Shfela','Haifa & Coast','Galilee','Golan','Countrywide'];
 const TAG_SUGGEST = {Adventure:['Jeep','ATV / RZR','Rappelling','Kayak & rafting','Zipline','Boat','Snorkelling','Bikes','Horse riding','Camels','Shooting'],
   Activity:['Workshop','Food & wine','Volunteering','Archaeology','Family','Shooting','Farm'],
@@ -579,7 +583,8 @@ const TAG_SUGGEST = {Adventure:['Jeep','ATV / RZR','Rappelling','Kayak & rafting
   Guide:['Eshkol license','D1 license','Owns an Eshkol vehicle','Midbari 4x4 vehicle','Carries a gun','Driver-guide','Shuk tours','Graffiti tours','English','French','Spanish','Russian'],
   'Travel Agent':['Hotel bookings','Flights','Packages','Groups','Commission'],
   'Itinerary Planner':['Full trip planning','Day trips','Groups','Families','Bar/bat mitzvah'],
-  Winery:['Tasting','Tour','Restaurant','Boutique','Free bottle for guide','Group menus']};
+  Winery:['Tasting','Tour','Restaurant','Boutique','Free bottle for guide','Group menus'],
+  Other:['Photographer']};   // D-23: a photographer is a type under Other, not a category of its own
 // Shomer Shabbat is a tag on the supplier (no database change); the kosher rule: no non-kosher restaurants on the list.
 const SHABBAT_TAG='Shomer Shabbat';
 // Guide rules (D-15): only licensed tour guides are listed, except a specialty (shuk tours, graffiti tours and the
@@ -590,7 +595,8 @@ const tagHas=(tags,t)=>String(tags||'').split(',').map(x=>x.trim().toLowerCase()
 // (Water = kayaks, boats, snorkelling), so nothing in the database changes. A button shows only when a supplier on the list has that type.
 const SUBCATS = {
   Adventure:[['Jeeps',['Jeep']],['ATVs',['ATV / RZR','ATV','RZR']],['Water',['Kayak & rafting','Boat','Snorkelling']],['Rappelling',['Rappelling']],['Zipline',['Zipline']],['Bikes',['Bikes']],['Horses',['Horse riding']],['Camels',['Camels']],['Shooting',['Shooting']]],
-  Activity:[['Workshops',['Workshop']],['Food & wine',['Food & wine']],['Farms',['Farm']],['Family',['Family']],['Volunteering',['Volunteering']],['Archaeology',['Archaeology']],['Shooting',['Shooting']]]
+  Activity:[['Workshops',['Workshop']],['Food & wine',['Food & wine']],['Farms',['Farm']],['Family',['Family']],['Volunteering',['Volunteering']],['Archaeology',['Archaeology']],['Shooting',['Shooting']]],
+  Other:[['Photographers',['Photographer']]]
 };
 const subHit=(v,c,name)=>{ const g=(SUBCATS[c]||[]).find(x=>x[0]===name); return !!g && g[1].some(t=>tagHas(v.tags,t)); };
 const eshkolListed=tags=>/eshkol (license|driver|guide)/i.test(String(tags||''));
@@ -605,7 +611,9 @@ const tagsNoShab=v=>tagList(v).filter(t=>t.toLowerCase()!==SHABBAT_TAG.toLowerCa
 // The stored category is still 'Adventure'; guides and agents call it Extreme (owner, 3 Oct 2026, D-19). catDisp is the name shown on buttons and in the form.
 const catDisp=c=>c==='Adventure'?'Extreme':c;
 const advTypes=v=>{ const have=tagList(v).map(t=>t.toLowerCase()); return TAG_SUGGEST.Adventure.filter(t=>have.includes(t.toLowerCase())); };
-const catName=(c,v)=>{ if(c!=='Adventure') return c; const t=advTypes(v); return t.length ? t.slice(0,2).join(', ')+(t.length>2?'…':'') : catDisp(c); };
+// The same for Other (D-23): a photographer's page reads "Photographer", not "Other".
+const otherTypes=v=>{ const have=tagList(v).map(t=>t.toLowerCase()); return TAG_SUGGEST.Other.filter(t=>have.includes(t.toLowerCase())); };
+const catName=(c,v)=>{ if(c!=='Adventure'&&c!=='Other') return c; const t=c==='Other'?otherTypes(v):advTypes(v); return t.length ? t.slice(0,2).join(', ')+(t.length>2?'…':'') : catDisp(c); };
 const catMain=v=>catName(v.category, v);
 const catLabel=v=>catsOf(v).map(c=>catName(c,v)).join(' + ');
 const shabPill=v=>isShabbat(v)?'<span class="pill shab">Shomer Shabbat</span>':'';
@@ -660,6 +668,7 @@ function sample(){
     v({id:'vendor_x7atv01',name:'Arava ATV Trails',category:'Adventure',tags:'ATV / RZR, Jeep',contactPerson:'Gal',phone:'+972 52 555 0161',location:'Tzukim',region:'Negev & Arava',agentPrice:'280',agentPriceVatTreatment:'plus_vat',priceBasis:'Per person'}),
     v({id:'vendor_x7kyk02',name:'Upper Jordan Kayaks',category:'Adventure',tags:'Kayak & rafting, Boat',contactPerson:'Office',phone:'+972 4 555 0172',location:'Kfar Blum',region:'Galilee',listedPrice:'120',listedPriceVatTreatment:'including_vat',priceBasis:'Per person'}),
     v({id:'vendor_x7rap03',name:'Judean Desert Rappelling',category:'Adventure',tags:'Rappelling',contactPerson:'Itai',phone:'+972 54 555 0183',location:'Metzoke Dragot',region:'Dead Sea & Judean Desert',agentPrice:'1800',agentPriceVatTreatment:'plus_vat',priceBasis:'Per group'}),
+    v({id:'vendor_x7pho05',name:'Galil Light Photography',category:'Other',tags:'Photographer',contactPerson:'Maya',phone:'+972 52 555 0205',email:'maya@example-photo.co.il',location:'Tiberias',region:'Galilee',agentPrice:'1800',listedPrice:'2200',priceBasis:'Per day',currency:'ILS'}),
     v({id:'vendor_x7wsh04',name:'Shiloh Pottery Workshop',category:'Activity',tags:'Workshop, Family',contactPerson:'Tamar',phone:'+972 50 555 0194',location:'Shilo',region:'Binyamin & Shomron',agentPrice:'90',agentPriceVatTreatment:'including_vat',priceBasis:'Per person'}),
     v({id:'vendor_n0a5h4l',name:'Noa Shalev',category:'Guide',tags:'Eshkol license, Owns an Eshkol vehicle',experience_years:'14',phone:'+972 52 555 0188',whatsapp:'+972 52 555 0188',location:'Jerusalem',region:'Jerusalem',languages:'English, Hebrew, Spanish',agentPrice:'1500',agentPriceVatTreatment:'plus_vat',priceBasis:'Per day',
       client_bio:'Noa grew up in the Jerusalem hills and has guided families and small groups for fourteen years. She trained as an archaeologist, dug at the City of David, and still cannot walk past an open trench without stopping.\n\nShe guides in English, Hebrew and Spanish, and is at her best with mixed ages: grandparents who want the history, children who want the tunnels.',retail_price:'$650 a day, up to 9 hours. Vehicle and entrance fees extra.'}),
@@ -1399,7 +1408,7 @@ function openAgentAsk(v){
   w.querySelector('#agBack').onclick=()=>openDetail(v.id);
   const b1=w.querySelector('#agWa'); if(b1) b1.onclick=()=>{ track(v.id,'agent_ask'); window.open(`https://wa.me/${intlDigits(wa)}?text=${encodeURIComponent(txt.value)}`,'_blank','noopener'); };
   const b2=w.querySelector('#agMail'); if(b2) b2.onclick=()=>{ track(v.id,'agent_ask'); const subj=lang==='he'?'הרשמה כסוכן':'Agent registration';
-    location.href=`mailto:${em}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(txt.value)}${bccOn()?'&bcc='+encodeURIComponent(S.me.bcc_email):''}`; };
+    mailGo({to:em, subject:subj, body:txt.value, bcc:bccOn()?S.me.bcc_email:''}); };
   if(!wa && !em) w.querySelector('#agTxt').insertAdjacentHTML('afterend','<div class="msg err" style="margin-top:8px">This supplier has no WhatsApp, mobile or email on the list. Copy the message and send it another way.</div>');
 }
 function openAgentForm(v){
@@ -1471,7 +1480,7 @@ function openWelcome(m){
   w.querySelectorAll('[data-wl]').forEach(b=>b.onclick=()=>{ lang=b.dataset.wl; w.querySelectorAll('[data-wl]').forEach(o=>o.setAttribute('aria-pressed',o===b)); t.value=welcomeText(m,lang); t.dir=lang==='he'?'rtl':'ltr'; });
   w.querySelector('#wSkip').onclick=closeSheet;
   const wa=w.querySelector('#wWa'); if(wa) wa.onclick=()=>{ window.open(`https://wa.me/${intlDigits(ph)}?text=${encodeURIComponent(t.value)}`,'_blank','noopener'); closeSheet(); };
-  const ml=w.querySelector('#wMail'); if(ml) ml.onclick=()=>{ location.href=`mailto:${em}?subject=${encodeURIComponent(lang==='he'?'אושרת לרשימת הספקים':'You\'re approved: The Inner Circle – Israel Guide')}&body=${encodeURIComponent(t.value)}`; closeSheet(); };
+  const ml=w.querySelector('#wMail'); if(ml) ml.onclick=()=>{ mailGo({to:em, subject:lang==='he'?'אושרת לרשימת הספקים':'You\'re approved: The Inner Circle – Israel Guide', body:t.value}); closeSheet(); };
 }
 function viewReview(){
   const view=document.getElementById('view');
@@ -1709,8 +1718,44 @@ function track(vid, action){
 document.addEventListener('click',e=>{ const a=e.target.closest('[data-track]'); if(a) track(a.dataset.v||'', a.dataset.track); }, true);
 function bccOn(){ return !!(S.me && S.me.bcc_email && !S.me.bcc_opt_out && !S.me.is_admin); }
 function mailHref(em, force){ const useBcc = force===undefined ? bccOn() : force; return 'mailto:'+em+(useBcc?'?bcc='+encodeURIComponent(S.me.bcc_email):''); }
+// Opening an email (D-22). A phone opens its mail app. A computer often has no mail program set for email links, so the
+// click did nothing: on a computer the member chooses Gmail in the browser, the computer's mail program, or copying the address.
+// m = {to, subject, body, bcc}
+const mailtoUrl=m=>{ const q=[['subject',m.subject],['body',m.body],['bcc',m.bcc]].filter(x=>x[1]).map(x=>x[0]+'='+encodeURIComponent(x[1])).join('&'); return 'mailto:'+m.to+(q?'?'+q:''); };
+const gmailUrl=m=>'https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(m.to)+(m.subject?'&su='+encodeURIComponent(m.subject):'')+(m.body?'&body='+encodeURIComponent(m.body):'')+(m.bcc?'&bcc='+encodeURIComponent(m.bcc):'');
+const onComputer=()=>{ try{ return matchMedia('(hover: hover) and (pointer: fine)').matches; }catch(e){ return false; } };
+// "Don't ask again on this computer": kept on the device only (localStorage), like the welcome tour. '' = ask each time.
+const MAIL_KEY='eitv_mail_via';
+const mailPref=()=>{ try{ const v=localStorage.getItem(MAIL_KEY); return v==='gmail'||v==='app'?v:''; }catch(e){ return ''; } };
+const mailPrefSet=v=>{ try{ if(v) localStorage.setItem(MAIL_KEY,v); else localStorage.removeItem(MAIL_KEY); }catch(e){} };
+function mailGo(m){ if(!onComputer()){ location.href=mailtoUrl(m); return; }
+  const via=mailPref();
+  if(via==='app'){ location.href=mailtoUrl(m); return; }
+  if(via==='gmail'){ const w=window.open(gmailUrl(m),'_blank'); if(w){ try{ w.opener=null; }catch(e){} return; } }   // blocked by the browser: fall back to asking
+  mailChoice(m); }
+function mailChoice(m){
+  const old=document.getElementById('mailModal'); if(old) old.remove();
+  const el=document.createElement('div'); el.className='modal'; el.id='mailModal';
+  el.innerHTML=`<div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="mcT"><h3 id="mcT">Email</h3>
+    <p style="overflow-wrap:anywhere"><b>${esc(m.to)}</b>${m.bcc?`<br><span class="hint">Hidden copy to ${esc(m.bcc)}</span>`:''}</p>
+    <a class="btn primary" data-m="gmail" href="${esc(gmailUrl(m))}" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;box-sizing:border-box;text-decoration:none">Open in Gmail</a>
+    <a class="btn soft" data-m="app" href="${esc(mailtoUrl(m))}" style="display:flex;align-items:center;justify-content:center;box-sizing:border-box;text-decoration:none">Open my mail program</a>
+    <button class="btn soft" data-m="copy" type="button">Copy the address</button>
+    <button class="btn soft" data-m="x" type="button">Cancel</button>
+    <label class="switch" for="mcKeep" style="margin:4px 0 10px"><input id="mcKeep" type="checkbox"><span><b>Don't ask again on this computer</b><br><span class="hint">Email will open the way you choose now. Change it under My settings (your name at the top).</span></span></label>
+    <p class="hint" style="margin:0">"My mail program" works only if this computer has one set up for email links, such as Outlook or Apple Mail.</p></div>`;
+  document.body.appendChild(el);
+  const close=()=>el.remove();
+  el.addEventListener('click',e=>{ if(e.target===el) close(); });
+  const keep=via=>{ if(el.querySelector('#mcKeep').checked){ mailPrefSet(via); toast('Saved for this computer. Change it under My settings.'); } setTimeout(close,0); };
+  el.querySelector('[data-m="gmail"]').addEventListener('click',()=>keep('gmail'));
+  el.querySelector('[data-m="app"]').addEventListener('click',()=>keep('app'));
+  el.querySelector('[data-m="copy"]').onclick=()=>{ copyText(m.to); close(); };
+  el.querySelector('[data-m="x"]').onclick=close;
+}
 document.addEventListener('click',e=>{ const a=e.target.closest('[data-mail]'); if(!a) return;
   if(S.me && S.me.bcc_email && !S.me.is_admin && !S.me.bcc_ack){ e.preventDefault(); bccPopup(a.dataset.mail); return; }
+  if(onComputer()){ e.preventDefault(); mailGo({to:a.dataset.mail, bcc:bccOn()?S.me.bcc_email:''}); return; }
   a.href = mailHref(a.dataset.mail); });
 function bccPopup(em){
   const m=document.createElement('div'); m.className='modal'; m.id='bccModal';
@@ -1722,16 +1767,18 @@ function bccPopup(em){
   document.body.appendChild(m);
   m.querySelectorAll('[data-b]').forEach(b=>b.onclick=async()=>{ const out=b.dataset.b==='out'; m.remove();
     S.me.bcc_ack=true; S.me.bcc_opt_out=out; if(LIVE){ try{ await sb.rpc('set_bcc_pref',{p_token:S.token,p_opt_out:out}); }catch(e){} }
-    location.href = mailHref(em, !out); });
+    mailGo({to:em, bcc:!out?S.me.bcc_email:''}); });
 }
 function openMySettings(){
   const body=`<p style="margin:0 0 12px;color:var(--ink-2)">${esc(S.me.name)} · ${esc(S.me.email)}${S.me.role?' · '+esc(S.me.role):''}${S.me.org?' · '+esc(S.me.org):''}</p>
     ${lim()?`<p class="hint" style="margin:0 0 12px">Your access: ${esc(mySections().map(k=>secName(k).toLowerCase()).join(', '))}. Agent prices are for tour guides and agents. What you add is shown to everyone on the list.</p>`:''}
     ${S.me.is_admin?'':`<label class="switch" for="myBcc"><input id="myBcc" type="checkbox" ${S.me.bcc_opt_out?'':'checked'}><span><b>Copy Eretz Israel Tours on supplier emails</b><br><span class="hint">Adds ${esc(S.me.bcc_email||'the Eretz Israel Tours address')} as a hidden copy when you use the Email button. Helps keep prices and bookings up to date.</span></span></label>`}
+    ${mailPref()?`<p style="margin-top:14px" id="myMailRow">On this computer, Email opens <b>${mailPref()==='gmail'?'Gmail':'your mail program'}</b>. <button type="button" class="linkbtn" id="myMail">Ask me each time</button></p>`:''}
     <p style="margin-top:14px"><button type="button" class="btn soft" id="myTour">Take the welcome tour again</button></p>
     <p style="margin-top:14px"><button type="button" class="linkbtn" id="myTerms">Terms and privacy</button></p>`;
   const w=sheet('My settings', body, `<button class="btn primary" id="msOk" type="button">Done</button>`);
   w.querySelector('#msOk').onclick=closeSheet; w.querySelector('#myTerms').onclick=openTerms; w.querySelector('#myTour').onclick=()=>{ closeSheet(); openTour(true); };
+  const mm=w.querySelector('#myMail'); if(mm) mm.onclick=()=>{ mailPrefSet(''); w.querySelector('#myMailRow').remove(); toast('Email will ask you each time'); };
   const c=w.querySelector('#myBcc'); if(c) c.onchange=async()=>{ S.me.bcc_opt_out=!c.checked; S.me.bcc_ack=true; if(LIVE){ try{ await sb.rpc('set_bcc_pref',{p_token:S.token,p_opt_out:!c.checked}); }catch(e){ toast(e.message); } } toast(c.checked?'Your supplier emails will copy Eretz Israel Tours':'Your emails won\'t be copied'); };
 }
 function fromBadge(by,date,prefix){ if(!by || by.admin) return ''; return `<span class="from">👤 <span>${esc(prefix||'From')} <b>${esc(by.name)}</b>${by.role?` <span class="r">· ${esc(by.role)}</span>`:''}${date?` <span class="r">· ${fmtDate(date)}</span>`:''}</span></span>`; }
@@ -2880,7 +2927,7 @@ function openBookingSend(b){
   g('bsWaT').onclick=()=>wa(bkText(b,null,'template'));
   g('bsCopy').onclick=()=>copyText(bkText(b,null,'ask',link));
   g('bsCopyT').onclick=()=>copyText(bkText(b,null,'template'));
-  const ml=g('bsMail'); if(ml) ml.onclick=()=>{ const base=mailHref(em); location.href=base+(base.includes('?')?'&':'?')+'subject='+encodeURIComponent('הזמנת רכב · Vehicle booking · '+bkShort(b))+'&body='+encodeURIComponent(bkText(b,null,'ask',link)); };
+  const ml=g('bsMail'); if(ml) ml.onclick=()=>mailGo({to:em, subject:'הזמנת רכב · Vehicle booking · '+bkShort(b), body:bkText(b,null,'ask',link), bcc:bccOn()?S.me.bcc_email:''});
   g('bsDone').onclick=()=>bkReload(b,true);
 }
 function bkPrint(b){
