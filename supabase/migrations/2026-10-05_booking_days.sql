@@ -8,7 +8,7 @@
 -- number of days on the quote a confirmed sheet leaves in the Quotes tab.
 --
 -- One new column, one new internal helper, five functions replaced. No grant, no policy; no DELETE, no DROP.
--- Safe to run twice. NOT RUN ON PRODUCTION until the owner says to go live.
+-- Safe to run twice. Run on production by the owner in the Supabase SQL editor on 5 Oct 2026, about 11:42.
 
 alter table public.bookings add column if not exists days text not null default '';
 do $do$ begin

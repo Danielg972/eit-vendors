@@ -10,13 +10,13 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
-## D-21 · A booking sheet for separate days inside a period (built; NOT live, waiting for the owner)
+## D-21 · A booking sheet for separate days inside a period (live)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 5 October 2026, 11:07 and 11:12 Israel time.
 
 **In his words:** "booking sheet - it only has full dates example nov 18 -27 what if i need only 5 dates during that period? how do i delinieate days?" Told that the sheet could not do it, and asked whether to prepare a preview of a "Which days" picker: "yes".
 
-**What he has agreed to so far:** a preview. Going live is his to say, after he has seen it (G1).
+**Go-live:** he saw the preview pictures (11:29, "looks good") and, asked whether to put it live, said at 11:30: "yes".
 
 **What was built (implementation choices; change on request):**
 
@@ -32,7 +32,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 **Checked:** `supabase/tests/booking_days/run.sh` (26 checks: the change file run twice on the earlier schema gives the same functions and columns as the schema record; a sheet made before the change reads exactly as it did; junk, repeats, impossible dates and days outside the period are dropped; an old copy of the app keeps the days unless it moves the dates; a day dropped after acceptance goes back to waiting; the quote counts the chosen days; an organisation sees only its own sheets). The 98 limited-member checks still pass. In preview, at phone and desktop size, as Eretz Israel Tours: fill in, save, send, reopen, and the company's page. **Not checked:** on the live site; on a real phone; by a session other than the one that built it; in preview as an organisation.
 
-**Status:** on the branch `booking-days`. The database file `supabase/migrations/2026-10-05_booking_days.sql` has NOT been run on production. It adds one column and one helper and replaces five functions; no DELETE, no DROP. It must be run before the branch is merged: the new app copy on the old database would simply ignore the days, but the form would show a picker whose choice is not saved.
+**Status:** live since 5 Oct 2026. The connector's approval prompt was cancelled twice, so the owner ran `supabase/migrations/2026-10-05_booking_days.sql` himself in the Supabase SQL editor at about 11:42 (G5). Checked on production straight after: 27 tables, 138 functions, 0 table grants, 0 policies; every function's fingerprint equals the tested copy (`supabase/tests/production_fingerprints.txt`); the helper cannot be called from outside; and a rolled-back probe as a guide and as an organisation (`supabase/tests/booking_days/production_probe.sql`) came back as expected: the days are kept and reach the company's page, the company's page gets no private field, each sees only its own sheet. Then the branch was merged. Before the change production had 137 functions and no booking sheets.
 
 ---
 
