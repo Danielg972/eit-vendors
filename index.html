@@ -466,6 +466,11 @@ button.bkcard{display:block;width:100%;text-align:left;font:inherit;color:inheri
 .cal-g button:disabled{opacity:.4}
 .cal-g button.jb::after{content:"";position:absolute;right:5px;top:5px;width:7px;height:7px;border-radius:50%;background:var(--ochre)}
 .cal-k{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--ink-2);margin-top:10px}
+/* booking sheet: which days of the period */
+.bkdays{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px}
+.bkdays .cal-g button{display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.05}
+.bkdays .cal-g button small{font-size:9.5px;font-family:inherit;opacity:.85}
+.bkdays .cal-g button[aria-pressed="false"]{color:var(--ink-2);text-decoration:line-through}
 .cal-k i{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-2px;margin-right:6px;border:1px solid var(--line)}
 .mini[aria-pressed="true"]{background:var(--olive);border-color:var(--olive);color:var(--on-olive)}
 /* a member's own page, claims, and notes that are private or waiting */
@@ -918,7 +923,7 @@ const DB = {
   async saveBooking(vid, b){
     if(!LIVE){ const now=new Date().toISOString(), v=S.vendors.find(y=>y.id===vid); let x=b.id&&S.demoBookings.find(y=>y.id===b.id);
       const job=['date_from','date_to','pax','service','seats','tourists','pickup_time','pickup_place','route','dropoff_time','dropoff_place','note'];
-      const content=y=>JSON.parse(JSON.stringify(Object.assign(Object.fromEntries(job.map(k=>[k,y[k]===undefined?'':y[k]])),{terms:y.terms||{}})));
+      const content=y=>JSON.parse(JSON.stringify(Object.assign(Object.fromEntries(job.map(k=>[k,y[k]===undefined?'':y[k]])),{terms:y.terms||{}},y.days?{days:y.days}:{})));
       if(!x){ x={id:'b'+Date.now(),vendor_id:vid,vendor_name:v?v.name:'',key:'demo',status:'waiting',terms:{},terms_by:'',answered_by:'',answered_at:null,confirmed_at:null,guide_ok_at:now,company_ok_at:null,company_ok_via:'',seen:null,mine:true,owner_name:S.me.name,owner_admin:true,in_tracker:false,created_at:now}; S.demoBookings.unshift(x); }
       const before=JSON.stringify(content(x)), was=x.status;
       const keep={id:x.id,status:x.status,key:x.key,terms:x.terms,terms_by:x.terms_by,answered_by:x.answered_by,answered_at:x.answered_at,guide_ok_at:x.guide_ok_at,company_ok_at:x.company_ok_at,company_ok_via:x.company_ok_via,seen:x.seen,confirmed_at:x.confirmed_at};
@@ -2510,6 +2515,26 @@ const bkMoney=(t,x)=>(BK_SIGN[(t&&t.currency)||'ILS']||'₪')+Number(x).toLocale
 function bkDate(iso,he){ if(!iso) return ''; const d=new Date(iso+'T12:00:00'); if(isNaN(d)) return iso;
   try{ return he ? d.toLocaleDateString('he-IL',{weekday:'short',day:'numeric',month:'numeric',year:'numeric'}) : d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'}); }catch(e){ return iso; } }
 const bkRange=(b,he)=> b.date_to&&b.date_to!==b.date_from ? bkDate(b.date_from,he)+' – '+bkDate(b.date_to,he) : bkDate(b.date_from,he);
+// Separate days inside a period (D-21). b.days is a comma list of yyyy-mm-dd, set only when the guide left some days of
+// the period out; empty means every day from the first date to the last.
+const bkIso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const bkPicked=b=>[...new Set(String((b&&b.days)||'').split(',').filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)))].sort();
+function bkSpan(from,to,max){ const out=[]; if(!/^\d{4}-\d{2}-\d{2}$/.test(from||'')) return out; const d=new Date(from+'T12:00:00'), end=/^\d{4}-\d{2}-\d{2}$/.test(to||'')&&to>from?to:from;
+  for(let i=0;i<(max||400);i++){ const iso=bkIso(d); if(iso>end) break; out.push(iso); d.setDate(d.getDate()+1); } return out; }
+function bkDayCount(b){ const p=bkPicked(b); if(p.length) return p.length; if(!b||!b.date_from) return 0; if(!b.date_to||b.date_to<=b.date_from) return 1;
+  const n=Math.round((new Date(b.date_to+'T12:00:00')-new Date(b.date_from+'T12:00:00'))/86400000)+1; return n>0?n:1; }
+const BK_WD_HE=['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'];
+// "5 ימים: ד׳ 18.11, ה׳ 19.11, א׳ 22.11.2026" · "5 days: Wed 18 Nov, Thu 19 Nov, Sun 22 Nov 2026"
+function bkDayList(days,he){ if(!days.length) return ''; const ds=days.map(x=>new Date(x+'T12:00:00')), oneYear=ds.every(d=>d.getFullYear()===ds[0].getFullYear());
+  const one=(d,i)=>{ const yr=!oneYear||i===ds.length-1;
+    if(he) return BK_WD_HE[d.getDay()]+' '+d.getDate()+'.'+(d.getMonth()+1)+(yr?'.'+d.getFullYear():'');
+    let s; try{ s=d.toLocaleDateString('en-GB',{weekday:'short'})+' '+d.getDate()+' '+d.toLocaleDateString('en-GB',{month:'short'}); }catch(e){ s=days[i]; } return s+(yr?' '+d.getFullYear():''); };
+  return (he?days.length+' ימים: ':days.length+' days: ')+ds.map(one).join(', '); }
+// The date line of a booking sheet: the chosen days, or the period with its number of days.
+function bkDates(b,he){ const p=bkPicked(b); if(p.length>1) return bkDayList(p,he); if(p.length===1) return bkDate(p[0],he);
+  const r=bkRange(b,he), n=bkDayCount(b); return r&&n>1 ? r+' · '+n+(he?' ימים':' days') : r; }
+// Short form for a card: the period, and how many days of it when separate days were chosen.
+const bkShort=b=>{ const p=bkPicked(b), r=bkRange(b,false); return p.length>1&&r ? r+' · '+p.length+' days' : r; };
 function bkVehicle(b,he){ const v=BK_VEH[b.service];
   if(!v) return b.seats?(he?b.seats+' מקומות':b.seats+' seats'):'';
   if(b.seats&&/^(bus|midibus|van)/.test(b.service)){
@@ -2518,7 +2543,7 @@ function bkVehicle(b,he){ const v=BK_VEH[b.service];
   return v[he?0:1]; }
 // Rows are [Hebrew label, English label, Hebrew value, English value]. English value null = the same typed text.
 function bkJobRows(b,all){ return [
-  ['תאריך','Date',bkRange(b,true),bkRange(b,false)],
+  ['תאריך','Date',bkDates(b,true),bkDates(b,false)],
   ['נוסעים','Passengers',b.pax?b.pax+(b.tourists?' · תיירים מחו״ל':''):(b.tourists?'תיירים מחו״ל':''),b.pax?b.pax+(b.tourists?' · tourists from abroad':''):(b.tourists?'tourists from abroad':'')],
   ['רכב','Vehicle',bkVehicle(b,true),bkVehicle(b,false)],
   ['איסוף','Pick-up',[b.pickup_time,b.pickup_place].filter(Boolean).join(', '),null],
@@ -2562,8 +2587,9 @@ function bkSheetHtml(b,t,o){ o=o||{}; const has=!!(t&&t.price), comp=b.company||
   const oldJob=seen&&('date_from' in seen)?Object.fromEntries(bkJobRows(seen,true).map(r=>[r[1],r[2]])):null;
   const st=seen&&seen.terms, oldTerm=st&&Object.keys(st).length?Object.fromEntries(bkTermRows(st).map(r=>[r[1],r[2]])):null;
   const was=(old,r)=>{ if(!old) return null; const prev=old[r[1]]||''; if(prev===(r[2]||'')) return null; if(o.loose&&!prev) return null; return prev||'—'; };
+  const nd=bkDayCount(b), perDay=r=>r[1]==='Price per day'&&r[2]&&nd>1?`<small class="xd" dir="rtl">× ${nd} ימים</small><small class="xd" dir="ltr">× ${nd} days</small>`:'';
   const row=(r,old,cls)=>{ const w=was(old,r);
-    return `<div class="bks-r${r[2]?'':' ns'}${w!=null?' chg':''}${cls||''}"><dt>${esc(r[0])}<small dir="ltr">${esc(r[1])}</small></dt><dd dir="auto">${r[2]?esc(r[2]):'לא צוין'}${r[2]?(r[3]&&r[3]!==r[2]?`<small dir="ltr">${esc(r[3])}</small>`:''):'<small dir="ltr">not stated</small>'}${w!=null?`<small class="was" dir="auto">קודם · was: ${esc(w)}</small>`:''}</dd></div>`; };
+    return `<div class="bks-r${r[2]?'':' ns'}${w!=null?' chg':''}${cls||''}"><dt>${esc(r[0])}<small dir="ltr">${esc(r[1])}</small></dt><dd dir="auto">${r[2]?esc(r[2]):'לא צוין'}${r[2]?(r[3]&&r[3]!==r[2]?`<small dir="ltr">${esc(r[3])}</small>`:''):'<small dir="ltr">not stated</small>'}${perDay(r)}${w!=null?`<small class="was" dir="auto">קודם · was: ${esc(w)}</small>`:''}</dd></div>`; };
   const jobs=bkJobRows(b,true).filter(r=>r[2]||was(oldJob,r)!=null);
   const terms=has?bkTermRows(t).filter((r,i)=>r[2]||i<BK_MUST||was(oldTerm,r)!=null):[];
   const ok=has?bkOkRows(b):null;
@@ -2586,10 +2612,10 @@ function bkChanged(b,t,seen,loose){ if(!seen) return 0; let n=0;
 function bkText(b,t,mode,link){ const L=[], comp=b.company||b.vendor_name||'';
   const two=r=>{ if(r[3]==null||r[3]===r[2]) L.push(r[0]+' · '+r[1]+': '+r[2]); else { L.push(r[0]+': '+r[2]); L.push(r[1]+': '+r[3]); } };
   if(mode==='ask'){
-    L.push('שלום, יש לי הזמנת רכב: '+[bkRange(b,true),bkVehicle(b,true),b.pax?b.pax+' נוסעים':''].filter(Boolean).join(', ')+'.');
+    L.push('שלום, יש לי הזמנת רכב: '+[bkDates(b,true),bkVehicle(b,true),b.pax?b.pax+' נוסעים':''].filter(Boolean).join(', ')+'.');
     if(b.pickup_time||b.pickup_place) L.push('איסוף: '+[b.pickup_time,b.pickup_place].filter(Boolean).join(', ')+'.');
     L.push('נא למלא מחיר ותנאים בקישור, זה לוקח דקה:'); L.push(link); L.push('תודה, '+(b.booker_name||''));
-    L.push(''); L.push('Vehicle booking for '+bkRange(b,false)+'. Please fill in the price and terms at the link. Thanks, '+(b.booker_name||''));
+    L.push(''); L.push('Vehicle booking for '+bkDates(b,false)+'. Please fill in the price and terms at the link. Thanks, '+(b.booker_name||''));
     return L.join('\n'); }
   L.push('*דף הזמנת רכב · Vehicle booking sheet*'); if(comp) L.push(comp);
   L.push(''); bkJobRows(b).forEach(two);
@@ -2601,7 +2627,7 @@ function bkText(b,t,mode,link){ const L=[], comp=b.company||b.vendor_name||'';
       .forEach(p=>{ L.push(p[0]); L.push(p[1]); });
   } else if(t&&t.price){
     L.push(''); L.push('*מחיר ותנאים · Price and terms*');
-    bkTermRows(t).forEach((r,i)=>{ if(r[2]) two(r); else if(i<BK_MUST){ L.push(r[0]+': לא צוין'); L.push(r[1]+': not stated'); } });
+    const nd=bkDayCount(b); bkTermRows(t).forEach((r,i)=>{ if(r[2]) two(i===0&&nd>1?[r[0],r[1],r[2]+' × '+nd+' ימים',r[3]+' × '+nd+' days']:r); else if(i<BK_MUST){ L.push(r[0]+': לא צוין'); L.push(r[1]+': not stated'); } });
   }
   L.push(''); L.push('*'+BK_STMT[0]+'*'); L.push(BK_STMT[1]);
   L.push(''); L.push('מזמין · Booked by: '+[b.booker_name,b.booker_phone].filter(Boolean).join(', '));
@@ -2621,6 +2647,7 @@ const BKS_CSS=`.bks{background:#fff;color:#16261e;border:1px solid #cfd6cd;borde
 .bks-r.chg{background:#f8e3df;box-shadow:-6px 0 0 #f8e3df,6px 0 0 #f8e3df}
 .bks-r.chg dd{color:#a63b2e;font-weight:600}
 .bks .was{color:#a63b2e;font-weight:400}
+.bks .xd{color:#16261e;font-weight:600}
 .bks-sec{margin:12px 0 2px;padding:5px 8px;background:#e8ede5;border-radius:6px;font-weight:600;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .bks-sec small{display:inline}
 .bks-stmt{margin-top:12px;border:2px solid #16261e;border-radius:6px;padding:8px 10px;font-weight:700}
@@ -2639,8 +2666,8 @@ const bkVendor=b=>S.vendors.find(v=>v.id===b.vendor_id);
 const BK_NUM=['price','hours_incl','km_incl','overtime','extra_km','tip_amt'];
 function bkCard(b, withVendor){ const t=b.terms||{};
   return `<button class="qcard bkcard${b.status==='cancelled'?' old':''}" type="button" data-bk="${esc(b.id)}">
-    <div class="qhead"><b>${esc(withVendor?(b.vendor_name||'Supplier'):bkRange(b,false)||'No date yet')}</b>${bkPill(b)}</div>
-    <div class="qsub">${[withVendor?esc(bkRange(b,false)):'',esc(bkVehicle(b,false)),b.pax?esc(b.pax)+' people':'',b.client_ref?esc(b.client_ref):''].filter(Boolean).join(' · ')}</div>
+    <div class="qhead"><b>${esc(withVendor?(b.vendor_name||'Supplier'):bkShort(b)||'No date yet')}</b>${bkPill(b)}</div>
+    <div class="qsub">${[withVendor?esc(bkShort(b)):'',esc(bkVehicle(b,false)),b.pax?esc(b.pax)+' people':'',b.client_ref?esc(b.client_ref):''].filter(Boolean).join(' · ')}</div>
     ${t.price?`<div class="qrate"><span class="p">${esc(bkMoney(t,t.price))}</span><span class="u">per day${BK_VAT[t.vat]?' · '+esc(BK_VAT[t.vat][1]):''}</span></div>`:''}
     ${!b.mine&&b.owner_name?`<div class="qsub">Sheet from ${esc(b.owner_name)}${b.owner_role?' · '+esc(b.owner_role):''}</div>`:''}</button>`; }
 // Open the sheet from the list at once, then swap in the server's copy if the company has acted since the list loaded.
@@ -2739,6 +2766,7 @@ function openBookingForm(v, b0, back){
     <fieldset><legend>The job</legend><div class="grid">
       <div class="f"><label for="b_from">Date <em>*</em></label><input id="b_from" type="date" value="${esc(b.date_from)}"></div>
       <div class="f"><label for="b_to">Until (more than one day)</label><input id="b_to" type="date" value="${esc(b.date_to)}"></div>
+      <div class="f wide" id="bDaysWrap" hidden><span class="lab">Which days</span><div class="bkdays" id="bDays"></div></div>
       <div class="f"><label for="b_pax">Passengers</label><input id="b_pax" inputmode="numeric" value="${esc(b.pax)}" placeholder="24"></div>
       <div class="f"><label for="b_seats">Seats needed</label><input id="b_seats" inputmode="numeric" value="${esc(b.seats)}" placeholder="30"></div>
       <div class="f wide"><label for="b_svc">Vehicle <em>*</em></label><select id="b_svc">${opt([['','Choose…'],...BK_SERVICES],b.service)}</select></div>
@@ -2767,6 +2795,20 @@ function openBookingForm(v, b0, back){
   bkWireTerms(exp);
   const setTerms=(t,from)=>{ exp.querySelector('.bkterms').outerHTML=bkTermsForm(t,'bp_'); bkWireTerms(exp); exp.open=true; g('bkExpNote').textContent=from?'Filled in from '+from+'. Change what is different.':''; };
   g('b_seats').onblur=()=>{ const k=vehicleBySeats(g('b_seats').value.trim()); if(k&&(!g('b_svc').value||VEH[g('b_svc').value])) g('b_svc').value=k; };
+  // Which days (D-21): every day of the period starts switched on; tap one to leave it out. off = the days left out.
+  const BK_PICK_MAX=62, off=new Set((p=>p.length?bkSpan(b.date_from,b.date_to,BK_PICK_MAX).filter(d=>!p.includes(d)):[])(bkPicked(b)));
+  const bkPeriod=()=>{ const f=g('b_from').value, t=g('b_to').value; return bkSpan(f,t,BK_PICK_MAX+1); };
+  const drawPick=()=>{ const wrap=g('bDaysWrap'), box=g('bDays'), sp=bkPeriod();
+    if(sp.length<2||sp.length>BK_PICK_MAX){ wrap.hidden=true; box.innerHTML=''; return; }
+    const on=sp.filter(d=>!off.has(d)), lead=new Date(sp[0]+'T12:00:00').getDay();
+    const cells=Array.from({length:lead},()=>'<span></span>').concat(sp.map(iso=>{ const d=new Date(iso+'T12:00:00'), is=!off.has(iso), mark=iso===sp[0]||d.getDate()===1;
+      return `<button type="button" data-d="${iso}" aria-pressed="${is}" aria-label="${esc(bkDate(iso,false))}${is?'':', left out'}">${d.getDate()}${mark?`<small>${d.toLocaleDateString('en-GB',{month:'short'})}</small>`:''}</button>`; }));
+    wrap.hidden=false;
+    box.innerHTML=`<div class="cal-g">${WEEKDAYS.map(d=>`<span class="dn">${d==='Shabbat'?'Sat':d}</span>`).join('')}${cells.join('')}</div>
+      <p class="hint" style="margin:8px 0 0">${on.length===sp.length?`<b>All ${sp.length} days.</b> Tap a day to leave it out.`:on.length?`<b>${on.length} of ${sp.length} days.</b> The company is asked for these days only. <button class="linkbtn" type="button" data-all>All days</button>`:`<b>No day chosen.</b> Tap the days you need. <button class="linkbtn" type="button" data-all>All days</button>`}</p>`;
+    box.querySelectorAll('[data-d]').forEach(el=>el.onclick=()=>{ const iso=el.dataset.d; if(off.has(iso)) off.delete(iso); else off.add(iso); drawPick(); });
+    const all=box.querySelector('[data-all]'); if(all) all.onclick=()=>{ off.clear(); drawPick(); }; };
+  ['b_from','b_to'].forEach(id=>['change','input'].forEach(ev=>g(id).addEventListener(ev,drawPick))); drawPick();
   // Autofill: earlier sheets with this company, and its quotes.
   (async()=>{ const box=g('bkFill'); if(!box) return; let mine=[], quotes=[];
     try{ mine=(await DB.loadBookings(''))||[]; }catch(e){} try{ quotes=(await DB.loadQuotes(v.id))||[]; }catch(e){}
@@ -2786,7 +2828,7 @@ function openBookingForm(v, b0, back){
         if(!s.placesOnly){ put('b_pax',j.pax); put('b_seats',j.seats); if(!g('b_svc').value&&j.service) g('b_svc').value=j.service; put('b_note',j.note); } }
       if(s.quote){ const {q,o}=s.quote; if(!g('b_pax').value&&q.pax) g('b_pax').value=q.pax; if(!g('b_seats').value&&o.seats) g('b_seats').value=o.seats;
         if(!g('b_svc').value&&VEH[o.service]) g('b_svc').value=o.service; if(!g('b_from').value&&q.date_from&&q.date_from>=today()){ g('b_from').value=q.date_from; g('b_to').value=q.date_to&&q.date_to!==q.date_from?q.date_to:''; }
-        if(!g('b_ref').value&&q.title) g('b_ref').value=q.title; }
+        if(!g('b_ref').value&&q.title) g('b_ref').value=q.title; drawPick(); }
       if(s.terms&&Object.keys(s.terms).length) setTerms(s.terms,s.from);
       if(!quiet) toast('Filled in. Check it and change what is different.'); };
     box.querySelectorAll('[data-src]').forEach(el=>el.onclick=()=>apply(srcs[+el.dataset.src]));
@@ -2800,6 +2842,11 @@ function openBookingForm(v, b0, back){
       pickup_time:g('b_ptime').value,pickup_place:g('b_pplace').value.trim(),route:g('b_route').value.trim(),dropoff_time:g('b_dtime').value,dropoff_place:g('b_dplace').value.trim(),note:g('b_note').value.trim(),private_note:g('b_priv').value.trim(),proposed,shared:g('b_shared').checked&&!v.prices_private};
     const probs=[]; if(!out.date_from) probs.push('Add the date.'); if(!out.service) probs.push('Choose the vehicle.'); if(!out.booker_name) probs.push('Add your name.'); if(!out.booker_phone) probs.push('Add your phone, so the company can answer you.');
     if(out.date_from&&out.date_to&&out.date_to<out.date_from) probs.push('The end date is before the start date.');
+    // Separate days: the first and last chosen day become the period; days in a row need no list.
+    out.days=''; { const sp=bkPeriod(), on=sp.filter(d=>!off.has(d));
+      if(sp.length>1&&sp.length<=BK_PICK_MAX&&on.length<sp.length){
+        if(!on.length) probs.push('Choose at least one day.');
+        else { out.date_from=on[0]; out.date_to=on[on.length-1]; if(bkSpan(on[0],on[on.length-1],BK_PICK_MAX).length!==on.length) out.days=on.join(','); } } }
     if(out.seats&&!/^\d{1,3}$/.test(out.seats)) probs.push('Seats must be a number.');
     const bt=bkBadTerms(proposed); if(bt) probs.push(bt);
     if(probs.length){ err.innerHTML=`<div class="msg err">${probs.map(esc).join(' ')}</div>`; err.scrollIntoView({block:'center'}); return; }
@@ -2833,7 +2880,7 @@ function openBookingSend(b){
   g('bsWaT').onclick=()=>wa(bkText(b,null,'template'));
   g('bsCopy').onclick=()=>copyText(bkText(b,null,'ask',link));
   g('bsCopyT').onclick=()=>copyText(bkText(b,null,'template'));
-  const ml=g('bsMail'); if(ml) ml.onclick=()=>{ const base=mailHref(em); location.href=base+(base.includes('?')?'&':'?')+'subject='+encodeURIComponent('הזמנת רכב · Vehicle booking · '+bkRange(b,false))+'&body='+encodeURIComponent(bkText(b,null,'ask',link)); };
+  const ml=g('bsMail'); if(ml) ml.onclick=()=>{ const base=mailHref(em); location.href=base+(base.includes('?')?'&':'?')+'subject='+encodeURIComponent('הזמנת רכב · Vehicle booking · '+bkShort(b))+'&body='+encodeURIComponent(bkText(b,null,'ask',link)); };
   g('bsDone').onclick=()=>bkReload(b,true);
 }
 function bkPrint(b){

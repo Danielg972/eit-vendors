@@ -1,0 +1,16 @@
+#!/bin/bash
+# Booking sheets, separate days inside a period (D-21): the checks for supabase/migrations/2026-10-05_booking_days.sql.
+# Needs a local Postgres 16 (PGHOST, PGPORT, PGUSER set), psql and python3. Run after ../limited_members/run.sh has
+# passed: this builds its own two databases, one from supabase/schema.sql and one from the schema as it was before
+# D-21 (pass that file as $1, e.g. from `git show main:supabase/schema.sql`) with the migration run on top, twice.
+set -e
+cd "$(dirname "$0")"; R=../../..; OLD=${1:?give the schema.sql from before D-21}
+for DB in eitv_bd_new eitv_bd_mig; do psql -q -d postgres -c "drop database if exists $DB" -c "create database $DB" 2>/dev/null; psql -q -d $DB -f ../limited_members/local_base.sql; done
+psql -q -v ON_ERROR_STOP=1 -d eitv_bd_new -f $R/supabase/schema.sql 2>&1 | grep -v "NOTICE\|skipping" | head -5 || true
+psql -q -v ON_ERROR_STOP=1 -d eitv_bd_mig -f "$OLD" 2>&1 | grep -v "NOTICE\|skipping" | head -5 || true
+psql -q -d eitv_bd_mig -f ../limited_members/seed.sql > /dev/null
+# an old booking sheet, made before the change, has to come through untouched
+psql -q -v ON_ERROR_STOP=1 -d eitv_bd_mig -c "select public.booking_save('FULLTOKEN00000000000000000', (select id from public.__ids where k='T'), '{\"date_from\":\"2026-11-18\",\"date_to\":\"2026-11-27\",\"service\":\"bus\",\"booker_name\":\"Old\",\"booker_phone\":\"050\"}'::jsonb)" > /dev/null
+psql -qAt -d eitv_bd_mig -c "select md5(public._booking_content(b)::text) from public.bookings b" > /tmp/bd_before.txt
+for i in 1 2; do psql -q -v ON_ERROR_STOP=1 -d eitv_bd_mig -f $R/supabase/migrations/2026-10-05_booking_days.sql 2>&1 | grep -v "NOTICE\|skipping" | head -5 || true; done
+python3 probe.py | grep -v "^PASS"
