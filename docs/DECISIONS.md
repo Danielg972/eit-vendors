@@ -10,7 +10,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
-## D-28 · Gaza Envelope is a region (built; waits for the owner's word)
+## D-28 · Gaza Envelope is a region (live)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 5 October 2026, 17:37 Israel time.
 
@@ -24,11 +24,11 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 - As with every region, its button on the supplier list appears once a supplier a member can see is in it.
 - Front end only (`index.html`, one line). The database takes any region text up to 60 characters, so nothing changes there.
 
-**Not done, his to decide:** no supplier was moved. Four suppliers now under "Negev & Arava" are in the Gaza Envelope, all four hidden and waiting for review: Burnt Vehicles Compound (Tkuma), Garden of Heroism and Remembrance (Sderot), Nova Festival Memorial Site (Re'im), The Salad Trail (Talmei Yosef).
+**Suppliers moved into it, on his word:** four suppliers that were under "Negev & Arava", all four hidden and waiting for review: Burnt Vehicles Compound (Tkuma), Garden of Heroism and Remembrance (Sderot), Nova Festival Memorial Site (Re'im), The Salad Trail (Talmei Yosef). Asked whether to move them, he said at 17:42: "yes to both". Only the region of those four rows was changed.
 
 **Checked:** in preview at phone and desktop size: the region is offered on the supplier form and is saved as chosen; with one sample supplier placed in it, its button shows on the list and filters to that supplier. No page errors. **Not checked:** on the live site.
 
-**Status:** built on branch `region-gaza-envelope`; not live. No terms change.
+**Status:** live since 5 Oct 2026, about 17:45, on his word at 17:42: "yes to both" (go live, and move the four suppliers). Shown the preview picture first. Front end only, plus the region of four supplier rows. No terms change. Until one of the four is approved or another supplier is put in the region, colleagues see it in the forms but not as a filter button.
 
 ---
 
