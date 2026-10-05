@@ -72,6 +72,7 @@
 
 ## Waiting for the owner
 
+- **Rows cut off in a narrow computer window (review item D1, second part):** the owner, 5 Oct, 11:43: "desktop home page is still cutoff and i cant scroll right". The 3 Oct fix wrapped the rows only in windows 700 px or wider; a browser beside another app, or zoomed in, is narrower and still had one clipped row a mouse cannot scroll. Now any device with a mouse wraps them, at any width (categories, regions, view tabs, most-used cards two to a row). Phones unchanged. Styling only, on the branch `email-choice`, NOT live. His window was not seen: the live site showed nothing cut off in a 1,443 px window, and the fault was reproduced in preview at 577 and 690 px.
 - **The Email button on a computer (D-22):** built on the branch `email-choice`, NOT live. On a computer it offers Open in Gmail, Open my mail program or Copy the address; a phone is unchanged. Front end only. Waiting for his word after the preview picture.
 - **Booking sheets for separate days inside a period (D-21):** live since 5 Oct on his word ("yes", 11:30). He ran `supabase/migrations/2026-10-05_booking_days.sql` himself; production now has `bookings.days` and 138 functions, checked against the tested copy. Not yet tried by a person on the live site. Nothing Cockpit-facing.
 - **Several categories at once, and subcategories (D-20):** live since 4 Oct, about 19:00, on his word. Front end only. His to say if he wants otherwise: Activity was given subcategories too (he named Extreme only). Not yet tried by a person on the live site.
