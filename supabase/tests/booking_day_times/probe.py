@@ -82,6 +82,17 @@ check('a term put back on the sheet is asked again (it comes back empty)', x['te
 g2 = save(dict(base, booker_name='Typed', terms_off='cancel,tip', terms=full, company_agreed=True, answered_by='Dudu'))
 check('terms the guide types in himself lose the ones left off too', not ({'tip','tip_amt','cancel'} & set(g2['terms'])) and g2['terms']['km_incl'] == '250', g2['terms'])
 check('a sheet with every term on has no terms_off key in what both sides accept', q("select bool_or(public._booking_content(b) ? 'terms_off')::text from public.bookings b where terms_off = ''") == 'false')
+# ---- D-26 and the loose end of D-25: the conditions on the quote a confirmed sheet leaves
+def confirm(o):
+    s0 = save(dict(base, **o)); j(f"select public.booking_answer('{s0['key']}', {lit(dict(full, hours_from='depot'))}::jsonb, 'Dudu')", role='anon'); j(f"select public.booking_set_status('{F}', '{s0['id']}', 'confirmed')")
+    return q(f"select q.conditions from public.quotes q join public.bookings b on b.quote_id = q.id where b.id = '{s0['id']}'")
+c1 = confirm(dict(booker_name='Q1'))
+check('the quote says "when the bus turns on", and gives the cancellation policy', 'Hours counted from when the bus turns on.' in c1 and 'leaving the depot' not in c1 and 'Cancellation policy: 48 hours' in c1, c1)
+c2 = confirm(dict(booker_name='Q2', terms_off='cancel'))
+check('with the cancellation policy left off the sheet, the quote says nothing about it', 'Cancellation policy' not in c2 and 'From a booking sheet accepted by both sides.' in c2, c2)
+s3 = save(dict(base, booker_name='Q3')); j(f"select public.booking_answer('{s3['key']}', {lit({'price':'3000'})}::jsonb, 'Dudu')", role='anon'); j(f"select public.booking_set_status('{F}', '{s3['id']}', 'confirmed')")
+c3 = q(f"select q.conditions from public.quotes q join public.bookings b on b.quote_id = q.id where b.id = '{s3['id']}'")
+check('with the policy on the sheet and left empty, the quote still says none was given', 'Cancellation policy: none given.' in c3, c3)
 # an organisation
 L = j("select public.request_access_org('Avi Stern','avi@yeshiva.test','050-000-0000','','2026-10-03b','Sample Yeshiva','I run the trips for a yeshiva of 120 students, six years in the role. Office 02-000-0000.')")['token']
 q(f"select public.member_decide('{A}', (select id from public.members where email='avi@yeshiva.test'), 'approved')")

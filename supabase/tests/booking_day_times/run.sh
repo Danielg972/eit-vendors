@@ -13,4 +13,6 @@ psql -q -d eitv_bt_mig -f ../limited_members/seed.sql > /dev/null
 psql -q -v ON_ERROR_STOP=1 -d eitv_bt_mig -c "select public.booking_save('FULLTOKEN00000000000000000', (select id from public.__ids where k='T'), '{\"date_from\":\"2026-11-18\",\"date_to\":\"2026-11-27\",\"service\":\"bus\",\"booker_name\":\"Old\",\"booker_phone\":\"050\",\"pickup_time\":\"08:00\",\"dropoff_time\":\"18:00\"}'::jsonb)" -c "select public.booking_save('FULLTOKEN00000000000000000', (select id from public.__ids where k='T'), '{\"date_from\":\"2026-11-18\",\"date_to\":\"2026-11-27\",\"days\":\"2026-11-18,2026-11-20,2026-11-27\",\"service\":\"bus\",\"booker_name\":\"Old2\",\"booker_phone\":\"050\"}'::jsonb)" > /dev/null
 psql -qAt -d eitv_bt_mig -c "select string_agg(md5(public._booking_content(b)::text), ',' order by booker_name) from public.bookings b" > /tmp/bt_before.txt
 for i in 1 2; do psql -q -v ON_ERROR_STOP=1 -d eitv_bt_mig -f $R/supabase/migrations/2026-10-05b_booking_day_times.sql 2>&1 | grep -v "NOTICE\|skipping" | head -5 || true; done
+# later changes to the same functions, so the result can still be compared with the schema record as it is today
+for i in 1 2; do psql -q -v ON_ERROR_STOP=1 -d eitv_bt_mig -f $R/supabase/migrations/2026-10-05c_quote_wording.sql 2>&1 | grep -v "NOTICE\|skipping" | head -5 || true; done
 python3 probe.py | grep -v "^PASS"
