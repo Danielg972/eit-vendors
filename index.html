@@ -1394,7 +1394,7 @@ function openAgentAsk(v){
   w.querySelector('#agBack').onclick=()=>openDetail(v.id);
   const b1=w.querySelector('#agWa'); if(b1) b1.onclick=()=>{ track(v.id,'agent_ask'); window.open(`https://wa.me/${intlDigits(wa)}?text=${encodeURIComponent(txt.value)}`,'_blank','noopener'); };
   const b2=w.querySelector('#agMail'); if(b2) b2.onclick=()=>{ track(v.id,'agent_ask'); const subj=lang==='he'?'הרשמה כסוכן':'Agent registration';
-    location.href=`mailto:${em}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(txt.value)}${bccOn()?'&bcc='+encodeURIComponent(S.me.bcc_email):''}`; };
+    mailGo({to:em, subject:subj, body:txt.value, bcc:bccOn()?S.me.bcc_email:''}); };
   if(!wa && !em) w.querySelector('#agTxt').insertAdjacentHTML('afterend','<div class="msg err" style="margin-top:8px">This supplier has no WhatsApp, mobile or email on the list. Copy the message and send it another way.</div>');
 }
 function openAgentForm(v){
@@ -1466,7 +1466,7 @@ function openWelcome(m){
   w.querySelectorAll('[data-wl]').forEach(b=>b.onclick=()=>{ lang=b.dataset.wl; w.querySelectorAll('[data-wl]').forEach(o=>o.setAttribute('aria-pressed',o===b)); t.value=welcomeText(m,lang); t.dir=lang==='he'?'rtl':'ltr'; });
   w.querySelector('#wSkip').onclick=closeSheet;
   const wa=w.querySelector('#wWa'); if(wa) wa.onclick=()=>{ window.open(`https://wa.me/${intlDigits(ph)}?text=${encodeURIComponent(t.value)}`,'_blank','noopener'); closeSheet(); };
-  const ml=w.querySelector('#wMail'); if(ml) ml.onclick=()=>{ location.href=`mailto:${em}?subject=${encodeURIComponent(lang==='he'?'אושרת לרשימת הספקים':'You\'re approved: The Inner Circle – Israel Guide')}&body=${encodeURIComponent(t.value)}`; closeSheet(); };
+  const ml=w.querySelector('#wMail'); if(ml) ml.onclick=()=>{ mailGo({to:em, subject:lang==='he'?'אושרת לרשימת הספקים':'You\'re approved: The Inner Circle – Israel Guide', body:t.value}); closeSheet(); };
 }
 function viewReview(){
   const view=document.getElementById('view');
@@ -1704,8 +1704,34 @@ function track(vid, action){
 document.addEventListener('click',e=>{ const a=e.target.closest('[data-track]'); if(a) track(a.dataset.v||'', a.dataset.track); }, true);
 function bccOn(){ return !!(S.me && S.me.bcc_email && !S.me.bcc_opt_out && !S.me.is_admin); }
 function mailHref(em, force){ const useBcc = force===undefined ? bccOn() : force; return 'mailto:'+em+(useBcc?'?bcc='+encodeURIComponent(S.me.bcc_email):''); }
+// Opening an email (D-22). A phone opens its mail app. A computer often has no mail program set for email links, so the
+// click did nothing: on a computer the member chooses Gmail in the browser, the computer's mail program, or copying the address.
+// m = {to, subject, body, bcc}
+const mailtoUrl=m=>{ const q=[['subject',m.subject],['body',m.body],['bcc',m.bcc]].filter(x=>x[1]).map(x=>x[0]+'='+encodeURIComponent(x[1])).join('&'); return 'mailto:'+m.to+(q?'?'+q:''); };
+const gmailUrl=m=>'https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(m.to)+(m.subject?'&su='+encodeURIComponent(m.subject):'')+(m.body?'&body='+encodeURIComponent(m.body):'')+(m.bcc?'&bcc='+encodeURIComponent(m.bcc):'');
+const onComputer=()=>{ try{ return matchMedia('(hover: hover) and (pointer: fine)').matches; }catch(e){ return false; } };
+function mailGo(m){ if(onComputer()) mailChoice(m); else location.href=mailtoUrl(m); }
+function mailChoice(m){
+  const old=document.getElementById('mailModal'); if(old) old.remove();
+  const el=document.createElement('div'); el.className='modal'; el.id='mailModal';
+  el.innerHTML=`<div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="mcT"><h3 id="mcT">Email</h3>
+    <p style="overflow-wrap:anywhere"><b>${esc(m.to)}</b>${m.bcc?`<br><span class="hint">Hidden copy to ${esc(m.bcc)}</span>`:''}</p>
+    <a class="btn primary" data-m="gmail" href="${esc(gmailUrl(m))}" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;box-sizing:border-box;text-decoration:none">Open in Gmail</a>
+    <a class="btn soft" data-m="app" href="${esc(mailtoUrl(m))}" style="display:flex;align-items:center;justify-content:center;box-sizing:border-box;text-decoration:none">Open my mail program</a>
+    <button class="btn soft" data-m="copy" type="button">Copy the address</button>
+    <button class="btn soft" data-m="x" type="button">Cancel</button>
+    <p class="hint" style="margin:6px 0 0">"My mail program" works only if this computer has one set up for email links, such as Outlook or Apple Mail.</p></div>`;
+  document.body.appendChild(el);
+  const close=()=>el.remove();
+  el.addEventListener('click',e=>{ if(e.target===el) close(); });
+  el.querySelector('[data-m="gmail"]').addEventListener('click',()=>setTimeout(close,0));
+  el.querySelector('[data-m="app"]').addEventListener('click',()=>setTimeout(close,0));
+  el.querySelector('[data-m="copy"]').onclick=()=>{ copyText(m.to); close(); };
+  el.querySelector('[data-m="x"]').onclick=close;
+}
 document.addEventListener('click',e=>{ const a=e.target.closest('[data-mail]'); if(!a) return;
   if(S.me && S.me.bcc_email && !S.me.is_admin && !S.me.bcc_ack){ e.preventDefault(); bccPopup(a.dataset.mail); return; }
+  if(onComputer()){ e.preventDefault(); mailChoice({to:a.dataset.mail, bcc:bccOn()?S.me.bcc_email:''}); return; }
   a.href = mailHref(a.dataset.mail); });
 function bccPopup(em){
   const m=document.createElement('div'); m.className='modal'; m.id='bccModal';
@@ -1717,7 +1743,7 @@ function bccPopup(em){
   document.body.appendChild(m);
   m.querySelectorAll('[data-b]').forEach(b=>b.onclick=async()=>{ const out=b.dataset.b==='out'; m.remove();
     S.me.bcc_ack=true; S.me.bcc_opt_out=out; if(LIVE){ try{ await sb.rpc('set_bcc_pref',{p_token:S.token,p_opt_out:out}); }catch(e){} }
-    location.href = mailHref(em, !out); });
+    mailGo({to:em, bcc:!out?S.me.bcc_email:''}); });
 }
 function openMySettings(){
   const body=`<p style="margin:0 0 12px;color:var(--ink-2)">${esc(S.me.name)} · ${esc(S.me.email)}${S.me.role?' · '+esc(S.me.role):''}${S.me.org?' · '+esc(S.me.org):''}</p>
@@ -2833,7 +2859,7 @@ function openBookingSend(b){
   g('bsWaT').onclick=()=>wa(bkText(b,null,'template'));
   g('bsCopy').onclick=()=>copyText(bkText(b,null,'ask',link));
   g('bsCopyT').onclick=()=>copyText(bkText(b,null,'template'));
-  const ml=g('bsMail'); if(ml) ml.onclick=()=>{ const base=mailHref(em); location.href=base+(base.includes('?')?'&':'?')+'subject='+encodeURIComponent('הזמנת רכב · Vehicle booking · '+bkRange(b,false))+'&body='+encodeURIComponent(bkText(b,null,'ask',link)); };
+  const ml=g('bsMail'); if(ml) ml.onclick=()=>mailGo({to:em, subject:'הזמנת רכב · Vehicle booking · '+bkRange(b,false), body:bkText(b,null,'ask',link), bcc:bccOn()?S.me.bcc_email:''});
   g('bsDone').onclick=()=>bkReload(b,true);
 }
 function bkPrint(b){

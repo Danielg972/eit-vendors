@@ -251,6 +251,10 @@ Researched by web lookups per supplier (the supplier's own site first, a third-p
 - **Checks kept in the repository:** `supabase/tests/limited_members/` (`run.sh` for a local Postgres: 96 checks, the 74 from this change plus 22 added with D-12, D-14 and D-16 for the places where the two changes meet; `production_probe.sql` for the live database, rolled back). Run them after any change to a function that sends or accepts supplier data. The hand-off for the `guide-for-clients` branch, `docs/HANDOFF_guide-for-clients.md`, is done and kept as a record.
 - **Worth knowing:** approving a pending organisation sends the same automatic welcome email a guide gets (the `member_decide` hook from 1 Oct). Its text is not in this repository; check that it suits an organisation. If the jobs migration files from 3 Oct are ever run again, they would put back `whoami`, `_jobs_on`, `_jobs_post` and `_job_fits` without the limited-member rules; run `2026-10-03b_limited_members.sql` after them.
 
+## The Email button on a computer (5 Oct 2026, decision D-22; branch `email-choice`, not live until the owner says so)
+
+An email link does nothing on a computer with no mail program set for email links. On a device with a mouse, every place the app starts an email (`mailGo`, `mailChoice` in `index.html`: a supplier's Email button, asking for agent prices, the welcome message, sending a booking sheet) now opens a box: Open in Gmail (new tab, subject, message and hidden copy carried over), Open my mail program, Copy the address. Phones and tablets are unchanged. No database change.
+
 ## Several categories at once, and subcategories (4 Oct 2026, decision D-20)
 **Status: live since 4 Oct 2026, about 19:00 (pull request #15), on the owner's word at 18:55 ("Go live"). Front end only.**
 - The category buttons on the supplier list switch on and off one by one (`S.cats`, an array; it replaces `S.cat`). A supplier shows if it belongs to any chosen category (`catOk`). "All" clears them.

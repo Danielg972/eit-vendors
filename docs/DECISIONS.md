@@ -10,6 +10,28 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-22 · The Email button on a computer offers Gmail, the mail program, or copying the address (built; NOT live, waiting for the owner)
+
+**Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 5 October 2026, 11:30 to 11:37 Israel time.
+
+**In his words:** "also when i click email for a vender nothing happens", then "email was on cpu", and, offered a fix in the app for everyone (tapping Email offers Open in Gmail, Open mail app or Copy address, with a preview first): "yes - fix now".
+
+**Cause, read in the code:** the Email button was an ordinary email link, which asks the device to open its own mail program. A computer where none is set for email links (Gmail used only in the browser, for example) does nothing. Nothing in the app blocked it. Not reproduced on his computer.
+
+**What was built (implementation choices; change on request):**
+
+- **On a computer**, Email opens a small box with the address and four buttons: **Open in Gmail** (a new tab with the message started), **Open my mail program** (the old behaviour), **Copy the address**, **Cancel**. "A computer" means a device with a mouse; a phone or tablet behaves exactly as before and opens its mail app at once.
+- **The same box** is used for the other three places the app starts an email: asking a supplier for agent prices, the welcome message to a new member, and sending a booking sheet by email. Subject and message carry over to Gmail.
+- **The hidden copy to Eretz Israel Tours is unchanged:** it is added for the same members as before, in Gmail as in the mail program, and the box says so. The first-time notice about the hidden copy still comes first.
+- **The choice is not remembered:** the box shows each time. A "don't ask again on this computer" could be added.
+- Only Gmail is offered as a browser mailbox. Outlook.com and others were not added.
+
+**Checked:** in preview at desktop size as Eretz Israel Tours and as an organisation (box shows, Gmail and mail-program links correct, copy works, box closes), and at phone size (no box, mail app link as before). The links were checked with a subject, a message and a hidden copy. **Not checked:** on the live site; on his computer; Gmail itself opening (no internet access from the test); the hidden copy in the running app (the demo members have none); by a session other than the one that built it.
+
+**Status:** on the branch `email-choice`, front end only (`index.html`). No database change, no terms change. It touches one line that the branch `booking-days` (D-21) also changes, the booking sheet's Email button: whichever goes live second is brought up to date with `main` first (G11).
+
+---
+
 ## D-20 · Choose two or more categories at once; subcategories under a category (live)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 4 October 2026, 18:26 Israel time.
