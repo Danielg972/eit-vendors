@@ -252,15 +252,15 @@ Researched by web lookups per supplier (the supplier's own site first, a third-p
 - **Checks kept in the repository:** `supabase/tests/limited_members/` (`run.sh` for a local Postgres: 96 checks, the 74 from this change plus 22 added with D-12, D-14 and D-16 for the places where the two changes meet; `production_probe.sql` for the live database, rolled back). Run them after any change to a function that sends or accepts supplier data. The hand-off for the `guide-for-clients` branch, `docs/HANDOFF_guide-for-clients.md`, is done and kept as a record.
 - **Worth knowing:** approving a pending organisation sends the same automatic welcome email a guide gets (the `member_decide` hook from 1 Oct). Its text is not in this repository; check that it suits an organisation. If the jobs migration files from 3 Oct are ever run again, they would put back `whoami`, `_jobs_on`, `_jobs_post` and `_job_fits` without the limited-member rules; run `2026-10-03b_limited_members.sql` after them.
 
-## Photographer, a subcategory under Other (5 Oct 2026, decision D-23; branch `email-choice`, not live until the owner says so)
+## Photographer, a subcategory under Other (5 Oct 2026, decision D-23; live)
 
 `TAG_SUGGEST.Other` and `SUBCATS.Other` in `index.html`: the form suggests the type Photographer for the category Other, the list gets a Photographers button under Other, and `catName` prints "Photographer" where it would print "Other". `foodOk` leaves food nearby off a photographer's page. No database change.
 
-## Filter rows wrap on any device with a mouse (5 Oct 2026; review item D1, second part; branch `email-choice`)
+## Filter rows wrap on any device with a mouse (5 Oct 2026; review item D1, second part; live)
 
 The 3 Oct fix let the category, region and most-used rows wrap from 700 px up. A computer window narrower than that (beside another app, or zoomed in) kept one clipped row with a hidden scrollbar, which a mouse cannot scroll. The rule is now `(min-width:700px), (hover:hover) and (pointer:fine)`, and it covers the view tabs (`.otabs`) too; under 700 px with a mouse the most-used cards go two to a row. Touch devices keep the swipe row.
 
-## The Email button on a computer (5 Oct 2026, decision D-22; branch `email-choice`, not live until the owner says so)
+## The Email button on a computer (5 Oct 2026, decision D-22; live)
 
 An email link does nothing on a computer with no mail program set for email links. On a device with a mouse, every place the app starts an email (`mailGo`, `mailChoice` in `index.html`: a supplier's Email button, asking for agent prices, the welcome message, sending a booking sheet) now opens a box: Open in Gmail (new tab, subject, message and hidden copy carried over), Open my mail program, Copy the address, and a tick box "Don't ask again on this computer" (kept in the browser under `eitv_mail_via`; undone in My settings). Phones and tablets are unchanged. No database change.
 

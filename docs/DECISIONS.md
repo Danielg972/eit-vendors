@@ -10,7 +10,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
-## D-23 · Photographer is a subcategory under Other (built; NOT live, waiting for the owner)
+## D-23 · Photographer is a subcategory under Other (live)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 5 October 2026, 11:43 to 12:02 Israel time.
 
@@ -29,11 +29,11 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 **Checked:** in preview at desktop and phone size as Eretz Israel Tours (filter, entry, page, form) and as an organisation (does not see it). **Not checked:** on the live site; by a session other than the one that built it.
 
-**Status:** on the branch `email-choice` with D-22 and the narrow-window fix, front end only. No database change, no terms change.
+**Status:** live since 5 Oct 2026, about 15:30. He saw the preview picture and, asked whether to put all three changes of the branch `email-choice` live, said at 15:27: "yes". Front end only. No database change, no terms change. The live list has no photographer yet, so the Photographers button shows once someone adds one.
 
 ---
 
-## D-22 · The Email button on a computer offers Gmail, the mail program, or copying the address (built; NOT live, waiting for the owner)
+## D-22 · The Email button on a computer offers Gmail, the mail program, or copying the address (live)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 5 October 2026, 11:30 to 11:37 Israel time.
 
@@ -51,7 +51,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 **Checked:** in preview at desktop size as Eretz Israel Tours and as an organisation (box shows, Gmail and mail-program links correct, copy works, box closes), and at phone size (no box, mail app link as before). The links were checked with a subject, a message and a hidden copy. **Not checked:** on the live site; on his computer; Gmail itself opening (no internet access from the test); the hidden copy in the running app (the demo members have none); by a session other than the one that built it.
 
-**Status:** on the branch `email-choice`, front end only (`index.html`). No database change, no terms change. Brought up to date with `main` after D-21 went live (the one shared line, the booking sheet's Email button, keeps both changes).
+**Status:** live since 5 Oct 2026, about 15:30, on his word at 15:27 ("yes" to putting the Email box, the narrow-window row fix and Photographer live together). Front end only (`index.html`). No database change, no terms change. Brought up to date with `main` after D-21 went live (the one shared line, the booking sheet's Email button, keeps both changes). Not yet tried on his computer.
 ## D-21 · A booking sheet for separate days inside a period (live)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 5 October 2026, 11:07 and 11:12 Israel time.
