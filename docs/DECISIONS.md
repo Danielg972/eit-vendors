@@ -10,6 +10,27 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-26 · "Hours counted from": "Leaving the depot" becomes "When the bus turns on" (live)
+
+**Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 5 October 2026, 16:47 Israel time.
+
+**In his words:** "Hours counted from / The pick-up  Leaving the depot  - change leaving the depot to from time bus stops". That could be read three ways, so he was asked what the second choice should say, and answered: "when the bus turns on".
+
+**Decision:** the second choice under "Hours counted from" reads **When the bus turns on**. The first, **The pick-up**, is unchanged.
+
+**What was changed (implementation choices; change on request):**
+
+- English: "When the bus turns on" on the guide's form, "when the bus turns on" on the sheet and on the company's page, and in the plain WhatsApp message with blanks.
+- **Hebrew:** "התנעת האוטובוס", so the sheet reads "השעות נספרות מ־ התנעת האוטובוס". It replaces "היציאה מהחניון". Proposed by the session; shown to him and approved at 17:18 ("yes and make live").
+- What is stored does not change (the value is still `depot`), so nothing in the database changes and a sheet that already holds this choice simply reads the new words.
+- **The quote a confirmed sheet leaves** in the Quotes tab already says "Hours counted from when the bus turns on.": the owner ran `supabase/migrations/2026-10-05c_quote_wording.sql` himself at about 17:15 (see D-25).
+
+**Checked:** in preview at phone size: the guide's form, the company's form, and the finished sheet. **Not checked:** on the live site; whether bus companies read "התנעת האוטובוס" the way he means it.
+
+**Status:** live since 5 Oct 2026, about 17:25, on his word at 17:18: "yes and make live". Front end only. No terms change. With the database file he ran at 17:15, the sheet and the quote of a confirmed sheet now use the same words.
+
+---
+
 ## D-25 · The guide can leave terms off a booking sheet, by tick box (live)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 5 October 2026, 15:44 Israel time.
