@@ -2352,10 +2352,12 @@ begin
   if t ? 'tolls' then fees := fees || jsonb_build_object('tolls', jsonb_strip_nulls(jsonb_build_object('s',t->>'tolls','note',t->>'tolls_note'))); end if;
   if t ? 'parking' then fees := fees || jsonb_build_object('parking', jsonb_build_object('s',t->>'parking')); end if;
   cond := concat_ws(E'\n',
-    case t->>'hours_from' when 'pickup' then 'Hours counted from the pick-up.' when 'depot' then 'Hours counted from leaving the depot.' end,
+    case t->>'hours_from' when 'pickup' then 'Hours counted from the pick-up.' when 'depot' then 'Hours counted from when the bus turns on.' end,   -- D-26
     case t->>'tip' when 'none' then 'Driver tip: not expected.' when 'customary' then 'Driver tip: customary' || coalesce(', about ' || (t->>'tip_amt') || ' a day', '') || '.' end,
     case when t ? 'extras' then 'Other extras: ' || (t->>'extras') end,
-    case when t ? 'cancel' then 'Cancellation policy: ' || (t->>'cancel') else 'Cancellation policy: none given.' end,
+    case when t ? 'cancel' then 'Cancellation policy: ' || (t->>'cancel')
+         when 'cancel' = any (string_to_array(b.terms_off, ',')) then null   -- D-25: the policy was left off the sheet, so nothing is said about it
+         else 'Cancellation policy: none given.' end,
     case when t ? 'payment' then 'Payment: ' || (t->>'payment') end,
     case when b.days <> '' then days::text || ' separate days between these dates.' end,
     'From a booking sheet accepted by both sides.');

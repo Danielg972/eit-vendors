@@ -14,5 +14,5 @@ psql -q -v ON_ERROR_STOP=1 -d eitv_bd_mig -c "select public.booking_save('FULLTO
 psql -qAt -d eitv_bd_mig -c "select md5(public._booking_content(b)::text) from public.bookings b" > /tmp/bd_before.txt
 for i in 1 2; do psql -q -v ON_ERROR_STOP=1 -d eitv_bd_mig -f $R/supabase/migrations/2026-10-05_booking_days.sql 2>&1 | grep -v "NOTICE\|skipping" | head -5 || true; done
 # later changes to the same functions, so the result can still be compared with the schema record as it is today
-for f in 2026-10-05b_booking_day_times.sql; do psql -q -v ON_ERROR_STOP=1 -d eitv_bd_mig -f $R/supabase/migrations/$f 2>&1 | grep -v "NOTICE\|skipping" | head -5 || true; done
+for f in 2026-10-05b_booking_day_times.sql 2026-10-05c_quote_wording.sql; do psql -q -v ON_ERROR_STOP=1 -d eitv_bd_mig -f $R/supabase/migrations/$f 2>&1 | grep -v "NOTICE\|skipping" | head -5 || true; done
 python3 probe.py | grep -v "^PASS"
