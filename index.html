@@ -1710,7 +1710,15 @@ function mailHref(em, force){ const useBcc = force===undefined ? bccOn() : force
 const mailtoUrl=m=>{ const q=[['subject',m.subject],['body',m.body],['bcc',m.bcc]].filter(x=>x[1]).map(x=>x[0]+'='+encodeURIComponent(x[1])).join('&'); return 'mailto:'+m.to+(q?'?'+q:''); };
 const gmailUrl=m=>'https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(m.to)+(m.subject?'&su='+encodeURIComponent(m.subject):'')+(m.body?'&body='+encodeURIComponent(m.body):'')+(m.bcc?'&bcc='+encodeURIComponent(m.bcc):'');
 const onComputer=()=>{ try{ return matchMedia('(hover: hover) and (pointer: fine)').matches; }catch(e){ return false; } };
-function mailGo(m){ if(onComputer()) mailChoice(m); else location.href=mailtoUrl(m); }
+// "Don't ask again on this computer": kept on the device only (localStorage), like the welcome tour. '' = ask each time.
+const MAIL_KEY='eitv_mail_via';
+const mailPref=()=>{ try{ const v=localStorage.getItem(MAIL_KEY); return v==='gmail'||v==='app'?v:''; }catch(e){ return ''; } };
+const mailPrefSet=v=>{ try{ if(v) localStorage.setItem(MAIL_KEY,v); else localStorage.removeItem(MAIL_KEY); }catch(e){} };
+function mailGo(m){ if(!onComputer()){ location.href=mailtoUrl(m); return; }
+  const via=mailPref();
+  if(via==='app'){ location.href=mailtoUrl(m); return; }
+  if(via==='gmail'){ const w=window.open(gmailUrl(m),'_blank'); if(w){ try{ w.opener=null; }catch(e){} return; } }   // blocked by the browser: fall back to asking
+  mailChoice(m); }
 function mailChoice(m){
   const old=document.getElementById('mailModal'); if(old) old.remove();
   const el=document.createElement('div'); el.className='modal'; el.id='mailModal';
@@ -1720,18 +1728,20 @@ function mailChoice(m){
     <a class="btn soft" data-m="app" href="${esc(mailtoUrl(m))}" style="display:flex;align-items:center;justify-content:center;box-sizing:border-box;text-decoration:none">Open my mail program</a>
     <button class="btn soft" data-m="copy" type="button">Copy the address</button>
     <button class="btn soft" data-m="x" type="button">Cancel</button>
-    <p class="hint" style="margin:6px 0 0">"My mail program" works only if this computer has one set up for email links, such as Outlook or Apple Mail.</p></div>`;
+    <label class="switch" for="mcKeep" style="margin:4px 0 10px"><input id="mcKeep" type="checkbox"><span><b>Don't ask again on this computer</b><br><span class="hint">Email will open the way you choose now. Change it under My settings (your name at the top).</span></span></label>
+    <p class="hint" style="margin:0">"My mail program" works only if this computer has one set up for email links, such as Outlook or Apple Mail.</p></div>`;
   document.body.appendChild(el);
   const close=()=>el.remove();
   el.addEventListener('click',e=>{ if(e.target===el) close(); });
-  el.querySelector('[data-m="gmail"]').addEventListener('click',()=>setTimeout(close,0));
-  el.querySelector('[data-m="app"]').addEventListener('click',()=>setTimeout(close,0));
+  const keep=via=>{ if(el.querySelector('#mcKeep').checked){ mailPrefSet(via); toast('Saved for this computer. Change it under My settings.'); } setTimeout(close,0); };
+  el.querySelector('[data-m="gmail"]').addEventListener('click',()=>keep('gmail'));
+  el.querySelector('[data-m="app"]').addEventListener('click',()=>keep('app'));
   el.querySelector('[data-m="copy"]').onclick=()=>{ copyText(m.to); close(); };
   el.querySelector('[data-m="x"]').onclick=close;
 }
 document.addEventListener('click',e=>{ const a=e.target.closest('[data-mail]'); if(!a) return;
   if(S.me && S.me.bcc_email && !S.me.is_admin && !S.me.bcc_ack){ e.preventDefault(); bccPopup(a.dataset.mail); return; }
-  if(onComputer()){ e.preventDefault(); mailChoice({to:a.dataset.mail, bcc:bccOn()?S.me.bcc_email:''}); return; }
+  if(onComputer()){ e.preventDefault(); mailGo({to:a.dataset.mail, bcc:bccOn()?S.me.bcc_email:''}); return; }
   a.href = mailHref(a.dataset.mail); });
 function bccPopup(em){
   const m=document.createElement('div'); m.className='modal'; m.id='bccModal';
@@ -1749,10 +1759,12 @@ function openMySettings(){
   const body=`<p style="margin:0 0 12px;color:var(--ink-2)">${esc(S.me.name)} · ${esc(S.me.email)}${S.me.role?' · '+esc(S.me.role):''}${S.me.org?' · '+esc(S.me.org):''}</p>
     ${lim()?`<p class="hint" style="margin:0 0 12px">Your access: ${esc(mySections().map(k=>secName(k).toLowerCase()).join(', '))}. Agent prices are for tour guides and agents. What you add is shown to everyone on the list.</p>`:''}
     ${S.me.is_admin?'':`<label class="switch" for="myBcc"><input id="myBcc" type="checkbox" ${S.me.bcc_opt_out?'':'checked'}><span><b>Copy Eretz Israel Tours on supplier emails</b><br><span class="hint">Adds ${esc(S.me.bcc_email||'the Eretz Israel Tours address')} as a hidden copy when you use the Email button. Helps keep prices and bookings up to date.</span></span></label>`}
+    ${mailPref()?`<p style="margin-top:14px" id="myMailRow">On this computer, Email opens <b>${mailPref()==='gmail'?'Gmail':'your mail program'}</b>. <button type="button" class="linkbtn" id="myMail">Ask me each time</button></p>`:''}
     <p style="margin-top:14px"><button type="button" class="btn soft" id="myTour">Take the welcome tour again</button></p>
     <p style="margin-top:14px"><button type="button" class="linkbtn" id="myTerms">Terms and privacy</button></p>`;
   const w=sheet('My settings', body, `<button class="btn primary" id="msOk" type="button">Done</button>`);
   w.querySelector('#msOk').onclick=closeSheet; w.querySelector('#myTerms').onclick=openTerms; w.querySelector('#myTour').onclick=()=>{ closeSheet(); openTour(true); };
+  const mm=w.querySelector('#myMail'); if(mm) mm.onclick=()=>{ mailPrefSet(''); w.querySelector('#myMailRow').remove(); toast('Email will ask you each time'); };
   const c=w.querySelector('#myBcc'); if(c) c.onchange=async()=>{ S.me.bcc_opt_out=!c.checked; S.me.bcc_ack=true; if(LIVE){ try{ await sb.rpc('set_bcc_pref',{p_token:S.token,p_opt_out:!c.checked}); }catch(e){ toast(e.message); } } toast(c.checked?'Your supplier emails will copy Eretz Israel Tours':'Your emails won\'t be copied'); };
 }
 function fromBadge(by,date,prefix){ if(!by || by.admin) return ''; return `<span class="from">👤 <span>${esc(prefix||'From')} <b>${esc(by.name)}</b>${by.role?` <span class="r">· ${esc(by.role)}</span>`:''}${date?` <span class="r">· ${fmtDate(date)}</span>`:''}</span></span>`; }
