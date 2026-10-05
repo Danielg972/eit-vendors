@@ -10,7 +10,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
-## D-27 · "Did they check your reservation?" is asked at national parks only (built; waits for the owner's word)
+## D-27 · "Did they check your reservation?" is asked at national parks only (live)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 5 October 2026, 17:23 Israel time.
 
@@ -31,7 +31,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 **Checked:** in preview, before and after, at phone and desktop size, as Eretz Israel Tours and as an organisation: a private supplier marked required, recommended, not needed and not set; a national park marked required. No page errors. **Not checked:** on the live site.
 
-**Status:** built on branch `reservation-parks-only`; not live. No terms change.
+**Status:** live since 5 Oct 2026, about 17:40, on his word at 17:34: "yes go live". Shown the before and after pictures first. Front end only. No terms change.
 
 ---
 
