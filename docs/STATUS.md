@@ -72,6 +72,7 @@
 
 ## Waiting for the owner
 
+- **Booking sheets, "When the bus turns on" (D-26):** built on the branch `hours-wording`, NOT live. The second choice under "Hours counted from" says "When the bus turns on" / "התנעת האוטובוס" in place of "Leaving the depot". Wording only; the stored value is unchanged.
 - **Booking sheets, terms left off by tick box (D-25):** live since 5 Oct, about 16:10, on his word, with D-24. Eight tick boxes in "Terms you expect"; a term left off is not asked of the company and is not on the sheet. Same database file as D-24.
 - **Booking sheets, each day's own times (D-24):** live since 5 Oct, about 16:10, on his word. On a sheet of more than one day each day has its own pick-up time, estimated finish and optional "Where to". `supabase/migrations/2026-10-05b_booking_day_times.sql` is on production (with D-25: two added columns, five functions replaced, nothing deleted); production now has 141 functions, checked against the tested copy. Not yet tried by a person on the live site. Nothing Cockpit-facing.
 - **Photographer, a subcategory under Other (D-23):** live since 5 Oct, about 15:30, on his word. A type under Other with its own button in the second row; no database change. Organisations do not see it unless given the Other section.

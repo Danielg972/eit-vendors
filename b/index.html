@@ -146,7 +146,7 @@ function bkTermRows(t){ t=t||{}; const m=x=>bkMoney(t,x), vat=BK_VAT[t.vat];
   return [
     ['מחיר ליום','Price per day',t.price?m(t.price)+(vat?' · '+vat[0]:''):'',t.price?m(t.price)+(vat?' · '+vat[1]:''):''],
     ['המחיר כולל','Price includes',inc.map(x=>x[1]).join(' · '),inc.map(x=>x[2]).join(' · ')],
-    ['השעות נספרות מ־','Hours counted from',({pickup:'נקודת האיסוף',depot:'היציאה מהחניון'})[t.hours_from]||'',({pickup:'the pick-up',depot:'leaving the depot'})[t.hours_from]||''],
+    ['השעות נספרות מ־','Hours counted from',({pickup:'נקודת האיסוף',depot:'התנעת האוטובוס'})[t.hours_from]||'',({pickup:'the pick-up',depot:'when the bus turns on'})[t.hours_from]||''],
     ['שעה נוספת','Extra hour',t.overtime?m(t.overtime):'',t.overtime?m(t.overtime):''],
     ['ק״מ נוסף','Extra km',t.extra_km?m(t.extra_km):'',t.extra_km?m(t.extra_km):''],
     ['כביש 6 ואגרות','Highway 6 and tolls',...ie('tolls',t.tolls_note)],
@@ -219,7 +219,7 @@ function bkText(b,t,mode,link){ const L=[], comp=b.company||b.vendor_name||'';
   if(mode==='template'){
     L.push(''); L.push('*נא למלא ולהחזיר · Please fill in and send back:*');
     const off=bkOff(b), on=k=>!off.includes(k), inc=[on('hours')?['__ שעות','__ hours']:null,on('km')?['__ ק״מ','__ km']:null].filter(Boolean);
-    [['מחיר ליום: ₪ ____ (כולל מע״מ / בתוספת / ללא)','Price per day: ₪ ____ (incl. VAT / plus VAT / none)'],inc.length&&['כולל עד '+inc.map(x=>x[0]).join(' ועד '),'Includes up to '+inc.map(x=>x[1]).join(' and ')],on('hours')&&['השעות נספרות מ: האיסוף / החניון','Hours counted from: pick-up / depot'],
+    [['מחיר ליום: ₪ ____ (כולל מע״מ / בתוספת / ללא)','Price per day: ₪ ____ (incl. VAT / plus VAT / none)'],inc.length&&['כולל עד '+inc.map(x=>x[0]).join(' ועד '),'Includes up to '+inc.map(x=>x[1]).join(' and ')],on('hours')&&['השעות נספרות מ: האיסוף / התנעת האוטובוס','Hours counted from: pick-up / when the bus turns on'],
      on('hours')&&['שעה נוספת: ₪ ____','Extra hour: ₪ ____'],on('km')&&['ק״מ נוסף: ₪ ____','Extra km: ₪ ____'],on('tolls')&&['כביש 6 ואגרות: כלול / בנוסף','Highway 6 and tolls: included / extra'],on('parking')&&['חניה: כלול / בנוסף','Parking: included / extra'],
      on('tip')&&['טיפ לנהג: לא מצופה / ₪ ____ ליום','Driver tip: not expected / ₪ ____ a day'],on('extras')&&['תוספות אחרות (לינה, לילה, שבת): ____','Other extras (overnight, night, Shabbat): ____'],on('cancel')&&['מדיניות ביטול: ____','Cancellation policy: ____'],on('payment')&&['תשלום: ____','Payment: ____'],['הערות: ____','Notes: ____']]
       .filter(Boolean).forEach(p=>{ L.push(p[0]); L.push(p[1]); });
@@ -308,7 +308,7 @@ function formView(){
         ${bkDayCount(B)>1?`<p class="note sub" style="margin:6px 0 0">${two('ההזמנה היא ל־'+bkDayCount(B)+' ימים. המחיר הוא ליום אחד.','This booking is for '+bkDayCount(B)+' days. The price is for one day.')}</p>`:''}
         <fieldset class="sub"><legend class="lab" style="font-weight:400;font-size:13px;color:var(--ink-2)">מע״מ · VAT</legend>${seg('vat',[['including_vat','כולל מע״מ','incl. VAT'],['plus_vat','בתוספת מע״מ','plus VAT'],['not_applicable','ללא מע״מ, תיירים','no VAT, tourists']],t,3)}</fieldset></div>
       ${pair(on('hours')&&field('hours_incl','כולל עד שעות','Hours included',t,'decimal','10'),on('km')&&field('km_incl','כולל עד ק״מ','Km included',t,'numeric','250'))}
-      ${on('hours')?`<fieldset><legend class="lab">${two('השעות נספרות מ־','Hours counted from')}</legend>${seg('hours_from',[['pickup','נקודת האיסוף','the pick-up'],['depot','היציאה מהחניון','leaving the depot']],t)}</fieldset>`:''}
+      ${on('hours')?`<fieldset><legend class="lab">${two('השעות נספרות מ־','Hours counted from')}</legend>${seg('hours_from',[['pickup','נקודת האיסוף','the pick-up'],['depot','התנעת האוטובוס','when the bus turns on']],t)}</fieldset>`:''}
       ${pair(on('hours')&&field('overtime','שעה נוספת','Extra hour',t,'decimal','200'),on('km')&&field('extra_km','ק״מ נוסף','Extra km',t,'decimal','5'))}
       ${on('tolls')?`<fieldset><legend class="lab">${two('כביש 6 ואגרות','Highway 6 and tolls')}</legend>${seg('tolls',[['incl','כלול במחיר','included'],['extra','בנוסף','extra']],t)}
         <input class="sub" data-t="tolls_note" type="text" dir="auto" aria-label="הערה לכביש 6 · Highway 6 note" value="${esc(t.tolls_note||'')}" placeholder="למשל: לפי חשבון · e.g. by the bill"></fieldset>`:''}

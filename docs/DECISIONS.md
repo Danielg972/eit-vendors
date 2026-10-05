@@ -10,6 +10,27 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-26 · "Hours counted from": "Leaving the depot" becomes "When the bus turns on" (built; NOT live, waiting for the owner)
+
+**Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 5 October 2026, 16:47 Israel time.
+
+**In his words:** "Hours counted from / The pick-up  Leaving the depot  - change leaving the depot to from time bus stops". That could be read three ways, so he was asked what the second choice should say, and answered: "when the bus turns on".
+
+**Decision:** the second choice under "Hours counted from" reads **When the bus turns on**. The first, **The pick-up**, is unchanged.
+
+**What was changed (implementation choices; change on request):**
+
+- English: "When the bus turns on" on the guide's form, "when the bus turns on" on the sheet and on the company's page, and in the plain WhatsApp message with blanks.
+- **Hebrew, chosen by the session and not by him:** "התנעת האוטובוס", so the sheet reads "השעות נספרות מ־ התנעת האוטובוס". It replaces "היציאה מהחניון".
+- What is stored does not change (the value is still `depot`), so nothing in the database changes and a sheet that already holds this choice simply reads the new words.
+- **Not changed yet:** the quote a confirmed sheet leaves in the Quotes tab still writes "Hours counted from leaving the depot." in its conditions. That text is inside the one database function the connector will not send without his confirmation; a file for him to run is prepared on the branch `quote-wording`.
+
+**Checked:** in preview at phone size: the guide's form, the company's form, and the finished sheet. **Not checked:** on the live site; whether bus companies read "התנעת האוטובוס" the way he means it.
+
+**Status:** on the branch `hours-wording`, front end only. No database change, no terms change.
+
+---
+
 ## D-25 · The guide can leave terms off a booking sheet, by tick box (live)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 5 October 2026, 15:44 Israel time.
