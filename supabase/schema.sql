@@ -84,6 +84,7 @@ create table public.bookings (
   seen_company jsonb,
   days text default ''::text not null,
   day_plan jsonb default '{}'::jsonb not null,
+  terms_off text default ''::text not null,
   constraint bookings_pkey primary key (id),
   constraint bookings_company_ok_via_check check (company_ok_via = any (array[''::text, 'link'::text, 'guide'::text])),
   constraint bookings_link_key_key unique (link_key),
@@ -93,6 +94,7 @@ create table public.bookings (
   constraint bookings_date_to_check check (date_to = ''::text or date_to ~ '^\d{4}-\d{2}-\d{2}$'::text),
   constraint bookings_days_check check (days = ''::text or (length(days) <= 700 and days ~ '^\d{4}-\d{2}-\d{2}(,\d{4}-\d{2}-\d{2})+$'::text)),
   constraint bookings_day_plan_check check (jsonb_typeof(day_plan) = 'object'::text and length(day_plan::text) <= 30000),
+  constraint bookings_terms_off_check check (terms_off ~ '^[a-z,]{0,80}$'::text),
   constraint bookings_seats_check check (seats = ''::text or seats ~ '^\d{1,3}$'::text),
   constraint bookings_service_check check (service = any (array[''::text, 'bus'::text, 'midibus'::text, 'van20'::text, 'van16'::text, 'van10'::text, 'van8'::text, 'car'::text, 'jeep_vehicle'::text, 'transfer'::text])),
   constraint bookings_lengths_check check (length(client_ref) <= 160 and length(booker_name) <= 80 and length(booker_phone) <= 40 and length(pax) <= 20
@@ -2317,7 +2319,7 @@ create or replace function public._booking_json(b public.bookings)
 as $function$
   select json_build_object('id',b.id,'vendor_id',b.vendor_id,'vendor_name',(select v.name from public.vendors v where v.id = b.vendor_id),
     'key',b.link_key,'status',b.status,'client_ref',b.client_ref,'booker_name',b.booker_name,'booker_phone',b.booker_phone,
-    'date_from',b.date_from,'date_to',b.date_to,'days',b.days,'day_plan',b.day_plan,'pax',b.pax,'service',b.service,'seats',b.seats,'tourists',b.tourists,
+    'date_from',b.date_from,'date_to',b.date_to,'days',b.days,'day_plan',b.day_plan,'terms_off',b.terms_off,'pax',b.pax,'service',b.service,'seats',b.seats,'tourists',b.tourists,
     'pickup_time',b.pickup_time,'pickup_place',b.pickup_place,'route',b.route,'dropoff_time',b.dropoff_time,'dropoff_place',b.dropoff_place,
     'note',b.note,'private_note',b.private_note,'proposed',b.proposed,'terms',b.terms,'terms_by',b.terms_by,
     'answered_by',b.answered_by,'answered_at',b.answered_at,'confirmed_at',b.confirmed_at,'shared',b.shared,'in_tracker',b.quote_id is not null,
@@ -2416,6 +2418,32 @@ begin
   return o;
 end $function$;
 
+-- D-25 (5 Oct 2026): terms left off a booking sheet. The groups a guide can leave off, in a fixed order; anything else is dropped.
+create or replace function public._terms_off_clean(p text)
+ returns text language sql immutable set search_path to ''
+as $function$
+  select coalesce(string_agg(u.k, ',' order by u.ord), '')
+  from unnest(array['hours','km','tolls','parking','tip','cancel','extras','payment']) with ordinality u(k, ord)
+  where u.k = any (string_to_array(replace(coalesce(p,''), ' ', ''), ','))
+$function$;
+
+-- The terms without the groups left off. hours = hours in a day, where they are counted from, the extra hour;
+-- km = km in a day, the extra km; tolls = Kvish 6 and its note; tip = the tip and its amount.
+create or replace function public._terms_on(t jsonb, p_off text)
+ returns jsonb language sql immutable set search_path to ''
+as $function$
+  select coalesce(t, '{}'::jsonb)
+    - case when 'hours' = any (o) then array['hours_incl','hours_from','overtime'] else '{}'::text[] end
+    - case when 'km' = any (o) then array['km_incl','extra_km'] else '{}'::text[] end
+    - case when 'tolls' = any (o) then array['tolls','tolls_note'] else '{}'::text[] end
+    - case when 'parking' = any (o) then array['parking'] else '{}'::text[] end
+    - case when 'tip' = any (o) then array['tip','tip_amt'] else '{}'::text[] end
+    - case when 'cancel' = any (o) then array['cancel'] else '{}'::text[] end
+    - case when 'extras' = any (o) then array['extras'] else '{}'::text[] end
+    - case when 'payment' = any (o) then array['payment'] else '{}'::text[] end
+  from (select string_to_array(coalesce(p_off,''), ',') as o) x
+$function$;
+
 -- The guide saves. Saving a version is accepting it (guide_ok_at). If the sheet's content changed after the company
 -- answered, the company's acceptance is cleared and it has to accept again (status back to 'waiting').
 -- p_booking "terms": the guide writes the terms himself. With "company_agreed": true he is typing in what the company
@@ -2470,10 +2498,18 @@ begin
       case when p_booking ? 'day_plan' then p_booking->'day_plan' when prev.id is not null then prev.day_plan else '{}'::jsonb end,
       b.date_from, b.date_to, b.days)
   where id = bid returning * into b;
+  -- D-25: terms the guide left off the sheet. They are taken out of what he expects and out of the terms already there.
+  -- A copy of the app from before D-25 sends no "terms_off": the list is kept.
+  update public.bookings set terms_off = public._terms_off_clean(
+      case when p_booking ? 'terms_off' then p_booking->>'terms_off' when prev.id is not null then prev.terms_off else '' end)
+  where id = bid returning * into b;
+  if b.terms_off <> '' then
+    update public.bookings set proposed = public._terms_on(proposed, b.terms_off), terms = public._terms_on(terms, b.terms_off) where id = bid returning * into b;
+  end if;
   if jsonb_typeof(p_booking->'terms') = 'object' then
     if coalesce(public._terms_clean(p_booking->'terms')->>'price','') = '' then raise exception 'Add the price.'; end if;
     agreed := coalesce((p_booking->>'company_agreed')::boolean, false);
-    update public.bookings set terms = public._terms_clean(p_booking->'terms'), terms_by = 'guide',
+    update public.bookings set terms = public._terms_on(public._terms_clean(p_booking->'terms'), b.terms_off), terms_by = 'guide',
       answered_by = case when agreed then left(trim(coalesce(p_booking->>'answered_by','')),80) else answered_by end,
       answered_at = case when agreed then now() else answered_at end,
       company_ok_at = case when agreed then now() end, company_ok_via = case when agreed then 'guide' else '' end,
@@ -2559,7 +2595,7 @@ begin
     'booker_name',b.booker_name,
     'booker_role',(select case when mm.org <> '' then mm.org else mm.role end from public.members mm where mm.email = b.owner limit 1),
     'booker_phone',b.booker_phone,
-    'date_from',b.date_from,'date_to',b.date_to,'days',b.days,'day_plan',b.day_plan,'pax',b.pax,'service',b.service,'seats',b.seats,'tourists',b.tourists,
+    'date_from',b.date_from,'date_to',b.date_to,'days',b.days,'day_plan',b.day_plan,'terms_off',b.terms_off,'pax',b.pax,'service',b.service,'seats',b.seats,'tourists',b.tourists,
     'pickup_time',b.pickup_time,'pickup_place',b.pickup_place,'route',b.route,'dropoff_time',b.dropoff_time,'dropoff_place',b.dropoff_place,
     'note',b.note,'proposed',b.proposed,'terms',b.terms,'terms_by',b.terms_by,'answered_by',b.answered_by,
     'answered_at',b.answered_at,'confirmed_at',b.confirmed_at,
@@ -2579,6 +2615,7 @@ begin
   if b.status = 'confirmed' then raise exception 'This booking is already confirmed. To change it, contact the person who sent it.'; end if;
   if b.status = 'cancelled' then raise exception 'This booking was cancelled.'; end if;
   if b.answers >= 30 then raise exception 'This sheet was changed too many times. Contact the person who sent it.'; end if;
+  t := public._terms_on(t, b.terms_off);   -- D-25: a term the guide left off the sheet is not taken from the company either
   if coalesce(t->>'price','') = '' then raise exception 'Fill in the price.'; end if;
   if b.status = 'waiting' and b.guide_ok_at is not null and b.terms = t then return public.booking_accept(p_key, p_name); end if;
   -- when the company revises an earlier answer, the guide's page compares against that earlier answer
@@ -2599,6 +2636,7 @@ as $function$
     'note',b.note,'terms',b.terms)
     || case when b.days <> '' then jsonb_build_object('days', b.days) else '{}'::jsonb end   -- D-21; left out when empty, so sheets from before it compare as they did
     || case when b.day_plan <> '{}'::jsonb then jsonb_build_object('day_plan', b.day_plan) else '{}'::jsonb end   -- D-24; the same
+    || case when b.terms_off <> '' then jsonb_build_object('terms_off', b.terms_off) else '{}'::jsonb end   -- D-25; the same
 $function$;
 
 -- The company accepts the sheet as it stands (after the guide changed the job or proposed other terms).
@@ -3273,6 +3311,8 @@ revoke all on function public.booking_answer(text,jsonb,text) from public; grant
 revoke all on function public._booking_content(public.bookings) from public, anon, authenticated;
 revoke all on function public._booking_days_clean(text,text,text) from public, anon, authenticated;
 revoke all on function public._booking_plan_clean(jsonb,text,text,text) from public, anon, authenticated;
+revoke all on function public._terms_off_clean(text) from public, anon, authenticated;
+revoke all on function public._terms_on(jsonb,text) from public, anon, authenticated;
 revoke all on function public.booking_accept(text,text) from public; grant execute on function public.booking_accept(text,text) to anon, authenticated;
 revoke all on function public._jobs_on(public.members) from public, anon, authenticated;
 revoke all on function public._jobs_post(public.members) from public, anon, authenticated;

@@ -10,6 +10,32 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-25 · The guide can leave terms off a booking sheet, by tick box (built; NOT live, waiting for the owner)
+
+**Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 5 October 2026, 15:44 Israel time.
+
+**In his words:** "can make "all of the terms youre expecting" removable by box. meaning if i want to send without the "tip" or ;mileage etc". In the same message he settled the open point of D-24: "keep" (the optional "Where to" for each day stays).
+
+**Decision:** each of the terms on a booking sheet can be taken off that sheet with a tick box.
+
+**How it was read (his to correct):** a term left off is off the sheet altogether. The company is not asked about it, neither side's sheet shows it, and it is not flagged as "not stated". Leaving a field empty already meant "I don't propose anything here, the company fills it in"; this is the further step of not asking at all.
+
+**What was built (implementation choices; change on request):**
+
+- **Eight tick boxes** at the top of "Terms you expect", all ticked to begin with: Hours and overtime (hours in a day, where they are counted from, the extra hour), Mileage (km in a day, the extra km), Kvish 6 and tolls, Parking, Driver tip, Cancellation policy, Other extras, Payment. **The price and its VAT cannot be taken off.** "Anything else" stays as free text.
+- **Unticking a box** takes its fields out of the form, keeps what was typed in the others, and leaves that term off the sheet the company gets: its page does not ask for it, and the plain WhatsApp message with blanks does not list it.
+- **The warnings follow:** nothing left off is listed under "not stated", and with Cancellation policy left off the company is not warned that it left the policy empty.
+- **Stored** in one new column, `bookings.terms_off`. The database also drops a term that was left off from anything the company sends, so it cannot be added back from the company's side.
+- **Part of what both sides accept:** taking a term off (or putting one back) after the company accepted clears its acceptance and sends the sheet back to it. A term put back comes back empty and is asked again.
+- **The sheet's closing line is unchanged:** "Anything not written here will not be charged." So a term left off is one the company cannot charge for under the sheet. Whether that wording holds up is one of the points already listed for a lawyer (the booking sheet's closing line).
+- **Not changed:** the quote a confirmed sheet leaves in the Quotes tab still says "Cancellation policy: none given." when the policy was left off. Changing that needs the one function whose replacement the connector refuses to send, so it was left for later.
+
+**Checked:** 12 further checks in `supabase/tests/booking_day_times/run.sh` (33 in all): the list keeps only known groups; a term left off is gone from what the guide expects; the company cannot add it back; an old copy of the app keeps the list; a term taken off after acceptance leaves the agreed terms and sends the sheet back; a term put back is asked again. In preview at phone size: the boxes, the form, the plain message, reopening, the company's form and sheet, and the cancellation warning with and without the policy on the sheet. **Not checked:** on the live site; on a real phone; at desktop size; by a session other than the one that built it.
+
+**Status:** on the branch `booking-day-times` with D-24. Both use the one database file `supabase/migrations/2026-10-05b_booking_day_times.sql`, which has NOT been run on production: two added columns, three internal helpers, five functions replaced, nothing deleted or dropped. It must be run before the branch is merged.
+
+---
+
 ## D-24 · On a booking sheet of more than one day, each day has its own pick-up time and estimated finish (built; NOT live, waiting for the owner)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 5 October 2026, 15:34 Israel time.
@@ -21,7 +47,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 **What was built (implementation choices; change on request):**
 
 - **The form:** when a sheet has more than one day, a block "Times for each day" lists the chosen days. Each has a pick-up time, a finish time ("to about") and an optional "Where to". The single pick-up time and drop-off time fields are hidden then; pick-up place and drop-off place stay, one for all days. **Same times every day** copies the first day's times to the rest.
-- **"Where to" for each day was not asked for.** It was added because the itinerary he showed has a different region each day and a bus price depends on where the bus goes. It is optional and comes out on his word.
+- **"Where to" for each day was not asked for.** It was added because the itinerary he showed has a different region each day and a bus price depends on where the bus goes. It is optional. Asked whether to keep it, he said at 15:44: "keep".
 - **What the company sees:** under the date line, one line for each day, Hebrew with English under it: "ד׳ 18.11 · איסוף 08:30 · סיום משוער 18:00 · ים המלח" / "Wed 18 Nov · pick-up 08:30 · finish about 18:00". A day with a pick-up time and no finish reads "finish time to follow"; a day with nothing reads "times to follow". Also in the WhatsApp plain message and the printed sheet.
 - **Every finish time is worded as an estimate** ("סיום משוער", "finish about"). Nothing else on the sheet says what an estimate means for overtime: the hours included in a day and the price of an extra hour are the company's to fill in, as before.
 - **Stored** in one new column, `bookings.day_plan` (`{"2026-10-20": {"start":"08:30","end":"18:00","route":"…"}}`). Empty means the sheet's one pick-up and drop-off time apply to every day, so sheets made before this are unchanged. When every day has the same times and no "Where to", nothing is stored per day and the sheet shows one pick-up and one drop-off time, as before.
@@ -30,7 +56,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 **Checked:** `supabase/tests/booking_day_times/run.sh` (21 checks: the change file run twice on the earlier schema gives the same functions and columns as the schema record; sheets made before the change read exactly as they did; bad times, days not on the sheet and empty entries are dropped; an old copy of the app keeps the times; a time changed after acceptance goes back to waiting; an organisation sees only its own sheets). The 98 limited-member checks and the 26 day-picker checks still pass. In preview, at phone and desktop size, as Eretz Israel Tours: fill in, save, plain message, reopen, same times every day, and the company's page. **Not checked:** on the live site; on a real phone; by a session other than the one that built it; in preview as an organisation; the red marking of a changed time on the company's page was checked in the database only, not looked at.
 
-**Status:** on the branch `booking-day-times`. The database file `supabase/migrations/2026-10-05b_booking_day_times.sql` has NOT been run on production. It adds one column and one helper and replaces four functions; nothing is deleted or dropped. It must be run before the branch is merged.
+**Status:** on the branch `booking-day-times`, with D-25. The database file `supabase/migrations/2026-10-05b_booking_day_times.sql` covers both and has NOT been run on production. It must be run before the branch is merged.
 
 ---
 
