@@ -567,13 +567,13 @@ const REL = {
 };
 const catsOf = v => [v.category, ...String(v.also_categories||'').split(',').map(t=>t.trim()).filter(Boolean)];
 const rel = (field, v) => catsOf(v).some(c=>REL[field].includes(c));
-// Food nearby is only for a place you can stand at. A guide, a bus or van company, or a jeep, ATV or rappelling
-// outfit comes to the client and has no "nearby", so it gets no food section.
+// Food nearby is only for a place you can stand at. A guide, a bus or van company, a photographer, or a jeep, ATV or
+// rappelling outfit comes to the client and has no "nearby", so it gets no food section.
 const PLACE_CATS=['Hotel','Restaurant','Winery','Attraction / Site','National Parks'];
 function foodOk(v){ const c=catsOf(v);
   if(c.some(x=>PLACE_CATS.includes(x))) return true;
   if(!c.some(x=>x==='Activity'||x==='Other')) return false;
-  return !/(^|,)\s*(jeep|atv|rzr|rappel)/i.test(String(v.tags||'')); }
+  return !/(^|,)\s*(jeep|atv|rzr|rappel|photograph)/i.test(String(v.tags||'')); }
 const REGIONS = ['Jerusalem','Gush Etzion & Judea','Binyamin & Shomron','Dead Sea & Judean Desert','Negev & Arava','Eilat','Tel Aviv & Center','Shfela','Haifa & Coast','Galilee','Golan','Countrywide'];
 const TAG_SUGGEST = {Adventure:['Jeep','ATV / RZR','Rappelling','Kayak & rafting','Zipline','Boat','Snorkelling','Bikes','Horse riding','Camels','Shooting'],
   Activity:['Workshop','Food & wine','Volunteering','Archaeology','Family','Shooting','Farm'],
@@ -583,7 +583,8 @@ const TAG_SUGGEST = {Adventure:['Jeep','ATV / RZR','Rappelling','Kayak & rafting
   Guide:['Eshkol license','D1 license','Owns an Eshkol vehicle','Midbari 4x4 vehicle','Carries a gun','Driver-guide','Shuk tours','Graffiti tours','English','French','Spanish','Russian'],
   'Travel Agent':['Hotel bookings','Flights','Packages','Groups','Commission'],
   'Itinerary Planner':['Full trip planning','Day trips','Groups','Families','Bar/bat mitzvah'],
-  Winery:['Tasting','Tour','Restaurant','Boutique','Free bottle for guide','Group menus']};
+  Winery:['Tasting','Tour','Restaurant','Boutique','Free bottle for guide','Group menus'],
+  Other:['Photographer']};   // D-23: a photographer is a type under Other, not a category of its own
 // Shomer Shabbat is a tag on the supplier (no database change); the kosher rule: no non-kosher restaurants on the list.
 const SHABBAT_TAG='Shomer Shabbat';
 // Guide rules (D-15): only licensed tour guides are listed, except a specialty (shuk tours, graffiti tours and the
@@ -594,7 +595,8 @@ const tagHas=(tags,t)=>String(tags||'').split(',').map(x=>x.trim().toLowerCase()
 // (Water = kayaks, boats, snorkelling), so nothing in the database changes. A button shows only when a supplier on the list has that type.
 const SUBCATS = {
   Adventure:[['Jeeps',['Jeep']],['ATVs',['ATV / RZR','ATV','RZR']],['Water',['Kayak & rafting','Boat','Snorkelling']],['Rappelling',['Rappelling']],['Zipline',['Zipline']],['Bikes',['Bikes']],['Horses',['Horse riding']],['Camels',['Camels']],['Shooting',['Shooting']]],
-  Activity:[['Workshops',['Workshop']],['Food & wine',['Food & wine']],['Farms',['Farm']],['Family',['Family']],['Volunteering',['Volunteering']],['Archaeology',['Archaeology']],['Shooting',['Shooting']]]
+  Activity:[['Workshops',['Workshop']],['Food & wine',['Food & wine']],['Farms',['Farm']],['Family',['Family']],['Volunteering',['Volunteering']],['Archaeology',['Archaeology']],['Shooting',['Shooting']]],
+  Other:[['Photographers',['Photographer']]]
 };
 const subHit=(v,c,name)=>{ const g=(SUBCATS[c]||[]).find(x=>x[0]===name); return !!g && g[1].some(t=>tagHas(v.tags,t)); };
 const eshkolListed=tags=>/eshkol (license|driver|guide)/i.test(String(tags||''));
@@ -609,7 +611,9 @@ const tagsNoShab=v=>tagList(v).filter(t=>t.toLowerCase()!==SHABBAT_TAG.toLowerCa
 // The stored category is still 'Adventure'; guides and agents call it Extreme (owner, 3 Oct 2026, D-19). catDisp is the name shown on buttons and in the form.
 const catDisp=c=>c==='Adventure'?'Extreme':c;
 const advTypes=v=>{ const have=tagList(v).map(t=>t.toLowerCase()); return TAG_SUGGEST.Adventure.filter(t=>have.includes(t.toLowerCase())); };
-const catName=(c,v)=>{ if(c!=='Adventure') return c; const t=advTypes(v); return t.length ? t.slice(0,2).join(', ')+(t.length>2?'…':'') : catDisp(c); };
+// The same for Other (D-23): a photographer's page reads "Photographer", not "Other".
+const otherTypes=v=>{ const have=tagList(v).map(t=>t.toLowerCase()); return TAG_SUGGEST.Other.filter(t=>have.includes(t.toLowerCase())); };
+const catName=(c,v)=>{ if(c!=='Adventure'&&c!=='Other') return c; const t=c==='Other'?otherTypes(v):advTypes(v); return t.length ? t.slice(0,2).join(', ')+(t.length>2?'…':'') : catDisp(c); };
 const catMain=v=>catName(v.category, v);
 const catLabel=v=>catsOf(v).map(c=>catName(c,v)).join(' + ');
 const shabPill=v=>isShabbat(v)?'<span class="pill shab">Shomer Shabbat</span>':'';
@@ -664,6 +668,7 @@ function sample(){
     v({id:'vendor_x7atv01',name:'Arava ATV Trails',category:'Adventure',tags:'ATV / RZR, Jeep',contactPerson:'Gal',phone:'+972 52 555 0161',location:'Tzukim',region:'Negev & Arava',agentPrice:'280',agentPriceVatTreatment:'plus_vat',priceBasis:'Per person'}),
     v({id:'vendor_x7kyk02',name:'Upper Jordan Kayaks',category:'Adventure',tags:'Kayak & rafting, Boat',contactPerson:'Office',phone:'+972 4 555 0172',location:'Kfar Blum',region:'Galilee',listedPrice:'120',listedPriceVatTreatment:'including_vat',priceBasis:'Per person'}),
     v({id:'vendor_x7rap03',name:'Judean Desert Rappelling',category:'Adventure',tags:'Rappelling',contactPerson:'Itai',phone:'+972 54 555 0183',location:'Metzoke Dragot',region:'Dead Sea & Judean Desert',agentPrice:'1800',agentPriceVatTreatment:'plus_vat',priceBasis:'Per group'}),
+    v({id:'vendor_x7pho05',name:'Galil Light Photography',category:'Other',tags:'Photographer',contactPerson:'Maya',phone:'+972 52 555 0205',email:'maya@example-photo.co.il',location:'Tiberias',region:'Galilee',agentPrice:'1800',listedPrice:'2200',priceBasis:'Per day',currency:'ILS'}),
     v({id:'vendor_x7wsh04',name:'Shiloh Pottery Workshop',category:'Activity',tags:'Workshop, Family',contactPerson:'Tamar',phone:'+972 50 555 0194',location:'Shilo',region:'Binyamin & Shomron',agentPrice:'90',agentPriceVatTreatment:'including_vat',priceBasis:'Per person'}),
     v({id:'vendor_n0a5h4l',name:'Noa Shalev',category:'Guide',tags:'Eshkol license, Owns an Eshkol vehicle',experience_years:'14',phone:'+972 52 555 0188',whatsapp:'+972 52 555 0188',location:'Jerusalem',region:'Jerusalem',languages:'English, Hebrew, Spanish',agentPrice:'1500',agentPriceVatTreatment:'plus_vat',priceBasis:'Per day',
       client_bio:'Noa grew up in the Jerusalem hills and has guided families and small groups for fourteen years. She trained as an archaeologist, dug at the City of David, and still cannot walk past an open trench without stopping.\n\nShe guides in English, Hebrew and Spanish, and is at her best with mixed ages: grandparents who want the history, children who want the tunnels.',retail_price:'$650 a day, up to 9 hours. Vehicle and entrance fees extra.'}),

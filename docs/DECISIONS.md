@@ -10,6 +10,29 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-23 · Photographer is a subcategory under Other (built; NOT live, waiting for the owner)
+
+**Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 5 October 2026, 11:43 to 12:02 Israel time.
+
+**In his words:** "also add as a supplier photgrapher". Offered its own category (which needs a database file he runs) or a type under Other (no database change), he first said "Photographer own category" (12:01) and a minute later settled it: "photgrapher sub category under other" (12:02).
+
+**Decision:** a photographer is listed under the category Other, with the type Photographer. It is not a category of its own.
+
+**What was built (implementation choices; change on request):**
+
+- **The supplier form** offers "+ Photographer" as a type when the category is Other.
+- **The supplier list:** when Other is switched on, a second row appears with **All other** and **Photographers**, the same way Extreme and Activity have theirs (D-20). The button shows once a photographer is on the list.
+- **A photographer's entry reads "Photographer"** where it would have said "Other", the same idea as D-19.
+- **No food nearby** on a photographer's page: it is a service that comes to the client, not a place (E7).
+- **Organisations** see photographers only if Eretz Israel Tours gives that organisation the Other section. By default they do not, the same as every supplier under Other.
+- A sample photographer was added to the preview's sample list. The live list is untouched: no photographer exists on it until someone adds one.
+
+**Checked:** in preview at desktop and phone size as Eretz Israel Tours (filter, entry, page, form) and as an organisation (does not see it). **Not checked:** on the live site; by a session other than the one that built it.
+
+**Status:** on the branch `email-choice` with D-22 and the narrow-window fix, front end only. No database change, no terms change.
+
+---
+
 ## D-22 · The Email button on a computer offers Gmail, the mail program, or copying the address (built; NOT live, waiting for the owner)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 5 October 2026, 11:30 to 11:37 Israel time.

@@ -252,6 +252,10 @@ Researched by web lookups per supplier (the supplier's own site first, a third-p
 - **Checks kept in the repository:** `supabase/tests/limited_members/` (`run.sh` for a local Postgres: 96 checks, the 74 from this change plus 22 added with D-12, D-14 and D-16 for the places where the two changes meet; `production_probe.sql` for the live database, rolled back). Run them after any change to a function that sends or accepts supplier data. The hand-off for the `guide-for-clients` branch, `docs/HANDOFF_guide-for-clients.md`, is done and kept as a record.
 - **Worth knowing:** approving a pending organisation sends the same automatic welcome email a guide gets (the `member_decide` hook from 1 Oct). Its text is not in this repository; check that it suits an organisation. If the jobs migration files from 3 Oct are ever run again, they would put back `whoami`, `_jobs_on`, `_jobs_post` and `_job_fits` without the limited-member rules; run `2026-10-03b_limited_members.sql` after them.
 
+## Photographer, a subcategory under Other (5 Oct 2026, decision D-23; branch `email-choice`, not live until the owner says so)
+
+`TAG_SUGGEST.Other` and `SUBCATS.Other` in `index.html`: the form suggests the type Photographer for the category Other, the list gets a Photographers button under Other, and `catName` prints "Photographer" where it would print "Other". `foodOk` leaves food nearby off a photographer's page. No database change.
+
 ## Filter rows wrap on any device with a mouse (5 Oct 2026; review item D1, second part; branch `email-choice`)
 
 The 3 Oct fix let the category, region and most-used rows wrap from 700 px up. A computer window narrower than that (beside another app, or zoomed in) kept one clipped row with a hidden scrollbar, which a mouse cannot scroll. The rule is now `(min-width:700px), (hover:hover) and (pointer:fine)`, and it covers the view tabs (`.otabs`) too; under 700 px with a mouse the most-used cards go two to a row. Touch devices keep the swipe row.
