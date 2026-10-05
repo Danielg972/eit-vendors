@@ -109,6 +109,20 @@ function bkDayList(days,he){ if(!days.length) return ''; const ds=days.map(x=>ne
 // The date line of a booking sheet: the chosen days, or the period with its number of days.
 function bkDates(b,he){ const p=bkPicked(b); if(p.length>1) return bkDayList(p,he); if(p.length===1) return bkDate(p[0],he);
   const r=bkRange(b,he), n=bkDayCount(b); return r&&n>1 ? r+' · '+n+(he?' ימים':' days') : r; }
+// Each day's own times (D-24). b.day_plan = {'2026-10-20':{start:'08:30',end:'18:00',route:'Dead Sea'}, …}: only on a booking
+// of more than one day, and only when the days differ. Empty = the pick-up and drop-off times of the sheet apply to every day.
+// A finish time is always shown as an estimate.
+const bkPlan=b=>{ const p=b&&b.day_plan; return p&&typeof p==='object'&&!Array.isArray(p)?p:{}; };
+const bkHasPlan=b=>Object.keys(bkPlan(b)).length>0;
+const bkAllDays=b=>{ const p=bkPicked(b); return p.length?p:bkSpan(b.date_from,b.date_to,62); };
+function bkDayLabel(iso,he){ const d=new Date(iso+'T12:00:00'); if(isNaN(d)) return iso; if(he) return BK_WD_HE[d.getDay()]+' '+d.getDate()+'.'+(d.getMonth()+1);
+  try{ return d.toLocaleDateString('en-GB',{weekday:'short'})+' '+d.getDate()+' '+d.toLocaleDateString('en-GB',{month:'short'}); }catch(e){ return iso; } }
+function bkDayLine(x,he){ x=x||{}; const a=[];
+  if(x.start) a.push(he?'איסוף '+x.start:'pick-up '+x.start);
+  if(x.end) a.push(he?'סיום משוער '+x.end:'finish about '+x.end); else if(x.start) a.push(he?'שעת סיום תימסר':'finish time to follow');
+  if(x.route) a.push(x.route);
+  return a.length?a.join(' · '):(he?'שעות יימסרו':'times to follow'); }
+const bkDayRows=b=>{ if(!bkHasPlan(b)) return []; const p=bkPlan(b); return bkAllDays(b).map(d=>[bkDayLabel(d,true),bkDayLabel(d,false),bkDayLine(p[d],true),bkDayLine(p[d],false)]); };
 function bkVehicle(b,he){ const v=BK_VEH[b.service];
   if(!v) return b.seats?(he?b.seats+' מקומות':b.seats+' seats'):'';
   if(b.seats&&/^(bus|midibus|van)/.test(b.service)){
@@ -118,6 +132,7 @@ function bkVehicle(b,he){ const v=BK_VEH[b.service];
 // Rows are [Hebrew label, English label, Hebrew value, English value]. English value null = the same typed text.
 function bkJobRows(b,all){ return [
   ['תאריך','Date',bkDates(b,true),bkDates(b,false)],
+  ...bkDayRows(b),
   ['נוסעים','Passengers',b.pax?b.pax+(b.tourists?' · תיירים מחו״ל':''):(b.tourists?'תיירים מחו״ל':''),b.pax?b.pax+(b.tourists?' · tourists from abroad':''):(b.tourists?'tourists from abroad':'')],
   ['רכב','Vehicle',bkVehicle(b,true),bkVehicle(b,false)],
   ['איסוף','Pick-up',[b.pickup_time,b.pickup_place].filter(Boolean).join(', '),null],
@@ -240,6 +255,8 @@ let demo = {status:'waiting',company:'Galil Buses',booker_name:'Yael Levi',booke
 // ?demo=changed shows the page after the guide changed the job: red rows and the Accept button
 // ?demo=days shows a booking for separate days inside a period; ?demo=dayschanged the same after the guide dropped a day
 if(/^days/.test(qs.get('demo')||'')){ demo=Object.assign({},demo,{date_from:'2026-11-18',date_to:'2026-11-26',days:'2026-11-18,2026-11-19,2026-11-22,2026-11-24,2026-11-26'});
+  // ?demo=daystimes: every day with its own pick-up time, estimated finish and where to (D-24)
+  if(qs.get('demo')==='daystimes') demo=Object.assign({},demo,{pickup_time:'',dropoff_time:'',route:'',day_plan:{'2026-11-18':{start:'08:30',end:'18:00',route:'ים המלח: מצדה, עין גדי, קומראן'},'2026-11-19':{start:'10:30',route:'שומרון: שילה, הר גריזים'},'2026-11-22':{start:'10:15',end:'19:00',route:'גוש עציון, חברון, קבר רחל'},'2026-11-24':{start:'09:00',end:'18:00',route:'עוטף עזה: שדרות, רעים'},'2026-11-26':{start:'09:30',end:'17:00',route:'העיר העתיקה'}}});
   if(qs.get('demo')==='dayschanged'){ const t={price:'3000',currency:'ILS',vat:'not_applicable',hours_incl:'10',km_incl:'250',overtime:'200',tolls:'incl',tip:'none'};
     const was=Object.assign({},demo,{terms:t,date_to:'2026-11-27',days:'2026-11-18,2026-11-19,2026-11-22,2026-11-24,2026-11-26,2026-11-27'}); demo=Object.assign({},demo,{terms:t,terms_by:'company',answered_by:'דודו',answered_at:new Date().toISOString(),seen:was}); } }
 if(qs.get('demo')==='changed'){ const t={price:'3000',currency:'ILS',vat:'not_applicable',hours_incl:'10',km_incl:'250',overtime:'200',tolls:'incl',tip:'none'};

@@ -10,6 +10,30 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-24 · On a booking sheet of more than one day, each day has its own pick-up time and estimated finish (built; NOT live, waiting for the owner)
+
+**Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 5 October 2026, 15:34 Israel time.
+
+**In his words:** "each day needs its own start and finsh time. there should be be timated. for instance this is what the itinerary looks like." With it he attached one of his own trip itineraries, where each bus day has its own pick-up time and an estimated return, some still to be set. The itinerary is a client document and is not kept in these records (D6).
+
+**Decision:** on a booking sheet for more than one day, every day carries its own start time and its own finish time, and the finish is an estimate.
+
+**What was built (implementation choices; change on request):**
+
+- **The form:** when a sheet has more than one day, a block "Times for each day" lists the chosen days. Each has a pick-up time, a finish time ("to about") and an optional "Where to". The single pick-up time and drop-off time fields are hidden then; pick-up place and drop-off place stay, one for all days. **Same times every day** copies the first day's times to the rest.
+- **"Where to" for each day was not asked for.** It was added because the itinerary he showed has a different region each day and a bus price depends on where the bus goes. It is optional and comes out on his word.
+- **What the company sees:** under the date line, one line for each day, Hebrew with English under it: "ד׳ 18.11 · איסוף 08:30 · סיום משוער 18:00 · ים המלח" / "Wed 18 Nov · pick-up 08:30 · finish about 18:00". A day with a pick-up time and no finish reads "finish time to follow"; a day with nothing reads "times to follow". Also in the WhatsApp plain message and the printed sheet.
+- **Every finish time is worded as an estimate** ("סיום משוער", "finish about"). Nothing else on the sheet says what an estimate means for overtime: the hours included in a day and the price of an extra hour are the company's to fill in, as before.
+- **Stored** in one new column, `bookings.day_plan` (`{"2026-10-20": {"start":"08:30","end":"18:00","route":"…"}}`). Empty means the sheet's one pick-up and drop-off time apply to every day, so sheets made before this are unchanged. When every day has the same times and no "Where to", nothing is stored per day and the sheet shows one pick-up and one drop-off time, as before.
+- **The times are part of what both sides accept:** a time changed after the company accepted clears its acceptance and comes back to it in red (D-5, item 10). Taking a day off the sheet takes its times with it.
+- A one-day sheet is unchanged. Sheets of more than 31 days get no per-day block.
+
+**Checked:** `supabase/tests/booking_day_times/run.sh` (21 checks: the change file run twice on the earlier schema gives the same functions and columns as the schema record; sheets made before the change read exactly as they did; bad times, days not on the sheet and empty entries are dropped; an old copy of the app keeps the times; a time changed after acceptance goes back to waiting; an organisation sees only its own sheets). The 98 limited-member checks and the 26 day-picker checks still pass. In preview, at phone and desktop size, as Eretz Israel Tours: fill in, save, plain message, reopen, same times every day, and the company's page. **Not checked:** on the live site; on a real phone; by a session other than the one that built it; in preview as an organisation; the red marking of a changed time on the company's page was checked in the database only, not looked at.
+
+**Status:** on the branch `booking-day-times`. The database file `supabase/migrations/2026-10-05b_booking_day_times.sql` has NOT been run on production. It adds one column and one helper and replaces four functions; nothing is deleted or dropped. It must be run before the branch is merged.
+
+---
+
 ## D-23 · Photographer is a subcategory under Other (live)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 5 October 2026, 11:43 to 12:02 Israel time.
