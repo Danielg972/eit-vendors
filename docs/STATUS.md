@@ -72,6 +72,7 @@
 
 ## Waiting for the owner
 
+- **Region "Gaza Envelope - עוטף עזה" (D-28):** live since 5 Oct, about 17:45, on his word ("yes to both"). Asked for at 17:37. One line in the region list; no change to the database structure. On the same word, four hidden suppliers that were under "Negev & Arava" were moved into it (Burnt Vehicles Compound, Garden of Heroism and Remembrance, Nova Festival Memorial Site, The Salad Trail).
 - **Reservation question at national parks only (D-27):** live since 5 Oct, about 17:40, on his word ("yes go live"). He reported on 5 Oct at 17:23 that Shimshon's Farm, a private supplier, asked him whether his reservation was checked. The pop-up and the "They checked / Not checked" buttons now show only in the category National Parks; any other supplier with a reservation setting shows one plain line. Front end only; no database change.
 - **Booking sheets, "When the bus turns on" (D-26):** live since 5 Oct, about 17:25, on his word. The second choice under "Hours counted from" says "When the bus turns on" / "התנעת האוטובוס" in place of "Leaving the depot". Wording only; the stored value is unchanged.
 - **Quote wording (database, one function):** on production since 5 Oct, about 17:15, run by the owner (`supabase/migrations/2026-10-05c_quote_wording.sql`). The quote a confirmed sheet leaves says "Hours counted from when the bus turns on." and says nothing about a cancellation policy left off the sheet. 141 functions, checked against the tested copy.

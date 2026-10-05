@@ -592,7 +592,7 @@ function foodOk(v){ const c=catsOf(v);
   if(c.some(x=>PLACE_CATS.includes(x))) return true;
   if(!c.some(x=>x==='Activity'||x==='Other')) return false;
   return !/(^|,)\s*(jeep|atv|rzr|rappel|photograph)/i.test(String(v.tags||'')); }
-const REGIONS = ['Jerusalem','Gush Etzion & Judea','Binyamin & Shomron','Dead Sea & Judean Desert','Negev & Arava','Eilat','Tel Aviv & Center','Shfela','Haifa & Coast','Galilee','Golan','Countrywide'];
+const REGIONS = ['Jerusalem','Gush Etzion & Judea','Binyamin & Shomron','Dead Sea & Judean Desert','Negev & Arava','Gaza Envelope - עוטף עזה','Eilat','Tel Aviv & Center','Shfela','Haifa & Coast','Galilee','Golan','Countrywide'];
 const TAG_SUGGEST = {Adventure:['Jeep','ATV / RZR','Rappelling','Kayak & rafting','Zipline','Boat','Snorkelling','Bikes','Horse riding','Camels','Shooting'],
   Activity:['Workshop','Food & wine','Volunteering','Archaeology','Family','Shooting','Farm'],
   Hotel:['Kosher','Shabbat-friendly','Kibbutz','Boutique','Pool'],
