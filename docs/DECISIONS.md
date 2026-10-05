@@ -10,6 +10,31 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-27 · "Did they check your reservation?" is asked at national parks only (built; waits for the owner's word)
+
+**Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 5 October 2026, 17:23 Israel time.
+
+**In his words:** "shimshons farm is private and i got a popup about reservations, that isnt relevant there".
+
+**Decision:** the question whether a reservation was actually checked belongs to national parks, where booking is the official rule and the gate does not always ask. A private supplier is booked with the supplier, so there is nothing to report.
+
+**What caused it:** the reservation bar and its one-time pop-up were built for national parks. The supplier findings import of 4 October set "reservation required" or "recommended" on 37 suppliers that are not parks (activities, museums, wineries, restaurants). The pop-up opened on the 19 of them marked "required", and the "They checked / Not checked" buttons showed on all 34 marked "required" or "recommended".
+
+**What was changed (implementation choices; change on request):**
+
+- The pop-up, the "Colleagues reported" line and the "They checked / Not checked" buttons show only on entries in the category National Parks. Parks are unchanged.
+- Any other supplier with a reservation setting shows one plain line and no question: "Book ahead: by reservation only", "Reservation recommended" or "No reservation needed". The wording "Book ahead: by reservation only" is the session's, in place of "Reservation officially required".
+- The "Reserve ahead" label on the supplier list is unchanged.
+- Front end only (`index.html`). Nothing in the database changes and no supplier's setting was changed.
+
+**Left as it is:** one answer already given on a private supplier (Eretz Israel Tours, "they checked", Shimshon's Farm) stays in the database and no longer shows anywhere. Removing it is a delete, which is the owner's to run.
+
+**Checked:** in preview, before and after, at phone and desktop size, as Eretz Israel Tours and as an organisation: a private supplier marked required, recommended, not needed and not set; a national park marked required. No page errors. **Not checked:** on the live site.
+
+**Status:** built on branch `reservation-parks-only`; not live. No terms change.
+
+---
+
 ## D-26 · "Hours counted from": "Leaving the depot" becomes "When the bus turns on" (live)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 5 October 2026, 16:47 Israel time.

@@ -3074,6 +3074,10 @@ function openBookingAnswer(b){
 }
 
 const RES_LABEL={required:'Reservation officially required',recommended:'Reservation recommended',not_needed:'No reservation needed'};
+// D-27: "did they check your reservation?" belongs to national parks, where booking is the official rule and the gate does not always ask.
+// A private supplier (a farm, a workshop, a winery, a restaurant) is booked with the supplier, so there is nothing to report: the bar only says to book.
+const RES_LABEL_PRIVATE={required:'Book ahead: by reservation only',recommended:'Reservation recommended',not_needed:'No reservation needed'};
+const resAsked=v=>v.category==='National Parks';
 function resSummary(reps){
   const real=reps.filter(r=>r.checked!=='unsure'); if(!real.length) return 'No one has reported yet.';
   const yes=real.filter(r=>r.checked==='yes').length, no=real.length-yes, last=real[0];
@@ -3087,8 +3091,8 @@ function drawSiteBits(v,det){
   const rb=document.getElementById('resBox');
   if(rb){
     if(v.reservation){
-      rb.innerHTML=`<div class="resbar"><b>📅 ${esc(RES_LABEL[v.reservation])}</b>
-        ${v.reservation!=='not_needed'?`<span class="meta">${resSummary(det.res_reports||[])}</span>
+      rb.innerHTML=`<div class="resbar"><b>📅 ${esc((resAsked(v)?RES_LABEL:RES_LABEL_PRIVATE)[v.reservation])}</b>
+        ${resAsked(v)&&v.reservation!=='not_needed'?`<span class="meta">${resSummary(det.res_reports||[])}</span>
         <div class="btn-row"><span class="meta" style="align-self:center">Your last visit:</span><button class="mini" type="button" data-res="yes">They checked</button><button class="mini" type="button" data-res="no">Not checked</button></div>`:''}
         ${v.npResLink?`<p class="meta" style="margin:8px 0 0"><a data-track="booking" data-v="${esc(v.id)}" href="${esc(v.npResLink)}" target="_blank" rel="noopener">Book a visit</a></p>`:''}</div>`;
       rb.querySelectorAll('[data-res]').forEach(b=>b.onclick=async()=>{ try{ await DB.reportReservation(v.id,b.dataset.res,today()); toast('Thanks, noted'); drawExtras(v); }catch(e){ toast(e.message); } });
@@ -3114,7 +3118,7 @@ function drawSiteBits(v,det){
     ss.querySelector('#ss_save').onclick=async()=>{ try{ await DB.setSite(v.id, ss.querySelector('#ss_parent').value, ss.querySelector('#ss_res').value); toast('Saved'); openDetail(v.id); }catch(e){ toast(e.message); } };
   }
   // one-time pop-up
-  if(v.reservation==='required' && !det.res_answered){
+  if(resAsked(v) && v.reservation==='required' && !det.res_answered){
     let skip=false; try{ skip=localStorage.getItem('eitv_res_'+v.id)==='later'; }catch(e){}
     if(!skip) setTimeout(()=>resPopup(v),350);
   }
