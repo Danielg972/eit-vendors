@@ -10,7 +10,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
-## D-25 · The guide can leave terms off a booking sheet, by tick box (built; NOT live, waiting for the owner)
+## D-25 · The guide can leave terms off a booking sheet, by tick box (live)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 5 October 2026, 15:44 Israel time.
 
@@ -32,11 +32,11 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 **Checked:** 12 further checks in `supabase/tests/booking_day_times/run.sh` (33 in all): the list keeps only known groups; a term left off is gone from what the guide expects; the company cannot add it back; an old copy of the app keeps the list; a term taken off after acceptance leaves the agreed terms and sends the sheet back; a term put back is asked again. In preview at phone size: the boxes, the form, the plain message, reopening, the company's form and sheet, and the cancellation warning with and without the policy on the sheet. **Not checked:** on the live site; on a real phone; at desktop size; by a session other than the one that built it.
 
-**Status:** on the branch `booking-day-times` with D-24. Both use the one database file `supabase/migrations/2026-10-05b_booking_day_times.sql`, which has NOT been run on production: two added columns, three internal helpers, five functions replaced, nothing deleted or dropped. It must be run before the branch is merged.
+**Status:** live since 5 Oct 2026, about 16:10. Asked whether to go live with D-24 and D-25 together, he said at 15:57: "yes go live." The database file `supabase/migrations/2026-10-05b_booking_day_times.sql` went through the connector this time (it holds nothing the connector asks him to confirm). Checked on production straight after: 27 tables, 141 functions (138 before), 0 table grants, 0 policies; every function's fingerprint equals the tested copy (`supabase/tests/production_fingerprints.txt`); the three helpers cannot be called from outside; and a rolled-back probe as a guide and as an organisation (`supabase/tests/booking_day_times/production_probe.sql`) came back as expected and left nothing behind. Then the branch was merged. Production had no booking sheets at the time.
 
 ---
 
-## D-24 · On a booking sheet of more than one day, each day has its own pick-up time and estimated finish (built; NOT live, waiting for the owner)
+## D-24 · On a booking sheet of more than one day, each day has its own pick-up time and estimated finish (live)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 5 October 2026, 15:34 Israel time.
 
@@ -56,7 +56,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 **Checked:** `supabase/tests/booking_day_times/run.sh` (21 checks: the change file run twice on the earlier schema gives the same functions and columns as the schema record; sheets made before the change read exactly as they did; bad times, days not on the sheet and empty entries are dropped; an old copy of the app keeps the times; a time changed after acceptance goes back to waiting; an organisation sees only its own sheets). The 98 limited-member checks and the 26 day-picker checks still pass. In preview, at phone and desktop size, as Eretz Israel Tours: fill in, save, plain message, reopen, same times every day, and the company's page. **Not checked:** on the live site; on a real phone; by a session other than the one that built it; in preview as an organisation; the red marking of a changed time on the company's page was checked in the database only, not looked at.
 
-**Status:** on the branch `booking-day-times`, with D-25. The database file `supabase/migrations/2026-10-05b_booking_day_times.sql` covers both and has NOT been run on production. It must be run before the branch is merged.
+**Status:** live with D-25; see its status line for the go-live checks.
 
 ---
 

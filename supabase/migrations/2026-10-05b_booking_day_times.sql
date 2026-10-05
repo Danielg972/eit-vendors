@@ -14,7 +14,7 @@
 --
 -- Every booking sheet made before this stays exactly as it is (both columns start empty).
 -- Two new columns, three new internal helpers, five functions replaced. No grant, no policy; nothing is deleted or
--- dropped. Safe to run twice. NOT RUN ON PRODUCTION until the owner says to go live.
+-- dropped. Safe to run twice. Run on production through the connector on 5 Oct 2026, about 16:00, on the owner's word.
 
 alter table public.bookings add column if not exists day_plan jsonb not null default '{}'::jsonb;
 alter table public.bookings add column if not exists terms_off text not null default '';
