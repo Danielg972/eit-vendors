@@ -10,6 +10,35 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-29 · Prices on a driver's or bus company's page: every vehicle size, airport transfers to and from Ben Gurion, agent price (live)
+
+**Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 7 October 2026, 12:31 Israel time. He had just added an independent van driver with five vehicle sizes and airport transfers.
+
+**In his words:** "pricing for drivers needs to have all of the options of vehicle size. it needs airport transfer Ben Gurion - (add City) and (add city) Ben Gurion needs agent price".
+
+**Decision:** on a Transport supplier (an independent van driver or a bus company) a price says which vehicle size it is for, an airport transfer says which way and which city, and the price is entered as an agent price.
+
+**Changed the same day, on his word at 12:43, after the first preview:** "i think it should be in a dropdown format of all the relevant pricing - a list is too daunting". It could mean the form or the list of saved prices, so both were changed and shown to him again.
+
+**What was built (implementation choices; change on request):**
+
+- "Add price" on a Transport supplier is a short form of drop-downs. **What is the price for?** is one drop-down: Airport transfer Ben Gurion → city, Airport transfer city → Ben Gurion, Airport transfer both ways at the same price, Day rate, Per hour, Something else. The "both ways" choice was not asked for; it is saved as one line marked "each way".
+- **City** (for a transfer) is a drop-down of 39 towns that ends with "Another city…", which opens a box to type any city.
+- **Vehicle size** is a drop-down of all seven sizes (bus, midibus, the four van sizes, car). It is required for a transfer, a day rate and an hourly rate. A driver with one size has it filled in.
+- **Agent or public price?** is a drop-down, "Agent price" first and the default, and the price box is named after the one chosen ("Agent price, one way"). An organisation never sees this choice and its line is never an agent rate (C3), as before.
+- Season and the note are folded under one line, "Season, extra charges, a note". Where the price is from and the date it was checked stay in view (E4).
+- Not asked for: **"Save + add another"**, which opens the next line with the same kind, city, vehicle, VAT and source, so a driver's whole list can be typed in a row.
+- **On the supplier's page** a Transport supplier's prices are no longer one long list. They sit under headings that open on a tap: Airport transfers, Day rate, Per hour, Other prices, each with its count. With more than one vehicle size on the page, a **Vehicle size** drop-down above them keeps only that size. With three prices or fewer the groups start open. Inside a group a line is named without repeating the heading ("Ben Gurion → Jerusalem · Van, up to 8 seats").
+- The kind, the route and the vehicle are written into the line's name ("Airport transfer: Ben Gurion → Jerusalem · Van, up to 8 seats"). Front end only (`index.html`): no table, column or database function changed, so who sees a price is exactly as before. Lines already on the list are untouched; they open under "Something else" and are listed under "Other prices".
+- A transfer is saved per vehicle, a day rate per day, an hourly rate per hour; "For", child ages and group size are not asked for those three.
+- Suppliers that are not Transport keep the form and the flat price list they had.
+
+**Checked:** in preview, 52 checks at phone and desktop size as Eretz Israel Tours, as a colleague and as an organisation: every vehicle size offered; both directions and both ways; a city from the list and a typed city; agent and public; the refusals (no city, no vehicle size); the groups, their counts, the size drop-down; edit opens a saved line with its parts set; an older free-text line saves unchanged; "Save + add another" keeps "Suggest for everyone" and the reason; an organisation's line is an organisation rate and it is shown no agent rate; a jeep supplier's form and list are as before; no page errors. 160 names written and read back the same. **Not checked:** on the live site; on a real phone; by a session other than the one that built it. The limited-member database checks were not run again because the database is not touched.
+
+**Status:** live since 7 Oct 2026, about 13:00, on his word at 12:57: "go live". He was shown two sets of preview pictures first; the second, the drop-down form and the prices in groups, is what went live. Front end only. No terms change, no database file. Not yet tried on the live site by a person.
+
+---
+
 ## D-28 · Gaza Envelope is a region (live)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 5 October 2026, 17:37 Israel time.
