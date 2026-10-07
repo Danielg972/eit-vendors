@@ -26,11 +26,11 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 - The preview's sample booking sheet is labelled `Sample family, Nov 2026`.
 - The preview's sample quote is titled `Sample family, 6 days`, with invented dates (7–12 March 2027), 16 people, received 1 September 2026, valid to 28 February 2027.
 - Front end only (`index.html`, four lines). No database change, no terms change. The example texts are hints in an empty box, and the sample data runs only in preview, so nothing a member can do changes.
-- The history of this repository is to be rewritten so that the name is in no commit of any branch. See `docs/STATUS.md` for where that stands.
+- The history of this repository is to be rewritten so that the name is in no commit of any branch. Not yet done; see `docs/STATUS.md` for where that stands.
 
-**Checked:** in preview at phone size as Eretz Israel Tours and as an organisation: both forms show the new example text; the sample quote and the sample booking sheet show under their new labels; the Quotes tab draws; no page errors; the name is nowhere in the page that is served or in any file of the repository. **Not checked:** on the live site until it is merged.
+**Checked:** in preview at phone size as Eretz Israel Tours and as an organisation: both forms show the new example text; the sample quote and the sample booking sheet show under their new labels; the Quotes tab draws; no page errors; the name is nowhere in the page that is served or in any file of the repository. On the live site after the merge, read once, read only: the page it serves holds the new example text twice and the name nowhere. Pull request, issue and comment text on GitHub was searched for client names: none. **Not checked:** nobody has opened the two forms on the live site.
 
-**Status:** live on the owner's word of 13:11 ("replace it"), once this branch is merged.
+**Status:** the replacement is live since 7 Oct 2026, about 13:16, on the owner's word of 13:11 ("replace it"); pull request #25. The rewrite of the history is NOT done.
 
 ---
 
