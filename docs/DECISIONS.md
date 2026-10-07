@@ -10,6 +10,31 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-29 · Prices on a driver's or bus company's page: every vehicle size, airport transfers to and from Ben Gurion, agent price (built; waits for the owner's word)
+
+**Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 7 October 2026, 12:31 Israel time. He had just added an independent van driver with five vehicle sizes and airport transfers.
+
+**In his words:** "pricing for drivers needs to have all of the options of vehicle size. it needs airport transfer Ben Gurion - (add City) and (add city) Ben Gurion needs agent price".
+
+**Decision:** on a Transport supplier (an independent van driver or a bus company) a price says which vehicle size it is for, an airport transfer says which way and which city, and the price is entered as an agent price.
+
+**What was built (implementation choices; change on request):**
+
+- "Add price" on a Transport supplier starts with **What is the price for?**: Airport transfer, Day rate, Per hour, Something else.
+- **Vehicle size** lists all seven sizes (bus, midibus, the four van sizes, car). It is required for a transfer, a day rate and an hourly rate. A driver with one size has it filled in.
+- **Airport transfer:** "Ben Gurion → city" or "city → Ben Gurion", and the city is typed (with a list of towns and six quick buttons). Not asked for: a third choice, "Both ways, same price", saved as one line marked "each way".
+- **Which price is it?** two buttons, "Agent price · what we pay" (the default) and "Public price", and the price box is named after the one chosen. An organisation never sees this choice and its line is never an agent rate (C3), as before.
+- Not asked for: **"Save + add another"**, which opens the next line with the same kind, route, vehicle, VAT and source, so a driver's whole list can be typed in a row.
+- The kind, the route and the vehicle are written into the line's name ("Airport transfer: Ben Gurion → Jerusalem · Van, up to 8 seats"). Front end only (`index.html`): no table, column or database function changed, so who sees a price is exactly as before. Lines already on the list are untouched and open under "Something else".
+- A transfer is saved per vehicle, a day rate per day, an hourly rate per hour; "For", child ages and group size are not asked for those three.
+- Suppliers that are not Transport keep the form they had.
+
+**Checked:** in preview, 36 checks at phone and desktop size as Eretz Israel Tours, as a colleague and as an organisation: every vehicle size offered; both directions and both ways; a typed city; agent and public; the refusals (no city, no vehicle size); edit opens a saved line with its parts set; an older free-text line saves unchanged; "Save + add another" keeps "Suggest for everyone" and the reason; an organisation's line is an organisation rate and it is shown no agent rate; a jeep supplier's form is as before; no page errors. 160 names written and read back the same. **Not checked:** on the live site; on a real phone; by a session other than the one that built it. The limited-member database checks were not run again because the database is not touched.
+
+**Status:** NOT live. Branch `driver-prices`, a draft pull request. Preview pictures sent to the owner on 7 Oct 2026; waits for his word (G1). No terms change, no database file.
+
+---
+
 ## D-28 · Gaza Envelope is a region (live)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 5 October 2026, 17:37 Israel time.

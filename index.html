@@ -739,6 +739,16 @@ const DB = {
         notes:[{id:'n1',body:'Ask for Avi as driver, great with kids. Meeting point moved to the gas station at the junction.',author:'rachel.ops@gmail.com',author_name:'Rachel Amar',created_at:dd(2)},
                {id:'n2',body:'Book at least 2 weeks ahead during chag.',author:OWNER,author_name:'Eretz Israel Tours',created_at:dd(20)}],
         requests:[]};
+      // an independent van driver's prices (D-29): airport transfers by direction and city, a day rate, each for a vehicle size
+      S.demo['vendor_v4n0001']={
+        prices:[
+          {id:'tp1',label:'Airport transfer: Ben Gurion → Jerusalem · Van, 9–10 seats',audience:'Vehicle',price:'450',currency:'ILS',vat:'plus_vat',basis:'Per vehicle',is_agent:true,season:'Night or Shabbat +25%',source:'WhatsApp from Eli',checked_on:'2026-09-20',note:''},
+          {id:'tp2',label:'Airport transfer: Jerusalem → Ben Gurion · Van, 9–10 seats',audience:'Vehicle',price:'420',currency:'ILS',vat:'plus_vat',basis:'Per vehicle',is_agent:true,season:'Night or Shabbat +25%',source:'WhatsApp from Eli',checked_on:'2026-09-20',note:''},
+          {id:'tp3',label:'Airport transfer: Ben Gurion ⇄ Tel Aviv, each way · Van, 9–10 seats',audience:'Vehicle',price:'300',currency:'ILS',vat:'plus_vat',basis:'Per vehicle',is_agent:true,season:'',source:'WhatsApp from Eli',checked_on:'2026-09-20',note:''},
+          {id:'tp4',label:'Day rate · Van, 9–10 seats',audience:'Vehicle',price:'1600',currency:'ILS',vat:'plus_vat',basis:'Per day',is_agent:true,season:'',source:'WhatsApp from Eli',checked_on:'2026-09-20',note:'10 hours and 250 km. Kvish 6 is extra.'},
+          {id:'tp5',label:'Airport transfer: Ben Gurion → Jerusalem · Van, 9–10 seats',audience:'Vehicle',price:'550',currency:'ILS',vat:'including_vat',basis:'Per vehicle',is_agent:false,season:'',source:'What he charges a private client',checked_on:'2026-09-20',note:''}],
+        deals:[],notes:[],requests:[]};
+      S.vendors.find(v=>v.id==='vendor_v4n0001')._prices=5;
       S.vendors.find(v=>v.id==='vendor_k3m9p2x')._prices=4; S.vendors.find(v=>v.id==='vendor_k3m9p2x')._deals=1; S.vendors.find(v=>v.id==='vendor_k3m9p2x')._notes=2;
       S.demoRequests=[{id:'r1',vendor_id:'vendor_a81qz0c',vendor_name:'Dan Panorama Jerusalem',kind:'vendor_fields',proposed:{agentPrice:'1250',phone:'+972 2 569 5000'},current:{agentPrice:'1150',phone:'+972 2 569 5695'},reason:'New group rate for 2027, and the group desk has a new number.',requested_by:'rachel.ops@gmail.com',requested_name:'Rachel Amar',created_at:dd(1)}];
       S.requests=S.demoRequests; S.myTop=['vendor_k3m9p2x','vendor_p0lk5sd','vendor_a81qz0c'];
@@ -823,7 +833,7 @@ const DB = {
     return await rpc('vendor_detail',{p_id:vid});
   },
   async savePrice(vid, line, reason){
-    if(!LIVE){ const d=await DB.detail(vid); if(line.id){ const i=d.prices.findIndex(p=>p.id===line.id); d.prices[i]=Object.assign({},d.prices[i],line); } else d.prices.push(Object.assign({id:'p'+Date.now(),created_by:S.user.email},line,lim()?{org:true,mine:true,is_agent:false,owner:S.user.email,by:{name:S.me.name,role:S.me.org||'',admin:false,org:true},by_date:new Date().toISOString()}:{})); bump(vid,'_prices',line.id?0:1); return {request:false,org:lim()}; }
+    if(!LIVE){ const d=await DB.detail(vid); if(line.id){ const i=d.prices.findIndex(p=>p.id===line.id); d.prices[i]=Object.assign({},d.prices[i],line); } else d.prices.push(Object.assign({created_by:S.user.email},line,{id:'p'+Date.now()},lim()?{org:true,mine:true,is_agent:false,owner:S.user.email,by:{name:S.me.name,role:S.me.org||'',admin:false,org:true},by_date:new Date().toISOString()}:{})); bump(vid,'_prices',line.id?0:1); return {request:false,org:lim()}; }
     const r = await rpc('price_save',{p_vendor:vid,p_data:line,p_reason:reason||''}); await DB.refreshVendor(vid); return r;
   },
   async deletePrice(vid, id, reason){
@@ -1952,7 +1962,7 @@ async function drawExtras(v){
       <span class="meta">${p.org&&!p.private?'<span class="tag" style="background:var(--ochre-wash);color:var(--ink)">Organisation rate</span>':(p.owner||p.org?'<span class="tag" style="background:var(--ochre-wash);color:var(--ochre)">Only '+(p.mine?'you':'them')+' and Eretz Israel Tours see this</span>':(p.private?'<span class="tag" style="background:var(--bad-wash);color:var(--bad)">Private</span>':''))}${p.org?'':(p.is_agent?'<span class="tag agent">Agent rate</span>':'<span class="tag">Public price</span>')}${esc(priceWho(p))} · ${esc((p.basis||'').toLowerCase())}${vatLabel(p.vat)?' · '+esc(vatLabel(p.vat).toLowerCase()):''}${p.season?' · '+esc(p.season):''}</span>
       ${p.note||p.source||p.checked_on?`<span class="meta">${p.note?esc(p.note)+'<br>':''}${p.source?'Source: '+esc(p.source):''}${p.checked_on?' · checked '+esc(ilDate(p.checked_on)):''}</span>`:''}
       <span class="ctl">${p.org&&!p.mine&&!S.admin?'':`${(S.admin&&!(p.owner&&!p.mine))||p.mine?`<button class="mini" data-pedit="${esc(p.id)}" type="button">Edit</button>`:(S.admin?'':`<button class="mini" data-pedit="${esc(p.id)}" type="button">Suggest change</button>`)}<button class="mini" data-pdel="${esc(p.id)}" type="button">${S.admin||p.mine?'Remove':'Suggest removing'}</button>`}</span></div>`).join('')}</div>`
-    : (privNote?'':`<p class="hint" style="margin:0 0 10px">${lim()?'No prices yet. Add the rate you got: everyone on the list sees it, without your name.':'No price lines yet. Add adult, child, Israeli senior or group rates as separate lines.'}</p>`));
+    : (privNote?'':`<p class="hint" style="margin:0 0 10px">${lim()?'No prices yet. Add the rate you got: everyone on the list sees it, without your name.':(catsOf(v).includes('Transport')?'No prices yet. Add airport transfers, a day rate and an hourly rate, one line for each vehicle size.':'No price lines yet. Add adult, child, Israeli senior or group rates as separate lines.')}</p>`));
   pb.querySelectorAll('[data-pedit]').forEach(b=>b.onclick=()=>openPriceForm(v, det.prices.find(p=>p.id===b.dataset.pedit), null, det.prices_private));
   pb.querySelectorAll('[data-pdel]').forEach(b=>b.onclick=async()=>{
     if(S.admin || (det.prices.find(p=>p.id===b.dataset.pdel)||{}).mine){ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again'; return; } try{ await DB.deletePrice(v.id,b.dataset.pdel); toast('Price removed'); drawExtras(v); }catch(e){ toast(e.message); } return; }
@@ -3155,52 +3165,122 @@ function openReasonSheet(title, prompt, onSend){
     try{ await onSend(r); }catch(e){ w.querySelector('#rsnErr').innerHTML=`<div class="msg err">${esc(e.message)}</div>`; } };
 }
 
+// ---------- prices on a bus company's or a driver's page (D-29) ----------
+// On a Transport supplier a price says what it is for (airport transfer, day, hour) and for which vehicle size.
+// Both are written into the line's label ("Airport transfer: Ben Gurion → Jerusalem · Van, up to 8 seats"),
+// so the price table and the database functions are unchanged, and older free-text lines keep working.
+const TR_KINDS=[['transfer','Airport transfer'],['day','Day rate'],['hour','Per hour'],['other','Something else']];
+const TR_AIRPORT='Ben Gurion', TR_SEP=' · ', TR_EACH=', each way';
+const TR_BASIS={transfer:'Per vehicle',day:'Per day',hour:'Per hour'};
+const TR_CITIES=TOWNS.filter(t=>t!=='Ben Gurion Airport');
+const TR_QUICK=['Jerusalem','Tel Aviv','Netanya','Haifa','Tiberias','Dead Sea'];
+const trCity=c=>String(c||'').replace(/\s+/g,' ').trim();
+function trLabel(t){
+  const veh=VEH[t.veh]?VEH[t.veh].label:'', c=trCity(t.city); let s;
+  if(t.kind==='transfer') s='Airport transfer: '+(t.dir==='to'?c+' → '+TR_AIRPORT:t.dir==='both'?TR_AIRPORT+' ⇄ '+c+TR_EACH:TR_AIRPORT+' → '+c);
+  else if(t.kind==='day') s='Day rate'; else if(t.kind==='hour') s='Per hour'; else s=String(t.text||'').trim();
+  return veh?(s?s+TR_SEP+veh:veh):s;
+}
+function trParse(label){
+  let s=String(label||'').trim(), veh='', m;
+  const hit=VEHICLES.find(x=>s===x[1]||s.endsWith(TR_SEP+x[1]));
+  if(hit){ veh=hit[0]; s=s===hit[1]?'':s.slice(0,-(TR_SEP+hit[1]).length); }
+  const o={kind:'other',dir:'from',city:'',veh,text:s};
+  if((m=s.match(/^Airport transfer: Ben Gurion ⇄ (.+), each way$/))) return Object.assign(o,{kind:'transfer',dir:'both',city:m[1],text:''});
+  if((m=s.match(/^Airport transfer: Ben Gurion → (.+)$/))) return Object.assign(o,{kind:'transfer',dir:'from',city:m[1],text:''});
+  if((m=s.match(/^Airport transfer: (.+) → Ben Gurion$/))) return Object.assign(o,{kind:'transfer',dir:'to',city:m[1],text:''});
+  if(s==='Day rate') return Object.assign(o,{kind:'day',text:''});
+  if(s==='Per hour') return Object.assign(o,{kind:'hour',text:''});
+  return o;
+}
 function openPriceForm(v, p, pre, pp){
   // A limited member's own line is an organisation rate: saved at once, shown to everyone without the name, never an agent rate.
   const orgLine = lim() && (!p || p.mine);
   const ownOnly = !S.admin && !orgLine && (pp || (p && p.mine)); const canChoose = !S.admin && !orgLine && !p && !pp;
-  const x=Object.assign({label:'',audience:'Adult',age_from:'',age_to:'',pax_min:'',pax_max:'',season:'',price:'',currency:v.currency||'ILS',vat:'',basis:v.priceBasis||'Per person',is_agent:!lim(),source:'',checked_on:today(),note:''}, p||pre||{});
+  const isTr = catsOf(v).includes('Transport');
+  const x=Object.assign({label:'',audience:isTr?'Vehicle':'Adult',age_from:'',age_to:'',pax_min:'',pax_max:'',season:'',price:'',currency:v.currency||'ILS',vat:'',basis:v.priceBasis||'Per person',is_agent:!lim(),source:'',checked_on:today(),note:''}, p||pre||{});
+  const tr = isTr ? trParse(x.label) : null;
+  if(isTr && !p && !(pre&&pre.label)){ tr.kind=isIndep(v)?'transfer':'day'; const fl=[...fleetOf(v)]; if(fl.length===1) tr.veh=fl[0]; }
   const opt=(arr,val)=>arr.map(o=>{const [k,t]=Array.isArray(o)?o:[o,o];return `<option value="${esc(k)}"${String(val)===k?' selected':''}>${esc(t)}</option>`}).join('');
+  const seg=(id,name,opts,val,attr)=>`<div class="tgs seg" id="${id}" role="group" aria-label="${esc(name)}">${opts.map(([k,t])=>`<button class="tg" type="button" data-${attr}="${esc(k)}" aria-pressed="${String(val)===k}">${esc(t)}</button>`).join('')}</div>`;
+  const trTop = isTr ? `
+      <div class="f wide"><span class="lab">What is the price for?</span>${seg('trKind','What is the price for?',TR_KINDS,tr.kind,'k')}</div>
+      <div class="f wide"><label for="tr_veh">Vehicle size <em id="trVehReq">*</em></label><select id="tr_veh">${opt([['','Choose…'],...VEHICLES.map(o=>[o[0],o[1]])],tr.veh)}</select></div>
+      <div class="f wide" id="trDirWrap"><span class="lab">Which way?</span>${seg('trDir','Which way?',[['from','Ben Gurion → city'],['to','City → Ben Gurion'],['both','Both ways, same price']],tr.dir,'d')}</div>
+      <div class="f wide" id="trCityWrap"><label for="tr_city">City <em>*</em></label><input id="tr_city" list="trCities" maxlength="40" value="${esc(tr.city)}" placeholder="Type the city, like Jerusalem" autocomplete="off"><datalist id="trCities">${TR_CITIES.map(c=>`<option value="${esc(c)}">`).join('')}</datalist>
+        <div class="presets" style="margin:6px 0 0">${TR_QUICK.map(c=>`<button type="button" class="mini" data-city="${esc(c)}">${esc(c)}</button>`).join('')}</div></div>` : '';
   const body=`<form id="pf" novalidate>
     ${S.admin?'':orgLine?`<div class="lockbar">The rate you got from this supplier. ${pp?'This supplier\'s prices are kept private, so only you and Eretz Israel Tours see it.':'Everyone on the list sees it, without your name. Eretz Israel Tours sees who added it.'} It saves straight away.</div>`:(ownOnly?`<div class="lockbar">This price is just for you. Only you and Eretz Israel Tours see it. It saves straight away.</div>`:
       (canChoose?`<div class="chips" role="radiogroup" aria-label="Who sees it" style="padding-top:0;margin-bottom:10px"><button type="button" class="chip" data-who="me" aria-pressed="true">Just for me</button><button type="button" class="chip" data-who="all" aria-pressed="false">Suggest for everyone</button></div>
         <div class="lockbar" id="whoNote">Only you and Eretz Israel Tours see it. It saves straight away.</div>`:`<div class="lockbar">🔒 Shared prices are checked by Eretz Israel Tours before they appear. Your suggestion is sent with your reason.</div>`))}
-    <div class="grid">
-      <div class="f wide"><label for="pl_label">What is it?</label><input id="pl_label" value="${esc(x.label)}" placeholder="2-hour jeep tour, entrance ticket, half board…"></div>
-      <div class="f"><label for="pl_aud">For</label><select id="pl_aud">${opt(AUDIENCES,x.audience)}</select></div>
-      <div class="f"${lim()?' hidden':''}><label for="pl_type">Type of price</label><select id="pl_type">${opt([['1','Agent rate (what we pay)'],['0','Public price']], x.is_agent?'1':'0')}</select></div>
+    <div class="grid">${trTop}
+      <div class="f wide" id="lblWrap"><label for="pl_label">What is it?</label><input id="pl_label" value="${esc(isTr?tr.text:x.label)}"${isTr?' maxlength="90"':''} placeholder="${isTr?'Extra hour, driver overnight, transfer inside the city…':'2-hour jeep tour, entrance ticket, half board…'}"></div>
+      <div class="f" id="audWrap"><label for="pl_aud">For</label><select id="pl_aud">${opt(AUDIENCES,x.audience)}</select></div>
+      ${isTr&&!lim()?`<div class="f wide"><span class="lab">Which price is it?</span>${seg('trType','Which price is it?',[['1','Agent price · what we pay'],['0','Public price']],x.is_agent?'1':'0','t')}</div>`:''}
+      <div class="f"${lim()||isTr?' hidden':''}><label for="pl_type">Type of price</label><select id="pl_type">${opt([['1','Agent rate (what we pay)'],['0','Public price']], x.is_agent?'1':'0')}</select></div>
       <div class="f" id="ageWrap"><label>Child ages</label><div style="display:flex;gap:6px"><input id="pl_af" inputmode="numeric" value="${esc(x.age_from)}" placeholder="from"><input id="pl_at" inputmode="numeric" value="${esc(x.age_to)}" placeholder="to"></div></div>
-      <div class="f"><label>Group size (people)</label><div style="display:flex;gap:6px"><input id="pl_pmin" inputmode="numeric" value="${esc(x.pax_min)}" placeholder="min"><input id="pl_pmax" inputmode="numeric" value="${esc(x.pax_max)}" placeholder="max"></div></div>
-      <div class="f"><label for="pl_price">Price</label><div style="display:flex;gap:6px"><input id="pl_price" inputmode="decimal" value="${esc(x.price)}" placeholder="Leave empty if unknown"><button type="button" class="mini" id="pl_free">Free</button></div></div>
+      <div class="f" id="paxWrap"><label>Group size (people)</label><div style="display:flex;gap:6px"><input id="pl_pmin" inputmode="numeric" value="${esc(x.pax_min)}" placeholder="min"><input id="pl_pmax" inputmode="numeric" value="${esc(x.pax_max)}" placeholder="max"></div></div>
+      <div class="f"><label for="pl_price" id="plPriceLab">Price</label><div style="display:flex;gap:6px"><input id="pl_price" inputmode="decimal" value="${esc(x.price)}" placeholder="Leave empty if unknown"><button type="button" class="mini" id="pl_free"${isTr?' hidden':''}>Free</button></div></div>
       <div class="f"><label for="pl_cur">Currency</label><select id="pl_cur">${opt(['ILS','USD','EUR'],x.currency)}</select></div>
       <div class="f"><label for="pl_vat">VAT</label><select id="pl_vat">${opt(VAT,x.vat)}</select></div>
-      <div class="f"><label for="pl_basis">Basis</label><select id="pl_basis">${opt(BASIS,x.basis)}</select></div>
-      <div class="f wide"><label for="pl_season">Season or dates</label><input id="pl_season" value="${esc(x.season)}" placeholder="Weekdays only · Chol HaMoed +15% · until 31 Mar 2027"></div>
-      <div class="f wide"><label for="pl_src">Where is this price from?</label><input id="pl_src" value="${esc(x.source)}" placeholder="Quote email, receipt, website, phone call with Moshe"></div>
+      <div class="f" id="basisWrap"><label for="pl_basis">Basis</label><select id="pl_basis">${opt(BASIS,x.basis)}</select></div>
+      ${isTr?'<div class="f wide" id="trShowWrap" hidden><span class="hint">Shows as: <b id="trShow"></b></span></div>':''}
+      <div class="f wide"><label for="pl_season">Season or dates</label><input id="pl_season" value="${esc(x.season)}" placeholder="${isTr?'Night or Shabbat +25% · Chol HaMoed +15% · until 31 Mar 2027':'Weekdays only · Chol HaMoed +15% · until 31 Mar 2027'}"></div>
+      <div class="f wide"><label for="pl_src">Where is this price from?</label><input id="pl_src" value="${esc(x.source)}" placeholder="${isTr?'WhatsApp from the driver, quote email, what I paid':'Quote email, receipt, website, phone call with Moshe'}"></div>
       <div class="f"><label for="pl_chk">Checked on</label><input id="pl_chk" type="date" value="${esc(x.checked_on)}"></div>
-      <div class="f wide"><label for="pl_note">Note</label><input id="pl_note" value="${esc(x.note)}" placeholder="Show Teudat Ezrach Vatik at the gate"></div>
+      <div class="f wide"><label for="pl_note">Note</label><input id="pl_note" value="${esc(x.note)}" placeholder="${isTr?'Up to 6 suitcases. Kvish 6 is extra.':'Show Teudat Ezrach Vatik at the gate'}"></div>
       ${S.admin?`<label class="check f wide" for="pl_priv"><input id="pl_priv" type="checkbox" ${x.private?'checked':''}><span><b>Private:</b> only you see this price</span></label>`:(ownOnly||orgLine?'':`<div class="f wide" id="reasonWrapP" ${canChoose?'hidden':''}><label for="pl_reason">Why are you adding or changing it? <em>*</em></label><input id="pl_reason" placeholder="New price list received by email"></div>`)}
     </div><div id="plErr"></div></form>`;
-  const w=sheet(orgLine?(p?'Edit your rate':'Add the rate you got'):(p?(S.admin||ownOnly?'Edit price':'Suggest a price change'):(S.admin?'Add price':'Add a price')), body,
-    `<button class="btn soft" id="pc" type="button">Cancel</button><button class="btn primary" id="ps" type="button">${S.admin||ownOnly||canChoose||orgLine?'Save':'Send for approval'}</button>`);
+  const saveTxt=()=>S.admin||ownOnly||orgLine||forMe?'Save':'Send for approval';
   let forMe = ownOnly || canChoose;
+  const w=sheet(orgLine?(p?'Edit your rate':'Add the rate you got'):(p?(S.admin||ownOnly?'Edit price':'Suggest a price change'):(S.admin?'Add price':'Add a price')), body,
+    `<button class="btn soft" id="pc" type="button">Cancel</button>${isTr&&!p?'<button class="btn soft" id="psMore" type="button">Save + add another</button>':''}<button class="btn primary" id="ps" type="button">${saveTxt()}</button>`);
   w.querySelectorAll('[data-who]').forEach(b=>b.onclick=()=>{ forMe=b.dataset.who==='me'; w.querySelectorAll('[data-who]').forEach(o=>o.setAttribute('aria-pressed',o===b));
     w.querySelector('#whoNote').textContent = forMe?'Only you and Eretz Israel Tours see it. It saves straight away.':'🔒 Shared prices are checked by Eretz Israel Tours before they appear. Say where the price comes from.';
-    w.querySelector('#reasonWrapP').hidden = forMe; w.querySelector('#ps').textContent = forMe?'Save':'Send for approval'; });
+    w.querySelector('#reasonWrapP').hidden = forMe; w.querySelector('#ps').textContent = saveTxt(); });
+  if(canChoose && pre && pre._who==='all'){ w.querySelector('[data-who="all"]').onclick(); w.querySelector('#pl_reason').value=pre._reason||''; }   // "Save and add another" keeps the choice
   w.querySelector('#pl_free').onclick=()=>{ w.querySelector('#pl_price').value='0'; if(!w.querySelector('#pl_label').value.trim()) w.querySelector('#pl_label').value='Entrance'; };
-  const aud=w.querySelector('#pl_aud'); const age=w.querySelector('#ageWrap'); const syncAge=()=>{ age.hidden = aud.value!=='Child'; }; aud.onchange=syncAge; syncAge();
+  const aud=w.querySelector('#pl_aud'); const age=w.querySelector('#ageWrap');
+  const trRead=()=>({kind:tr.kind,dir:tr.dir,city:trCity(w.querySelector('#tr_city').value),veh:w.querySelector('#tr_veh').value,text:w.querySelector('#pl_label').value.trim()});
+  const syncAge=()=>{ age.hidden = aud.value!=='Child' || (isTr && tr.kind!=='other'); }; aud.onchange=syncAge;
+  // On a transport page the three usual prices need no free text: the kind, the vehicle and the route make the line's name.
+  const syncTr=()=>{ if(!isTr) return; const fixed=tr.kind!=='other', t=trRead(), c=t.city;
+    [['#trDirWrap',tr.kind==='transfer'],['#trCityWrap',tr.kind==='transfer'],['#lblWrap',!fixed],['#audWrap',!fixed],['#paxWrap',!fixed],['#basisWrap',!fixed]].forEach(([s,on])=>{ w.querySelector(s).hidden=!on; });
+    w.querySelector('#trVehReq').hidden=!fixed; syncAge();
+    const d=w.querySelector('#trDir'); d.querySelector('[data-d="from"]').textContent=TR_AIRPORT+' → '+(c||'city'); d.querySelector('[data-d="to"]').textContent=(c||'City')+' → '+TR_AIRPORT;
+    const ready=fixed&&t.veh&&(tr.kind!=='transfer'||c); w.querySelector('#trShowWrap').hidden=!ready; if(ready) w.querySelector('#trShow').textContent=trLabel(t);
+    w.querySelector('#plPriceLab').textContent=(lim()?'Price':w.querySelector('#pl_type').value==='1'?'Agent price':'Public price')+(tr.kind==='transfer'?(tr.dir==='both'?', each way':', one way'):tr.kind==='day'?', a day':tr.kind==='hour'?', an hour':'');
+  };
+  if(isTr){
+    const pick=(box,attr,set)=>w.querySelectorAll('#'+box+' .tg').forEach(b=>b.onclick=()=>{ w.querySelectorAll('#'+box+' .tg').forEach(o=>o.setAttribute('aria-pressed',o===b)); set(b.dataset[attr]); syncTr(); });
+    pick('trKind','k',k=>{ tr.kind=k; }); pick('trDir','d',d=>{ tr.dir=d; });
+    if(!lim()) pick('trType','t',t=>{ w.querySelector('#pl_type').value=t; });
+    w.querySelector('#tr_veh').onchange=syncTr; w.querySelector('#tr_city').addEventListener('input',syncTr);
+    w.querySelectorAll('[data-city]').forEach(b=>b.onclick=()=>{ w.querySelector('#tr_city').value=b.dataset.city; syncTr(); });
+  }
+  syncAge(); syncTr();
   w.querySelector('#pc').onclick=()=>openDetail(v.id);
-  w.querySelector('#ps').onclick=async()=>{
+  const save=async again=>{
     const g=id=>w.querySelector('#'+id).value.trim(); const err=w.querySelector('#plErr');
     const line={id:p?p.id:undefined,label:g('pl_label'),audience:g('pl_aud'),age_from:g('pl_af'),age_to:g('pl_at'),pax_min:g('pl_pmin'),pax_max:g('pl_pmax'),price:g('pl_price').replace(/[,₪$€\s]/g,''),currency:g('pl_cur'),vat:g('pl_vat'),basis:g('pl_basis'),is_agent:!lim()&&g('pl_type')==='1',season:g('pl_season'),source:g('pl_src'),checked_on:g('pl_chk'),note:g('pl_note'),private:S.admin?w.querySelector('#pl_priv').checked:false};
+    if(isTr){ const t=trRead();
+      if(t.kind!=='other'){
+        if(t.kind==='transfer' && !t.city){ err.innerHTML='<div class="msg err">Add the city the transfer goes to or comes from.</div>'; return; }
+        if(!t.veh){ err.innerHTML='<div class="msg err">Choose the vehicle size.</div>'; return; }
+        Object.assign(line,{audience:'Vehicle',age_from:'',age_to:'',pax_min:'',pax_max:'',basis:TR_BASIS[t.kind]}); }
+      line.label=trLabel(t); }
     if(line.price && !/^\d+(\.\d+)?$/.test(line.price)){ err.innerHTML='<div class="msg err">Enter the price as a number, like 360, or leave it empty.</div>'; return; }
     if(!line.price && !line.label){ err.innerHTML='<div class="msg err">Say what the price is for, even if you don\'t know the amount yet.</div>'; return; }
     line.mine = !S.admin && forMe;
     const reason = (S.admin||forMe||orgLine)?'':g('pl_reason');
     if(!S.admin && !forMe && !orgLine && reason.length<3){ err.innerHTML='<div class="msg err">Add a short reason, like where the price came from.</div>'; return; }
-    try{ const r=await DB.savePrice(v.id,line,reason); toast(r&&r.request?'Sent for approval':(r&&r.org?(pp?'Saved. Only you and Eretz Israel Tours see it.':'Saved. Everyone on the list sees this rate, without your name.'):(line.mine?'Saved. Only you see this price.':'Price saved'))); openDetail(v.id); }
+    try{ const r=await DB.savePrice(v.id,line,reason); toast(r&&r.request?'Sent for approval':(r&&r.org?(pp?'Saved. Only you and Eretz Israel Tours see it.':'Saved. Everyone on the list sees this rate, without your name.'):(line.mine?'Saved. Only you see this price.':'Price saved')));
+      // the next line starts from this one: same kind, route, vehicle, VAT and source; the price and the note are empty
+      if(again) openPriceForm(v,null,Object.assign({},line,{id:undefined,price:'',note:'',_who:forMe?'me':'all',_reason:reason}),pp); else openDetail(v.id); }
     catch(e){ err.innerHTML=`<div class="msg err">${esc(e.message)}</div>`; }
   };
+  w.querySelector('#ps').onclick=()=>save(false);
+  const more=w.querySelector('#psMore'); if(more) more.onclick=()=>save(true);
 }
 
 function openDealForm(v){

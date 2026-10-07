@@ -4,7 +4,7 @@
 
 *Short, factual status for the Cockpit Steward and other EIT projects. Updated by the Vendor Master session after any change that matters to them. The commit that last changed this file is its version.*
 
-**As of:** 5 October 2026
+**As of:** 7 October 2026
 
 ## Identity
 
@@ -72,6 +72,7 @@
 
 ## Waiting for the owner
 
+- **Prices on a driver's or bus company's page (D-29):** built, NOT live, branch `driver-prices` (draft pull request). Asked for on 7 Oct at 12:31. "Add price" on a Transport supplier asks what the price is for (airport transfer, day rate, per hour, something else), the vehicle size (all seven), for a transfer which way (Ben Gurion → city, city → Ben Gurion, or both ways at the same price) and the city, and whether it is the agent price or the public price. Front end only: the parts are written into the line's name, no database change. He has the preview pictures; waits for his word.
 - **Region "Gaza Envelope - עוטף עזה" (D-28):** live since 5 Oct, about 17:45, on his word ("yes to both"). Asked for at 17:37. One line in the region list; no change to the database structure. On the same word, four hidden suppliers that were under "Negev & Arava" were moved into it (Burnt Vehicles Compound, Garden of Heroism and Remembrance, Nova Festival Memorial Site, The Salad Trail).
 - **Reservation question at national parks only (D-27):** live since 5 Oct, about 17:40, on his word ("yes go live"). He reported on 5 Oct at 17:23 that Shimshon's Farm, a private supplier, asked him whether his reservation was checked. The pop-up and the "They checked / Not checked" buttons now show only in the category National Parks; any other supplier with a reservation setting shows one plain line. Front end only; no database change.
 - **Booking sheets, "When the bus turns on" (D-26):** live since 5 Oct, about 17:25, on his word. The second choice under "Hours counted from" says "When the bus turns on" / "התנעת האוטובוס" in place of "Leaving the depot". Wording only; the stored value is unchanged.
