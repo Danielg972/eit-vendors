@@ -18,18 +18,22 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 **Decision:** on a Transport supplier (an independent van driver or a bus company) a price says which vehicle size it is for, an airport transfer says which way and which city, and the price is entered as an agent price.
 
+**Changed the same day, on his word at 12:43, after the first preview:** "i think it should be in a dropdown format of all the relevant pricing - a list is too daunting". It could mean the form or the list of saved prices, so both were changed and shown to him again.
+
 **What was built (implementation choices; change on request):**
 
-- "Add price" on a Transport supplier starts with **What is the price for?**: Airport transfer, Day rate, Per hour, Something else.
-- **Vehicle size** lists all seven sizes (bus, midibus, the four van sizes, car). It is required for a transfer, a day rate and an hourly rate. A driver with one size has it filled in.
-- **Airport transfer:** "Ben Gurion → city" or "city → Ben Gurion", and the city is typed (with a list of towns and six quick buttons). Not asked for: a third choice, "Both ways, same price", saved as one line marked "each way".
-- **Which price is it?** two buttons, "Agent price · what we pay" (the default) and "Public price", and the price box is named after the one chosen. An organisation never sees this choice and its line is never an agent rate (C3), as before.
-- Not asked for: **"Save + add another"**, which opens the next line with the same kind, route, vehicle, VAT and source, so a driver's whole list can be typed in a row.
-- The kind, the route and the vehicle are written into the line's name ("Airport transfer: Ben Gurion → Jerusalem · Van, up to 8 seats"). Front end only (`index.html`): no table, column or database function changed, so who sees a price is exactly as before. Lines already on the list are untouched and open under "Something else".
+- "Add price" on a Transport supplier is a short form of drop-downs. **What is the price for?** is one drop-down: Airport transfer Ben Gurion → city, Airport transfer city → Ben Gurion, Airport transfer both ways at the same price, Day rate, Per hour, Something else. The "both ways" choice was not asked for; it is saved as one line marked "each way".
+- **City** (for a transfer) is a drop-down of 39 towns that ends with "Another city…", which opens a box to type any city.
+- **Vehicle size** is a drop-down of all seven sizes (bus, midibus, the four van sizes, car). It is required for a transfer, a day rate and an hourly rate. A driver with one size has it filled in.
+- **Agent or public price?** is a drop-down, "Agent price" first and the default, and the price box is named after the one chosen ("Agent price, one way"). An organisation never sees this choice and its line is never an agent rate (C3), as before.
+- Season and the note are folded under one line, "Season, extra charges, a note". Where the price is from and the date it was checked stay in view (E4).
+- Not asked for: **"Save + add another"**, which opens the next line with the same kind, city, vehicle, VAT and source, so a driver's whole list can be typed in a row.
+- **On the supplier's page** a Transport supplier's prices are no longer one long list. They sit under headings that open on a tap: Airport transfers, Day rate, Per hour, Other prices, each with its count. With more than one vehicle size on the page, a **Vehicle size** drop-down above them keeps only that size. With three prices or fewer the groups start open. Inside a group a line is named without repeating the heading ("Ben Gurion → Jerusalem · Van, up to 8 seats").
+- The kind, the route and the vehicle are written into the line's name ("Airport transfer: Ben Gurion → Jerusalem · Van, up to 8 seats"). Front end only (`index.html`): no table, column or database function changed, so who sees a price is exactly as before. Lines already on the list are untouched; they open under "Something else" and are listed under "Other prices".
 - A transfer is saved per vehicle, a day rate per day, an hourly rate per hour; "For", child ages and group size are not asked for those three.
-- Suppliers that are not Transport keep the form they had.
+- Suppliers that are not Transport keep the form and the flat price list they had.
 
-**Checked:** in preview, 36 checks at phone and desktop size as Eretz Israel Tours, as a colleague and as an organisation: every vehicle size offered; both directions and both ways; a typed city; agent and public; the refusals (no city, no vehicle size); edit opens a saved line with its parts set; an older free-text line saves unchanged; "Save + add another" keeps "Suggest for everyone" and the reason; an organisation's line is an organisation rate and it is shown no agent rate; a jeep supplier's form is as before; no page errors. 160 names written and read back the same. **Not checked:** on the live site; on a real phone; by a session other than the one that built it. The limited-member database checks were not run again because the database is not touched.
+**Checked:** in preview, 52 checks at phone and desktop size as Eretz Israel Tours, as a colleague and as an organisation: every vehicle size offered; both directions and both ways; a city from the list and a typed city; agent and public; the refusals (no city, no vehicle size); the groups, their counts, the size drop-down; edit opens a saved line with its parts set; an older free-text line saves unchanged; "Save + add another" keeps "Suggest for everyone" and the reason; an organisation's line is an organisation rate and it is shown no agent rate; a jeep supplier's form and list are as before; no page errors. 160 names written and read back the same. **Not checked:** on the live site; on a real phone; by a session other than the one that built it. The limited-member database checks were not run again because the database is not touched.
 
 **Status:** NOT live. Branch `driver-prices`, a draft pull request. Preview pictures sent to the owner on 7 Oct 2026; waits for his word (G1). No terms change, no database file.
 
