@@ -10,7 +10,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
-## D-29 · Prices on a driver's or bus company's page: every vehicle size, airport transfers to and from Ben Gurion, agent price (built; waits for the owner's word)
+## D-29 · Prices on a driver's or bus company's page: every vehicle size, airport transfers to and from Ben Gurion, agent price (live)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 7 October 2026, 12:31 Israel time. He had just added an independent van driver with five vehicle sizes and airport transfers.
 
@@ -35,7 +35,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 **Checked:** in preview, 52 checks at phone and desktop size as Eretz Israel Tours, as a colleague and as an organisation: every vehicle size offered; both directions and both ways; a city from the list and a typed city; agent and public; the refusals (no city, no vehicle size); the groups, their counts, the size drop-down; edit opens a saved line with its parts set; an older free-text line saves unchanged; "Save + add another" keeps "Suggest for everyone" and the reason; an organisation's line is an organisation rate and it is shown no agent rate; a jeep supplier's form and list are as before; no page errors. 160 names written and read back the same. **Not checked:** on the live site; on a real phone; by a session other than the one that built it. The limited-member database checks were not run again because the database is not touched.
 
-**Status:** NOT live. Branch `driver-prices`, a draft pull request. Preview pictures sent to the owner on 7 Oct 2026; waits for his word (G1). No terms change, no database file.
+**Status:** live since 7 Oct 2026, about 13:00, on his word at 12:57: "go live". He was shown two sets of preview pictures first; the second, the drop-down form and the prices in groups, is what went live. Front end only. No terms change, no database file. Not yet tried on the live site by a person.
 
 ---
 
