@@ -248,13 +248,13 @@ async def run(p, w, h, tag):
     check(tag+': the form with the long list fits the screen', await off()==[] and not await over(), await off())
     await pg.wait_for_timeout(300); await quiet(); await pg.screenshot(path=OUT+tag+'_parks_3b_picker_long_list.png')
     await pg.click('#hkCancel'); await pg.evaluate("()=>{ S.vendors=S.vendors.filter(v=>!v.id.startsWith('vendor_zz')); }")
-    # start and end: only a Google Maps link from the text, or a Google Maps search for the text
+    # start and end: a Google Maps link from the text, else the point a Waze link carries, else a search for the words; never the hike's name (D-34)
     cases=[('Car park https://maps.app.goo.gl/SampleAbc','Trail','https://maps.app.goo.gl/SampleAbc'), ('Gate https://www.google.com/maps/place/x/@31.5,35.4,15z','Trail','https://www.google.com/maps/place/x/@31.5,35.4,15z'),
-        ('https://waze.com/ul?ll=31.5,35.4','Sample trail',G+'Sample%20trail'), ('Gate https://waze.com/ul?q=x','Trail',G+'Gate'), ('https://waze.com/ul?q=x then https://maps.app.goo.gl/SampleAbc','Trail','https://maps.app.goo.gl/SampleAbc'),
-        ('Car park https://evil.example/login?x=1','Trail',G+'Car%20park'), ('https://www.google.com.evil.example/maps/x','Trail',G+'Trail'), ('https://user@www.google.com/maps/x','Trail',G+'Trail'),
-        ('javascript:alert(1)','Trail',G+'javascript%3Aalert(1)'), ('"><img src=x onerror=alert(1)> & co','Trail',G+'%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E%20%26%20co'), ('עין עבדת','Trail',G+'%D7%A2%D7%99%D7%9F%20%D7%A2%D7%91%D7%93%D7%AA'), ('','',''), ('   ','Trail',G+'Trail')]
+        ('https://waze.com/ul?ll=31.5,35.4','Sample trail',G+'31.5,35.4'), ('Gate https://waze.com/ul?q=x','Trail',G+'Gate'), ('https://waze.com/ul?q=x then https://maps.app.goo.gl/SampleAbc','Trail','https://maps.app.goo.gl/SampleAbc'),
+        ('Car park https://evil.example/login?x=1','Trail',G+'Car%20park'), ('https://www.google.com.evil.example/maps/x','Trail',''), ('https://user@www.google.com/maps/x','Trail',''),
+        ('javascript:alert(1)','Trail',G+'javascript%3Aalert(1)'), ('"><img src=x onerror=alert(1)> & co','Trail',G+'%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E%20%26%20co'), ('עין עבדת','Trail',G+'%D7%A2%D7%99%D7%9F%20%D7%A2%D7%91%D7%93%D7%AA'), ('','',''), ('   ','Trail','')]
     got=await pg.evaluate('(c)=>c.map(x=>hkGmaps(x[0],x[1]))', cases)
-    check(tag+': start and end links: a Google Maps link from the text, else a search for the text, never a Waze or other link', got==[c[2] for c in cases], [(c[0],g_) for c,g_ in zip(cases,got) if g_!=c[2]])
+    check(tag+': start and end links: a Google Maps link from the text, else the point of a Waze link, else a search for the words; never another link, never the hike\'s name', got==[c[2] for c in cases], [(c[0],g_) for c,g_ in zip(cases,got) if g_!=c[2]])
     got=await pg.evaluate("()=>['javascript:alert(1)','www.parks.org.il','data:text/html,x','','https://example.org/a?b=1','http://example.org/'].map(hkHttp)")
     check(tag+': only an http or https booking link is taken', got==['','','','','https://example.org/a?b=1','http://example.org/'], got)
     await pg.evaluate("()=>{ S.vendors.find(x=>x.id==='vendor_p4avd01').npResLink='javascript:alert(1)'; }")
@@ -265,7 +265,7 @@ async def run(p, w, h, tag):
     await pg.click('.sheet .actions [data-hrep]'); await pg.wait_for_selector('#hrf'); await pg.fill('#hrDate_il','02/10/2026'); await pg.press('#hrDate_il','Tab')
     await pg.fill('#hrStart','Upper gate https://waze.com/ul?ll=30.82,34.76'); await pg.fill('#hrEnd','https://maps.app.goo.gl/SampleEnd1'); await pg.click('#hrSave'); await pg.wait_for_selector('.sheet .hk-rep p a')
     rl=await pg.eval_on_selector_all('.sheet .hk-rep p a','els=>els.map(e=>[e.textContent,e.getAttribute("href"),e.target,e.rel])')
-    check(tag+': in a report, start and end open Google Maps too: a Waze link is not opened as Google Maps, a Google Maps link is', rl==[['Upper gate',G+'Upper%20gate']+NEWTAB,['Map link','https://maps.app.goo.gl/SampleEnd1']+NEWTAB], rl)
+    check(tag+': in a report, start and end open Google Maps too: a Waze link gives Google Maps its point, not the Waze address; a Google Maps link is opened as it is', rl==[['Upper gate',G+'30.82,34.76']+NEWTAB,['Map link','https://maps.app.goo.gl/SampleEnd1']+NEWTAB], rl)
     await pg.click('#closeS')
     # a hidden supplier is no park for anyone, Eretz Israel Tours too
     await pg.evaluate("()=>{ S.vendors.find(x=>x.id==='vendor_p4avd01').hidden=true; S.hikes=null; render(); }"); await pg.wait_for_selector('#hkResults .row')
@@ -324,5 +324,7 @@ async def main():
     async with async_playwright() as p:
         await run(p, 390, 844, 'phone'); await run(p, 1280, 800, 'desk')
     for e in errs: print('ERR', e)
-    print('\n%d checks, %d failed, %d page errors' % (len(res), sum(1 for _,ok in res if not ok), len(errs)))
+    bad=sum(1 for _,ok in res if not ok)
+    print('\n%d checks, %d failed, %d page errors' % (len(res), bad, len(errs)))
+    sys.exit(1 if bad or errs else 0)
 asyncio.run(main())
