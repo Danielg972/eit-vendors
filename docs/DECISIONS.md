@@ -10,6 +10,36 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-35 · The hike's page: a real map with the route on it (built; not live)
+
+**Decided by:** the owner (Eretz Israel Tours), 8 October 2026, 20:45 Israel time, after trying the trial copy of D-34 on his phone.
+
+**In his words:** "The route on the page: new, so you can see the walk without any other app. It is a line drawing, not a map. It's a line not on any map... It's useless. The Google map start and end doesn't help either because it just opens Google maps. And you can't see both at once. Why can't you integrate open maps? Honestly I couldn't. Really tell the difference in old and new"
+
+**What is built** (branch `hike-page-fixes`, on top of D-34; front end only, no database change):
+
+- **A map leads the hike's page.** OpenStreetMap, with the recorded route drawn on it as a line and start and end marked together. It stays still on the page so the page scrolls under a finger. "Open the map", or a tap on the map, opens it over the whole screen: it moves and zooms, start and end each offer Waze and Google Maps to that exact point, and "Where am I" shows the member's own place against the route.
+- **A hike with no recording** shows its start and end together on the map when their map links carry a point; the page says no route is recorded. A short Google link carries no point, so such a hike has no map until someone adds a recording.
+- **Height along the walk**: a small chart of the recording's heights, above its length, climb, descent, lowest and highest point.
+- **The page's order**: map, key facts in one band, "Open the map", region and status, warnings, the four tiles (Waze and Google Maps now say "to the start"), then the sections of D-34.
+- **Gone:** the line drawing as the normal view (it is now only what shows when the map cannot load), and the four separate "where the recording starts/ends" buttons (they are on the map's own points).
+
+**Where the map comes from, and on what terms:**
+
+- **Map pictures:** OpenStreetMap's own server (`tile.openstreetmap.org`), free, under its tile usage policy, read 8 October 2026: the credit "© OpenStreetMap contributors" stays on the map, only what is on screen is fetched, nothing is fetched ahead or kept for use without a connection. The service makes no promise to stay up, and may block heavy use. With one user this is nothing; with the whole membership it is still light, but it is a service the app does not control.
+- **The drawing library:** Leaflet 1.9.4 (BSD licence), copied unchanged from its published package into `vendor/leaflet-1.9.4/` (checksums compared), served from this site, loaded only when a map is first needed.
+- **Israel Hiking Map**, the map guides know, with the trail colours: **not used.** Its tiles are licensed for non-commercial use, and its own FAQ says showing the map in another site is "in coordination with the authors" and commercial use needs their word. It is one address to change in the code once they agree. **Asking them is the owner's.**
+
+**Who sees what:** unchanged inside the app. New to the outside: when a hike's page shows a map, the member's phone asks OpenStreetMap's server for the map pictures of that area, which shows that server the phone's internet address, the area looked at, and this site's address; nothing about the member or the hike. "Where am I" is worked out on the phone and drawn there; the place is sent nowhere (when the map widens to include the member, the pictures then fetched are of that area). **The privacy notice does not yet say this. It must before Hikes opens to colleagues** (a terms change, the owner's, G13). Today only Eretz Israel Tours sees Hikes.
+
+**Checked:** `hike_page_walk.py`, 91 checks, map pictures stood in for (the test machine cannot reach OpenStreetMap): the line and points on the map, the credit seen and not covered, the still map does not trap scrolling, the open map, "Where am I" (near, far, slow, refused, and that the phone stops being asked when the map closes), a hike with start and end only, with an end only, with nothing; map pictures not arriving; the library or its style sheet not arriving. `preview_walk.py`, 200. A second agent attacked the first version: six faults and a list of small ones, fixed (GPS left running after a slow fix, a dead End point, a half-drawn map when the style sheet fails, the open-map button covering a point, the page saying a recording did not exist when it had only failed to load, a named Google place giving the middle of the screen as its point).
+
+**Not checked, and it matters:** the real map has not been seen by this session at all, only stand-in pictures; nothing on a real phone; iPhone; the phone's Back button does not close the open map (the app has no handling of Back anywhere).
+
+**Open, the owner's:** go-live of the branch (D-34 and D-35 together); asking the Israel Hiking Map authors; the privacy line before Hikes opens to colleagues.
+
+---
+
 ## D-34 · The hike's page: laid out as a finished page, map links that open, a route file that can be used (built; not live)
 
 **Decided by:** the owner (Eretz Israel Tours), 8 October 2026, about 18:30 Israel time, testing the live Hikes tab on his Android phone (Chrome, a Samsung) after adding a route file to his own hike.

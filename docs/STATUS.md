@@ -21,7 +21,11 @@
 
 A Hikes tab: official marked trails with a route file (GPX), notes, distance and time, and a report members add after walking one. Built 8 October 2026; pull request #28 merged by the owner at 14:57 and **the database file `supabase/migrations/2026-10-08_hikes.sql` run on production at about 15:01, checked by fingerprints and the rolled-back probe.** It adds three tables (`hikes`, `hike_reports`, `hike_gpx`) and thirteen functions, and replaces `whoami` and `set_setting` (each gains only the hikes switch). It is open to Eretz Israel Tours only, until the owner changes the setting `hikes_for` in the Team tab ("Open Hikes to all colleagues"): his decision. No hikes are entered yet. No terms change in the branch. Nothing in it touches suppliers, prices, quotes or any field the Cockpit could read. Details: `docs/DECISIONS.md`, D-31.
 
-## In work: the hike's page (D-34), branch `hike-page-fixes`, not live
+## In work: the hike's page (D-34, D-35), branch `hike-page-fixes`, not live
+
+**D-35, 8 October, 21:30:** the owner tried the trial of D-34 and said the line drawing was useless without a map, that two separate Google Maps buttons do not show the walk, and that the layout looked the same. Built on the same branch: a real map (OpenStreetMap) leads the hike's page with the recorded route on it and start and end together; it opens over the whole screen with "Where am I"; height along the walk; the facts in one band. The map library (Leaflet 1.9.4) is in `vendor/`. Checks: `hike_page_walk.py` 91, `preview_walk.py` 200, a second agent's findings fixed. Not seen: the real map (the test machine cannot reach it), a real phone. The trial copy at `/next/` carries it. Open, the owner's: go-live; asking the Israel Hiking Map authors for their map; a privacy line before Hikes opens to colleagues. Details: D-35 in DECISIONS.md.
+
+**D-34, earlier the same evening:**
 
 The owner tested the live hike page on his Android phone on 8 October and found three faults: the page did not look finished, start and end did not open Google Maps, and the route file opened in no app. Built the same evening, front end only: the page in sections, a Google Maps and a Waze button for each place that ask Android for the app itself, the recorded route drawn on the page with its length and climb, and a route file box that no longer offers what Android refuses. **Nothing of it has been seen on a real Android phone**, so whether it cures the second and third fault is not known until he tries it. Details, what is open: `docs/DECISIONS.md`, D-34.
 
