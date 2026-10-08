@@ -10,6 +10,32 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-36 · Hikes open to every colleague; a box that says how to allow location (live since 8 October 2026)
+
+**Decided by:** the owner (Eretz Israel Tours), 8 October 2026, 23:45 Israel time.
+
+**In his words:** "So have a pop-up tell g them what to do and make the hikes live fore everyone. And can we add more hikes?" Sent after a picture from his phone of the open map on Ein Ovdat with the message "Your phone did not give its place. Allow location for this site, then try again."
+
+**What that picture settled:** "Where am I" failed on his phone because Chrome there had not been allowed to use location for the site. The app was not at fault, but its message vanished after a few seconds and did not say where to allow it.
+
+**What is done:**
+
+- **The box** (`hkWhereHelp`). When the phone or browser refuses, a box stays on screen with the steps for that kind of device: Chrome on Android (and what to do when Location is not listed), an installed copy on Android, an iPhone, a computer. "Try again" asks the phone again. It says the member's place is drawn on his own screen and sent nowhere. Front end only.
+- **Hikes are open to every approved member**: the setting `hikes_for` is `all`, set in the database the way the Team tab's own switch sets it. Colleagues and organisations now see the Hikes tab, the 33 hikes, and can add hikes (each waits for Eretz Israel Tours' approval) and reports. The switch on the Team tab turns it back.
+
+**Opened on the owner's word with two things still open, both terms changes for the week's release (G13), neither yet written into the terms:**
+
+- a line in the privacy notice that a hike's map is fetched from OpenStreetMap's server, which sees the phone's internet address and the area looked at;
+- the no-responsibility line for hikes, which is also on the lawyer's list. The hike's page carries its own notice meanwhile.
+
+**Checked:** `hike_page_walk.py` 97 checks (the box for Android, iPhone, computer, at 320 wide; "Try again", Escape, closing the map; no watch left running); `preview_walk.py` 200. After the setting: every approved member counted as seeing Hikes.
+
+**Not checked:** the box on a real phone; whether the installed copy's "Site settings" step is worded as Samsung phones word it.
+
+**"Can we add more hikes?":** yes. A second list is being put together for him to choose from, as the first was.
+
+---
+
 ## D-35 · The hike's page: a real map with the route on it (live since 8 October 2026)
 
 **Live since 8 October 2026, about 22:40, on the owner's word.** He tried the trial copy on his phone and wrote at 22:35: "Open map works full screen 2 where am I doesn't work file saves ask Israel hiking map Route saved. Make it live no one uses the app anyway". So, on his Android phone: the map opens full screen; the saved route file was taken by Israel Hiking Map (as this session reads his words); "Where am I" did not work. Why it did not is not known: he did not say what the phone showed. The likeliest cause was the app's own doing: he was far from the hike, and the first version then refused to show him at all. That is changed before go-live: his place always comes onto the map, the map widens to hold him and the hike, and it says how many kilometres away he is. If the cause was the phone not giving its place, the page says so and how to allow it. Pull request #31 merged (main 7fdb20c); front end only; D-34 went live with it. Seen on the live app a few minutes later, in the owner's Chrome on his computer: his hike Ein Ovdat opens with the real map, the route on it, Start and End, and the credit. The trial copy at `/next/` now only sends on to the app (pull request #34). Not seen since go-live: a phone.
