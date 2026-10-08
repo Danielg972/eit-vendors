@@ -251,6 +251,29 @@ textarea.out{width:100%;min-height:160px;font-family:var(--f-mono);font-size:12p
 .hrs b{font-weight:500;flex-basis:100%}
 .hrs .brk{flex-basis:100%;margin-top:4px}
 .hrs .hv{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center}
+.hx-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:2px 14px 12px;font-size:14.5px}
+.hx-body>*+*{border-top:1px solid var(--line)}
+.hx-g{padding:9px 0}
+.hx-gl{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:var(--ink);margin:0 0 3px}
+.hx-now{font-size:10.5px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;border-radius:999px;padding:1px 7px;background:var(--ok-wash);color:var(--ok)}
+.hx-sl{font-size:12.5px;color:var(--ink-3);margin:6px 0 0}
+.hx-gl+.hx-sl{margin-top:2px}
+.hx-r{display:flex;justify-content:space-between;align-items:baseline;gap:14px;padding:3px 0;max-width:520px}
+.hx-d{color:var(--ink-2);min-width:0;overflow-wrap:anywhere}
+.hx-t{flex:0 0 auto;max-width:58%;text-align:right}
+.hx-tt{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-weight:500;white-space:nowrap}
+.hx-t.off .hx-tt{font-family:var(--f-body);color:var(--ink-3)}
+.hx-rn{display:block;font-size:12px;color:var(--ink-3)}
+.hx-n{margin:0;padding:9px 0;color:var(--ink-2)}
+.hx-n b,.hx-ul b{font-weight:600;color:var(--ink)}
+.hx-n.sub{padding:2px 0 0;font-size:12.5px;color:var(--ink-3)}
+.hx-sub{font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink-3);font-weight:600;margin:0;padding:11px 0 0;border-top:1px solid var(--line)}
+.hx-ul{margin:5px 0 0;padding:0 0 9px 18px;color:var(--ink-2)}
+.hx-ul li{margin:4px 0}
+.hx-foot{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;padding-top:10px;border-top:1px solid var(--line)}
+.hx-foot .hv{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center}
+.facts{margin-top:16px}
+.facts .dl{margin-bottom:0}
 .pill.shab{background:var(--ok-wash);color:var(--ok);box-shadow:inset 0 0 0 1px var(--ok)}
 .pill.reg{background:var(--wash);color:var(--ink-2)}
 .flags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
@@ -1880,12 +1903,112 @@ function priceWho(p){
 }
 const today=()=>new Date().toISOString().slice(0,10);
 
+// ---------- opening hours, laid out ----------
+// The hours are stored as the text a person typed. Nothing here changes that text: it is only cut into lines,
+// and a sentence becomes rows of "days | times" when every part of it reads that way. Anything else is shown as written.
+const HX_DAY=/^(sun|mon|tues?|wed|thur?s?|fri|sat|sunday|monday|tuesday|wednesday|thursday|friday|saturday|shabbat|weekdays?|weekends?|daily|every day|holidays?|holiday eves)$/i;
+const HX_RANGE=/^(.*?)\s*\b(\d{1,2}:\d{2})\s*[–—-]\s*(\d{1,2}:\d{2})\b\s*(.*)$/;
+const HX_ABBR=/(?:^|[\s(])(?:mt|st|dr|no|approx|incl|excl|e\.g|i\.e|tel)$/i;
+function hxSentences(t){
+  const out=[]; let cur='', depth=0; const s=String(t||'').trim();
+  for(let i=0;i<s.length;i++){ const c=s[i];
+    if(c==='(') depth++; else if(c===')'&&depth>0) depth--;
+    if(c==='.'&&depth===0&&/\s/.test(s[i+1]||'')&&/[A-Z0-9(“"'‘]/.test((s.slice(i+1).match(/\S/)||[''])[0])&&!HX_ABBR.test(cur)){ if(cur.trim()) out.push(cur.trim()); cur=''; continue; }
+    cur+=c; }
+  cur=cur.trim().replace(/\.$/,''); if(cur) out.push(cur);
+  return out;
+}
+function hxParts(t){
+  const out=[]; let cur='', depth=0;
+  for(let i=0;i<t.length;i++){ const c=t[i];
+    if(c==='(') depth++; else if(c===')'&&depth>0) depth--;
+    if((c===','||c===';')&&depth===0&&/\s/.test(t[i+1]||'')){ out.push(cur.trim()); cur=''; continue; }
+    cur+=c; }
+  if(cur.trim()) out.push(cur.trim());
+  return out.filter(Boolean);
+}
+const hxDayLike=t=>{ const w=String(t).trim().split(/\s*(?:,|&|\band\b|–|—|-|\bto\b)\s*/i).filter(Boolean); return w.length>0&&w.every(x=>HX_DAY.test(x)); };
+const HX_STOP=/\b(except|until|from|after|before|closed|opens?|closes?|not|only|around|about|between|by|last|first|entry|to|and)\b/i;
+// What stands before the times: days ("Sun–Thu & Shabbat"), a short name ("Rooftop view"), or a short name and then days.
+function hxLead(pre){
+  if(!pre||hxDayLike(pre)) return {name:'',d:pre}; if(/\d/.test(pre)) return null;
+  const w=pre.split(/\s+/);
+  for(let i=1;i<w.length;i++){ if(hxDayLike(w.slice(i).join(' '))){ const name=w.slice(0,i).join(' '); if(i>4||HX_STOP.test(name)) return null; return HX_DAY.test(w[0])?{name:'',d:pre}:{name,d:w.slice(i).join(' ')}; } }
+  return w.length<=3&&!HX_STOP.test(pre)?{name:'',d:pre}:null;
+}
+function hxRow(p, lone){
+  const m=HX_RANGE.exec(p);
+  if(m){ const pre=m[1].trim().replace(/[:,]$/,'').trim(), post=m[4].trim();
+    const paren=/^\([^()]*\)$/.test(post)&&post.length<=90;
+    if(/\d{1,2}:\d{2}/.test(pre)||(!paren&&(/\d{1,2}:\d{2}/.test(post)||post.length>44))) return null;
+    const ld=hxLead(pre); if(!ld) return null;
+    if(!pre&&!lone) return null;
+    return {name:ld.name, d:ld.d, t:m[2]+'–'+m[3], n:post}; }
+  const c=/^closed(?:\s+(?:on|over))?\s+(.+)$/i.exec(p);
+  if(c&&c[1].length<=48&&!/\d/.test(c[1])&&!/^(to|for|until|during|in|at|when|if|from)\b/i.test(c[1])) return {d:c[1].replace(/^./,x=>x.toUpperCase()), t:'Closed', n:''};
+  return null;
+}
+// -> [{k:'rows',label,rows:[{d,t,n}]} | {k:'line',label,text}]
+function hxBlocks(text){
+  const out=[];
+  hxSentences(text).forEach(sent=>{
+    let label='', rest=sent; const lm=/^([^:;]{2,70}?):\s+(\S.*)$/.exec(sent);
+    if(lm&&!/\d{1,2}:\d{2}/.test(lm[1])){ label=lm[1].trim(); rest=lm[2].trim(); }
+    if(!label){
+      const cw=/^closed(?:\s+(?:on|over))?\s+(.+)$/i.exec(sent);
+      if(cw&&cw[1].length<=110&&!/\d{1,2}:\d{2}/.test(cw[1])&&!/^(to|for|until|during|in|at|when|if|from)\b/i.test(cw[1])){ out.push({k:'rows',label:'',rows:[{d:cw[1].replace(/^./,x=>x.toUpperCase()),t:'Closed',n:''}]}); return; }
+      const ew=/^(.{3,70}?),?\s+(\d{1,2}:\d{2})\s*[–—-]\s*(\d{1,2}:\d{2})$/.exec(sent);
+      if(ew&&!/\d{1,2}:\d{2}/.test(ew[1])&&/[,]|\band\b/.test(ew[1])&&(HX_DAY.test(ew[1].split(/[\s,]+/)[0])||/^(eves?|open|every)\b/i.test(ew[1]))&&!hxRow(hxParts(sent)[0],false)){ out.push({k:'rows',label:'',rows:[{d:ew[1],t:ew[2]+'–'+ew[3],n:''}]}); return; }
+    }
+    const parts=hxParts(rest);
+    for(let i=0;i<parts.length-1;i++){ if(/^closed\b/i.test(parts[i])&&hxDayLike(parts[i+1])){ parts[i]+=', '+parts[i+1]; parts.splice(i+1,1); i--; } }
+    for(let i=0;i<parts.length-1;i++){ if(hxDayLike(parts[i])){ parts[i+1]=parts[i]+', '+parts[i+1]; parts.splice(i,1); i--; } }
+    const rows=parts.map(p=>hxRow(p, !!label&&parts.length===1));
+    let n=0; while(n<rows.length&&rows[n]) n++;
+    const tail=parts.slice(n);
+    if(n===0||rows.slice(n).some(Boolean)||tail.some(hxDayLike)){ out.push({k:'line',label,text:rest}); return; }
+    if(label&&n===1&&!rows[0].d) out.push({k:'rows',label:'',rows:[{d:label,t:rows[0].t,n:rows[0].n}]});
+    else out.push({k:'rows',label,rows:rows.slice(0,n)});
+    if(tail.length) out.push({k:'line',label:'',text:tail.join(', ').replace(/^./,x=>x.toUpperCase()),sub:true});
+  });
+  return out;
+}
+// Israel's clock: on summer time when Jerusalem is three hours ahead of UTC. '' if the browser can't say.
+function hxClock(now){
+  try{ const d=now||new Date(), at=z=>new Date(d.toLocaleString('en-US',{timeZone:z})).getTime(), h=Math.round((at('Asia/Jerusalem')-at('UTC'))/3600000);
+    return h===3?'summer':h===2?'winter':''; }catch(e){ return ''; }
+}
+const HX_SEASON=/^(summer|winter)(?:\s+(?:time|clock))?(?:\s*\((?:daylight[- ]saving(?:\s+time)?)\))?$/i;
+function hoursHtml(text, esc, now){
+  const bl=hxBlocks(text); if(!bl.length) return '';
+  const seasons=bl.filter(b=>b.k==='rows'&&HX_SEASON.test(b.label)).map(b=>HX_SEASON.exec(b.label)[1].toLowerCase());
+  const clock=seasons.includes('summer')&&seasons.includes('winter')?hxClock(now):'';
+  let html='', open=false, named=false; const close=()=>{ if(open){ html+='</div>'; open=false; } };
+  bl.forEach(b=>{
+    if(b.k==='rows'){
+      const sm=HX_SEASON.exec(b.label), isNow=!!(clock&&sm&&sm[1].toLowerCase()===clock);
+      if(b.label||!open||named){ close(); named=!!b.label; html+=`<div class="hx-g${isNow?' now':''}">`; open=true; if(b.label) html+=`<div class="hx-gl">${esc(b.label)}${isNow?'<span class="hx-now">Now</span>':''}</div>`; }
+      html+=b.rows.map(r=>`${r.name?`<div class="hx-sl">${esc(r.name)}</div>`:''}<div class="hx-r"><span class="hx-d">${esc(r.d)}</span><span class="hx-t${r.t==='Closed'?' off':''}"><span class="hx-tt">${esc(r.t)}</span>${r.n?`<span class="hx-rn">${esc(r.n)}</span>`:''}</span></div>`).join('');
+    } else { if(!b.sub) close(); html+=`<p class="hx-n${b.sub?' sub':''}">${b.label?`<b>${esc(b.label)}:</b> `:''}${esc(b.text)}</p>`; }
+  });
+  close(); return html;
+}
+function hoursLinesHtml(text, esc){
+  return hxSentences(text).map(s=>{ const m=/^([^:;]{2,70}?):\s+(\S.*)$/.exec(s); return m&&!/\d{1,2}:\d{2}/.test(m[1])?`<li><b>${esc(m[1].trim())}:</b> ${esc(m[2].trim())}</li>`:`<li>${esc(s)}</li>`; }).join('');
+}
+function hoursCard(v){
+  if(!v.hours&&!v.hours_last) return `<div class="hrs"><span class="hint">Opening hours</span><span class="hint">· not added yet</span><button class="mini" id="addHours" type="button">+ Add hours</button></div>`;
+  return `<fieldset><div class="sec-head"><legend>Opening hours</legend>${v.hours?'':'<button class="mini" id="addHours" type="button">+ Add hours</button>'}</div>
+    <div class="hx-card">${v.hours?`<div class="hx-body">${hoursHtml(v.hours,esc)}</div>`:''}
+      ${v.hours_last?`<div class="hx-sub"${v.hours?'':' style="border-top:0"'}>Last entry and other times</div><ul class="hx-ul">${hoursLinesHtml(v.hours_last,esc)}</ul>`:''}
+      <div class="hx-foot">${hoursCheck(v)}</div></div></fieldset>`;
+}
 // Hours are "Unverified" until a member confirms them by speaking to the supplier or being there (not from the website).
 function hoursCheck(v){
   if(!v.hours && !v.hours_last) return '';
   if(v.hours_verified_how){ const mine=S.me&&v.hours_verified_by===S.me.name;
-    return `<span class="hv brk"><span class="pill approved">✓ Verified</span><span class="hint">${esc(who(v.hours_verified_by))} ${esc(HOURS_HOW[v.hours_verified_how]||'')}${v.hours_verified_at?' · '+fmtDate(v.hours_verified_at):''}</span>${S.admin||mine?'<button class="mini" id="hvUndo" type="button">Undo</button>':''}</span>`; }
-  return `<span class="hv brk"><span class="pill pending">Unverified</span><span class="hint">${v.hours_source?'From '+esc(v.hours_source):'Not yet checked with the supplier'}</span><button class="mini" id="hvDo" type="button">☐ I verified these hours</button></span>`;
+    return `<span class="hv"><span class="pill approved">✓ Verified</span><span class="hint">${esc(who(v.hours_verified_by))} ${esc(HOURS_HOW[v.hours_verified_how]||'')}${v.hours_verified_at?' · '+fmtDate(v.hours_verified_at):''}</span>${S.admin||mine?'<button class="mini" id="hvUndo" type="button">Undo</button>':''}</span>`; }
+  return `<span class="hv"><span class="pill pending">Unverified</span><span class="hint">${v.hours_source?'From '+esc(v.hours_source):'Not yet checked with the supplier'}</span><button class="mini" id="hvDo" type="button">☐ I verified these hours</button></span>`;
 }
 function hoursVerifyPopup(v){
   const m=document.createElement('div'); m.className='modal';
@@ -1915,14 +2038,13 @@ function openDetail(id, opt){
   ].filter(s=>s[1] && !(v._own && s[0]==='Experience'));
   const body=`${vtabs}<div class="keep" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px"><span class="cat">${esc(catLabel(v))}</span>${v.region||v.location?`<span class="hint">${esc(v.region||v.location)}</span>`:''}${shabPill(v)}${statusPill(v)}${claimedPill(v)}${guideSpecialty(v)?'<span class="pill pending">Specialty guide · not licensed</span>':''}</div>
     ${ownBar(v)}
-    <div class="hrs"><span class="hint">Opening hours</span>${v.hours?`<b>${esc(v.hours)}</b>`:`<span class="hint">· not added yet</span><button class="mini" id="addHours" type="button">+ Add hours</button>`}
-      ${v.hours_last?`<span class="hint brk">Last entry and other times</span><b>${esc(v.hours_last)}</b>`:''}
-      ${hoursCheck(v)}</div>
     ${isTr?`<fieldset><legend>Vehicles</legend>${(fl=>fl.length?`<div class="flags" style="margin:0 0 4px">${fl.map(x=>`<span class="flag info" style="font-size:13.5px;padding:5px 10px">${esc(x[1])}</span>`).join('')}</div>`:`<p class="hint" style="margin:0">Not marked yet. Tap Edit and choose which vehicles ${indep?'he has':'they have'}: buses, vans by size, cars.</p>`)(VEHICLES.filter(x=>fleetOf(v).has(x[0])))}</fieldset>`:''}
     <div id="parentBox"></div>
     ${contactBar(v)}
+    ${hoursCard(v)}
     <button class="btn red upd" id="upd" type="button">⚠ Update this supplier <span>closed, moved, wrong details</span></button>
     <div id="resBox"></div>
+    <div class="facts">${sections.map(([h,dl])=>`<fieldset><legend>${h}</legend><dl class="dl">${dl}</dl></fieldset>`).join('')}</div>
     ${lim()?'':agentBox(v)}
     <div id="reqBox"></div>
     ${isGuide(v)?clientBox(v):''}
@@ -1948,7 +2070,6 @@ function openDetail(id, opt){
     ${S.admin?'<div id="actBox"></div>':''}
     <div id="siteSettings"></div>
     ${S.admin?`<fieldset><legend>Private note · only you see this</legend><div class="f wide"><textarea id="adminNote" rows="5" placeholder="Clients, trips, commissions, anything colleagues shouldn't see"></textarea></div><div class="btn-row" style="margin-top:8px"><button class="mini" id="adminNoteSave" type="button">Save private note</button></div></fieldset>`:''}
-    ${sections.map(([h,dl])=>`<fieldset><legend>${h}</legend><dl class="dl">${dl}</dl></fieldset>`).join('')}
     <div id="claimBox"></div>
     <div class="disclaim"><b>Shared by colleagues.</b> This list is crowdsourced. Eretz Israel Tours takes no responsibility for mistakes. Always confirm details with the supplier before booking, and take care when you add or change information. See a mistake? Tap the red <b>Update this supplier</b> button at the top, or use Feedback.</div>
     <p class="stamp">Added by ${esc(who(v.created_by))} on ${fmtDate(v.created_at)}. Last changed by ${esc(who(v.updated_by))} on ${fmtDate(v.updated_at)}. <span class="idtag">${esc(v.id)}</span></p>`;
@@ -4762,8 +4883,8 @@ function tourSteps(replay){
     <p>The suppliers you use most sit at the top. The rest is in mixed order that changes daily, so nobody is always first. Tap <b>Order</b> for A–Z.</p>` },
   { html:ex(`<div style="font-family:var(--f-display);font-size:20px;line-height:1.2">Golan Heights Jeep Tours</div>
       <div style="margin-top:2px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="cat">Jeep</span><span class="hint">Golan</span><span class="pill shab">Shomer Shabbat</span></div>
-      <div class="hrs"><span class="hint">Opening hours</span><b>Sun–Thu 8:00–17:00, Fri 8:00–13:00</b><span class="hv brk"><span class="pill pending">Unverified</span><span class="hint">From their website</span><span class="mini">☐ I verified these hours</span></span></div>
       <div class="actions"><span class="act">${ic.call}Call</span><span class="act">${bmark('whatsapp',ic.wa)}WhatsApp</span><span class="act">${ic.mail}Email</span><span class="act">${bmark('waze',ic.nav)}Waze</span><span class="act">${bmark('google-maps',ic.maps)}Google Maps</span></div>
+      <div class="hx-card" style="margin:10px 0"><div class="hx-body">${hoursHtml('Sun–Thu 8:00–17:00, Fri 8:00–13:00',esc)}</div><div class="hx-foot"><span class="hv"><span class="pill pending">Unverified</span><span class="hint">From their website</span><span class="mini">☐ I verified these hours</span></span></div></div>
       <div class="btn red upd" style="box-sizing:border-box;text-align:center">⚠ Update this supplier</div>
       <div class="favs-h" style="margin:10px 0 6px">Standard prices</div>
       <div class="pl"><span class="who3">Adult ${lim()?'<span class="tag">Public price</span>':'<span class="tag agent">Agent</span>'}</span><span class="amt">₪360</span><span class="meta">Per person · plus VAT · checked 14/08/2026</span></div>`, SAMPLE)+`
