@@ -34,7 +34,9 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 **Checked:** `hike_page_walk.py`, 91 checks, map pictures stood in for (the test machine cannot reach OpenStreetMap): the line and points on the map, the credit seen and not covered, the still map does not trap scrolling, the open map, "Where am I" (near, far, slow, refused, and that the phone stops being asked when the map closes), a hike with start and end only, with an end only, with nothing; map pictures not arriving; the library or its style sheet not arriving. `preview_walk.py`, 200. A second agent attacked the first version: six faults and a list of small ones, fixed (GPS left running after a slow fix, a dead End point, a half-drawn map when the style sheet fails, the open-map button covering a point, the page saying a recording did not exist when it had only failed to load, a named Google place giving the middle of the screen as its point).
 
-**Not checked, and it matters:** the real map has not been seen by this session at all, only stand-in pictures; nothing on a real phone; iPhone; the phone's Back button does not close the open map (the app has no handling of Back anywhere).
+**Seen on the trial copy, 8 October, about 21:50, in the owner's Chrome on his computer:** his own hike Ein Ovdat with the real map: the map pictures came from OpenStreetMap, the recorded route lay on the trail the map draws, Start and End were marked, the credit showed, the figures read 2.09 km and a climb of about 120 m, and the open map came up with "Where am I" and "Whole route".
+
+**Not checked, and it matters:** nothing on a real phone; iPhone; "Where am I" with a real phone's place; the phone's Back button does not close the open map (the app has no handling of Back anywhere).
 
 **Open, the owner's:** go-live of the branch (D-34 and D-35 together); asking the Israel Hiking Map authors; the privacy line before Hikes opens to colleagues.
 
