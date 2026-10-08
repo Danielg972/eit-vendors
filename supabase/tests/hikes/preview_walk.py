@@ -1,18 +1,33 @@
-# Hikes (D-31): a walk through the Hikes screens in the page's preview mode (sample data, no database, no network).
+# Hikes (D-31) and hikes with parks (D-32): a walk through the Hikes screens in the page's preview mode (sample data, no database, no network).
 # Needs python3 with Playwright and Chromium. From the repository root:
 #   python3 -m http.server 8765 &        then        python3 supabase/tests/hikes/preview_walk.py [folder for pictures]
 # It opens index.html at phone size (390 x 844) and at desktop size (1280 x 800) as Eretz Israel Tours, then as a guide and
 # as an organisation ("View as"), and checks what each sees and can do: the list by region, a hike's page, the route file,
-# a report, adding a hike, the Review queue. Prints the failures, any page error, and the total. Pictures are saved too.
-import asyncio, json, os, sys
+# a report, adding a hike, the Review queue. Then the parks (D-32): the list card's "In" line, the hike's page with its
+# park, hours, booking and brochure, start and end opening Google Maps, the supplier's page with its brochure and
+# "Hikes here", the picker in the form, and what a guide, an organisation that sees sites and one that does not each get.
+# Prints the failures, any page error, and the total. Pictures are saved too; the phone ones for D-32 are named parks_*.png.
+# The page keeps everything inside one function, so the walk cannot reach its sample data from outside. For the checks
+# that need to (a long list of places, a hidden supplier, what the form sends), index.html is served to this browser
+# with ONE line added at the end of its script, which hands a few of its own names to the window. Nothing else differs,
+# and the file in the repository is not touched.
+import asyncio, base64, json, os, sys
 from playwright.async_api import async_playwright
 OUT=(sys.argv[1] if len(sys.argv)>1 else '/tmp/hikes_preview').rstrip('/')+'/'; os.makedirs(OUT, exist_ok=True)
 res=[]; errs=[]
+PNG=base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==')   # one sample dot, for an upload
+PARK, PRAT, SATAF = 'vendor_p4avd01', 'vendor_p4prt02', 'vendor_p4stf03'   # the sample parks in index.html
+G='https://www.google.com/maps/search/?api=1&query='; NEWTAB=['_blank','noopener noreferrer']
+PAGE=open(os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','..','..','index.html'),encoding='utf-8').read()
+END='\n})();\n</script>'; assert PAGE.count(END)==1
+HOOKED=PAGE.replace(END,'\nObject.assign(window,{S,DB,hkGmaps,hkHttp,openDetail,render,demoHikesInit,blank});'+END)
 def check(n,c,d=''):
     res.append((n,bool(c))); print(('PASS ' if c else 'FAIL ')+n+((' :: '+str(d)[:300]) if not c else ''))
 async def run(p, w, h, tag):
     b=await p.chromium.launch(); ctx=await b.new_context(viewport={'width':w,'height':h}, device_scale_factor=2, accept_downloads=True)
     await ctx.add_init_script("try{localStorage.setItem('eitv_tour_seen','1')}catch(e){}")
+    async def serve(route): await route.fulfill(body=HOOKED, content_type='text/html; charset=utf-8')
+    await ctx.route('**/index.html', serve)
     pg=await ctx.new_page()
     pg.on('pageerror', lambda e: errs.append(tag+' pageerror: '+str(e)))
     pg.on('console', lambda m: errs.append(tag+' console: '+m.text) if m.type=='error' and 'Failed to load resource' not in m.text and 'net::' not in m.text else None)
@@ -122,6 +137,165 @@ async def run(p, w, h, tag):
     check(tag+': approving takes it out of the queue', t.count('data-hkok')==0 and (await pg.eval_on_selector_all('[data-hkok]','e=>e.length'))==1)
     await pg.click('.tab[data-tab="team"]'); await pg.wait_for_selector('#hkAll'); check(tag+': Team tab has the Hikes switch, off', not await pg.is_checked('#hkAll'))
     await pg.click('.tab[data-tab="hikes"]'); await pg.wait_for_selector('#hkResults .row')
+    # ---------- hikes and parks (D-32) ----------
+    shot=lambda name: OUT+((name+'.png') if tag=='phone' else tag+'_'+name+'.png')
+    quiet=lambda: pg.wait_for_selector('#toast', state='hidden')   # no passing message across a picture
+    over=lambda: pg.evaluate("()=>document.documentElement.scrollWidth>innerWidth+1")
+    # anything in the open sheet or pop-up that runs off the side of the screen
+    off=lambda: pg.evaluate("()=>[...document.querySelectorAll('.sheet *, .modal *')].filter(e=>{const r=e.getBoundingClientRect(); return r.width>0&&r.height>0&&(r.right>innerWidth+1||r.left<-1);}).map(e=>e.tagName+'.'+e.className).slice(0,5)")
+    cards=lambda: pg.eval_on_selector_all('#hkResults .row','els=>Object.fromEntries(els.map(e=>[e.querySelector(".row-name").textContent, e.querySelector(".row-in")?e.querySelector(".row-in").textContent:""]))')
+    title=lambda: pg.inner_text('.sheet-head h2')
+    groups=lambda: pg.eval_on_selector_all('#hkPark optgroup','els=>els.map(e=>[e.label,[...e.children].map(o=>o.textContent)])')
+    opts=lambda: pg.eval_on_selector_all('#hkPark option','els=>els.map(e=>e.textContent)')
+    await pg.evaluate("()=>{ const o=DB.saveHike; DB.saveHike=async d=>{ window.__hkLast=JSON.parse(JSON.stringify(d)); return o(d); }; }")   # what the form sends
+    last=lambda: pg.evaluate('()=>window.__hkLast')
+    d=await cards()
+    check(tag+': list cards name the park where there is one, and only there', d.get('Ein Avdat canyon')=='In Ein Avdat National Park' and d.get('Sataf springs loop')=='In Sataf' and d.get('Ein Prat to Ein Mabua')=='In Ein Prat Nature Reserve' and d.get('Nahal Og, lower canyon')=='' and d.get('Red Canyon')=='', d)
+    fit=await pg.eval_on_selector_all('#hkResults .row','els=>els.filter(e=>e.querySelector(".row-in")).every(e=>{const a=e.querySelector(".row-in").getBoundingClientRect(), b=e.querySelector(".row-price").getBoundingClientRect(), r=e.getBoundingClientRect(); return a.right<=b.left+1&&a.left>=r.left&&b.right<=r.right+1&&a.height<40;})')
+    check(tag+': the park line sits inside its card, clear of the distance, and the list fits the screen', fit and not await over())
+    await pg.eval_on_selector('#hkResults .row:has-text("Ein Avdat")','e=>e.scrollIntoView({block:"center"})'); await pg.wait_for_timeout(450); await quiet(); await pg.screenshot(path=shot('parks_4_list_card'))
+    await pg.fill('#hq','avdat national'); rows=await pg.eval_on_selector_all('#hkResults .row .row-name','els=>els.map(e=>e.textContent)')
+    check(tag+': searching the park\'s name finds its hike', rows==['Ein Avdat canyon'], rows); await pg.fill('#hq','')
+    # the hike's page
+    await pg.click('#hkResults .row:has-text("Ein Avdat")'); await pg.wait_for_selector('.sheet .hk-park [data-bro1]')
+    t=await pg.inner_text('.sheet .hk-park')
+    check(tag+': hike page: Part of, with the park\'s hours and last entry as its own page holds them', all(x in t for x in ('Part of','Ein Avdat National Park','Opening hours','Sample hours: Sun–Thu 8:00–17:00, Fri 8:00–16:00','Last entry','Sample: last entry one hour before closing','Unverified')), t)
+    pl=await pg.eval_on_selector_all('.sheet .hk-park a','els=>els.map(e=>[e.textContent,e.getAttribute("href"),e.target,e.rel])')
+    check(tag+': Book entry opens the park\'s booking link in a new tab', len(pl)==2 and pl[0]==['Book entry','https://example.org/sample-park-booking']+NEWTAB, pl)
+    check(tag+': Brochure opens the park\'s brochure in a new tab', len(pl)==2 and pl[1][0]=='Brochure' and pl[1][1].startswith('blob:') and pl[1][2:]==NEWTAB, pl)
+    se=await pg.eval_on_selector_all('.sheet a.hk-place','els=>els.map(e=>[e.getAttribute("href"),e.target,e.rel,e.getAttribute("aria-label"),e.textContent])')
+    check(tag+': Start and End each open Google Maps in a new tab, searching for the place', se==[[G+'Ein%20Avdat%20lower%20entrance']+NEWTAB+['Open the start in Google Maps','Ein Avdat lower entranceOpen in Google Maps'],[G+'Ein%20Avdat%20upper%20car%20park']+NEWTAB+['Open the end in Google Maps','Ein Avdat upper car parkOpen in Google Maps']], se)
+    hrefs=await pg.eval_on_selector_all('.sheet .actions a','els=>els.map(e=>e.href)')
+    check(tag+': the Waze and Google Maps buttons at the top are still there', len(hrefs)==2 and 'waze.com/ul?q=Ein%20Avdat%20lower%20entrance' in hrefs[0] and hrefs[1]==G+'Ein%20Avdat%20lower%20entrance', hrefs)
+    check(tag+': nothing on the hike page runs off the side', await off()==[] and not await over(), await off())
+    await pg.wait_for_timeout(450); await quiet(); await pg.screenshot(path=shot('parks_1_hike_with_park'))
+    async with ctx.expect_page() as np: await pg.click('.sheet .hk-park [data-bro1]')
+    tab2=await np.value; await tab2.wait_for_load_state(); check(tag+': a tap on Brochure opens the file in its own tab', tab2.url.startswith('blob:') and 'Sample brochure' in await tab2.content(), tab2.url); await tab2.close()
+    # the park's own page
+    await pg.click('[data-hpark]'); await pg.wait_for_selector('#hikesHere [data-hkh]'); await pg.wait_for_selector('#broBox [data-bro1]'); await pg.wait_for_selector('#filesBox_kind')
+    check(tag+': the park\'s name closes the hike and opens the park\'s page', await title()=='Ein Avdat National Park' and await pg.eval_on_selector_all('.sheet','e=>e.length')==1)
+    bro=await pg.eval_on_selector('#broBox [data-bro1]','e=>[e.textContent,e.getAttribute("href").slice(0,5),e.target,e.rel]')
+    top=await pg.evaluate("()=>{ const b=document.querySelector('#broBox').getBoundingClientRect(), a=document.querySelector('.sheet .actions').getBoundingClientRect(), h=document.querySelector('.sheet .hrs').getBoundingClientRect(); return b.top>=h.bottom-8&&b.bottom<=a.top+1&&b.height>20; }")
+    check(tag+': the brochure shows near the top of the park\'s page, under the hours, and opens in a new tab', bro==['Brochure','blob:']+NEWTAB and top, bro)
+    hh=await pg.inner_text('#hikesHere')
+    check(tag+': the park\'s page lists its hikes with distance and usual time, and offers to add one', 'HIKES HERE' in hh.upper() and 'Ein Avdat canyon' in hh and '2.5 km · 2 hours' in hh and '+ Add a hike here' in hh, hh)
+    kinds=await pg.eval_on_selector_all('#filesBox_kind option','els=>els.map(e=>e.textContent)')
+    check(tag+': Brochure is one of the kinds of file a member can add', 'Brochure' in kinds and kinds[-1]=='Other' and len(kinds)==9, kinds)
+    check(tag+': nothing on the park\'s page runs off the side', await off()==[] and not await over(), await off())
+    if tag=='phone': await pg.set_viewport_size({'width':w,'height':1560})
+    await pg.wait_for_timeout(450); await quiet(); await pg.screenshot(path=shot('parks_2_park_page_hikes'))
+    if tag=='phone': await pg.set_viewport_size({'width':w,'height':h})
+    await pg.click('#hikesHere [data-hkh]'); await pg.wait_for_selector('.sheet .hk-park')
+    check(tag+': a hike in "Hikes here" opens the hike\'s page', await title()=='Ein Avdat canyon')
+    # the form, from the park's page
+    await pg.click('[data-hpark]'); await pg.wait_for_selector('#addHikeHere'); await pg.click('#addHikeHere'); await pg.wait_for_selector('#hkf')
+    g1=await groups(); o1=await opts()
+    check(tag+': "Add a hike here" opens the form with the place and its region chosen', await pg.input_value('#hkPark')==PARK and await pg.input_value('#hkRegion')=='Negev & Arava', (await pg.input_value('#hkPark'), await pg.input_value('#hkRegion')))
+    check(tag+': the picker: None, the places in the hike\'s region, then the others by name', o1[0]=='None' and g1[0]==['In Negev & Arava',['Ein Avdat National Park']] and g1[1]==['Other places',['Ein Gedi Nature Reserve · Dead Sea','Ein Prat Nature Reserve · Binyamin & Shomron','Sataf · Jerusalem']], g1)
+    await pg.select_option('#hkRegion','Jerusalem'); g2=await groups()
+    check(tag+': another region puts its places first and keeps the choice', g2[0]==['In Jerusalem',['Sataf']] and await pg.input_value('#hkPark')==PARK, g2)
+    await pg.select_option('#hkRegion','Negev & Arava')
+    check(tag+': the form fits the screen', await off()==[] and not await over(), await off())
+    await pg.wait_for_timeout(450); await quiet(); await pg.screenshot(path=shot('parks_3_add_hike_park_picker'))
+    await pg.click('#hkCancel'); await pg.wait_for_selector('#hikesHere [data-hkh]')
+    check(tag+': Cancel goes back to the park\'s page', await title()=='Ein Avdat National Park')
+    await pg.click('#addHikeHere'); await pg.wait_for_selector('#hkf')
+    await pg.fill('#hkName','Avdat sample trail'); await pg.check('#hkOff'); await pg.fill('#hkKm','4'); await pg.fill('#hkH1','2'); await pg.click('#hkSave'); await pg.wait_for_selector('.sheet .hk-park')
+    check(tag+': a new hike is sent with its park and opens showing it', (await last()).get('vendor_id')==PARK and await title()=='Avdat sample trail' and 'Ein Avdat National Park' in await pg.inner_text('.sheet .hk-park'), await last())
+    await pg.click('[data-hedit]'); await pg.wait_for_selector('#hkf'); await pg.fill('#hkNotes','Sample note.'); await pg.click('#hkSave'); await pg.wait_for_selector('.sheet .hk-park')
+    check(tag+': a change to another field does not send the park, and the park stays', 'vendor_id' not in await last() and (await last()).get('notes')=='Sample note.' and 'Ein Avdat National Park' in await pg.inner_text('.sheet .hk-park'), await last())
+    await pg.click('[data-hedit]'); await pg.wait_for_selector('#hkf'); await pg.select_option('#hkPark',''); await pg.click('#hkSave'); await pg.wait_for_selector('.sheet .actions')
+    check(tag+': None takes the park off', (await last()).get('vendor_id')=='' and await pg.query_selector('.sheet .hk-park') is None, await last())
+    await pg.click('[data-hedit]'); await pg.wait_for_selector('#hkf'); await pg.select_option('#hkPark',SATAF); await pg.click('#hkSave'); await pg.wait_for_selector('.sheet .hk-park')
+    t=await pg.inner_text('.sheet .hk-park')
+    check(tag+': a site with no hours, booking link or brochure shows its name only', (await last()).get('vendor_id')==SATAF and 'Sataf' in t and not any(x in t for x in ('Opening hours','Last entry','Unverified','Book entry','Brochure')) and await pg.is_hidden('#hkParkBtns'), t)
+    await pg.click('[data-hpark]'); await pg.wait_for_selector('#hikesHere [data-hkh]'); hh=await pg.inner_text('#hikesHere')
+    check(tag+': the site\'s page now lists both its hikes, and has no brochure row with nothing to show but the offer to add one', 'Avdat sample trail' in hh and '4 km · 2 hours' in hh and 'Sataf springs loop' in hh and (await pg.inner_text('#broBox')).strip()=='+ Add brochure', hh)
+    await pg.click('#closeS')
+    # a long list of places: the search box
+    await pg.evaluate("()=>{ for(let i=0;i<45;i++) S.vendors.push(Object.assign(blank(),{id:'vendor_zz'+i,name:'Sample Reserve '+String(i).padStart(2,'0'),category:i%2?'National Parks':'Attraction / Site',region:i%5?'Galilee':'Golan',review_status:'approved',active:'Active'})); }")
+    await pg.click('#addH'); await pg.wait_for_selector('#hkPark')
+    check(tag+': with 49 places the picker lists them all and has a search box', len(await opts())==50 and await pg.query_selector('#hkParkQ') is not None, len(await opts()))
+    await pg.fill('#hkParkQ','prat'); o=await opts(); check(tag+': typing narrows the list', o==['None','Ein Prat Nature Reserve · Binyamin & Shomron'], o)
+    await pg.fill('#hkParkQ','zzzz'); check(tag+': a name that is not there says so', await opts()==['None'] and 'No park or site with that name' in await pg.inner_text('#hkParkNo'))
+    await pg.fill('#hkParkQ','reserve 07'); await pg.select_option('#hkPark','vendor_zz7'); await pg.fill('#hkParkQ','')
+    check(tag+': the choice is kept when the search is cleared', await pg.input_value('#hkPark')=='vendor_zz7' and len(await opts())==50)
+    await pg.select_option('#hkRegion','Golan'); g3=await groups()
+    check(tag+': and the region\'s places still come first', g3[0][0]=='In Golan' and len(g3[0][1])==9 and g3[1][0]=='Other places' and len(g3[1][1])==40, [g3[0][0], len(g3[0][1])])
+    check(tag+': the form with the long list fits the screen', await off()==[] and not await over(), await off())
+    await pg.wait_for_timeout(300); await quiet(); await pg.screenshot(path=OUT+tag+'_parks_3b_picker_long_list.png')
+    await pg.click('#hkCancel'); await pg.evaluate("()=>{ S.vendors=S.vendors.filter(v=>!v.id.startsWith('vendor_zz')); }")
+    # start and end: only a Google Maps link from the text, or a Google Maps search for the text
+    cases=[('Car park https://maps.app.goo.gl/SampleAbc','Trail','https://maps.app.goo.gl/SampleAbc'), ('Gate https://www.google.com/maps/place/x/@31.5,35.4,15z','Trail','https://www.google.com/maps/place/x/@31.5,35.4,15z'),
+        ('https://waze.com/ul?ll=31.5,35.4','Sample trail',G+'Sample%20trail'), ('Gate https://waze.com/ul?q=x','Trail',G+'Gate'), ('https://waze.com/ul?q=x then https://maps.app.goo.gl/SampleAbc','Trail','https://maps.app.goo.gl/SampleAbc'),
+        ('Car park https://evil.example/login?x=1','Trail',G+'Car%20park'), ('https://www.google.com.evil.example/maps/x','Trail',G+'Trail'), ('https://user@www.google.com/maps/x','Trail',G+'Trail'),
+        ('javascript:alert(1)','Trail',G+'javascript%3Aalert(1)'), ('"><img src=x onerror=alert(1)> & co','Trail',G+'%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E%20%26%20co'), ('עין עבדת','Trail',G+'%D7%A2%D7%99%D7%9F%20%D7%A2%D7%91%D7%93%D7%AA'), ('','',''), ('   ','Trail',G+'Trail')]
+    got=await pg.evaluate('(c)=>c.map(x=>hkGmaps(x[0],x[1]))', cases)
+    check(tag+': start and end links: a Google Maps link from the text, else a search for the text, never a Waze or other link', got==[c[2] for c in cases], [(c[0],g_) for c,g_ in zip(cases,got) if g_!=c[2]])
+    got=await pg.evaluate("()=>['javascript:alert(1)','www.parks.org.il','data:text/html,x','','https://example.org/a?b=1','http://example.org/'].map(hkHttp)")
+    check(tag+': only an http or https booking link is taken', got==['','','','','https://example.org/a?b=1','http://example.org/'], got)
+    await pg.evaluate("()=>{ S.vendors.find(x=>x.id==='vendor_p4avd01').npResLink='javascript:alert(1)'; }")
+    await pg.click('#hkResults .row:has-text("Ein Avdat")'); await pg.wait_for_selector('.sheet .hk-park [data-bro1]')
+    pl=await pg.eval_on_selector_all('.sheet .hk-park a','els=>els.map(e=>e.textContent)'); check(tag+': a booking link that is not a web link gives no Book entry button', pl==['Brochure'], pl)
+    await pg.evaluate("()=>{ S.vendors.find(x=>x.id==='vendor_p4avd01').npResLink='https://example.org/sample-park-booking'; }")
+    # start and end inside a report
+    await pg.click('.sheet .actions [data-hrep]'); await pg.wait_for_selector('#hrf'); await pg.fill('#hrDate_il','02/10/2026'); await pg.press('#hrDate_il','Tab')
+    await pg.fill('#hrStart','Upper gate https://waze.com/ul?ll=30.82,34.76'); await pg.fill('#hrEnd','https://maps.app.goo.gl/SampleEnd1'); await pg.click('#hrSave'); await pg.wait_for_selector('.sheet .hk-rep p a')
+    rl=await pg.eval_on_selector_all('.sheet .hk-rep p a','els=>els.map(e=>[e.textContent,e.getAttribute("href"),e.target,e.rel])')
+    check(tag+': in a report, start and end open Google Maps too: a Waze link is not opened as Google Maps, a Google Maps link is', rl==[['Upper gate',G+'Upper%20gate']+NEWTAB,['Map link','https://maps.app.goo.gl/SampleEnd1']+NEWTAB], rl)
+    await pg.click('#closeS')
+    # a hidden supplier is no park for anyone, Eretz Israel Tours too
+    await pg.evaluate("()=>{ S.vendors.find(x=>x.id==='vendor_p4avd01').hidden=true; S.hikes=null; render(); }"); await pg.wait_for_selector('#hkResults .row')
+    d=await cards(); await pg.click('#hkResults .row:has-text("Ein Avdat")'); await pg.wait_for_selector('.sheet .hk-rep'); nopark=await pg.query_selector('.sheet .hk-park') is None
+    await pg.click('[data-hedit]'); await pg.wait_for_selector('#hkPark'); o=await opts(); await pg.fill('#hkNotes','Sample. One way only: the ladders go up. A ride is needed at the top. Check the ladders after rain.'); await pg.click('#hkSave'); await pg.wait_for_selector('.sheet .hk-rep'); await pg.click('#closeS')
+    check(tag+': a hidden supplier reads as no park on the card and the page, is not offered, and a save then leaves the link alone', d.get('Ein Avdat canyon')=='' and nopark and not any('Ein Avdat' in x for x in o) and 'vendor_id' not in await last(), (d.get('Ein Avdat canyon'), o))
+    await pg.evaluate("()=>{ S.vendors.find(x=>x.id==='vendor_p4avd01').hidden=false; S.hikes=null; render(); }"); await pg.wait_for_selector('#hkResults .row')
+    check(tag+': shown again, the park is back on the card', (await cards()).get('Ein Avdat canyon')=='In Ein Avdat National Park')
+    # brochures: adding one, and several on one park
+    await pg.evaluate("()=>openDetail('vendor_p4prt02')"); await pg.wait_for_selector('#broAdd'); await pg.wait_for_selector('#filesBox_file', state='attached')
+    async with pg.expect_file_chooser() as fc: await pg.click('#broAdd')
+    ch=await fc.value; kind=await pg.input_value('#filesBox_kind'); await ch.set_files({'name':'sample-brochure-english.png','mimeType':'image/png','buffer':PNG})
+    await pg.wait_for_selector('#rSkip'); await pg.click('#rSkip'); await pg.wait_for_selector('#broBox [data-bro1]')
+    check(tag+': "Add brochure" on a park chooses the kind Brochure, and the brochure then shows at the top', kind=='Brochure' and 'Brochure' in await pg.eval_on_selector_all('#filesBox .fkind','els=>els.map(e=>e.textContent)') and await pg.query_selector('#broAdd') is None, kind)
+    await pg.select_option('#filesBox_kind','Brochure'); await pg.set_input_files('#filesBox_file', {'name':'sample-brochure-hebrew.png','mimeType':'image/png','buffer':PNG})
+    await pg.wait_for_selector('#rSkip'); await pg.click('#rSkip'); await pg.wait_for_selector('#broBox [data-bros]')
+    await pg.click('#broBox [data-bros]'); await pg.wait_for_selector('#broModal')
+    ml=await pg.eval_on_selector_all('#broModal a','els=>els.map(e=>[e.textContent,e.getAttribute("href").slice(0,5),e.target,e.rel])')
+    check(tag+': two brochures: one button, which opens a short list of both', await pg.inner_text('#broBox [data-bros]')=='Brochures (2)' and sorted(ml)==[['sample-brochure-english.png','blob:']+NEWTAB,['sample-brochure-hebrew.png','blob:']+NEWTAB] and await off()==[], ml)
+    await pg.wait_for_timeout(300); await quiet(); await pg.screenshot(path=OUT+tag+'_parks_2b_brochure_list.png'); await pg.click('#broModal [data-g="x"]'); await pg.click('#closeS')
+    await pg.click('#hkResults .row:has-text("Ein Prat")'); await pg.wait_for_selector('.sheet .hk-park [data-bros]'); await pg.click('.sheet .hk-park [data-bros]'); await pg.wait_for_selector('#broModal')
+    check(tag+': the hike in that park offers the same list', sorted(await pg.eval_on_selector_all('#broModal a','els=>els.map(e=>e.textContent)'))==['sample-brochure-english.png','sample-brochure-hebrew.png'] and 'Ein Prat Nature Reserve' in await pg.inner_text('#broModal'))
+    await pg.click('#broModal [data-g="x"]'); await pg.click('#closeS')
+    # as a guide
+    await pg.select_option('#demoAs','guide'); await pg.wait_for_selector('#hkResults .row')
+    check(tag+': a guide sees the park line on the card', (await cards()).get('Ein Avdat canyon')=='In Ein Avdat National Park')
+    await pg.click('#hkResults .row:has-text("Ein Avdat canyon")'); await pg.wait_for_selector('.sheet .hk-park [data-bro1]'); pl=await pg.eval_on_selector_all('.sheet .hk-park a','els=>els.map(e=>e.textContent)')
+    await pg.click('[data-hpark]'); await pg.wait_for_selector('#hikesHere [data-hkh]'); await pg.wait_for_selector('#filesBox_kind')
+    check(tag+': a guide gets the park on the hike, and on the park\'s page its hikes and the way to add a brochure', pl==['Book entry','Brochure'] and 'Ein Avdat canyon' in await pg.inner_text('#hikesHere') and 'Brochure' in await pg.eval_on_selector_all('#filesBox_kind option','els=>els.map(e=>e.textContent)') and '@' not in await pg.inner_text('#hikesHere'), pl)
+    await pg.click('#closeS')
+    # as an organisation that sees sites
+    await pg.select_option('#demoAs','org'); await pg.wait_for_selector('#hkResults .row')
+    await pg.click('#hkResults .row:has-text("Ein Avdat canyon")'); await pg.wait_for_selector('.sheet .hk-park [data-bro1]'); t=await pg.inner_text('.sheet .hk-park')
+    check(tag+': an organisation that sees sites gets the park, its hours and its brochure', (await cards()).get('Ein Avdat canyon')=='In Ein Avdat National Park' and 'Ein Avdat National Park' in t and 'Opening hours' in t and 'Brochure' in t, t)
+    await pg.click('[data-hpark]'); await pg.wait_for_selector('#hikesHere [data-hkh]')
+    check(tag+': and can open the park\'s page from the hike', await title()=='Ein Avdat National Park' and 'Ein Avdat canyon' in await pg.inner_text('#hikesHere')); await pg.click('#closeS')
+    # as an organisation that does not see sites: the same hike, with nothing about the park
+    await pg.select_option('#demoAs','org2'); await pg.wait_for_selector('#hkResults .row')
+    d=await cards(); none_seen=await pg.evaluate("()=>!S.vendors.some(v=>['vendor_p4avd01','vendor_p4prt02','vendor_p4stf03','vendor_7tt2w4n'].includes(v.id))&&S.hikes.every(h=>h.vendor_id==='')")
+    check(tag+': an organisation with no sites gets no park on any card, and no park\'s id in what it is sent', len(d)>=8 and all(v=='' for v in d.values()) and none_seen and 'National Park' not in await pg.inner_text('#view'), d)
+    await pg.click('#hkResults .row:has-text("Ein Avdat canyon")'); await pg.wait_for_selector('.sheet .hk-rep'); await pg.wait_for_timeout(300); t=await pg.inner_text('.sheet')
+    check(tag+': the same hike opens for it with nothing about the park: no name, hours, booking or brochure', await pg.query_selector('.sheet .hk-park') is None and not any(x in t for x in ('Part of','National Park','Opening hours','Book entry','Brochure')) and 'Ein Avdat lower entrance' in t, t[:300])
+    check(tag+': its start and end still open Google Maps, and the page fits', await pg.eval_on_selector_all('.sheet a.hk-place','els=>els.map(e=>e.getAttribute("href"))')==[G+'Ein%20Avdat%20lower%20entrance',G+'Ein%20Avdat%20upper%20car%20park'] and await off()==[] and not await over())
+    await pg.wait_for_timeout(300); await quiet(); await pg.screenshot(path=shot('parks_5_org_view')); await pg.click('#closeS')
+    n0=await pg.evaluate('()=>demoHikesInit().length')
+    r=await pg.evaluate("()=>DB.saveHike({id:'',name:'Org try',region:'Galilee',official:true,distance_km:'3',hours_from:'1',hours_to:'',start_place:'',end_place:'',is_loop:false,markers:[],notes:'',source:'walked',source_url:'',source_year:'',vendor_id:'vendor_p4avd01'}).then(()=>'saved',e=>e.message)")
+    check(tag+': it cannot link a hike to a place it cannot see, and nothing is saved', r=='Choose the place from the list.' and await pg.evaluate('()=>demoHikesInit().length')==n0, r)
+    await pg.click('#addH'); await pg.wait_for_selector('#hkf')
+    nopick=await pg.query_selector('#hkPark') is None
+    await pg.fill('#hkName','Org sample trail'); await pg.select_option('#hkRegion','Galilee'); await pg.check('#hkOff'); await pg.fill('#hkKm','3'); await pg.fill('#hkH1','1'); await pg.click('#hkSave'); await pg.wait_for_selector('.sheet .actions')
+    check(tag+': with no place to offer, its form has no picker and sends no park', nopick and 'vendor_id' not in await last() and await title()=='Org sample trail', await last()); await pg.click('#closeS')
+    await pg.select_option('#demoAs','admin'); await pg.wait_for_selector('#hkResults .row')
+    check(tag+': back as Eretz Israel Tours the parks are all there again', (await cards()).get('Ein Avdat canyon')=='In Ein Avdat National Park' and (await cards()).get('Avdat sample trail')=='In Sataf')
     await b.close()
 async def main():
     async with async_playwright() as p:

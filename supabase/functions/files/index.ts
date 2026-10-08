@@ -1,8 +1,9 @@
 // Vendor files, quote attachments, join proofs and feedback screenshots: checks the caller's personal link token, then signs uploads/downloads with the service key.
-// Deployed as Supabase edge function "files" (verify_jwt = false). Version 11, 3 Oct 2026. Keep this file identical to the deployed source.
+// Deployed as Supabase edge function "files" (verify_jwt = false). Version 12, 8 Oct 2026. Keep this file identical to the deployed source.
 // v10, v11: limited members (organisations, D-15; v11 only corrects that decision number). A supplier outside the member's sections, or a hidden one, is closed; a limited
 // member sees his own files, other organisations' files, photos and kosher certificates, never a guide's or agent's price list,
 // receipt, contract, booking confirmation or quote. The rule itself lives in the database (_file_scope).
+// v12: D-32: brochures, a new kind of file, open to every member who can open the supplier.
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 
 const cors = {
@@ -13,7 +14,7 @@ const cors = {
 const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { ...cors, "Content-Type": "application/json" } });
 const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
 const BUCKET = "vendor-files", PROOFS = "member-proofs", FEEDBACK = "feedback-files";
-const KINDS = ["Photo", "Receipt", "Price list", "Booking confirmation", "Contract", "Quote", "Kosher certificate", "Other"];
+const KINDS = ["Photo", "Receipt", "Price list", "Booking confirmation", "Contract", "Quote", "Kosher certificate", "Brochure", "Other"];
 const TYPES = /^(image\/(jpeg|png|webp|heic|heif|gif)|application\/pdf)$/;
 const NOT_ACTIVE = "Your link is not active. Ask Eretz Israel Tours for a new one.";
 const ADMIN_ONLY = "Only Eretz Israel Tours can do that.";
@@ -48,7 +49,7 @@ Deno.serve(async (req) => {
     const { data } = await db.rpc("_file_scope", { p_member: m.id, p_vendor: vid });
     return (data as { can_see: boolean; limited: boolean } | null) || { can_see: false, limited: false };
   };
-  const OPEN_KINDS = ["Photo", "Kosher certificate"];
+  const OPEN_KINDS = ["Photo", "Kosher certificate", "Brochure"];
   // colleagues never receive each other's email addresses
   const scrub = (f: any) => { f.mine = f.uploaded_by === m.email; if (!m.is_admin) delete f.uploaded_by; return f; };
 
