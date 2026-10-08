@@ -10,7 +10,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
-## D-32 · Hikes and parks: a hike names its park, parks hold brochures, start and end open Google Maps (built, not live)
+## D-32 · Hikes and parks: a hike names its park, parks hold brochures, start and end open Google Maps (live for Eretz Israel Tours since 8 Oct 2026)
 
 **Decided by:** the owner (Eretz Israel Tours), 8 October 2026, between 15:12 and 15:34 Israel time, a few minutes after the Hikes tab went live (D-31).
 
@@ -72,7 +72,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 - Which suppliers besides National Parks and sites the picker should offer: the owner's to widen.
 - The line in the terms, and the Hebrew side, as for D-31.
 
-**Status:** built on the branch `hikes-parks`. **Not live.** Nothing has been run on production, the files function has not been deployed, and nothing is merged or pushed. Go-live order: `README.md`, "Hikes and parks".
+**Status: live since 8 October 2026, about 16:40 Israel time**, on the owner's word at 16:31 ("Make. Them live."). Hikes are still open to Eretz Israel Tours only, so colleagues see the brochure kind and nothing else of this until he opens Hikes. In order: the owner ran `2026-10-08c_brochure_kind.sql` himself in the SQL editor (16:33, "I think I did it in supabase"; the list of kinds was read afterwards and holds Brochure); `2026-10-08b_hikes_parks.sql` went through the connector in two parts (`hikes_parks_2026_10_08b_part1_column_helper_hike_json`, `part2_hike_save_file_visible`); all 155 function fingerprints equal `supabase/tests/hikes/expected_fingerprints.txt`, with 30 tables, 91 functions callable from outside, 0 table grants and 0 policies; the files function was deployed as version 12 and its deployed source read back equal to the repository file; `supabase/tests/hikes/production_probe.sql` returned every expected value and left nothing behind; then pull request #30 was merged by the session. Not checked: the files function answering a real call (the session cannot reach it), a real upload of a brochure, the live page in a browser, a real phone.
 
 ---
 
