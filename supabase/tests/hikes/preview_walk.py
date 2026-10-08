@@ -52,7 +52,7 @@ async def run(p, w, h, tag):
     # a hike's page
     await pg.click('#hkResults .row:has-text("Nahal Og")'); await pg.wait_for_selector('.sheet .hk-rep')
     t=await pg.inner_text('.sheet')
-    check(tag+': hike page shows distance, time, start, end, markers, route file', all(x in t for x in ('5 km','3–4 hours','Og trailhead','Road 90','Blue, trail 9456','Black, trail 9452','On file')), t[:600])
+    check(tag+': hike page shows distance, time, start, end, markers, route file', all(x in t for x in ('5 km','3–4 h','Og trailhead','Road 90','Blue, trail 9456','Black, trail 9452','A recorded route is on file')), t[:600])
     check(tag+': warnings for cliffs and firing zone', 'Not for a fear of heights' in t and 'Crosses a firing zone' in t)
     check(tag+': summary and three reports with names', '3 reports' in t and 'Avi Mizrahi' in t and 'Noa Shalev' in t and 'Rachel Amar' in t and '6 to 24 people, ages 9 to 67' in t, t[600:1600])
     check(tag+': no email address on the page', '@' not in t, [l for l in t.splitlines() if '@' in l])
@@ -102,13 +102,17 @@ async def run(p, w, h, tag):
     check(tag+': a GPX file is taken, and its own name is not shown', 'ready to save' in await pg.inner_text('#hkFileN') and 'Sample family' not in await pg.inner_text('#hkFileN'))
     await pg.fill('#hkStart','Car park https://evil.example/login?x=1')
     await pg.wait_for_timeout(450); await pg.screenshot(path=OUT+tag+'_5_add.png'); await pg.click('#hkSave'); await pg.wait_for_selector('.sheet .actions')
-    t=await pg.inner_text('.sheet'); check(tag+': the new hike opens: 4.5 km, markers, unverified, no date on the page, route file', all(x in t for x in ('4.5 km','Red, trail 1234','Israel Trail','Unverified','no date on the page','On file','A loop')), t[:900])
+    t=await pg.inner_text('.sheet'); check(tag+': the new hike opens: 4.5 km, markers, unverified, no date on the page, route file', all(x in t for x in ('4.5 km','Red, trail 1234','Israel Trail','Unverified','no date on the page','A recorded route is on file','A loop')), t[:900])
     hrefs=await pg.eval_on_selector_all('.sheet .actions a','els=>els.map(e=>e.href)')
     check(tag+': a link that is not a map link never becomes a button, and stays in view as text', all('evil.example/login' not in h.split('q=')[0].split('query=')[0] and (h.startswith('https://waze.com/') or h.startswith('https://www.google.com/maps/')) for h in hrefs) and 'https://evil.example/login?x=1' in t, hrefs)
     await pg.click('[data-hgpx]'); await pg.wait_for_selector('#hkModal')
     async with pg.expect_download() as dl2: await pg.click('#hkModal [data-g="save"]')
     d2=await dl2.value; body2=open(await d2.path()).read(); await pg.click('#hkModal [data-g="x"]')
-    check(tag+': the kept route file holds the route only: no name, email, times, extra data, recording name or comment', all(x not in body2 for x in ('Sample','Walker','example.com','time','extensions','hr','made by','schemaLocation','metadata')) and body2.count('<trkpt')==2 and '<name>Spring</name>' in body2 and 'lat="33"' in body2 and '<ele>410.3</ele>' in body2, body2)
+    # the file handed over is the kept route with three things put around it: the XML opening line, and the hike's own name on the file and on its track (D-34)
+    DECL='<?xml version="1.0" encoding="UTF-8"?>\n'; NM='<name>Sample new trail</name>'
+    check(tag+': the file handed over opens with the XML line and carries the hike\'s name, on the file and on its track', body2.startswith(DECL+'<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="The Inner Circle"><metadata>'+NM+'</metadata>') and body2.count(NM)==2 and '<trk>'+NM+'<trkseg>' in body2, body2[:300])
+    core=body2[len(DECL):].replace('<metadata>'+NM+'</metadata>','').replace('<trk>'+NM,'<trk>')
+    check(tag+': the kept route file holds the route only: no name, email, times, extra data, recording name or comment', all(x not in core for x in ('Sample','Walker','example.com','time','extensions','hr','made by','schemaLocation','metadata')) and core.count('<trkpt')==2 and '<name>Spring</name>' in core and 'lat="33"' in core and '<ele>410.3</ele>' in core, core)
     check(tag+': and it is saved under the hike\'s name, not the file\'s', d2.suggested_filename=='Sample-new-trail.gpx', d2.suggested_filename)
     await pg.click('#closeS')
     # as a guide
@@ -181,7 +185,9 @@ async def run(p, w, h, tag):
     check(tag+': Book entry opens the park\'s booking link in a new tab', len(pl)==2 and pl[0]==['Book entry','https://example.org/sample-park-booking']+NEWTAB, pl)
     check(tag+': Brochure opens the park\'s brochure in a new tab', len(pl)==2 and pl[1][0]=='Brochure' and pl[1][1].startswith('blob:') and pl[1][2:]==NEWTAB, pl)
     se=await pg.eval_on_selector_all('.sheet a.hk-place','els=>els.map(e=>[e.getAttribute("href"),e.target,e.rel,e.getAttribute("aria-label"),e.textContent])')
-    check(tag+': Start and End each open Google Maps in a new tab, searching for the place', se==[[G+'Ein%20Avdat%20lower%20entrance']+NEWTAB+['Open the start in Google Maps','Ein Avdat lower entranceOpen in Google Maps'],[G+'Ein%20Avdat%20upper%20car%20park']+NEWTAB+['Open the end in Google Maps','Ein Avdat upper car parkOpen in Google Maps']], se)
+    check(tag+': Start and End each open Google Maps in a new tab, searching for the place', se==[[G+'Ein%20Avdat%20lower%20entrance']+NEWTAB+['Open the start in Google Maps','Google Maps'],[G+'Ein%20Avdat%20upper%20car%20park']+NEWTAB+['Open the end in Google Maps','Google Maps']], se)
+    pt=await pg.eval_on_selector_all('.sheet .hkp-ptxt','els=>els.map(e=>e.textContent)')
+    check(tag+': the words of the start and the end stand above their buttons', pt==['Ein Avdat lower entrance','Ein Avdat upper car park'], pt)
     hrefs=await pg.eval_on_selector_all('.sheet .actions a','els=>els.map(e=>e.href)')
     check(tag+': the Waze and Google Maps buttons at the top are still there', len(hrefs)==2 and 'waze.com/ul?q=Ein%20Avdat%20lower%20entrance' in hrefs[0] and hrefs[1]==G+'Ein%20Avdat%20lower%20entrance', hrefs)
     check(tag+': nothing on the hike page runs off the side', await off()==[] and not await over(), await off())
@@ -242,13 +248,13 @@ async def run(p, w, h, tag):
     check(tag+': the form with the long list fits the screen', await off()==[] and not await over(), await off())
     await pg.wait_for_timeout(300); await quiet(); await pg.screenshot(path=OUT+tag+'_parks_3b_picker_long_list.png')
     await pg.click('#hkCancel'); await pg.evaluate("()=>{ S.vendors=S.vendors.filter(v=>!v.id.startsWith('vendor_zz')); }")
-    # start and end: only a Google Maps link from the text, or a Google Maps search for the text
+    # start and end: a Google Maps link from the text, else the point a Waze link carries, else a search for the words; never the hike's name (D-34)
     cases=[('Car park https://maps.app.goo.gl/SampleAbc','Trail','https://maps.app.goo.gl/SampleAbc'), ('Gate https://www.google.com/maps/place/x/@31.5,35.4,15z','Trail','https://www.google.com/maps/place/x/@31.5,35.4,15z'),
-        ('https://waze.com/ul?ll=31.5,35.4','Sample trail',G+'Sample%20trail'), ('Gate https://waze.com/ul?q=x','Trail',G+'Gate'), ('https://waze.com/ul?q=x then https://maps.app.goo.gl/SampleAbc','Trail','https://maps.app.goo.gl/SampleAbc'),
-        ('Car park https://evil.example/login?x=1','Trail',G+'Car%20park'), ('https://www.google.com.evil.example/maps/x','Trail',G+'Trail'), ('https://user@www.google.com/maps/x','Trail',G+'Trail'),
-        ('javascript:alert(1)','Trail',G+'javascript%3Aalert(1)'), ('"><img src=x onerror=alert(1)> & co','Trail',G+'%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E%20%26%20co'), ('עין עבדת','Trail',G+'%D7%A2%D7%99%D7%9F%20%D7%A2%D7%91%D7%93%D7%AA'), ('','',''), ('   ','Trail',G+'Trail')]
+        ('https://waze.com/ul?ll=31.5,35.4','Sample trail',G+'31.5,35.4'), ('Gate https://waze.com/ul?q=x','Trail',G+'Gate'), ('https://waze.com/ul?q=x then https://maps.app.goo.gl/SampleAbc','Trail','https://maps.app.goo.gl/SampleAbc'),
+        ('Car park https://evil.example/login?x=1','Trail',G+'Car%20park'), ('https://www.google.com.evil.example/maps/x','Trail',''), ('https://user@www.google.com/maps/x','Trail',''),
+        ('javascript:alert(1)','Trail',G+'javascript%3Aalert(1)'), ('"><img src=x onerror=alert(1)> & co','Trail',G+'%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E%20%26%20co'), ('עין עבדת','Trail',G+'%D7%A2%D7%99%D7%9F%20%D7%A2%D7%91%D7%93%D7%AA'), ('','',''), ('   ','Trail','')]
     got=await pg.evaluate('(c)=>c.map(x=>hkGmaps(x[0],x[1]))', cases)
-    check(tag+': start and end links: a Google Maps link from the text, else a search for the text, never a Waze or other link', got==[c[2] for c in cases], [(c[0],g_) for c,g_ in zip(cases,got) if g_!=c[2]])
+    check(tag+': start and end links: a Google Maps link from the text, else the point of a Waze link, else a search for the words; never another link, never the hike\'s name', got==[c[2] for c in cases], [(c[0],g_) for c,g_ in zip(cases,got) if g_!=c[2]])
     got=await pg.evaluate("()=>['javascript:alert(1)','www.parks.org.il','data:text/html,x','','https://example.org/a?b=1','http://example.org/'].map(hkHttp)")
     check(tag+': only an http or https booking link is taken', got==['','','','','https://example.org/a?b=1','http://example.org/'], got)
     await pg.evaluate("()=>{ S.vendors.find(x=>x.id==='vendor_p4avd01').npResLink='javascript:alert(1)'; }")
@@ -259,7 +265,7 @@ async def run(p, w, h, tag):
     await pg.click('.sheet .actions [data-hrep]'); await pg.wait_for_selector('#hrf'); await pg.fill('#hrDate_il','02/10/2026'); await pg.press('#hrDate_il','Tab')
     await pg.fill('#hrStart','Upper gate https://waze.com/ul?ll=30.82,34.76'); await pg.fill('#hrEnd','https://maps.app.goo.gl/SampleEnd1'); await pg.click('#hrSave'); await pg.wait_for_selector('.sheet .hk-rep p a')
     rl=await pg.eval_on_selector_all('.sheet .hk-rep p a','els=>els.map(e=>[e.textContent,e.getAttribute("href"),e.target,e.rel])')
-    check(tag+': in a report, start and end open Google Maps too: a Waze link is not opened as Google Maps, a Google Maps link is', rl==[['Upper gate',G+'Upper%20gate']+NEWTAB,['Map link','https://maps.app.goo.gl/SampleEnd1']+NEWTAB], rl)
+    check(tag+': in a report, start and end open Google Maps too: a Waze link gives Google Maps its point, not the Waze address; a Google Maps link is opened as it is', rl==[['Upper gate',G+'30.82,34.76']+NEWTAB,['Map link','https://maps.app.goo.gl/SampleEnd1']+NEWTAB], rl)
     await pg.click('#closeS')
     # a hidden supplier is no park for anyone, Eretz Israel Tours too
     await pg.evaluate("()=>{ S.vendors.find(x=>x.id==='vendor_p4avd01').hidden=true; S.hikes=null; render(); }"); await pg.wait_for_selector('#hkResults .row')
@@ -318,5 +324,7 @@ async def main():
     async with async_playwright() as p:
         await run(p, 390, 844, 'phone'); await run(p, 1280, 800, 'desk')
     for e in errs: print('ERR', e)
-    print('\n%d checks, %d failed, %d page errors' % (len(res), sum(1 for _,ok in res if not ok), len(errs)))
+    bad=sum(1 for _,ok in res if not ok)
+    print('\n%d checks, %d failed, %d page errors' % (len(res), bad, len(errs)))
+    sys.exit(1 if bad or errs else 0)
 asyncio.run(main())

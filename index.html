@@ -553,14 +553,68 @@ button.bkcard{display:block;width:100%;text-align:left;font:inherit;color:inheri
 button.act{font-family:inherit;cursor:pointer}
 a.hk-link,.hk-src a{color:var(--tab-on)}
 /* Hikes and parks (D-32) */
+/* The hike's page (D-34): key facts, then sections */
+.hkp-facts{display:flex;background:var(--card);border:1px solid var(--line);border-radius:var(--r);margin:0 0 12px}
+.hkm+.hkp-facts{margin:0 -16px;border-width:0 0 1px;border-radius:0}
+.hkp-fact{flex:1 1 0;padding:12px 6px 11px;min-width:0;text-align:center;border-left:1px solid var(--line)}
+.hkp-fact:first-child{border-left:0}
+.hkp-fact b{display:block;font-family:var(--f-display);font-variant-numeric:tabular-nums;font-size:19px;font-weight:400;line-height:1.2;overflow-wrap:break-word}
+.hkp-fact span{font-size:10.5px;letter-spacing:.8px;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+.hkp-top{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin:12px 0}
+.hkp-h{font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink-3);font-weight:600;margin:18px 2px 8px}
+.hkp-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:0 14px;margin:0 0 4px}
+.hkp-row{display:grid;grid-template-columns:62px minmax(0,1fr);gap:4px 12px;padding:13px 0;border-top:1px solid var(--line)}
+.hkp-row:first-child{border-top:0}
+.hkp-k{font-size:13px;color:var(--ink-3);padding-top:2px}
+.hkp-v{min-width:0;overflow-wrap:anywhere;font-size:15px}
+.hkp-row>.hkp-btns{margin-top:6px}
+.hkp-go{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:var(--wash);color:var(--ink);font:inherit;font-size:14px;font-weight:500;text-decoration:none;cursor:pointer}
+.hkp-go svg{width:18px;height:18px;color:var(--olive-2)}
+.hkp-btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.hkp-notes{margin:13px 0;color:var(--ink);white-space:pre-wrap;overflow-wrap:anywhere;font-size:15px}
+.hkp-wide{grid-column:1/-1;min-width:0}
+.hkp-map{margin-top:4px}
+.hkp-map svg{display:block;width:100%;height:auto;background:var(--wash);border-radius:10px}
+.hkp-key{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;font-size:12.5px;color:var(--ink-2);margin-top:6px}
+.hkp-key i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px}
+.hkp-stats{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;margin:10px 0 0;font-size:14px}
+.hkp-stats dt{color:var(--ink-3)} .hkp-stats dd{margin:0;text-align:right}
+.hkp-steps{margin:6px 0 0;padding-left:20px;font-size:13.5px;line-height:1.45;color:var(--ink-2)} .hkp-steps li{margin:0 0 6px}
+/* The hike's map (D-35): a real map at the head of the page, the route on it, and the same map full screen. */
+.hkm{position:relative;margin:-16px -16px 0;height:clamp(220px,42vh,320px);background:var(--wash);overflow:hidden;border-bottom:1px solid var(--line)}
+.hkm-map{position:absolute;inset:0;z-index:0;cursor:pointer}
+.hkm-wait{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--ink-3);font-size:13.5px}
+.hkm-note{position:absolute;left:10px;top:10px;z-index:900;max-width:calc(100% - 20px);background:#fff;color:#7a2a20;border-radius:8px;padding:6px 9px;font-size:12.5px;line-height:1.3;box-shadow:0 1px 5px rgba(0,0,0,.25)}
+.hkm.plain{height:auto;padding:12px 16px}
+.hkm-cap{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin:12px 0;font-size:13px;line-height:1.4;color:var(--ink-2)}
+.hkm-cap span{flex:1 1 170px;min-width:0}
+.hkm .leaflet-container,.hkmf .leaflet-container{font:inherit;font-size:12px;background:var(--wash)}
+.leaflet-tooltip.hkm-tip{font-weight:600;font-size:12px;line-height:1.1;color:#fff;border:0;border-radius:10px;padding:4px 8px;box-shadow:0 1px 4px rgba(0,0,0,.35)}
+.leaflet-tooltip.hkm-tip.s{background:#2f7a4a} .leaflet-tooltip.hkm-tip.e{background:#8a5417}
+.leaflet-tooltip.hkm-tip:before{display:none}
+.leaflet-popup-content a.hkp-go{color:#16241c;background:#e8ede5;border-color:#cfd8cc}
+.hkmf .leaflet-popup .leaflet-popup-content{margin:12px 14px;font-size:14px}
+.hkmf .leaflet-popup-content .hkp-btns{flex-wrap:nowrap}
+.hkmf .leaflet-bar a,.hkmf .leaflet-touch .leaflet-bar a{width:40px;height:40px;line-height:40px;font-size:22px}
+.hkmf{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;background:var(--ground)}
+.hkmf-bar{display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 10px 16px;background:var(--card);border-bottom:1px solid var(--line)}
+.hkmf-bar b{flex:1;min-width:0;font-family:var(--f-display);font-weight:400;font-size:17px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hkmf-map{position:relative;flex:1;min-height:0}
+.hkmf-map>div:first-child{position:absolute;inset:0}
+.hkmf-tools{display:flex;flex-wrap:wrap;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));background:var(--card);border-top:1px solid var(--line)}
+.hkmf-tools .hkp-go{flex:1;justify-content:center;white-space:nowrap}
+.hkmf .hkm-note{left:62px;max-width:calc(100% - 72px)}
+.act .act-sub{display:block;font-size:10.5px;font-weight:400;color:var(--ink-2)}
+.hkp-prof{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 8px;margin-top:6px;font-size:11.5px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.hkp-prof-y{display:flex;flex-direction:column;justify-content:space-between;text-align:right}
+.hkp-prof svg{display:block;width:100%;height:84px;border-bottom:1px solid var(--line);border-left:1px solid var(--line)}
+.hkp-prof-x{grid-column:2;display:flex;justify-content:space-between}
 .hk-park{display:flex;flex-wrap:wrap;gap:2px 8px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;margin:0 0 16px;font-size:14px}
 .hk-park b{font-weight:500;flex-basis:100%;min-width:0;overflow-wrap:anywhere}
 .hk-park .brk{flex-basis:100%;margin-top:8px}
 .hk-park .btn-row{flex-basis:100%;margin-top:12px}
 .hk-park a.btn{display:inline-block;text-decoration:none}
 .hk-parkname{flex-basis:100%;min-height:44px;border:0;background:none;padding:4px 0;margin:0;text-align:left;font:inherit;font-size:17px;font-weight:600;color:var(--tab-on);text-decoration:underline;overflow-wrap:anywhere;cursor:pointer}
-a.hk-place{display:block;color:var(--ink);text-decoration:none}
-a.hk-place span{display:block;font-size:12px;color:var(--tab-on);text-decoration:underline;margin-top:2px}
 .hk-rep p a{color:var(--tab-on)}
 .bro-row{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;margin:-6px 0 14px}
 .mini.bro{background:var(--ochre-wash);border-color:var(--ochre);color:var(--ink);font-weight:600;font-size:14px;padding:8px 12px}
@@ -1781,8 +1835,8 @@ function sheet(title, body, foot){
   wrap.querySelector('#scrim').onclick=closeSheet; wrap.querySelector('#closeS').onclick=closeSheet;
   return wrap;
 }
-function closeSheet(){ S.openVendor=null; const w=document.getElementById('sheetWrap'); if(w){ w.remove(); document.body.style.overflow=''; } }
-document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeSheet(); });
+function closeSheet(){ S.openVendor=null; hkMapFullClose(); hkMapDrop(); const w=document.getElementById('sheetWrap'); if(w){ w.remove(); document.body.style.overflow=''; } }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ if(hkMapFullClose()) return; closeSheet(); } });
 
 function vatLabel(x){ const f=VAT.find(p=>p[0]===x); return f&&x?f[1]:''; }
 const AUDIENCES=['Adult','Child','Israeli senior','Senior','Student','Soldier','Group','Private','Vehicle','Other'];
@@ -4341,7 +4395,7 @@ function hkMapUrl(p){ for(const raw of String(p||'').match(/https?:\/\/[^\s<>"']
     if(['waze.com','www.waze.com','ul.waze.com'].includes(h) || h==='maps.app.goo.gl' || (h==='goo.gl'&&path.startsWith('/maps/'))
       || (HK_GOOGLE.includes(h)&&(path==='/maps'||path.startsWith('/maps/')||(h.startsWith('maps.')&&path==='/')))) return raw; }
   return ''; }
-const hkPlaceTxt=p=>{ const u=hkMapUrl(p), t=String(p||'').replace(u,'').trim(); return t||(u?'Map link':''); };
+const hkPlaceTxt=p=>{ let any=false; const t=String(p||'').replace(/https?:\/\/[^\s<>"']+/gi,m=>{ if(hkMapUrl(m)){ any=true; return ' '; } return m; }).replace(/\s+/g,' ').trim(); return t||(any?'Map link':''); };   // the words of a place, with every map link taken out
 function hkNav(place, name){ const url=hkMapUrl(place), ll=coordsOf(url), txt=String(place||'').replace(url,'').trim(), q=encodeURIComponent(txt||name||'');
   let isWaze=false; try{ isWaze=!!url&&/(^|\.)waze\.com$/i.test(new URL(url).hostname); }catch(e){}
   return { waze: ll?`https://waze.com/ul?ll=${ll}&navigate=yes`:(isWaze?url:`https://waze.com/ul?q=${q}&navigate=yes`),
@@ -4349,8 +4403,10 @@ function hkNav(place, name){ const url=hkMapUrl(place), ll=coordsOf(url), txt=St
 // ---- Hikes and parks (8 Oct 2026, D-32) ----
 // A hike can name the supplier it lies in: a national park, a nature reserve or a site. The database sends that
 // supplier's id only to a member who can see the supplier; the page shows it only when the supplier is in S.vendors too.
-// Start and end open Google Maps. Only two kinds of link are ever built: a Google Maps link found in the text (one
-// that hkMapUrl accepts), or a Google Maps search for the text. A Waze link is never opened as if it were Google Maps.
+// Start and end open Google Maps. Only three kinds of link are ever built: a Google Maps link found in the text (one
+// that hkMapUrl accepts), a Google Maps search for the point a Waze link carries, or a Google Maps search for the words.
+// A Waze link is never opened as if it were Google Maps, and nothing is searched by the hike's name: a place with
+// nothing to go by gets no button.
 const HK_PARK_CATS=['National Parks','Attraction / Site'];
 const hkIsParkCat=v=>catsOf(v).some(c=>HK_PARK_CATS.includes(c));
 const hkParkOf=h=>h&&h.vendor_id?(S.vendors.find(v=>v.id===h.vendor_id)||null):null;
@@ -4359,13 +4415,35 @@ const hkHttp=u=>{ try{ const x=new URL(String(u||'').trim()); return x.protocol=
 const hkFileHref=u=>{ try{ const x=new URL(String(u||'')); return ['https:','http:','blob:'].includes(x.protocol)?x.href:''; }catch(e){ return ''; } };
 const HK_LINK=/https?:\/\/[^\s<>"']+/gi;
 const hkIsWaze=u=>{ try{ return /(^|\.)waze\.com$/i.test(new URL(u).hostname); }catch(e){ return false; } };
-function hkGmaps(place, name){
-  for(const raw of String(place||'').match(HK_LINK)||[]){ const u=hkMapUrl(raw); if(u&&!hkIsWaze(u)) return u; }
-  const txt=String(place||'').replace(HK_LINK,' ').replace(/\s+/g,' ').trim()||String(name||'').replace(/\s+/g,' ').trim();
+function hkGmaps(place){ const raws=String(place||'').match(HK_LINK)||[];
+  for(const raw of raws){ const u=hkMapUrl(raw); if(u&&!hkIsWaze(u)) return u; }
+  for(const raw of raws){ const ll=coordsOf(hkMapUrl(raw)); if(ll) return 'https://www.google.com/maps/search/?api=1&query='+ll; }
+  const txt=String(place||'').replace(HK_LINK,' ').replace(/\s+/g,' ').trim();
   return txt?'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(txt):''; }
-// A start or end as it shows on the hike's page: the text, and under it the words that say a tap opens Google Maps.
-function hkPlaceLink(place, name, what, label){ const t=label||hkPlaceTxt(place); if(!t) return ''; const u=hkGmaps(place, name);
-  return u?`<a class="hk-place" href="${esc(u)}" target="_blank" rel="noopener noreferrer" aria-label="${esc('Open the '+what+' in Google Maps')}">${esc(t)}<span>Open in Google Maps</span></a>`:esc(t); }
+// How a link to a map is opened (D-34). On Android a web link to Google Maps or Waze opened in a new tab can leave that
+// tab empty instead of handing over to the app (the short maps.app.goo.gl links most of all). So on Android the link
+// asks the phone for the app itself, and carries the web address as the way out when the app is not installed.
+// Everywhere else it is a plain web link in a new tab. Only links hkMapUrl accepts, or ones built here, ever get this.
+const hkAndroid=()=>{ try{ return /Android/i.test(navigator.userAgent||''); }catch(e){ return false; } };
+function hkLinkProps(url){ const plain={href:url,target:'_blank',rel:'noopener noreferrer'};
+  if(!url||!hkAndroid()||/; wv\)/.test(navigator.userAgent||'')) return plain; let u; try{ u=new URL(url); }catch(e){ return plain; }
+  if(u.protocol!=='https:'||u.username||u.password) return plain; const h=u.hostname.toLowerCase();
+  const pkg=/(^|\.)waze\.com$/.test(h)?'com.waze':(HK_GOOGLE.includes(h)||h==='maps.app.goo.gl'||h==='goo.gl')?'com.google.android.apps.maps':'';
+  if(!pkg) return plain;
+  return {href:'intent://'+u.host+(u.pathname+u.search).replace(/;/g,'%3B')+'#Intent;scheme=https;package='+pkg+';S.browser_fallback_url='+encodeURIComponent(u.href)+';end', target:'', rel:''}; }
+const hkLinkAttrs=url=>{ const o=hkLinkProps(url); return `href="${esc(o.href)}"`+(o.target?` target="${o.target}"`:'')+(o.rel?` rel="${o.rel}"`:''); };
+// Waze for a start or end: a Waze link in the text, else the point a Google Maps link carries, else the words. Empty when there is nothing to go by.
+function hkWaze(place){ const raws=String(place||'').match(HK_LINK)||[];
+  for(const raw of raws){ const u=hkMapUrl(raw); if(u&&hkIsWaze(u)) return u; }
+  for(const raw of raws){ const ll=coordsOf(hkMapUrl(raw)); if(ll) return 'https://waze.com/ul?ll='+ll+'&navigate=yes'; }
+  const txt=String(place||'').replace(HK_LINK,' ').replace(/\s+/g,' ').trim();
+  return txt?'https://waze.com/ul?q='+encodeURIComponent(txt)+'&navigate=yes':''; }
+const hkLLUrl=(ll,waze)=>waze?'https://waze.com/ul?ll='+ll+'&navigate=yes':'https://www.google.com/maps/search/?api=1&query='+ll;
+// A start or end on the hike's page: the words, then a button for Google Maps and one for Waze, each only when
+// the place gives it something to go by. A place that is only a pasted map link has no words, so it says what it is.
+function hkPlaceRow(k, place, what, label){ const t=label||hkPlaceTxt(place); if(!t) return ''; const u=hkGmaps(place), wz=hkWaze(place);
+  return `<div class="hkp-row"><span class="hkp-k">${k}</span><div class="hkp-v hkp-ptxt">${esc(t==='Map link'?'A pin on the map':t)}</div>`
+    +(u||wz?`<div class="hkp-btns hkp-wide">${u?`<a class="hkp-go hk-place" ${hkLinkAttrs(u)} aria-label="${esc('Open the '+what+' in Google Maps')}">${ic.maps}Google Maps</a>`:''}${wz?`<a class="hkp-go" ${hkLinkAttrs(wz)} aria-label="${esc('Navigate to the '+what+' with Waze')}">${ic.nav}Waze</a>`:''}</div>`:'')+'</div>'; }
 // Brochures: a kind of file on a supplier. One brochure is a link that opens it; several open a short list.
 const broOf=files=>(files||[]).filter(f=>f.kind==='Brochure'&&hkFileHref(f.url));
 function broBtnHtml(list, cls){ if(!list.length) return '';
@@ -4442,7 +4520,7 @@ function hkRepHtml(x, name){
     .filter(b=>b[1]).map(b=>`<span class="flag ${b[3]||'info'}">${esc(b[2]+hkLab(b[0],b[1]).toLowerCase().replace(/^./,c=>b[2]?c:c.toUpperCase()))}</span>`);
   const bath=String(x.bathrooms||'').split(',').map(k=>hkLab(HK_BATH,k)).filter(Boolean).join(', ').toLowerCase(); if(bath) bits.push(`<span class="flag info">Bathrooms: ${esc(bath)}</span>`);
   const line=(k,v)=>v?`<p><span class="hint">${k}</span> ${esc(v)}</p>`:'';
-  const place=(k,p)=>{ const t=hkPlaceTxt(p), u=t?hkGmaps(p, name):''; return !t?'':u?`<p><span class="hint">${k}</span> <a href="${esc(u)}" target="_blank" rel="noopener noreferrer" title="Open in Google Maps">${esc(t)}</a></p>`:line(k,t); };
+  const place=(k,p)=>{ const t=hkPlaceTxt(p), u=t?hkGmaps(p):''; return !t?'':u?`<p><span class="hint">${k}</span> <a ${hkLinkAttrs(u)} title="Open in Google Maps">${esc(t)}</a></p>`:line(k,t); };
   return `<div class="hk-rep"><b>${esc(x.by)}${x.org?' <span class="tag">Organisation</span>':''}${x.mine?' <span class="tag">You</span>':''}</b>
     <span class="meta">Walked ${esc(ilDate(x.walked_on))}${grp?' · '+esc(grp):''}</span>
     ${bits.length?`<div class="flags">${bits.join('')}</div>`:''}
@@ -4469,26 +4547,34 @@ async function openHike(id){
       ${park.hours_last?`<span class="hint brk">Last entry</span><b>${esc(park.hours_last)}</b>`:''}
       ${park.hours||park.hours_last?(park.hours_verified_how?'<span class="pill approved brk" style="flex-basis:auto">✓ Verified</span>':'<span class="pill pending brk" style="flex-basis:auto">Unverified</span><span class="hint brk" style="flex-basis:auto">Check the hours before you go.</span>'):''}
       <div class="btn-row" id="hkParkBtns"${book?'':' hidden'}>${book?`<a class="btn soft" href="${esc(book)}" target="_blank" rel="noopener noreferrer">Book entry</a>`:''}</div></div>`:'';
-  const body=`<div style="display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin-bottom:14px"><span class="cat">${esc(h.region)}</span>${hkPill(h)}</div>
-    <div class="actions">
-      <a class="act" href="${esc(nav.waze)}" target="_blank" rel="noopener" title="Navigate to the start with Waze" aria-label="Navigate to the start with Waze">${bmark('waze',ic.nav)}Waze</a>
-      <a class="act" href="${esc(nav.maps)}" target="_blank" rel="noopener" title="Open the start with Google Maps" aria-label="Open the start with Google Maps">${bmark('google-maps',ic.maps)}Google Maps</a>
+  const top=[['Distance',hkKm(h)],['Usual time',hkTime(h)],['Difficulty',n?hkLab(HK_DIFF,r.difficulty):'']].filter(x=>x[1]);
+  const startHtml=hkPlaceRow('Start', h.start_place, 'start'), endHtml=h.is_loop?hkPlaceRow('End', h.start_place, 'end', 'A loop: it ends where it starts.'):hkPlaceRow('End', h.end_place, 'end');
+  // The map leads the page when there is something to put on it: a recorded route, or a start or end that carries a point.
+  const hasMap=!!(h.gpx||hkMapData(h,null));
+  const body=`${hasMap?'<div class="hkm" id="hkMap"><div class="hkm-wait">Loading the map…</div></div>':''}
+    ${top.length?`<div class="hkp-facts">${top.map(x=>`<div class="hkp-fact"><b>${esc(x[1])}</b><span>${x[0]}</span></div>`).join('')}</div>`:''}
+    ${hasMap?'<div class="hkm-cap" id="hkMapCap" hidden></div>':''}
+    <div class="hkp-top"><span class="cat">${esc(h.region)}</span>${hkPill(h)}</div>
+    ${r.cliffs==='yes'?'<div class="hk-warn bad">Cliffs on the way. Not for a fear of heights.</div>':''}
+    ${r.firing_zone==='crosses'?'<div class="hk-warn zone">Crosses a firing zone. Check that it is open before every trip.</div>':''}
+    <div class="actions" style="margin-top:12px">
+      <a class="act" ${hkLinkAttrs(nav.waze)} title="Navigate to the start with Waze" aria-label="Navigate to the start with Waze">${bmark('waze',ic.nav)}Waze<span class="act-sub">to the start</span></a>
+      <a class="act" ${hkLinkAttrs(nav.maps)} title="Open the start with Google Maps" aria-label="Open the start with Google Maps">${bmark('google-maps',ic.maps)}Google Maps<span class="act-sub">to the start</span></a>
       ${h.gpx?`<button class="act" type="button" data-hgpx>${hkFileIcon}Route file</button>`:''}
       <button class="act" type="button" data-hrep>${hkRepIcon}Add report</button>
     </div>
-    ${parkBox}
-    <dl class="dl">
-      ${row('Distance',`<span class="mono">${esc(hkKm(h))}</span>`.replace('<span class="mono"></span>',''))}
-      ${row('Usual time',`<span class="mono">${esc(hkTime(h,true))}</span>`.replace('<span class="mono"></span>',''))}
-      ${row('Start',hkPlaceLink(h.start_place, h.name, 'start'))}
-      ${row('End',h.is_loop?hkPlaceLink(h.start_place, h.name, 'end', 'A loop: it ends where it starts.'):hkPlaceLink(h.end_place, h.name, 'end'))}
-      ${mk.length?row('Trail markers',`<span style="display:flex;flex-direction:column;gap:6px">${mk.map(m=>`<span class="hk-mrow">${hkMark(m.color)}<span>${esc(hkMarkTxt(m))}</span></span>`).join('')}${mk.length>1?'<span class="hint">In walking order</span>':''}</span>`):''}
-      ${h.gpx?row('Route file (GPX)',`On file<div class="hint">From ${esc(h.gpx.by)}, ${esc(fmtDate(h.gpx.at))}</div>`):row('Route file (GPX)','<span class="hint">None yet. Add one with your report.</span>')}
-    </dl>
-    ${r.cliffs==='yes'?'<div class="hk-warn bad">Cliffs on the way. Not for a fear of heights.</div>':''}
-    ${r.firing_zone==='crosses'?'<div class="hk-warn zone">Crosses a firing zone. Check that it is open before every trip.</div>':''}
-    ${h.notes?`<section class="panel" style="margin:10px 0 8px"><h3>Important notes</h3><p style="color:var(--ink);white-space:pre-wrap;overflow-wrap:anywhere;margin:0">${esc(h.notes)}</p></section>`:''}
-    <p class="hk-src">${src}</p>
+    ${startHtml||endHtml?`<h3 class="hkp-h">Getting there</h3>
+    <div class="hkp-card">
+      ${startHtml}${endHtml}
+    </div>`:''}
+    <h3 class="hkp-h">The trail</h3>
+    <div class="hkp-card">
+      ${mk.length?`<div class="hkp-row"><span class="hkp-k">Markers</span><div class="hkp-v"><span style="display:flex;flex-direction:column;gap:6px">${mk.map(m=>`<span class="hk-mrow">${hkMark(m.color)}<span>${esc(hkMarkTxt(m))}</span></span>`).join('')}${mk.length>1?'<span class="hint">In walking order</span>':''}</span></div></div>`:''}
+      <div class="hkp-row" id="hkRoute"><span class="hkp-k">Route</span><div class="hkp-v">${h.gpx?`A recorded route is on file.<div class="hint">From ${esc(h.gpx.by)}, ${esc(fmtDate(h.gpx.at))}</div>`:'<span class="hint">No recorded route yet. Add one with your report and it is drawn on the map.</span>'}</div>${h.gpx?'<div id="hkRouteBox" class="hkp-wide"><p class="hint" style="margin:0">Loading the route…</p></div>':''}</div>
+    </div>
+    ${parkBox?`<h3 class="hkp-h">The place</h3>${parkBox}`:''}
+    ${h.notes?`<h3 class="hkp-h">Important notes</h3><div class="hkp-card"><p class="hkp-notes">${esc(h.notes)}</p></div>`:''}
+    <p class="hk-src" style="margin-top:10px">${src}</p>
     <section class="panel"><h3>From colleagues who walked it</h3>
       <p>${n?`${n} report${n>1?'s':''}, the latest walk on ${esc(ilDate(r.last))}`:'Nobody has reported on this hike yet. Walked it? Add what you saw.'}</p>
       ${n&&sum?`<dl class="dl" style="border:0;padding:0;background:transparent;margin-bottom:6px">${sum}</dl>`:''}
@@ -4507,6 +4593,23 @@ async function openHike(id){
       box.insertAdjacentHTML('beforeend', broBtnHtml(bros,'btn soft')); box.hidden=false; broWire(box, bros, park.name); }).catch(()=>{}); }
   w.querySelectorAll('[data-hrep]').forEach(b=>b.onclick=()=>openHikeReport(h, null));
   const g=w.querySelector('[data-hgpx]'); if(g) g.onclick=()=>hkOpenGpx(h);
+  // The map and the recording's figures come after the page is up. With a recording the map shows its line; without
+  // one, the points the start and end carry. If the map library cannot load, the line alone is drawn in its place.
+  const mapBox=w.querySelector('#hkMap'), mapCap=w.querySelector('#hkMapCap');
+  const noMap=()=>{ if(mapBox) mapBox.remove(); if(mapCap) mapCap.remove(); };
+  // lost: there is a recording, but it could not be fetched just now
+  const showMap=async (t, lost)=>{ if(!mapBox||!document.body.contains(mapBox)) return; const d=hkMapData(h,t); if(!d){ noMap(); return; }
+    let ok=false; try{ ok=await hkMapInline(mapBox, h, d); }catch(e){ ok=false; }
+    if(!document.body.contains(mapBox)) return;
+    if(!ok){ if(t){ mapBox.classList.add('plain'); mapBox.innerHTML=hkSketchHtml(t); mapCap.remove(); } else noMap(); return; }
+    const what=d.start&&d.end?'the start and the end':d.start?(d.same?'where it starts and ends':'the start'):'the end';
+    mapCap.innerHTML=`<button class="hkp-go" type="button" data-hmap>${hkWideIcon}Open the map</button><span>${d.rec?'The recorded route. Open the map to move around it and to see where you are on it.':lost?'The recorded route did not load just now. The map shows '+what+' only.':'Nobody has added a recorded route yet. The map shows '+what+' only.'}</span>`;
+    mapCap.hidden=false; const ob=mapCap.querySelector('[data-hmap]'); ob.onclick=()=>hkMapFull(h, d, ob); };
+  const fileBtn=box=>{ box.insertAdjacentHTML('beforeend',`<div class="hkp-btns"><button class="hkp-go" type="button" data-hgpx2>${hkFileIcon}Open or save the route file</button></div>`); box.querySelector('[data-hgpx2]').onclick=()=>hkOpenGpx(h); };
+  if(h.gpx) hkLoadGpx(h).then(body=>{ const t=hkTrack(body); showMap(t); const box=w.querySelector('#hkRouteBox'); if(!box||!document.body.contains(box)) return;
+    box.innerHTML=t?hkFiguresHtml(t):''; fileBtn(box);
+  }).catch(()=>{ showMap(null, true); const box=w.querySelector('#hkRouteBox'); if(box&&!box.querySelector('[data-hgpx2]')){ box.innerHTML='<p class="hint" style="margin:0">The route did not load just now.</p>'; fileBtn(box); } });
+  else showMap(null, false);
   const ed=w.querySelector('[data-hedit]'); if(ed) ed.onclick=()=>openHikeForm(h);
   const sg=w.querySelector('[data-hsug]'); if(sg) sg.onclick=()=>openHikeSuggest(h);
   w.querySelectorAll('[data-hdec]').forEach(b=>b.onclick=async()=>{ const yes=b.dataset.hdec==='yes'; b.disabled=true;
@@ -4524,31 +4627,188 @@ function openHikeSuggest(h){
     e.target.disabled=true; try{ await DB.sendFeedback('Suggestion', t, ('Hike: '+h.name).slice(0,300), null); try{ await DB.loadFeedback(); }catch(e2){} toast('Sent to Eretz Israel Tours. Thank you.'); openHike(h.id); }catch(x){ e.target.disabled=false; err.textContent=x.message; err.hidden=false; } };
 }
 // A route file opens in a hiking app: on a phone that lets the browser hand a file over, straight from here; otherwise it is saved and opened from the phone's files.
+// The route file of a hike, fetched once per version and kept for the page.
+const hkGpxCache={};
+function hkLoadGpx(h){ const key=h.id+'|'+((h.gpx&&h.gpx.at)||'');
+  if(!hkGpxCache[key]){ Object.keys(hkGpxCache).forEach(k=>{ if(k.indexOf(h.id+'|')===0) delete hkGpxCache[k]; }); hkGpxCache[key]=DB.hikeGpx(h.id).then(g=>g.body).catch(e=>{ delete hkGpxCache[key]; throw e; }); }
+  return hkGpxCache[key]; }
+// Metres between two points given as [latitude, longitude].
+function hkDist(a,b){ const R=6371000, rad=x=>x*Math.PI/180, dla=rad(b[0]-a[0]), dlo=rad(b[1]-a[1]), x=Math.sin(dla/2)**2+Math.cos(rad(a[0]))*Math.cos(rad(b[0]))*Math.sin(dlo/2)**2; return 2*R*Math.asin(Math.min(1,Math.sqrt(x))); }
+// The lines of a route file, read from the plain form the app stores (hkCleanGpx): each track part is its own line
+// (routes are used only when the file has no track), so a gap between two parts is never counted or drawn.
+// Climb and descent count only moves of 10 m or more, so the small jumps of a phone's height reading do not add up.
+function hkTrack(body){ const text=String(body||''), segs=[], ptRe=/<(?:trkpt|rtept) lat="(-?[0-9.]+)" lon="(-?[0-9.]+)"(?:\/>|>(?:<ele>(-?[0-9.]+)<\/ele>)?)/g;
+  const blocks=text.match(/<trkseg>[^]*?<\/trkseg>/g)||text.match(/<rte>[^]*?<\/rte>/g)||[];
+  for(const blk of blocks){ const pts=[]; let m; ptRe.lastIndex=0;
+    while((m=ptRe.exec(blk))){ const la=+m[1], lo=+m[2]; if(isFinite(la)&&isFinite(lo)) pts.push([la,lo,m[3]===undefined?null:+m[3]]); }
+    if(pts.length>1) segs.push(pts); }
+  if(!segs.length) return null;
+  const dist=hkDist;
+  let len=0, up=0, down=0, lo=Infinity, hi=-Infinity, any=false;
+  for(const pts of segs){ let ref=null; for(let i=0;i<pts.length;i++){ const q=pts[i]; if(i) len+=dist(pts[i-1],q);
+      if(q[2]===null) continue; any=true; lo=Math.min(lo,q[2]); hi=Math.max(hi,q[2]); if(ref===null){ ref=q[2]; continue; } const d=q[2]-ref; if(d>=10){ up+=d; ref=q[2]; } else if(d<=-10){ down-=d; ref=q[2]; } } }
+  const first=segs[0][0], lastSeg=segs[segs.length-1], last=lastSeg[lastSeg.length-1], f=q=>q[0].toFixed(6)+','+q[1].toFixed(6);
+  return {segs, len, up:any?Math.round(up):null, down:any?Math.round(down):null, lo:any?Math.round(lo):null, hi:any?Math.round(hi):null, start:f(first), end:f(last), same:dist(first,last)<80}; }
+// The route as a line drawing, north at the top. It is what shows when the map itself cannot load: a sketch, no roads, no trail markings.
+function hkSketchHtml(t){ const W=320, H=200, pad=16, total=t.segs.reduce((n,x)=>n+x.length,0), step=Math.max(1,Math.ceil(total/600));
+  const lines=t.segs.map(pts=>pts.filter((q,i)=>i%step===0||i===pts.length-1)), all=[].concat(...lines);
+  let la0=Infinity, la1=-Infinity, lo0=Infinity, lo1=-Infinity; for(const q of all){ la0=Math.min(la0,q[0]); la1=Math.max(la1,q[0]); lo0=Math.min(lo0,q[1]); lo1=Math.max(lo1,q[1]); }
+  const k=Math.cos((la0+la1)/2*Math.PI/180), w=Math.max((lo1-lo0)*k,1e-9), hgt=Math.max(la1-la0,1e-9), sc=Math.min((W-2*pad)/w,(H-2*pad)/hgt);
+  const X=q=>(pad+((W-2*pad)-w*sc)/2+(q[1]-lo0)*k*sc).toFixed(1), Y=q=>(pad+((H-2*pad)-hgt*sc)/2+(la1-q[0])*sc).toFixed(1);
+  const a=lines[0][0], zl=lines[lines.length-1], z=zl[zl.length-1], same=t.same;
+  return `<div class="hkp-map"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="The recorded route as a line, north at the top">
+      ${lines.map(pts=>`<polyline points="${pts.map(q=>X(q)+','+Y(q)).join(' ')}" fill="none" stroke="${HK_LINE}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`).join('')}
+      <circle cx="${X(a)}" cy="${Y(a)}" r="6" fill="var(--ok)" stroke="var(--card)" stroke-width="2"/>
+      ${same?'':`<circle cx="${X(z)}" cy="${Y(z)}" r="6" fill="var(--ochre)" stroke="var(--card)" stroke-width="2"/>`}
+      <text x="${W-8}" y="16" text-anchor="end" font-size="11" fill="var(--ink-3)">N ↑</text></svg>
+    <div class="hkp-key"><span><i style="background:var(--ok)"></i>${same?'Start and end':'Start'}</span>${same?'':'<span><i style="background:var(--ochre)"></i>End</span>'}<span class="hint">The map could not load. This is the line of the recording only.</span></div></div>`; }
+// Height along the walk: the heights of the recording against the distance walked. Shown only when the file holds heights that differ.
+function hkProfileHtml(t){ const P=[]; let d=0;
+  for(const s of t.segs) for(let i=0;i<s.length;i++){ if(i) d+=hkDist(s[i-1],s[i]); if(s[i][2]!==null) P.push([d,s[i][2]]); }
+  if(P.length<8||!(d>0)) return ''; let lo=Infinity, hi=-Infinity; for(const q of P){ lo=Math.min(lo,q[1]); hi=Math.max(hi,q[1]); }
+  if(hi-lo<10) return '';
+  const step=Math.max(1,Math.ceil(P.length/240)), Q=P.filter((q,i)=>i%step===0||i===P.length-1), W=320, H=80;
+  const line=Q.map(q=>(q[0]/d*W).toFixed(1)+','+(4+(hi-q[1])/(hi-lo)*(H-8)).toFixed(1)).join(' ');
+  return `<div class="hkp-prof"><div class="hkp-prof-y"><span>${Math.round(hi)} m</span><span>${Math.round(lo)} m</span></div>
+    <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Height along the walk, from ${Math.round(lo)} to ${Math.round(hi)} metres above sea level"><polygon points="0,${H} ${line} ${W},${H}" fill="var(--wash)"/><polyline points="${line}" fill="none" stroke="var(--olive-2)" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></svg>
+    <div class="hkp-prof-x"><span>Start</span><span>Height along the walk</span><span>${esc(hkLenTxt(t.len))}</span></div></div>`; }
+const hkLenTxt=m=>m>=1000?(m/1000).toFixed(m>=10000?1:2)+' km':Math.round(m)+' m';
+// The figures of the recording: its height profile, then its length, climb, descent, lowest and highest point.
+function hkFiguresHtml(t){
+  const facts=[['Length of the recording',hkLenTxt(t.len)], t.up!==null?['Climb, about',t.up+' m']:null, t.down!==null?['Descent, about',t.down+' m']:null, t.lo!==null?['Lowest point',t.lo+' m']:null, t.hi!==null?['Highest point',t.hi+' m']:null].filter(Boolean);
+  return hkProfileHtml(t)+`<dl class="hkp-stats">${facts.map(x=>`<dt>${x[0]}</dt><dd class="mono">${esc(x[1])}</dd>`).join('')}</dl>`; }
+// ---- The hike's map (8 Oct 2026, D-35) ----
+// A real map on the hike's page: the recorded route drawn on it, start and end marked together. The picture of the map
+// comes from OpenStreetMap's own tile server, under its tile usage policy: its credit stays on the map, only what is
+// on screen is fetched, nothing is fetched ahead or kept for use without a connection. The drawing library
+// (Leaflet 1.9.4, BSD licence, vendor/) is a file of this site and is loaded the first time a map is needed.
+// A member's own position, when he asks for it, is drawn on his screen and goes nowhere else.
+const HK_LEAF='vendor/leaflet-1.9.4/', HK_LINE='#b5179e';
+const HK_TILES={url:'https://tile.openstreetmap.org/{z}/{x}/{y}.png', max:19, credit:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors'};
+var hkMapNow=null, hkFullNow=null, hkLeafP=null, hkLeafOk=false;
+// The map library is ready only when both its script and its style sheet have come; either one failing, or twelve
+// seconds passing, counts as no map, and the next hike tries again from the start.
+function hkLeaflet(){ if(hkLeafOk&&window.L&&window.L.map) return Promise.resolve(window.L);
+  if(!hkLeafP) hkLeafP=new Promise((ok,no)=>{ const c=document.createElement('link'); c.rel='stylesheet'; c.href=HK_LEAF+'leaflet.css';
+    const s=document.createElement('script'); s.src=HK_LEAF+'leaflet.js'; let n=0, over=false;
+    const fail=()=>{ if(over) return; over=true; clearTimeout(tm); hkLeafP=null; s.remove(); c.remove(); no(new Error('The map could not load.')); };
+    const one=()=>{ if(over||++n<2) return; if(!(window.L&&window.L.map)){ fail(); return; } over=true; clearTimeout(tm); hkLeafOk=true; ok(window.L); };
+    const tm=setTimeout(fail,12000); s.onload=one; c.onload=one; s.onerror=fail; c.onerror=fail;
+    document.head.appendChild(c); document.head.appendChild(s); });
+  return hkLeafP; }
+// The point a start or end carries, when its map link holds one (a short link holds none). A Google link to a named
+// place holds the place's own point after "!3d"; the point after "@" in such a link is only where the screen stood, so
+// it is not used there.
+function hkPlaceLL(place){ const good=a=>a.length===2&&isFinite(a[0])&&isFinite(a[1])&&Math.abs(a[0])<=90&&Math.abs(a[1])<=180&&(a[0]||a[1])?a:null;
+  for(const raw of String(place||'').match(HK_LINK)||[]){ const u=hkMapUrl(raw); if(!u) continue;
+    const pin=/!3d(-?[0-9]{1,2}\.[0-9]+)!4d(-?[0-9]{1,3}\.[0-9]+)/.exec(u); if(pin){ const a=good([+pin[1],+pin[2]]); if(a) return a; continue; }
+    if(/\/maps\/place\//i.test(u)&&!/[?&](?:q|ll|query|daddr)=-?[0-9]/i.test(u)) continue;
+    const a=good(coordsOf(u).split(',').map(Number)); if(a) return a; } return null; }
+// What the map shows: the recording's lines with the points it starts and ends at; with no recording, the points the
+// hike's start and end carry. Nothing to show gives null.
+function hkMapData(h, t){
+  if(t){ const f=t.segs[0][0], ls=t.segs[t.segs.length-1], z=ls[ls.length-1]; return {segs:t.segs.map(s=>s.map(q=>[q[0],q[1]])), start:[f[0],f[1]], end:t.same?null:[z[0],z[1]], same:t.same, rec:true}; }
+  const a=hkPlaceLL(h.start_place), b=h.is_loop?null:hkPlaceLL(h.end_place); if(!a&&!b) return null;
+  return {segs:[], start:a, end:b, same:!!h.is_loop, rec:false}; }
+function hkMapDraw(L, el, d, live){
+  const map=L.map(el, live?{zoomControl:true}:{zoomControl:false, dragging:false, touchZoom:false, doubleClickZoom:false, scrollWheelZoom:false, boxZoom:false, keyboard:false, tapHold:false});
+  try{
+  map.attributionControl.setPrefix(false);
+  const tiles=L.tileLayer(HK_TILES.url,{maxZoom:HK_TILES.max, attribution:HK_TILES.credit}).addTo(map), pts=[];
+  d.segs.forEach(s=>L.polyline(s,{color:'#fff',weight:8,opacity:.85,interactive:false}).addTo(map));
+  d.segs.forEach(s=>{ L.polyline(s,{color:HK_LINE,weight:4,opacity:1,interactive:false}).addTo(map); s.forEach(q=>pts.push(q)); });
+  // each point is a dot with its name; on the open map a wider, unseen ring around it takes the tap
+  const dot=(ll,cls,label,dir)=>{ pts.push(ll); L.circleMarker(ll,{radius:8,color:'#fff',weight:3,fillColor:cls==='s'?'#2f7a4a':'#b8742a',fillOpacity:1,interactive:false}).addTo(map)
+      .bindTooltip(label,{permanent:true,direction:dir,offset:dir==='top'?[0,-10]:[0,10],className:'hkm-tip '+cls});
+    return live?L.circleMarker(ll,{radius:22,stroke:false,fillOpacity:0,interactive:true}).addTo(map):null; };
+  const ms={}; if(d.start) ms.start=dot(d.start,'s',d.same?'Start and end':'Start','top'); if(d.end) ms.end=dot(d.end,'e','End','bottom');
+  const bounds=L.latLngBounds(pts), one=bounds.getNorthEast().distanceTo(bounds.getSouthWest())<30;
+  const fit=()=>{ if(one) map.setView(bounds.getCenter(),16,{animate:false}); else map.fitBounds(bounds,{padding:[48,44],maxZoom:17,animate:false}); };
+  fit(); if(!live) map.on('resize',fit);   // a phone turned on its side
+  // the map's picture did not come: say so, the line and the points are still right
+  const note=el.parentNode.querySelector('.hkm-note'); let got=0;
+  tiles.on('tileload',()=>{ got++; if(note) note.hidden=true; }); tiles.on('tileerror',()=>{ if(!got&&note){ note.textContent='The map did not load. Check the connection.'; note.hidden=false; } });
+  return {map, ms, fit, bounds};
+  }catch(e){ try{ map.remove(); }catch(e2){} throw e; } }
+function hkMapDrop(){ if(hkMapNow){ try{ hkMapNow.remove(); }catch(e){} hkMapNow=null; } }
+// The map at the head of the hike's page. It stays still, so the page scrolls under a finger; a tap opens it full screen.
+// Gives false when the map library could not load.
+async function hkMapInline(box, h, d){ let L; try{ L=await hkLeaflet(); }catch(e){ return false; }
+  if(!document.body.contains(box)) return true; hkMapDrop();
+  box.innerHTML='<div class="hkm-map"></div><div class="hkm-note" role="status" hidden></div>';
+  const m=hkMapDraw(L, box.firstChild, d, false); hkMapNow=m.map;
+  m.map.on('click',()=>hkMapFull(h, d, document.querySelector('#hkMapCap [data-hmap]')));
+  setTimeout(()=>{ if(hkMapNow===m.map){ m.map.invalidateSize(); m.fit(); } },320);   // after the page has slid up
+  return true; }
+const hkWideIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>';
+const hkMeIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>';
+// The same map over the whole screen: it moves and zooms, start and end offer the way there, and "Where am I" shows
+// the member's own position against the route.
+function hkMapFull(h, d, from){ hkMapFullClose(); const L=window.L; if(!hkLeafOk||!L||!L.map) return;
+  const el=document.createElement('div'); el.id='hkMapFull'; el.className='hkmf'; el.setAttribute('role','dialog'); el.setAttribute('aria-modal','true'); el.setAttribute('aria-label','Map: '+h.name);
+  el.innerHTML=`<div class="hkmf-bar"><b>${esc(h.name)}</b><button class="btn soft" type="button" data-x>Close the map</button></div>
+    <div class="hkmf-map"><div></div><div class="hkm-note" role="status" hidden></div></div>
+    <div class="hkmf-tools"><button class="hkp-go" type="button" data-me>${hkMeIcon}Where am I</button><button class="hkp-go" type="button" data-fit>${ic.maps}${d.rec?'Whole route':d.start&&d.end?'Start and end':d.start?'The start':'The end'}</button></div>`;
+  document.body.appendChild(el);
+  let m; try{ m=hkMapDraw(L, el.querySelector('.hkmf-map>div'), d, true); }catch(e){ el.remove(); toast('The map could not open.'); return; }
+  const map=m.map; hkFullNow={el, map, from};
+  const go=(mk,what,ll)=>{ if(!mk) return; const p=ll[0].toFixed(6)+','+ll[1].toFixed(6);
+    mk.bindPopup(`<b>${esc(what)}</b><div class="hkp-btns"><a class="hkp-go" ${hkLinkAttrs(hkLLUrl(p,true))} aria-label="${esc(what+': navigate with Waze')}">${ic.nav}Waze</a><a class="hkp-go" ${hkLinkAttrs(hkLLUrl(p,false))} aria-label="${esc(what+': open in Google Maps')}">${ic.maps}Google Maps</a></div>`,{minWidth:236}); };
+  if(d.start) go(m.ms.start, d.rec?(d.same?'Where the recording starts and ends':'Where the recording starts'):(d.same?'Start and end':'Start'), d.start);
+  if(d.end) go(m.ms.end, d.rec?'Where the recording ends':'End', d.end);
+  let me=null, ring=null, asked=false, watching=false;
+  // The member's place always comes onto the map, however far he is: the map widens to hold him and the hike, and
+  // says how far he is when that is more than a walk. "Whole route" brings the hike back.
+  const show=ll=>{ const far=m.bounds.getCenter().distanceTo(ll);
+    map.fitBounds(L.latLngBounds(m.bounds.getSouthWest(), m.bounds.getNorthEast()).extend(ll),{padding:[48,44],maxZoom:17});
+    if(far>3000) toast('You are about '+(far>=10000?Math.round(far/1000):(far/1000).toFixed(1))+' km from this hike. The map shows you and the hike.'); };
+  map.on('locationfound',e=>{ if(!me){ ring=L.circle(e.latlng,{radius:e.accuracy,color:'#1d4ed8',weight:1,fillOpacity:.12,interactive:false}).addTo(map);
+      me=L.circleMarker(e.latlng,{radius:7,color:'#fff',weight:3,fillColor:'#1d4ed8',fillOpacity:1,interactive:false}).addTo(map).bindTooltip('You',{permanent:true,direction:'right',offset:[10,0]}); }
+    else{ me.setLatLng(e.latlng); ring.setLatLng(e.latlng).setRadius(e.accuracy); }
+    if(asked){ asked=false; show(e.latlng); } });
+  // Refused: the watch is ended and the page says how to allow it. Too slow or not found: the phone keeps looking,
+  // and the member's place is shown when it comes.
+  map.on('locationerror',e=>{ if(e&&e.code===1){ watching=false; map.stopLocate(); if(asked){ asked=false; toast('Your phone did not give its place. Allow location for this site, then try again.'); } return; }
+    if(asked) toast('Still looking for where you are. It can take a minute in a canyon.'); });
+  el.querySelector('[data-me]').onclick=()=>{ if(me&&watching){ show(me.getLatLng()); return; } asked=true;
+    if(!watching){ watching=true; map.stopLocate(); map.locate({watch:true, enableHighAccuracy:true, maximumAge:5000, timeout:20000}); } };
+  el.querySelector('[data-fit]').onclick=()=>m.fit();
+  el.querySelector('[data-x]').onclick=()=>hkMapFullClose();
+  el.querySelector('[data-x]').focus(); }
+function hkMapFullClose(){ if(!hkFullNow) return false; const f=hkFullNow; hkFullNow=null; try{ f.map.stopLocate(); f.map.remove(); }catch(e){} f.el.remove();
+  if(f.from&&document.body.contains(f.from)){ try{ f.from.focus(); }catch(e){} } return true; }
+// The file as it is handed over: the stored route with the lines a hiking app expects around it (the XML opening line,
+// and the hike's name on the file and on its track, so the app shows a name and not "route").
+function hkGpxFileText(h, body){ const nm=(String(h.name||'').replace(/[\u0000-\u001f]/g,' ').slice(0,120)||'Route').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  let t=String(body||''); if(t.indexOf(HK_GPX_HEAD)!==0) return t;
+  t=HK_GPX_HEAD+'<metadata><name>'+nm+'</name></metadata>'+t.slice(HK_GPX_HEAD.length);
+  t=t.replace('<trk>',()=>'<trk><name>'+nm+'</name>').replace('<rte>',()=>'<rte><name>'+nm+'</name>');
+  return '<?xml version="1.0" encoding="UTF-8"?>\n'+t; }
 async function hkOpenGpx(h){
-  let g; try{ g=await DB.hikeGpx(h.id); }catch(e){ toast(e.message); return; }
-  const name=(String(h.name||'').normalize('NFKD').replace(/[^A-Za-z0-9\u05d0-\u05ea]+/g,'-').replace(/^-+|-+$/g,'').slice(0,60)||'route')+'.gpx';
-  let file=null; try{ file=new File([g.body], name, {type:'application/gpx+xml'}); }catch(e){}
-  let canShare=false; try{ canShare=!!(file&&navigator.canShare&&navigator.canShare({files:[file]})); }catch(e){}
-  const save=()=>{ try{ const url=URL.createObjectURL(new Blob([g.body],{type:'application/gpx+xml'})); const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),5000); return true; }catch(e){ toast('Could not save the file.'); return false; } };
+  let raw; const slow=setTimeout(()=>toast('Getting the route file…'),700); try{ raw=await hkLoadGpx(h); }catch(e){ clearTimeout(slow); toast(e.message); return; } clearTimeout(slow);
+  const text=hkGpxFileText(h, raw);
+  const name=(String(h.name||'').normalize('NFKD').replace(/[^A-Za-z0-9א-ת]+/g,'-').replace(/^-+|-+$/g,'').slice(0,60)||'route')+'.gpx';
+  let file=null; try{ file=new File([text], name, {type:'application/gpx+xml'}); }catch(e){}
+  // Handing a file straight to another app: Chrome on Android refuses route files, so it is not offered there.
+  let canShare=false; try{ canShare=!hkAndroid()&&!!(file&&navigator.canShare&&navigator.canShare({files:[file]})); }catch(e){}
+  const save=()=>{ try{ const url=URL.createObjectURL(new Blob([text],{type:'application/gpx+xml'})); const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),5000); return true; }catch(e){ toast('Could not save the file.'); return false; } };
+  const apps=HK_APPS.map(a=>`<a class="hk-link" href="${a[1]}" target="_blank" rel="noopener">${a[0]}</a>`).join(' or ');
+  const steps=`<ol class="hkp-steps"><li>Choose <b>Save the file</b>. It goes to Downloads as <b>${esc(name)}</b>.</li><li>Open your hiking app and open the file from there. On a phone you can also tap the file in Downloads and choose the hiking app.</li><li>No hiking app yet? Nothing can open the file until one is installed: ${apps}.</li></ol>`;
   const old=document.getElementById('hkModal'); if(old) old.remove();
   const el=document.createElement('div'); el.className='modal'; el.id='hkModal';
   el.innerHTML=`<div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="hkMT"><h3 id="hkMT">Route file</h3>
     <p style="overflow-wrap:anywhere"><b>${esc(name)}</b><br><span class="hint">${esc(h.name)}</span></p>
     ${canShare?'<button class="btn primary" type="button" data-g="share">Open in a hiking app</button>':''}
     <button class="btn ${canShare?'soft':'primary'}" type="button" data-g="save">Save the file</button>
-    <p class="hint" id="hkMH" style="margin:4px 0 12px">${canShare?'Your phone shows its apps: choose your hiking app.':'Then open the saved file and choose your hiking app.'} It opens in any app that reads GPX files, such as ${HK_APPS.map(a=>`<a href="${a[1]}" target="_blank" rel="noopener">${a[0]}</a>`).join(' or ')}.</p>
+    <div class="hint" id="hkMH" style="margin:4px 0 12px">${canShare?`Your phone shows its apps: choose your hiking app. It opens in any app that reads GPX files, such as ${apps}.`:steps}</div>
     <button class="btn soft" type="button" data-g="x">Close</button></div>`;
   document.body.appendChild(el);
   el.addEventListener('click',e=>{ if(e.target===el) el.remove(); });
   el.querySelector('[data-g="x"]').onclick=()=>el.remove();
-  el.querySelector('[data-g="save"]').onclick=()=>{ if(save()) el.querySelector('#hkMH').textContent='Saved. Open the file from your downloads and choose your hiking app, such as '+HK_APPS.map(a=>a[0]).join(' or ')+'.'; };
-  const sh=el.querySelector('[data-g="share"]'); if(sh) sh.onclick=async()=>{ try{ await navigator.share({files:[file], title:h.name}); el.remove(); }catch(e){ if(e&&e.name!=='AbortError') toast('Could not hand the file over. Save it instead.'); } };
+  el.querySelector('[data-g="save"]').onclick=()=>{ if(save()) toast('Saving '+name); };
+  const sh=el.querySelector('[data-g="share"]'); if(sh) sh.onclick=async()=>{ try{ await navigator.share({files:[file], title:h.name}); el.remove(); }
+    catch(e){ if(e&&e.name==='AbortError') return; sh.remove(); const sv=el.querySelector('[data-g="save"]'); sv.className='btn primary'; el.querySelector('#hkMH').innerHTML='This phone would not pass the file to another app. Do it this way:'+steps; } };
 }
-// Only the route leaves the phone. The file is read, and a new one is written from its points alone: track points,
-// route points and up to 200 marked spots, each with its place, its height if it has one, and for a marked spot a short
-// name. The recorder's name, email, the times of the walk, the name he gave the recording and any extra data a recording
-// app wrote all stay behind. A very long recording is thinned until it fits. The database takes exactly this form and
-// nothing else (_hike_gpx_put), so keep the two in step: one <gpx> opening tag, lat before lon, no spaces between tags.
 const HK_GPX_HEAD='<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="The Inner Circle">';
 function hkCleanGpx(text){
   const bad='That does not look like a GPX route file. Save the route as GPX from your hiking app.';
@@ -4766,7 +5026,8 @@ function demoHikesInit(){ if(S.demoHikes) return S.demoHikes;
   const rep=(id,who,o)=>Object.assign({id,author:P[who][0],author_name:P[who][1],org:who==='org',hidden:false,walked_on:day(30),group_size:'',age_min:'',age_max:'',difficulty:'',cliffs:'',cliffs_note:'',water_shoes:'',start_place:'',end_place:'',poi:'',firing_zone:'',water_route:'',drinking_water:'',bathrooms:'',eat:'',eat_note:'',note:'',created_at:dd(20)},o);
   const hk=(id,o)=>Object.assign({id,region:'',vendor_id:'',distance_km:'',hours_from:'',hours_to:'',start_place:'',end_place:'',is_loop:false,markers:[],notes:'',official:true,source:'walked',source_url:'',source_year:'',review_status:'approved',added_by:OWNER,added_by_name:'Eretz Israel Tours',org:false,gpxFile:null,reports:[],created_at:dd(12),updated_at:dd(3)},o);
   const y=new Date().getFullYear();
-  const SAMPLE_GPX=HK_GPX_HEAD+'<trk><trkseg><trkpt lat="31.8" lon="35.4"/><trkpt lat="31.801" lon="35.404"/><trkpt lat="31.802" lon="35.409"/></trkseg></trk></gpx>';
+  // a made-up line with heights, so the route drawing has something to show (preview only)
+  const SAMPLE_GPX=HK_GPX_HEAD+'<trk><trkseg>'+Array.from({length:48},(_,i)=>{ const t=i/47; return `<trkpt lat="${(31.8+0.012*t+0.002*Math.sin(t*9)).toFixed(6)}" lon="${(35.4+0.016*t*t+0.003*Math.sin(t*5)).toFixed(6)}"><ele>${(-250+180*t+25*Math.sin(t*7)).toFixed(1)}</ele></trkpt>`; }).join('')+'</trkseg></trk></gpx>';
   S.demoHikes=[
     hk('hk1',{name:'Sataf springs loop',region:'Jerusalem',vendor_id:'vendor_p4stf03',distance_km:'3',hours_from:'1.5',hours_to:'2',start_place:'Sataf upper car park',is_loop:true,markers:[{color:'green',number:''}],notes:'Sample. Steps on the way down. Busy on Fridays.',
       reports:[rep('hr1','noa',{walked_on:day(9),group_size:'8',age_min:'6',age_max:'70',difficulty:'easy',cliffs:'no',water_shoes:'not_needed',firing_zone:'no',water_route:'yes',drinking_water:'yes',bathrooms:'start',eat:'yes',eat_note:'Tables by the upper spring',note:'Good first walk for a family.'}),

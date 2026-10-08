@@ -10,6 +10,79 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-35 · The hike's page: a real map with the route on it (live since 8 October 2026)
+
+**Live since 8 October 2026, about 22:50, on the owner's word.** He tried the trial copy on his phone and wrote at 22:35: "Open map works full screen 2 where am I doesn't work file saves ask Israel hiking map Route saved. Make it live no one uses the app anyway". So, on his Android phone: the map opens full screen; the saved route file was taken by Israel Hiking Map (as this session reads his words); "Where am I" did not work. Why it did not is not known: he did not say what the phone showed. The likeliest cause was the app's own doing: he was far from the hike, and the first version then refused to show him at all. That is changed before go-live: his place always comes onto the map, the map widens to hold him and the hike, and it says how many kilometres away he is. If the cause was the phone not giving its place, the page says so and how to allow it. Pull request #31 merged; front end only; D-34 went live with it.
+
+**Decided by:** the owner (Eretz Israel Tours), 8 October 2026, 20:45 Israel time, after trying the trial copy of D-34 on his phone.
+
+**In his words:** "The route on the page: new, so you can see the walk without any other app. It is a line drawing, not a map. It's a line not on any map... It's useless. The Google map start and end doesn't help either because it just opens Google maps. And you can't see both at once. Why can't you integrate open maps? Honestly I couldn't. Really tell the difference in old and new"
+
+**What is built** (branch `hike-page-fixes`, on top of D-34; front end only, no database change):
+
+- **A map leads the hike's page.** OpenStreetMap, with the recorded route drawn on it as a line and start and end marked together. It stays still on the page so the page scrolls under a finger. "Open the map", or a tap on the map, opens it over the whole screen: it moves and zooms, start and end each offer Waze and Google Maps to that exact point, and "Where am I" shows the member's own place against the route.
+- **A hike with no recording** shows its start and end together on the map when their map links carry a point; the page says no route is recorded. A short Google link carries no point, so such a hike has no map until someone adds a recording.
+- **Height along the walk**: a small chart of the recording's heights, above its length, climb, descent, lowest and highest point.
+- **The page's order**: map, key facts in one band, "Open the map", region and status, warnings, the four tiles (Waze and Google Maps now say "to the start"), then the sections of D-34.
+- **Gone:** the line drawing as the normal view (it is now only what shows when the map cannot load), and the four separate "where the recording starts/ends" buttons (they are on the map's own points).
+
+**Where the map comes from, and on what terms:**
+
+- **Map pictures:** OpenStreetMap's own server (`tile.openstreetmap.org`), free, under its tile usage policy, read 8 October 2026: the credit "© OpenStreetMap contributors" stays on the map, only what is on screen is fetched, nothing is fetched ahead or kept for use without a connection. The service makes no promise to stay up, and may block heavy use. With one user this is nothing; with the whole membership it is still light, but it is a service the app does not control.
+- **The drawing library:** Leaflet 1.9.4 (BSD licence), copied unchanged from its published package into `vendor/leaflet-1.9.4/` (checksums compared), served from this site, loaded only when a map is first needed.
+- **Israel Hiking Map**, the map guides know, with the trail colours: **not used.** Its tiles are licensed for non-commercial use, and its own FAQ says showing the map in another site is "in coordination with the authors" and commercial use needs their word. It is one address to change in the code once they agree. **Asking them is the owner's.**
+
+**Who sees what:** unchanged inside the app. New to the outside: when a hike's page shows a map, the member's phone asks OpenStreetMap's server for the map pictures of that area, which shows that server the phone's internet address, the area looked at, and this site's address; nothing about the member or the hike. "Where am I" is worked out on the phone and drawn there; the place is sent nowhere (when the map widens to include the member, the pictures then fetched are of that area). **The privacy notice does not yet say this. It must before Hikes opens to colleagues** (a terms change, the owner's, G13). Today only Eretz Israel Tours sees Hikes.
+
+**Checked:** `hike_page_walk.py`, 91 checks, map pictures stood in for (the test machine cannot reach OpenStreetMap): the line and points on the map, the credit seen and not covered, the still map does not trap scrolling, the open map, "Where am I" (near, far, slow, refused, and that the phone stops being asked when the map closes), a hike with start and end only, with an end only, with nothing; map pictures not arriving; the library or its style sheet not arriving. `preview_walk.py`, 200. A second agent attacked the first version: six faults and a list of small ones, fixed (GPS left running after a slow fix, a dead End point, a half-drawn map when the style sheet fails, the open-map button covering a point, the page saying a recording did not exist when it had only failed to load, a named Google place giving the middle of the screen as its point).
+
+**Seen on the trial copy, 8 October, about 21:50, in the owner's Chrome on his computer:** his own hike Ein Ovdat with the real map: the map pictures came from OpenStreetMap, the recorded route lay on the trail the map draws, Start and End were marked, the credit showed, the figures read 2.09 km and a climb of about 120 m, and the open map came up with "Where am I" and "Whole route".
+
+**Not checked, and it matters:** nothing on a real phone; iPhone; "Where am I" with a real phone's place; the phone's Back button does not close the open map (the app has no handling of Back anywhere).
+
+**Open, the owner's:** whether "Where am I" works for him now, and what the phone says if not; asking the Israel Hiking Map authors; the privacy line before Hikes opens to colleagues.
+
+---
+
+## D-34 · The hike's page: laid out as a finished page, map links that open, a route file that can be used (live since 8 October 2026, with D-35)
+
+**Decided by:** the owner (Eretz Israel Tours), 8 October 2026, about 18:30 Israel time, testing the live Hikes tab on his Android phone (Chrome, a Samsung) after adding a route file to his own hike.
+
+**In his words** (spoken, as transcribed; "Anode dot" is his hike Ein Ovdat):
+
+- "I uploaded a GPX file to Anode dot, and it the layout of the page does not look good. It looks like um, just the layout's not good. It doesn't look like a finished page. It looks like a tab. The edit page looks better, now the start and finish destination Google Map link doesn't open, doesn't show me anything. First start and end."
+- "GPX file when I tried to open it it didn't open in any kind of app."
+- With a picture of the route file box showing "Could not hand the file over. Save it instead.": "Ein ovdat android". Asked whether a hiking app is installed on that phone: "Yes".
+
+**What was found:**
+
+- **Route file.** The box offered "Open in a hiking app" because the browser said it could pass a file on. Chrome on Android then refuses a GPX file (it passes on pictures, sound, video, text and PDF only), which is the message he got. The stored file was whole: 3,365 points. Whether the saved file then opens depends on a hiking app on the phone that takes GPX files; that part has not been seen on a phone.
+- **Start and end.** His start and end are pasted Google Maps short links. The page did build the right link (seen in a phone-sized test: a tap opened a new tab on that address). Why his phone showed nothing is not known. The likely cause is that a short link opened in a new tab is left as an empty tab when the phone tries to pass it to the Maps app. It is a guess until he tries the change.
+- **Layout.** The page was a region line, four tiles and one long list of rows; the form, with its named groups, read as the more finished of the two.
+
+**What was built** (front end only, `index.html`; no table, function, grant or policy change):
+
+- **The page is in sections:** the key facts first (distance, usual time, difficulty) as three tiles, then the warnings (cliffs, firing zone), the Waze / Google Maps / Route file / Add report tiles, then "Getting there" (start and end), "The trail" (markers and the route), "The place" (the park, as before), "Important notes", the reports and "Before every trip". Nothing the old page showed is gone.
+- **Start and end** each show their words, then a Google Maps button and a Waze button, each only when the place gives it something to go by: Google Maps takes a Google Maps link from the text, else the point a Waze link carries, else a search for the words; Waze takes a Waze link, else the point a Google Maps link carries, else the words. Nothing is searched by the hike's name any more (the two tiles at the top still fall back to it). A place that is only a pasted link says "A pin on the map".
+- **On Android a map link asks the phone for the app itself** (Google Maps or Waze), and carries the web address as the way out when the app is missing. Elsewhere, and inside a bare in-app web view, it stays an ordinary link in a new tab. Only an address the page accepted as Google Maps or Waze, or built itself, is ever turned into an app link, and the app is named by the page, never by the address.
+- **The route is drawn on the page**: the recorded line, north at the top, with its length, climb and descent (moves of 10 m or more only, shown as "about"), lowest and highest point, and buttons that open the first and the last point of the recording in Google Maps and Waze. Parts of a track are kept apart, so a gap is neither counted nor drawn; a file with a track and a route uses the track. It says it is a sketch, not a map. The file is fetched once per hike and version when its page opens.
+- **The route file box** no longer offers handing the file to an app on Android. It says what to do: save the file, open it from the hiking app (or tap it in Downloads and choose the app), and that nothing can open it until such an app is installed. Where a browser offers to pass the file and then refuses, the dead button goes and the same steps show.
+- **The file handed over** is the stored route with three things added around it: the XML opening line, and the hike's name on the file and on its track, so a hiking app shows a name. What is stored is unchanged.
+
+**Who sees what:** unchanged. The route file was already open to every member who can see the hike; the page now fetches it when the hike opens instead of when the button is tapped.
+
+**Checked:** `supabase/tests/hikes/hike_page_walk.py`, new: 58 checks as an Android phone at 411, 360 and 320 wide, an Android in-app web view, an iPhone-like browser that passes files on, one that offers and refuses, and a computer; the page's own helpers are called with made-up routes and places and their figures and links compared with figures worked out in the test. `preview_walk.py`: 200 checks; it now ends with a failing exit code when a check fails. A second agent attacked the first version (security of the app links and the markup, the route figures, the layout at five widths, the tests themselves) and its findings were fixed: a fact tile cut off on 360-wide phones, a file broken by some hike names, figures wrong for files with more than one line, climb overstated on noisy heights, "start and end in one place" judged in picture dots, and seven faults the tests did not notice.
+
+**Not checked, and it matters:** nothing here has been seen on a real Android phone. The app links follow Chrome's documented form, and whether they cure "doesn't open" is not known until the owner taps them. Whether a saved route file opens in Israel Hiking Map or Amud Anan on his phone is not known either. iPhone Safari, Samsung Internet and Firefox were not run.
+
+**Open:**
+
+- The supplier pages' Waze and Google Maps buttons are still ordinary links in a new tab. If the app links cure the fault on his phone, the same change belongs there; if those buttons already work on his phone, the cause of fault 2 is something else.
+- A route file opened in one tap in Israel Hiking Map needs a web address the map's site can fetch the file from, which would be a new, public, short-lived link to a route file: the owner's decision (who sees what), and the site's way of opening a file by address has to be confirmed first.
+- A real map under the line (a map library and map tiles from another site) was left out on purpose: a new outside dependency is the owner's call.
+
+**Status:** built on the branch `hike-page-fixes`. **Not live.**
+
 ## D-32 · Hikes and parks: a hike names its park, parks hold brochures, start and end open Google Maps (live for Eretz Israel Tours since 8 Oct 2026)
 
 **Decided by:** the owner (Eretz Israel Tours), 8 October 2026, between 15:12 and 15:34 Israel time, a few minutes after the Hikes tab went live (D-31).
