@@ -10,7 +10,11 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
-## D-31 · Hikes: official marked trails, with a report after the walk (built; not live)
+## D-31 · Hikes: official marked trails, with a report after the walk (live for Eretz Israel Tours since 8 Oct 2026)
+
+**Live since 8 October 2026, about 15:02 Israel time, for Eretz Israel Tours only.** The owner merged pull request #28 himself at 14:57 ("Merged"). The database file was then run on production through the connector, in parts (`hikes_2026_10_08_part1_tables` to `part5_set_setting_whoami`), with `whoami` last so the tab appeared only once everything behind it was in place. Checked after (G4): 30 tables, 154 functions, 91 callable from outside, 0 table grants, 0 policies; all 154 function fingerprints equal `supabase/tests/hikes/expected_fingerprints.txt`; the three new tables equal the schema record (columns, constraints, indexes, row security); `supabase/tests/hikes/production_probe.sql` returned every expected value and left nothing behind (0 hikes, 0 reports, 0 route files, no probe member, no `hikes_for` row). Colleagues do not have the tab: `hikes_for` is not set, which reads as Eretz Israel Tours only. Not checked: the live page in a browser (no browser was reachable from the session), a real phone, a route file opened in a hiking app.
+
+**For the next session that sends SQL through the connector:** the connector turns a written-out character code of the form backslash-u-four-hex-digits into the character itself before the SQL reaches the database. `_hike_gpx_put` arrived with the two characters instead of the two codes: same behaviour, different text, so its fingerprint differed. It was sent again inside a `do` block that swaps a placeholder for the backslash (`hikes_2026_10_08_part2b_gpx_put_exact_text`), and now equals the repository to the letter. Other backslash forms (`\.`, `\s`, `\x01`) arrive unchanged. Compare fingerprints after every part, before the part that switches a feature on.
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 8 October 2026, in steps between 09:14 and 12:06 Israel time.
 

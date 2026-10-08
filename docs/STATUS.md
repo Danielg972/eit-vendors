@@ -17,9 +17,9 @@
 | Terms version | `2026-10-03c` live (adds 2c, organisations as limited members; `2026-10-03a` added 6d, jobs). `2026-10-03d` on the branch `guide-for-clients`: 3a malicious posts, 3c licensed guides and D1, 6e a guide's page for clients, 6f your own page and reviews. All draft, not yet reviewed by a lawyer |
 | Decisions | `docs/DECISIONS.md` (D-1 Cockpit boundary; D-2 quote tracker; D-3 driver reviews; D-4 transport by vehicle size; D-5 booking sheets; D-6 welcome tour, name, use-and-add rule; D-7 Shomer Shabbat badge, kosher restaurants only; D-8 opening hours, no-certificate needs approval; D-9 verified hours, last entry, hours from websites; D-10 official buttons; D-11 jobs between colleagues and My days, live for Eretz Israel Tours only; D-15 limited members: organisations that are not in tourism; D-13 food nearby only on places; D-12 a guide's page for clients; D-14 claimed pages, disputes, reviews; D-16 licensed guides only, D1 for Eshkol, malicious posts) |
 
-## In work: Hikes (D-31), branch `hikes-tab`, not live
+## Hikes (D-31): live for Eretz Israel Tours only since 8 October 2026
 
-A Hikes tab: official marked trails with a route file (GPX), notes, distance and time, and a report members add after walking one. Built 8 October 2026 on the branch `hikes-tab`; **the database file `supabase/migrations/2026-10-08_hikes.sql` has not been run on production and nothing is merged.** It adds three tables (`hikes`, `hike_reports`, `hike_gpx`) and thirteen functions, and replaces `whoami` and `set_setting` (each gains only the hikes switch). When it goes live it opens to Eretz Israel Tours only, until the setting `hikes_for` is changed in the Team tab. No terms change in the branch. Nothing in it touches suppliers, prices, quotes or any field the Cockpit could read. Details: `docs/DECISIONS.md`, D-31.
+A Hikes tab: official marked trails with a route file (GPX), notes, distance and time, and a report members add after walking one. Built 8 October 2026; pull request #28 merged by the owner at 14:57 and **the database file `supabase/migrations/2026-10-08_hikes.sql` run on production at about 15:01, checked by fingerprints and the rolled-back probe.** It adds three tables (`hikes`, `hike_reports`, `hike_gpx`) and thirteen functions, and replaces `whoami` and `set_setting` (each gains only the hikes switch). It is open to Eretz Israel Tours only, until the owner changes the setting `hikes_for` in the Team tab ("Open Hikes to all colleagues"): his decision. No hikes are entered yet. No terms change in the branch. Nothing in it touches suppliers, prices, quotes or any field the Cockpit could read. Details: `docs/DECISIONS.md`, D-31.
 
 ## Integration with the Cockpit
 
@@ -74,7 +74,7 @@ A Hikes tab: official marked trails with a route file (GPX), notes, distance and
 22. From D-16: "licensed" and "D1" are tags that the person adding an entry states. Nothing checks a license. A malicious post is found only when someone reports it or Eretz Israel Tours sees it.
 23. Two sessions changed the same functions on production on the same evening (limited members; guides, claims and reviews). It was caught before anything was overwritten because the fingerprints of the live functions were compared with the record first. Do that before every database change.
 
-### From D-31 (hikes), once live
+### From D-31 (hikes)
 
 - Hike information is safety information: cliffs, firing zones, water. The app says no responsibility is taken and never says a route is open, but a notice may not remove responsibility. For the lawyer, with the terms line that is still to come.
 - A report says where and when a group walked, with its size and ages. The form asks for numbers only and no client names; nothing in the database can stop a member typing a name into a free-text box.
