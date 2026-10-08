@@ -530,6 +530,10 @@ button.bkcard{display:block;width:100%;text-align:left;font:inherit;color:inheri
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(140px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--ground);padding:10px 16px;border-radius:999px;font-size:14px;z-index:40;max-width:calc(100% - 32px)}
 /* Hikes (D-31) */
 .hk-reg{font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--ochre);font-weight:600;margin:14px 2px 6px}
+#hkResults .list+.list{margin-top:10px}
+.hk-phead{display:flex;flex-direction:column;gap:2px;width:100%;min-height:44px;padding:12px 16px;border:0;border-bottom:1px solid var(--line);background:var(--ochre-wash);text-align:left;font:inherit;cursor:pointer}
+.hk-phead b{font-size:16px;font-weight:600;color:var(--ink);overflow-wrap:anywhere}
+.hk-phead span{font-size:12px;color:var(--ink-2)}
 .hk-mark{display:inline-flex;flex:none;width:24px;height:14px;border:1px solid var(--ink-3);border-radius:2px;overflow:hidden}
 .hk-mark i{flex:1;background:#fff}
 .hk-mark.none{border-style:dashed;background:transparent}
@@ -549,7 +553,6 @@ button.bkcard{display:block;width:100%;text-align:left;font:inherit;color:inheri
 button.act{font-family:inherit;cursor:pointer}
 a.hk-link,.hk-src a{color:var(--tab-on)}
 /* Hikes and parks (D-32) */
-.row-in{grid-column:1;font-size:13px;color:var(--ink-2);min-width:0;overflow-wrap:anywhere}
 .hk-park{display:flex;flex-wrap:wrap;gap:2px 8px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;margin:0 0 16px;font-size:14px}
 .hk-park b{font-weight:500;flex-basis:100%;min-width:0;overflow-wrap:anywhere}
 .hk-park .brk{flex-basis:100%;margin-top:8px}
@@ -721,7 +724,7 @@ function sample(){
     v({id:'vendor_a81qz0c',name:'Dan Panorama Jerusalem',category:'Hotel',contactPerson:'Group desk',phone:'+972 2 569 5695',email:'groups@example-hotel.co.il',location:'Jerusalem',kosher:'Rabbanut',maxCap:'290',agentPrice:'1150',agentPriceVatTreatment:'not_applicable',listedPrice:'1400',priceBasis:'Per group',currency:'USD',payTerms:'30% deposit, balance 14 days before',cancelNoticeAmount:'21',cancelNoticeUnit:'Days',cancelDayType:'Calendar days',rateReliability:'4',rateService:'4',rateValue:'3'}),
     v({id:'vendor_7tt2w4n',reservation:'required',name:'Ein Gedi Nature Reserve',category:'National Parks',location:'Dead Sea',npResLink:'https://www.parks.org.il',listedPrice:'33',listedPriceVatTreatment:'including_vat',agentPrice:'29',agentPriceVatTreatment:'including_vat',priceBasis:'Per person',review_status:'pending',created_by:'yossi.guide@gmail.com',updated_by:'yossi.guide@gmail.com',updated_at:d(1)}),
     // Preview only, for hikes and parks (D-32): the place names are real, every detail on them is invented.
-    v({id:'vendor_p4avd01',name:'Ein Avdat National Park',category:'National Parks',location:'Sde Boker',region:'Negev & Arava',hours:'Sample hours: Sun–Thu 8:00–17:00, Fri 8:00–16:00',hours_last:'Sample: last entry one hour before closing',hours_source:'sample data',npResLink:'https://example.org/sample-park-booking',listedPrice:'30',listedPriceVatTreatment:'including_vat',priceBasis:'Per person',notes:'Sample details, made up for the preview.'}),
+    v({id:'vendor_p4avd01',name:'Ein Avdat National Park',category:'National Parks',location:'Sde Boker',region:'Negev & Arava',hours:'Sample hours: Sun–Thu 8:00–17:00, Fri 8:00–16:00',hours_last:'Sample: last entry one hour before closing',hours_source:'sample data',npResLink:'https://example.org/sample-park-booking',website:'https://example.org/sample-park-page',listedPrice:'30',listedPriceVatTreatment:'including_vat',priceBasis:'Per person',notes:'Sample details, made up for the preview.'}),
     v({id:'vendor_p4prt02',name:'Ein Prat Nature Reserve',category:'National Parks',location:'Wadi Qelt',region:'Binyamin & Shomron',hours:'Sample hours: every day 8:00–16:00',hours_source:'sample data',listedPrice:'30',listedPriceVatTreatment:'including_vat',priceBasis:'Per person',notes:'Sample details, made up for the preview.'}),
     v({id:'vendor_p4stf03',name:'Sataf',category:'Attraction / Site',location:'Jerusalem hills',region:'Jerusalem',notes:'Sample details, made up for the preview.'}),
     v({id:'vendor_p0lk5sd',name:'Shomron Bus Lines',category:'Transport',contactPerson:'Avi',phone:'+972 54 000 1234',location:'Ariel',maxCap:'50',agentPrice:'2400',agentPriceVatTreatment:'plus_vat',priceBasis:'Per day',payTerms:'Cash or transfer on the day',rateReliability:'3',review_status:'pending',created_by:'rachel.ops@gmail.com',updated_by:'rachel.ops@gmail.com',updated_at:d(0)}),
@@ -4396,8 +4399,8 @@ function hkPill(h){
   if(h.source==='website') return `<span class="pill pending">Unverified</span><span>${esc(hkSrc(h))}</span>`;
   return '<span class="pill reg">No report yet</span>';
 }
-function hkRow(h){ const r=h.r||{}, pk=hkParkOf(h);
-  return `<button class="row" data-hk="${esc(h.id)}"><span class="row-name">${esc(h.name)}</span>${pk?`<span class="row-in">In ${esc(pk.name)}</span>`:''}
+function hkRow(h){ const r=h.r||{};
+  return `<button class="row" data-hk="${esc(h.id)}"><span class="row-name">${esc(h.name)}</span>
     <span class="row-price"><b>${esc(hkKm(h))}</b><span>${esc(hkTime(h))}</span></span>
     <span class="row-meta">${hkPill(h)}${r.difficulty?`<span>${esc(hkLab(HK_DIFF,r.difficulty))}</span>`:''}${r.cliffs==='yes'?'<span class="flag extra">Cliffs</span>':''}${r.water_shoes==='needed'?'<span class="flag info">Water shoes</span>':''}${r.firing_zone==='crosses'?'<span class="flag miss">Firing zone</span>':''}</span></button>`; }
 const hkRegions=list=>[...REGIONS.filter(r=>list.some(h=>h.region===r)), ...[...new Set(list.map(h=>h.region))].filter(r=>!REGIONS.includes(r)).sort()];
@@ -4423,9 +4426,15 @@ function drawHikes(){
   const rows=all.filter(h=>(S.hreg==='All'||h.region===S.hreg)&&(!n||normN([h.name,h.region,(hkParkOf(h)||{}).name,hkPlaceTxt(h.start_place),hkPlaceTxt(h.end_place),h.notes].join(' ')).includes(n)));
   if(!all.length){ box.innerHTML='<div class="list" style="margin-top:14px"><div class="empty"><h3>No hikes yet</h3>Tap <b>Add hike</b> to add the first trail you know.</div></div>'; return; }
   if(!rows.length){ box.innerHTML='<div class="list" style="margin-top:14px"><div class="empty"><h3>Nothing matches</h3>Try a shorter search or pick “All regions”.</div></div>'; return; }
-  box.innerHTML=`<div class="count">${rows.length===all.length?all.length:rows.length+' of '+all.length} hike${all.length>1?'s':''} · sorted by region</div>`+hkRegions(rows).map(r=>{ const hs=rows.filter(h=>h.region===r).sort((a,b)=>a.name.localeCompare(b.name));
-    return `<div class="hk-reg">${esc(r||'No region')} · ${hs.length}</div><div class="list">${hs.map(hkRow).join('')}</div>`; }).join('');
+  box.innerHTML=`<div class="count">${rows.length===all.length?all.length:rows.length+' of '+all.length} hike${all.length>1?'s':''} · by region and place</div>`+hkRegions(rows).map(r=>{ const hs=rows.filter(h=>h.region===r).sort((a,b)=>a.name.localeCompare(b.name));
+    // One card per place (the park or site the hikes lie in), holding every hike there; hikes with no place share a plain card.
+    const places=[], lone=[]; hs.forEach(h=>{ const p=hkParkOf(h); if(!p){ lone.push(h); return; } let g=places.find(x=>x.p.id===p.id); if(!g) places.push(g={p,hs:[]}); g.hs.push(h); });
+    places.sort((a,b)=>a.p.name.localeCompare(b.p.name));
+    return `<div class="hk-reg">${esc(r||'No region')} · ${hs.length}</div>`
+      + places.map(g=>`<div class="list hk-pcard"><button class="hk-phead" type="button" data-hkp="${esc(g.p.id)}"><b>${esc(g.p.name)}</b><span>${g.hs.length===1?'1 hike here':g.hs.length+' hikes here'} · Open the place ›</span></button>${g.hs.map(hkRow).join('')}</div>`).join('')
+      + (lone.length?`<div class="list">${lone.map(hkRow).join('')}</div>`:''); }).join('');
   box.querySelectorAll('.row').forEach(r=>r.onclick=()=>openHike(r.dataset.hk));
+  box.querySelectorAll('[data-hkp]').forEach(b=>b.onclick=()=>openDetail(b.dataset.hkp));
 }
 function hkRepHtml(x, name){
   const grp=[x.group_size?x.group_size+(x.group_size==='1'?' person':' people'):'', x.age_min&&x.age_max?'ages '+x.age_min+' to '+x.age_max:x.age_min?'youngest '+x.age_min:x.age_max?'oldest '+x.age_max:''].filter(Boolean).join(', ');
@@ -4454,6 +4463,7 @@ async function openHike(id){
     : `Added by ${esc(h.by)}${h.org?' (an organisation)':''}, ${esc(fmtDate(h.created_at))}.`;
   // The park or site, when this member can see it: its name (opens its page), its hours as the supplier's page holds them, booking and brochure.
   const park=hikesOn()?hkParkOf(h):null, book=park?hkHttp(park.npResLink):'';
+  const site0=park?String(park.website||'').trim():'', parkSite=site0&&!/\s/.test(site0)?hkHttp(/^https?:\/\//i.test(site0)?site0:'https://'+site0):'';
   const parkBox=park?`<div class="hk-park"><span class="hint">Part of</span><button class="hk-parkname" type="button" data-hpark>${esc(park.name)} ›</button>
       ${park.hours?`<span class="hint brk">Opening hours</span><b>${esc(park.hours)}</b>`:''}
       ${park.hours_last?`<span class="hint brk">Last entry</span><b>${esc(park.hours_last)}</b>`:''}
@@ -4485,7 +4495,9 @@ async function openHike(id){
       ${reps.map(x=>hkRepHtml(x, h.name)).join('')}
       <button class="btn accent" type="button" data-hrep style="width:100%;margin-top:10px">+ Add your report</button>
     </section>
-    <section class="panel"><h3>Before every trip</h3><p style="margin:0"><a class="hk-link" href="${HK_SAFETY}" target="_blank" rel="noopener">Moked Teva: safety pages and firing zones</a></p></section>
+    <section class="panel"><h3>Before every trip</h3>
+      ${parkSite?`<p style="margin:0 0 8px"><a class="hk-link" href="${esc(parkSite)}" target="_blank" rel="noopener noreferrer">${esc(park.name)}: its own page, for closures and changes</a></p>`:''}
+      <p style="margin:0"><a class="hk-link" href="${HK_SAFETY}" target="_blank" rel="noopener">Moked Teva: trail updates and firing zones, whole country</a><br><span class="hint">Moked Teva has no page for one hike. Look for the area there, or phone them.</span></p></section>
     <div class="disclaim">${esc(HK_DISCLAIM)}</div>
     ${S.admin&&h.review_status!=='pending'?`<p style="margin:0"><button class="linkbtn" type="button" data-hdec="${h.review_status==='approved'?'no':'yes'}">${h.review_status==='approved'?'Take this hike off the list':'Put this hike back on the list'}</button></p>`:''}`;
   const foot=`${h.can_edit?'<button class="btn soft" type="button" data-hedit>Change details</button>':'<button class="btn soft" type="button" data-hsug>Suggest a change</button>'}${S.admin&&h.review_status==='pending'?'<button class="btn soft" type="button" data-hdec="no">Turn down</button><button class="btn primary" type="button" data-hdec="yes">Approve</button>':''}`;
@@ -4768,6 +4780,7 @@ function demoHikesInit(){ if(S.demoHikes) return S.demoHikes;
     hk('hk4',{name:'Nahal Darga',region:'Dead Sea & Judean Desert',distance_km:'7',hours_from:'6',hours_to:'7',start_place:'Metzoke Dragot',end_place:'Road 90',markers:[{color:'red',number:''}],notes:'Sample. Ropes and pools. Closed when floods are forecast.',
       reports:[rep('hr6','avi',{walked_on:day(60),group_size:'9',age_min:'16',age_max:'45',difficulty:'hard',cliffs:'yes',cliffs_note:'Roped drops into pools',water_shoes:'needed',firing_zone:'no',water_route:'yes',drinking_water:'no',bathrooms:'none',eat:'yes'})]}),
     hk('hk5',{name:'Ein Prat to Ein Mabua',region:'Binyamin & Shomron',vendor_id:'vendor_p4prt02',distance_km:'8',hours_from:'4',hours_to:'5',start_place:'Ein Prat nature reserve',end_place:'Ein Mabua',source:'website',source_url:'https://example.org/sample-hiking-site/ein-prat',source_year:String(y-1),notes:'Sample. Taken from a website: not checked by anyone here yet.'}),
+    hk('hk9',{name:'Ein Prat, the pools walk',region:'Binyamin & Shomron',vendor_id:'vendor_p4prt02',distance_km:'1.5',hours_from:'1',hours_to:'',start_place:'Ein Prat nature reserve car park',is_loop:true,markers:[{color:'red',number:''}],notes:'Sample. A short walk between the pools. Good with small children.'}),
     hk('hk6',{name:'Ein Avdat canyon',region:'Negev & Arava',vendor_id:'vendor_p4avd01',distance_km:'2.5',hours_from:'2',hours_to:'',start_place:'Ein Avdat lower entrance',end_place:'Ein Avdat upper car park',notes:'Sample. One way only: the ladders go up. A ride is needed at the top.',
       reports:[rep('hr7','rachel',{walked_on:day(75),group_size:'18',age_min:'8',age_max:'72',difficulty:'moderate',cliffs:'yes',cliffs_note:'Ladders and steps cut in the cliff',water_shoes:'not_needed',firing_zone:'no',water_route:'yes',drinking_water:'yes',bathrooms:'start,end',eat:'no'})]}),
     hk('hk7',{name:'Red Canyon',region:'Eilat',distance_km:'2',hours_from:'1.5',hours_to:'',start_place:'Red Canyon car park, Road 12',is_loop:true,source:'website',source_url:'https://example.org/sample-hiking-site/red-canyon',source_year:'',notes:'Sample. Taken from a website with no date on the page.'}),

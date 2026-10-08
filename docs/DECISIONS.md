@@ -12,25 +12,30 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ## D-32 · Hikes and parks: a hike names its park, parks hold brochures, start and end open Google Maps (built, not live)
 
-**Decided by:** the owner (Eretz Israel Tours), 8 October 2026, 15:12 and 15:14 Israel time, a few minutes after the Hikes tab went live (D-31).
+**Decided by:** the owner (Eretz Israel Tours), 8 October 2026, between 15:12 and 15:34 Israel time, a few minutes after the Hikes tab went live (D-31).
 
 **In his words:**
 
 - 15:12: "Some hikes are connected to national parks. for instance right now I want to add Ein ovdat which I just did today and it's part of that nature reserve perhaps for something like that a see the link hike should be there which will take you to the hike page also for the national parks they all have brochures. There should be a place where they're uploaded."
 - 15:14: "Also start and end. Location should. Open Google maps"
+- 15:21: "Also the moked teva page link. Only opens general.. Nothing specific to this hike"
+- 15:34: "Also, most places that have hikes have different variations of hikes. Like Ein Gedi might have Nachal David. Or the D-U-D-I-M caves. Etc. There are many ways to do Nachal Prat also. So one card should have many different hike options."
 
 **How it was read:**
 
 - A hike can be connected to the supplier it lies in: the national park, nature reserve or site. The link works both ways. The hike's page names the park and opens the park's page; the park's page lists its hikes and opens each one.
 - A park's page has a place for its brochure. Brochures are a new kind of file on a supplier, next to photos, price lists and the rest, and show near the top of the page.
 - On a hike's page the start and the end are each tappable and open Google Maps.
+- The links under "Before every trip" should be about this hike. Moked Teva has no page for one hike that could be linked to (its site could not be read from the session to check), so the park's own page comes first and Moked Teva is named as the whole-country page it is.
+- A place with several hikes is one card in the list, holding every hike there. The place is the park or site the hikes are connected to, so this needs nothing new in the database. A hike connected to no place stays on its own.
 
 **What was built:**
 
 - **The hike form** has a field "Part of a park or site". It offers the suppliers the member can see whose category, or one of their "also offers", is National Parks or Attraction / Site: None first, then the places in the hike's region, then the rest by name. With more than eight places a search box narrows the list.
 - **The hike's page** shows "Part of" with the park's name, which closes the hike and opens the park's page. Under it: the park's opening hours and last entry as its own page holds them, marked Verified or Unverified; "Book entry" when the park has a booking link (web links only, in a new tab); "Brochure" when the park has one (several open a short list).
 - **The park's page** shows its brochure near the top, under the hours, and a section "Hikes here" with each hike's name, distance and usual time, and "Add a hike here", which opens the hike form with the place and its region chosen. A supplier that is not a park or site and has no hikes shows nothing. A park or site with no brochure offers "Add brochure".
-- **The list of hikes** carries one line on the card, "In" and the park's name, and the search finds a hike by its park.
+- **The list of hikes** shows one card per place inside each region: the place's name, how many hikes it has, and under it every hike there. The card's head opens the place's page. Hikes connected to no place share a plain card below. The search finds a hike by its place.
+- **Before every trip**, on a hike's page: first the park's own page, when the hike has a park and the park has a website ("its own page, for closures and changes"), then Moked Teva, worded as trail updates and firing zones for the whole country, with a line saying it has no page for one hike.
 - **Start and end**, on the hike's page and inside each report, open Google Maps in a new tab. Only two kinds of link are ever built: a Google Maps link found in the text (the same test as the buttons at the top), or a Google Maps search for the text. A Waze link in the text is never opened as Google Maps: the search is used, by the text, or by the hike's name when no text is left. Any other link in the text stays text. The Waze and Google Maps buttons at the top are as they were.
 
 **Who sees what:**
