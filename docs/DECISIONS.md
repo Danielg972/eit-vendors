@@ -10,6 +10,65 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-31 · Hikes: official marked trails, with a report after the walk (built; not live)
+
+**Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 8 October 2026, in steps between 09:14 and 12:06 Israel time.
+
+**In his words:**
+
+- 09:14: "Put in the pipeline a hikes tab - gpx, important notes, distance, how long it typically takes. If putting in for after then group size, ages, difficult level, cliffs (fear of heights), water shoes, start location, end location, points of interest, firing zone, water, bathrooms, can you eat on hike. Etc."
+- 09:17: "We can scrape websites for hiking in Israel like hiking the holy land, trail, lovloveisrael, any others?facebook?reddit, Hebrew and English, as well as מוקד טבע, sort by region"
+- 10:45: "2 I think to enter after hike 3 yes and can update 4 yes as long as it's been updated in last few years. Any Israel hiking websites Agreed on all points. We take no. Responsibility for the info on the app message or disclaimer" (2 = the longer list is a report entered after the hike; 3 = organisations see hikes and can update; 4 = hikes may be taken from websites.)
+- 11:34, of the mock-up: "Can you add trail markers and numbers"
+- 11:53, of the mock-up with the choices listed: "Looks great!"
+- 12:06: "I think build it now, why not? Number two, I don't know what trail means. It has to be an official marked trail. Hiking trail number or color is not mandatory. You can write for 3 , unverified. And aside from that, GPX needs to open on an app. You can offer suggestions. Israel hiking map.  Or Amud aNan."
+
+**What it is:** a Hikes tab. A hike is an official marked trail: its name and region, a route file (GPX), important notes, the distance and the usual time, where it starts and ends, and the trail markers on the way (colour and trail number, in walking order, both optional). After walking it, a member adds a report: the date, group size, youngest and oldest, difficulty, cliffs, water shoes, points of interest, firing zone, water on the route, drinking water, bathrooms, whether you can eat on the way, and anything else. The hike's page shows a summary of the reports and each report with the name of who wrote it.
+
+**The rules he set:**
+
+- Only official marked trails are listed. The form asks for a tick; without it nothing is saved.
+- Hikes are shown sorted by region.
+- Organisations (limited members) see hikes and can add hikes and reports, like every other member.
+- Hikes may be taken from Israeli hiking websites, in Hebrew or English, when the page was updated in the last few years. With the mock-up he accepted 3 years. A page that shows no date is taken and shown as Unverified, "date not known".
+- What is taken from a website is its facts in the app's own words, with a link to the page; the page's text, pictures and route file are not copied. A hike from a website shows as **Unverified** until a member has reported walking it (rulebook E2). Facebook and Reddit are not read in bulk.
+- A route file comes from a member's own recording or a route he drew on an open map. It must open in a hiking app; the app names Israel Hiking Map and Amud Anan.
+- The firing zone answer says only whether the route crosses one. The app never says a route is open.
+- Group size and ages are numbers. No client's name and no trip details go in any field (rulebook D6, D7).
+- The app carries a message that no responsibility is taken for hike information. Wording as he approved it on the mock-up: "Hike details are colleagues' reports and notes taken from websites. Eretz Israel Tours and the members take no responsibility for them. Check the route, the weather and any firing zone yourself before every trip."
+
+**Accepted with the mock-up (11:53), his to change:** any member may add a hike, and a new one shows to colleagues once Eretz Israel Tours has approved it; the Hikes tab sits between Quotes and Jobs; a report shows its writer's name; every hike links to Moked Teva's safety pages; markers are entered with the hike, not with the report.
+
+**Implementation choices, his to change:**
+
+- A member can change his own hike while it waits for approval. Once it is approved only Eretz Israel Tours changes it; everyone else has "Suggest a change", which goes to Feedback with the hike named.
+- Eretz Israel Tours approves the version it read. If the writer changed the hike, its route file or his own reports on it after that, the approval is refused and the hike has to be opened again.
+- Nothing is ever removed from the database: a hike taken off the list, a report taken off and a route file taken off are marked and kept. Eretz Israel Tours can put a hike back.
+- One route file per hike. A report can bring a route file only when the hike has none.
+- Only the route is kept from a file: its points, their heights and the names of marked spots (up to 200 spots, 60 characters a name). The recorder's name and email, the date and times of the walk, the name he gave the recording and the file's own name are left out: the page writes a new file from the points alone before sending it, and the database takes that form and nothing else. Every route file is called `route.gpx`; when saved it takes the hike's name.
+- The summary takes the most common answer, except cliffs and firing zone: one report saying yes is enough.
+- In a start or end place, only a Waze or Google Maps link becomes a button; any other link stays as plain text.
+- A member may add 20 hikes and 30 reports a day.
+- Reports of an organisation are marked "Organisation". Organisations read all reports on hikes (they read guides' reviews of suppliers on transportation only, D-15; a hike is not a supplier).
+- The 3-year rule is asked when a hike is added or its page year is changed, not when an older entry is corrected.
+- The message about responsibility is in the app from the start. The matching line in the terms waits for the week's terms release (rulebook G13) and for a lawyer; **no terms change is in this branch**.
+
+**Opens to Eretz Israel Tours first (rulebook G2):** a new setting, `hikes_for`: `admin` (only Eretz Israel Tours; the default) or `all`. The switch is in the Team tab.
+
+**Database (`supabase/migrations/2026-10-08_hikes.sql`; it only adds and replaces):** three new tables, `hikes`, `hike_reports`, `hike_gpx`, closed like every other table (row security on, no grant, no policy). Six new internal helpers (`_hikes_on`, `_hike_visible`, `_hike_markers_clean`, `_hike_json`, `_hike_detail_json`, `_hike_gpx_put`), none callable from outside. Seven new calls: `hikes_list`, `hike_detail`, `hike_save`, `hike_decide`, `hike_report_save`, `hike_report_hide`, `hike_gpx`. Two functions replaced, each gaining only the hikes switch: `whoami` (two new keys, `hikes` and `hikes_for`) and `set_setting`. 141 functions become 154.
+
+**Not in this branch:** loading hikes from websites (a data job for after the tab is live, each source first read for what it allows); a map on the page; the Hebrew side; a line in the welcome tour; the terms line.
+
+**Checked (on a local PostgreSQL 16; production is PostgreSQL 17, see Not checked):** a database built from `supabase/schema.sql` and one built from the schema before this change with the file run twice have the same functions, columns, constraints and indexes; 156 checks in `supabase/tests/hikes/` as Eretz Israel Tours, two guides and an organisation; the 98 limited-member checks still pass; the probe for the live database returns what it should on the local copy and leaves nothing behind. In preview (`supabase/tests/hikes/preview_walk.py`), 84 checks at phone and desktop size as Eretz Israel Tours, a guide and an organisation, with no page errors. A second session that wrote none of it tried to break it in four rounds, on the database and through the page. It found, among smaller things: a hike could be swapped between the moment Eretz Israel Tours read it and the approval; a route file could carry the recorder's name, email and times, and its own file name; a crafted route file could keep the database busy for minutes; a save already under way could land on a hike just approved. All of it was fixed and is in the checks; its fourth round found nothing it would hold the change for, and the three small points it raised then were fixed afterwards and are covered by the author's checks only.
+
+**Not checked:** production itself (the file has not been run there); PostgreSQL 17; a real phone; opening a route file in Israel Hiking Map or Amud Anan, which depends on the phone's own "open with"; Safari and Firefox.
+
+**For a lawyer, before it opens to colleagues:** the message about responsibility (a notice may not remove responsibility for safety information); reports that name where and when a group walked; taking facts from other websites.
+
+**Status:** built on the branch `hikes-tab`. **Not live.** The database file has not been run on production and nothing is merged.
+
+---
+
 ## D-30 · A real client's details never appear anywhere public; example text and sample data are invented (live)
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session (master agent), 7 October 2026, 13:11 Israel time, after a read-only report.
