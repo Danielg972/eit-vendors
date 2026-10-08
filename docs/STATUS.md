@@ -4,7 +4,7 @@
 
 *Short, factual status for the Cockpit Steward and other EIT projects. Updated by the Vendor Master session after any change that matters to them. The commit that last changed this file is its version.*
 
-**As of:** 7 October 2026
+**As of:** 8 October 2026
 
 ## Identity
 
@@ -16,6 +16,10 @@
 | Schema record | `supabase/schema.sql` (tables, functions, grants), plus `supabase/functions/files/index.ts` (edge function v11) |
 | Terms version | `2026-10-03c` live (adds 2c, organisations as limited members; `2026-10-03a` added 6d, jobs). `2026-10-03d` on the branch `guide-for-clients`: 3a malicious posts, 3c licensed guides and D1, 6e a guide's page for clients, 6f your own page and reviews. All draft, not yet reviewed by a lawyer |
 | Decisions | `docs/DECISIONS.md` (D-1 Cockpit boundary; D-2 quote tracker; D-3 driver reviews; D-4 transport by vehicle size; D-5 booking sheets; D-6 welcome tour, name, use-and-add rule; D-7 Shomer Shabbat badge, kosher restaurants only; D-8 opening hours, no-certificate needs approval; D-9 verified hours, last entry, hours from websites; D-10 official buttons; D-11 jobs between colleagues and My days, live for Eretz Israel Tours only; D-15 limited members: organisations that are not in tourism; D-13 food nearby only on places; D-12 a guide's page for clients; D-14 claimed pages, disputes, reviews; D-16 licensed guides only, D1 for Eshkol, malicious posts) |
+
+## In work: Hikes (D-31), branch `hikes-tab`, not live
+
+A Hikes tab: official marked trails with a route file (GPX), notes, distance and time, and a report members add after walking one. Built 8 October 2026 on the branch `hikes-tab`; **the database file `supabase/migrations/2026-10-08_hikes.sql` has not been run on production and nothing is merged.** It adds three tables (`hikes`, `hike_reports`, `hike_gpx`) and thirteen functions, and replaces `whoami` and `set_setting` (each gains only the hikes switch). When it goes live it opens to Eretz Israel Tours only, until the setting `hikes_for` is changed in the Team tab. No terms change in the branch. Nothing in it touches suppliers, prices, quotes or any field the Cockpit could read. Details: `docs/DECISIONS.md`, D-31.
 
 ## Integration with the Cockpit
 
@@ -69,6 +73,14 @@
 21. From D-14: matching a member to a page by phone or email can hide reviews from someone who merely shares a number with a business (an office line). Eretz Israel Tours sees the matches on the page and can judge.
 22. From D-16: "licensed" and "D1" are tags that the person adding an entry states. Nothing checks a license. A malicious post is found only when someone reports it or Eretz Israel Tours sees it.
 23. Two sessions changed the same functions on production on the same evening (limited members; guides, claims and reviews). It was caught before anything was overwritten because the fingerprints of the live functions were compared with the record first. Do that before every database change.
+
+### From D-31 (hikes), once live
+
+- Hike information is safety information: cliffs, firing zones, water. The app says no responsibility is taken and never says a route is open, but a notice may not remove responsibility. For the lawyer, with the terms line that is still to come.
+- A report says where and when a group walked, with its size and ages. The form asks for numbers only and no client names; nothing in the database can stop a member typing a name into a free-text box.
+- Opening a route file in a hiking app depends on the member's phone. It was not tried on a real phone.
+- Route files are kept as text in the database (up to 2 MB each): 250 files of that size would fill the free plan's 500 MB. A usual recording is far smaller.
+- Taking hikes from other websites has not started. Each source has to be read first for what it allows.
 
 ## Waiting for the owner
 

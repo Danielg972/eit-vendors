@@ -528,6 +528,26 @@ button.bkcard{display:block;width:100%;text-align:left;font:inherit;color:inheri
 .cpic .rm{position:absolute;top:4px;right:4px;border:0;border-radius:999px;background:var(--card);color:var(--bad);font-size:12px;padding:3px 8px;box-shadow:0 1px 4px rgba(0,0,0,.15)}
 .ccount{font-size:12px;color:var(--ink-3);text-align:right}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(140px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--ground);padding:10px 16px;border-radius:999px;font-size:14px;z-index:40;max-width:calc(100% - 32px)}
+/* Hikes (D-31) */
+.hk-reg{font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--ochre);font-weight:600;margin:14px 2px 6px}
+.hk-mark{display:inline-flex;flex:none;width:24px;height:14px;border:1px solid var(--ink-3);border-radius:2px;overflow:hidden}
+.hk-mark i{flex:1;background:#fff}
+.hk-mark.none{border-style:dashed;background:transparent}
+.hk-mrow{display:flex;align-items:center;gap:8px}
+.hk-warn{font-size:13.5px;border-radius:8px;padding:8px 10px;line-height:1.35;font-weight:500;margin-bottom:6px}
+.hk-warn.bad{background:var(--bad-wash);color:var(--bad)}
+.hk-warn.zone{background:var(--warn-wash);color:var(--warn)}
+.hk-src{font-size:12px;color:var(--ink-2);margin:0 2px 16px}
+.hk-rep{padding:12px 0;border-top:1px solid var(--line)}
+.hk-rep b{display:block}
+.hk-rep .meta{font-size:13px;color:var(--ink-2)}
+.hk-rep p{margin:6px 0 0;font-size:14px;color:var(--ink);white-space:pre-wrap;overflow-wrap:anywhere}
+.hk-mk{display:grid;grid-template-columns:auto minmax(0,1fr) minmax(0,1fr) 34px;gap:8px;align-items:center;margin-bottom:8px}
+.hk-mk select,.hk-mk input{width:100%;border:1px solid var(--line);background:var(--card);border-radius:8px;padding:10px 11px;font-size:16px}
+.hk-seg{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:6px}
+.hk-seg .tg{border-radius:8px;min-height:44px;padding:8px 6px;font-size:15px}
+button.act{font-family:inherit;cursor:pointer}
+a.hk-link,.hk-src a{color:var(--tab-on)}
 </style>
 <style>
 /* Base reset (the Claude preview adds this itself; the live site needs it) */
@@ -703,7 +723,7 @@ function sample(){
 }
 
 // ---------- state ----------
-const S = { jobs:null, jview:'open', jkind:'All', bookings:null, qview:'tracker', demoBookings:[], usage:{category:{},region:{}}, myTop:[], reg:'All', quotes:null, qt:{grp:'All',svc:'All',season:'All',q:'',sort:'new'}, demoDrivers:[], demoQuotes:{}, feedback:[], openVendor:null, files:{}, demo:{}, demoRequests:[], requests:[], token:null, members:[], user:null, admin:false, contributor:false, vendors:[], team:[], tab:'vendors', q:'', cats:[], subs:{}, busy:false };
+const S = { hikes:null, hreg:'All', hq:'', jobs:null, jview:'open', jkind:'All', bookings:null, qview:'tracker', demoBookings:[], usage:{category:{},region:{}}, myTop:[], reg:'All', quotes:null, qt:{grp:'All',svc:'All',season:'All',q:'',sort:'new'}, demoDrivers:[], demoQuotes:{}, feedback:[], openVendor:null, files:{}, demo:{}, demoRequests:[], requests:[], token:null, members:[], user:null, admin:false, contributor:false, vendors:[], team:[], tab:'vendors', q:'', cats:[], subs:{}, busy:false };
 let sb = null;
 
 function bump(vid,k,n){ const v=S.vendors.find(x=>x.id===vid); if(v) v[k]=Math.max(0,(v[k]||0)+n); }
@@ -828,7 +848,7 @@ const DB = {
     if(error) throw new Error(error.message);
     S.me = data; S.user = data?{email:data.email}:null;
     S.contributor = !!(data && data.status==='approved'); S.admin = !!(data && data.is_admin && S.contributor);
-    if(S.contributor){ await DB.loadVendors(); if(jobsOn()){ try{ S.jobs=await DB.loadJobs(); }catch(e){ S.jobs=null; } } try{ await DB.loadFeedback(); }catch(e){} if(S.admin){ await DB.loadTeam(); try{ await DB.loadRequests(); }catch(e){} try{ await DB.loadReports(); }catch(e){} try{ await DB.loadClaims(); await DB.loadPendingNotes(); }catch(e){} } }
+    if(S.contributor){ await DB.loadVendors(); if(jobsOn()){ try{ S.jobs=await DB.loadJobs(); }catch(e){ S.jobs=null; } } if(hikesOn()){ try{ S.hikes=await DB.loadHikes(); }catch(e){ S.hikes=null; } } try{ await DB.loadFeedback(); }catch(e){} if(S.admin){ await DB.loadTeam(); try{ await DB.loadRequests(); }catch(e){} try{ await DB.loadReports(); }catch(e){} try{ await DB.loadClaims(); await DB.loadPendingNotes(); }catch(e){} } }
   },
   async loadVendors(){ if(!LIVE) return; try{ S.vendors = await rpc('vendors_list'); }catch(e){ toast('Could not load vendors: '+e.message); } try{ S.myTop = await rpc('my_top'); }catch(e){ S.myTop=[]; } try{ S.usage = await rpc('my_usage'); }catch(e){} },
   async loadTeam(){ if(!LIVE) return; S.members = await rpc('members_list'); },
@@ -1292,9 +1312,10 @@ function useBump(kind, val){ if(!val||val==='All') return; /* order updates next
 function mixKey(v){ const seed=(S.user&&S.user.email||'')+new Date().toISOString().slice(0,10)+v.id; let h=2166136261; for(let i=0;i<seed.length;i++){ h^=seed.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
 
 function render(){
-  const pending = S.vendors.filter(v=>v.review_status==='pending').length + (S.requests||[]).length + (S.admin?(S.feedback||[]).filter(f=>f.status==='New').length+(S.reports||[]).filter(r=>r.status==='New').length+(S.claims||[]).length+(S.noteQueue||[]).length:0);
+  const pending = S.vendors.filter(v=>v.review_status==='pending').length + (S.requests||[]).length + hikesWaiting() + (S.admin?(S.feedback||[]).filter(f=>f.status==='New').length+(S.reports||[]).filter(r=>r.status==='New').length+(S.claims||[]).length+(S.noteQueue||[]).length:0);
   const waiting = S.members.filter(m=>m.status==='pending').length;
   const tabs = [['vendors','Suppliers',icons.list],['quotes','Quotes',icons.quote]];
+  if(hikesOn()) tabs.push(['hikes','Hikes',hkIcon]); else if(S.tab==='hikes') S.tab='vendors';
   if(jobsOn()) tabs.push(['jobs','Jobs',icons.jobs]); else if(S.tab==='jobs') S.tab='vendors';
   const newJobs = jobsOn()?jobsNew():0;
   if(S.admin){ tabs.push(['review','Review',icons.check]); tabs.push(['team','Team',icons.people]); }
@@ -1306,21 +1327,22 @@ function render(){
     ${LIVE?'':`<div class="demo-bar">Preview with sample suppliers. Changes here aren't saved. <label style="white-space:nowrap">View as<select id="demoAs">${Object.keys(DEMO_PEOPLE).map(k=>`<option value="${k}"${(S.demoAs||'admin')===k?' selected':''}>${esc(DEMO_PEOPLE[k].label)}</option>`).join('')}</select></label></div>`}
     ${S.me&&S.me.reminder_due?`<div style="padding:0 16px"><div class="rule" role="note"><span>🔒 <b>Colleagues only.</b> Never show this list to suppliers: not the app, screenshots, prices or notes. Anyone who does loses access.</span><button class="mini" id="ruleOk" type="button">Got it</button></div></div>`:''}
     <main id="view"></main>
-    ${S.tab==='vendors'?'<button class="fab" id="add">+ Add supplier</button>':''}${S.tab==='quotes'?(bookingsOn()&&S.qview==='bookings'?'<button class="fab" id="addB">+ New booking sheet</button>':'<button class="fab" id="addQ">+ Add quote</button>'):''}${S.tab==='jobs'&&jobsPost()&&S.jview!=='days'?'<button class="fab" id="addJ">+ Post a job</button>':''}
+    ${S.tab==='vendors'?'<button class="fab" id="add">+ Add supplier</button>':''}${S.tab==='quotes'?(bookingsOn()&&S.qview==='bookings'?'<button class="fab" id="addB">+ New booking sheet</button>':'<button class="fab" id="addQ">+ Add quote</button>'):''}${S.tab==='jobs'&&jobsPost()&&S.jview!=='days'?'<button class="fab" id="addJ">+ Post a job</button>':''}${S.tab==='hikes'?'<button class="fab" id="addH">+ Add hike</button>':''}
     ${tabs.length>1?`<nav class="tabs">${tabs.map(([k,l,ic])=>`<button class="tab" data-tab="${k}" ${S.tab===k?'aria-current="page"':''}>${ic}${l}${k==='review'&&pending?`<span class="badge">${pending}</span>`:''}${k==='team'&&waiting?`<span class="badge">${waiting}</span>`:''}${k==='jobs'&&newJobs?`<span class="badge">${newJobs}</span>`:''}</button>`).join('')}</nav>`:''}`;
   document.getElementById('fbBtn').onclick=()=>openFeedback();
   const me=document.getElementById('meBtn'); if(me) me.onclick=()=>{ if(S.me) openMySettings(); };
   const ro=document.getElementById('ruleOk'); if(ro) ro.onclick=async()=>{ S.me.reminder_due=false; render(); if(LIVE){ try{ await sb.rpc('ack_reminder',{p_token:S.token}); }catch(e){} } };
   const so=document.getElementById('signOut'); if(so) so.onclick=()=>{ if(so.dataset.c!=='1'){ so.dataset.c='1'; so.textContent='Tap again. You\'ll need your link to return.'; return; } forgetToken(); boot(); };
-  app.querySelectorAll('.tab').forEach(t=>t.onclick=async()=>{ S.tab=t.dataset.tab; if(S.tab==='quotes'){ S.quotes=null; S.bookings=null; } if(S.tab==='jobs'&&LIVE) S.jobs=null; render();
-    if(LIVE && S.tab==='review'){ try{ await DB.loadVendors(); await DB.loadRequests(); await DB.loadFeedback(); try{ await DB.loadReports(); }catch(e){} try{ await DB.loadClaims(); await DB.loadPendingNotes(); }catch(e){} render(); }catch(e){} }
+  app.querySelectorAll('.tab').forEach(t=>t.onclick=async()=>{ S.tab=t.dataset.tab; if(S.tab==='quotes'){ S.quotes=null; S.bookings=null; } if(S.tab==='jobs'&&LIVE) S.jobs=null; if(S.tab==='hikes'&&LIVE) S.hikes=null; render();
+    if(LIVE && S.tab==='review'){ try{ await DB.loadVendors(); await DB.loadRequests(); await DB.loadFeedback(); try{ await DB.loadReports(); }catch(e){} try{ await DB.loadClaims(); await DB.loadPendingNotes(); }catch(e){} if(hikesOn()){ try{ S.hikes=await DB.loadHikes(); }catch(e){} } render(); }catch(e){} }
     if(LIVE && S.tab==='team'){ try{ await DB.loadTeam(); render(); }catch(e){} } });
   const add=document.getElementById('add'); if(add) add.onclick=()=>openForm(null);
   const addQ=document.getElementById('addQ'); if(addQ) addQ.onclick=()=>openQuotePicker();
   const addB=document.getElementById('addB'); if(addB) addB.onclick=()=>bkExplain(openBookingPicker);
   const addJ=document.getElementById('addJ'); if(addJ) addJ.onclick=()=>openJobForm(null);
+  const addH=document.getElementById('addH'); if(addH) addH.onclick=()=>openHikeForm(null);
   const das=document.getElementById('demoAs'); if(das) das.onchange=()=>demoAs(das.value);
-  ({vendors:viewVendors, quotes:viewQuotes, jobs:viewJobs, review:viewReview, team:viewTeam})[S.tab]();
+  ({vendors:viewVendors, quotes:viewQuotes, hikes:viewHikes, jobs:viewJobs, review:viewReview, team:viewTeam})[S.tab]();
 }
 
 function suggestTerms(){
@@ -1524,6 +1546,7 @@ function viewReview(){
   const pend=S.vendors.filter(v=>v.review_status==='pending');
   const appr=S.vendors.filter(v=>v.review_status==='approved');
   view.innerHTML = `
+    ${hikesPanel()}
     ${claimsPanel()}
     ${notesPanel()}
     ${reportsPanel()}
@@ -1550,6 +1573,7 @@ function viewReview(){
   view.querySelectorAll('[data-ryes]').forEach(b=>b.onclick=()=>decide(b,true));
   wireFeedbackPanel(view);
   wireReviewQueues(view);
+  wireHikesPanel(view);
   view.querySelectorAll('[data-rp]').forEach(b=>b.onclick=async()=>{ b.disabled=true; try{ await DB.setReport(b.dataset.rp,b.dataset.st); toast(b.dataset.st==='Fixed'?'Marked done':'Dismissed'); render(); }catch(e){ b.disabled=false; toast(e.message); } });
   view.querySelectorAll('[data-rno]').forEach(b=>b.onclick=()=>decide(b,false));
   document.getElementById('exp').onclick=()=>exportR5(appr);
@@ -1589,6 +1613,10 @@ function viewTeam(){
       <div class="f"><label for="jobsFor">Who can use it</label><select id="jobsFor">${[['admin','Only you, for now'],['receive','Colleagues see and answer jobs and mark their days. Only you post.'],['all','Every colleague can post jobs too']].map(([k,l])=>`<option value="${k}"${((S.me&&S.me.jobs_for)||'admin')===k?' selected':''}>${l}</option>`).join('')}</select></div>
       <p class="hint" style="margin:8px 0 0">Change it once you have tried it yourself. You can change it back; jobs and days already saved are kept.</p>
     </section>`:''}
+    ${!LIVE||(S.me&&S.me.hikes_for)?`<section class="panel"><h3>Hikes</h3>
+      <p>Official marked trails with a route file, notes and what colleagues reported after walking them. <span id="hkAllNote">${S.me&&S.me.hikes_for==='all'?'Open to all colleagues.':'For now only you see the Hikes tab.'}</span></p>
+      <label class="switch" for="hkAll"><input id="hkAll" type="checkbox" ${S.me&&S.me.hikes_for==='all'?'checked':''}><span><b>Open Hikes to all colleagues</b><br><span class="hint">Colleagues and organisations then see the Hikes tab, add hikes (each one waits for your approval) and add reports. You can switch it off again; hikes and reports already saved are kept.</span></span></label>
+    </section>`:''}
     <section class="panel"><h3>Asking to join</h3>
       ${pend.length? pend.map(m=>`<div class="rev"><div class="who2"><b>${esc(m.name)}</b><span>${esc(m.role||'Role not given')}${m.org?' · '+esc(m.org):''}${m.license_no?` · license <span class="mono">${esc(m.license_no)}</span>`:''}<br>${esc(m.email)}${m.phone?' · '+esc(m.phone):''}${m.note?'<br>'+(/^No proof:/.test(m.note)?`<b style="color:var(--warn)">⚠ Asked to join without proof.</b> ${esc(m.note.replace(/^No proof:\s*/,''))}`:esc(m.note)):''}</span></div>
         ${m.credentials?`<div class="jnote" style="flex-basis:100%;margin:0"><b>Credentials, in their words</b><br>${esc(m.credentials)}</div>`:''}
@@ -1607,6 +1635,8 @@ function viewTeam(){
     try{ if(LIVE){ const { error } = await sb.rpc('set_setting',{p_token:S.token,p_key:'bcc_email',p_value:v}); if(error) throw new Error(error.message); } S.me.bcc_email=v.toLowerCase(); toast(v?'Email copies go to '+v:'Email copies turned off'); }catch(e){ toast(e.message); } };
   const bkAll=view.querySelector('#bkAll'); if(bkAll) bkAll.onchange=async e=>{ const on=e.target.checked;
     try{ if(LIVE){ const { error } = await sb.rpc('set_setting',{p_token:S.token,p_key:'bookings_for',p_value:on?'all':'admin'}); if(error) throw new Error(error.message); } S.me.bookings_for=on?'all':'admin'; toast(on?'Booking sheets are open to all colleagues':'Booking sheets are back to you only'); }catch(err){ e.target.checked=!on; toast(err.message); } };
+  const hkAll=view.querySelector('#hkAll'); if(hkAll) hkAll.onchange=async e=>{ const on=e.target.checked;
+    try{ if(LIVE){ const { error } = await sb.rpc('set_setting',{p_token:S.token,p_key:'hikes_for',p_value:on?'all':'admin'}); if(error) throw new Error(error.message); } S.me.hikes_for=on?'all':'admin'; const nt=view.querySelector('#hkAllNote'); if(nt) nt.textContent=on?'Open to all colleagues.':'For now only you see the Hikes tab.'; toast(on?'Hikes are open to all colleagues':'Hikes are back to you only'); }catch(err){ e.target.checked=!on; toast(err.message); } };
   const jf=view.querySelector('#jobsFor'); if(jf) jf.onchange=async()=>{ const v=jf.value, was=(S.me&&S.me.jobs_for)||'admin';
     try{ if(LIVE){ const { error } = await sb.rpc('set_setting',{p_token:S.token,p_key:'jobs_for',p_value:v}); if(error) throw new Error(error.message); } S.me.jobs_for=v; toast(v==='all'?'Every colleague can now see and post jobs':v==='receive'?'Colleagues now see the Jobs tab. Only you post.':'Jobs are back to you only'); }catch(err){ jf.value=was; toast(err.message); } };
   (async()=>{ const box=view.querySelector('#actAll'); if(!box) return;
@@ -2025,7 +2055,7 @@ const FB_KINDS=[['Suggestion','💡 Idea'],['Bug','🐞 Something broke'],['Ques
 const FB_STATUS=['New','Planned','Done',"Won't do"];
 function fbPill(st){ const c={New:'pending',Planned:'pending',Done:'approved',"Won't do":'inactive'}[st]||'pending'; return `<span class="pill ${c}">${esc(st)}</span>`; }
 function openFeedback(){
-  const where = S.openVendor ? 'Supplier: '+S.openVendor : ({vendors:'Suppliers list',quotes:'Quotes',review:'Review',team:'Team'}[S.tab]||S.tab);
+  const where = S.openVendor ? 'Supplier: '+S.openVendor : ({vendors:'Suppliers list',quotes:'Quotes',hikes:'Hikes',review:'Review',team:'Team'}[S.tab]||S.tab);
   const mine=(S.feedback||[]).filter(f=>f.author===(S.user.email||'').toLowerCase());
   const body=`<form id="fbf" novalidate>
     <p style="margin:0 0 12px;color:var(--ink-2)">Ideas, problems, questions: everything goes straight to Eretz Israel Tours.</p>
@@ -3763,10 +3793,10 @@ function demoAs(k){
   const KEEP=['vendors','demo','demoQuotes','demoBookings','requests','demoRequests','members','myTop','feedback','jobs','claims','noteQueue','reports'];
   if(S._demoSnap){ Object.assign(S, JSON.parse(S._demoSnap)); S._demoSnap=null; }   // leaving the organisation: the full sample data comes back
   if(k==='org'){ S._demoSnap=JSON.stringify(Object.fromEntries(KEEP.map(x=>[x,S[x]===undefined?null:S[x]]))); demoLimited(); S.demoAs='org'; S.contributor=true;
-    if(S.tab!=='vendors'&&S.tab!=='quotes') S.tab='vendors'; demoFlags(); closeSheet(); render(); return; }
+    if(S.tab!=='vendors'&&S.tab!=='quotes'&&S.tab!=='hikes') S.tab='vendors'; S.hikes=null; demoFlags(); closeSheet(); render(); return; }
   const p=DEMO_PEOPLE[k]||DEMO_PEOPLE.admin; S.demoAs=k; S.user={email:p.email};
   S.me={name:p.name,email:p.email,status:'approved',is_admin:p.is_admin,role:p.role,member_type:'full'}; S.admin=p.is_admin; S.contributor=true;
-  if(!S.admin && (S.tab==='review'||S.tab==='team')) S.tab='vendors'; demoFlags(); if(S.admin) DB.loadPendingNotes(); closeSheet(); render(); }
+  if(!S.admin && (S.tab==='review'||S.tab==='team')) S.tab='vendors'; S.hikes=null; demoFlags(); if(S.admin) DB.loadPendingNotes(); closeSheet(); render(); }
 function demoNoteSeen(n){ return S.admin || n.author===S.user.email || (!n.private && n.status!=='pending' && n.status!=='rejected'); }
 
 // ---------- a guide's page: the part written for clients (bio, up to four pictures, retail price) ----------
@@ -4238,6 +4268,447 @@ Object.assign(DB, {
     if(LIVE) return await rpc('my_days_prefs',{p_prefs:p});
     const m=demoJobsInit().me; if('weekly' in p) m.weekly=p.weekly; if('shared' in p) m.shared=p.shared!=='false'; if('kinds' in p) m.kinds=csv(p.kinds).includes('none')?'none':p.kinds; if('tags' in p) m.tags=p.tags; if('langs' in p) m.langs=p.langs;
     if('weekly' in p||p.confirm==='true') m.updated_at=new Date().toISOString(); return JSON.parse(JSON.stringify(m)); }
+});
+
+// ---------- Hikes (8 Oct 2026, D-31) ----------
+// Official marked trails: a route file (GPX), important notes, distance and usual time, start and end, trail markers.
+// After walking one, a member adds a report (group size, ages, difficulty, cliffs, water, bathrooms and the rest).
+// A member's new hike waits for Eretz Israel Tours' approval. Organisations see and add hikes like everyone else.
+// Names only: no email or phone ever reaches the page. No client names or trip details belong in any field.
+const HK_COLORS=[['red','Red','#c0392b'],['blue','Blue','#1d5fbf'],['green','Green','#2f7a4a'],['black','Black','#111111'],['israel_trail','Israel Trail',''],['other','Other','#8a8f8b']];
+const HK_DIFF=[['easy','Easy'],['moderate','Moderate'],['hard','Hard']], HK_SHOES=[['needed','Needed'],['useful','Useful'],['not_needed','Not needed']],
+  HK_ZONE=[['crosses','Crosses one'],['no','Does not'],['unsure','Not sure']], HK_WATER=[['yes','Yes'],['season','In season'],['no','No']], HK_YN=[['yes','Yes'],['no','No']],
+  HK_BATH=[['start','At the start'],['end','At the end'],['none','None']];
+const HK_APPS=[['Israel Hiking Map','https://israelhiking.osm.org.il/'],['Amud Anan','https://amudanan.co.il/']];
+const HK_SAFETY='https://www.mokedteva.co.il/InfoCenter/InfoPages';
+const HK_DISCLAIM="Hike details are colleagues' reports and notes taken from websites. Eretz Israel Tours and the members take no responsibility for them. Check the route, the weather and any firing zone yourself before every trip.";
+const HK_GPX_MAX=1900000, HK_GPX_THIN=1200000, HK_YEARS=3;
+const hikesOn=()=>!LIVE||!!(S.me&&S.me.hikes);
+const hkLab=(list,k)=>{ const x=list.find(y=>y[0]===k); return x?x[1]:''; };
+const hkIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20l6-12 4 7 2-3 6 8z"/><path d="M9 8V4l3 1.2L9 6.5"/></svg>';
+const hkFileIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7.5 11l4.5 4.5 4.5-4.5M5 20h14"/></svg>';
+const hkRepIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h10l4 4v12H5z"/><path d="M9 13h6M12 10v6"/></svg>';
+function hkMark(c){ const col=(HK_COLORS.find(x=>x[0]===c)||[])[2];
+  if(c==='israel_trail') return '<span class="hk-mark" aria-hidden="true"><i></i><i style="background:#1d5fbf"></i><i style="background:#e07b1a"></i></span>';
+  return col?`<span class="hk-mark" aria-hidden="true"><i></i><i style="background:${col}"></i><i></i></span>`:'<span class="hk-mark none" aria-hidden="true"></span>'; }
+const hkMarkTxt=m=>[hkLab(HK_COLORS,m.color), m.number?'trail '+m.number:''].filter(Boolean).join(', ');
+const hkKm=h=>h.distance_km?h.distance_km+' km':'';
+const hkTime=(h,long)=>h.hours_from?(h.hours_to?h.hours_from+'–'+h.hours_to:h.hours_from)+(long?(!h.hours_to&&+h.hours_from===1?' hour':' hours'):' h'):'';
+const hkN=h=>(h.r&&h.r.n)||0;
+const hkSrc=h=>h.source==='website'?'From a website, '+(h.source_year||'date not known'):'';
+const hkHost=u=>{ try{ return new URL(u).hostname.replace(/^www\./,''); }catch(e){ return 'the page'; } };
+// A start or end place is free text. Only a Waze or Google Maps link in it becomes a button; any other link stays plain text, in view.
+const HK_GOOGLE=['google.com','www.google.com','google.co.il','www.google.co.il','google.co.uk','www.google.co.uk','maps.google.com','maps.google.co.il','maps.google.co.uk'];
+function hkMapUrl(p){ for(const raw of String(p||'').match(/https?:\/\/[^\s<>"']+/gi)||[]){ let u; try{ u=new URL(raw); }catch(e){ continue; }
+    if(u.protocol!=='https:'&&u.protocol!=='http:') continue; if(u.username||u.password) continue; const h=u.hostname.toLowerCase(), path=u.pathname;
+    if(/%2e|%2f|%5c|\\|\.\./i.test(path)) continue;
+    if(['waze.com','www.waze.com','ul.waze.com'].includes(h) || h==='maps.app.goo.gl' || (h==='goo.gl'&&path.startsWith('/maps/'))
+      || (HK_GOOGLE.includes(h)&&(path==='/maps'||path.startsWith('/maps/')||(h.startsWith('maps.')&&path==='/')))) return raw; }
+  return ''; }
+const hkPlaceTxt=p=>{ const u=hkMapUrl(p), t=String(p||'').replace(u,'').trim(); return t||(u?'Map link':''); };
+function hkNav(place, name){ const url=hkMapUrl(place), ll=coordsOf(url), txt=String(place||'').replace(url,'').trim(), q=encodeURIComponent(txt||name||'');
+  let isWaze=false; try{ isWaze=!!url&&/(^|\.)waze\.com$/i.test(new URL(url).hostname); }catch(e){}
+  return { waze: ll?`https://waze.com/ul?ll=${ll}&navigate=yes`:(isWaze?url:`https://waze.com/ul?q=${q}&navigate=yes`),
+           maps: url&&!isWaze?url:`https://www.google.com/maps/search/?api=1&query=${ll||q}` }; }
+function hkPill(h){
+  if(h.review_status==='pending') return '<span class="pill pending">Waiting for approval</span>';
+  if(h.review_status==='rejected') return '<span class="pill rejected">Not listed</span>';
+  const n=hkN(h); if(n) return `<span class="pill approved">Walked · ${n} report${n>1?'s':''}</span>`;
+  if(h.source==='website') return `<span class="pill pending">Unverified</span><span>${esc(hkSrc(h))}</span>`;
+  return '<span class="pill reg">No report yet</span>';
+}
+function hkRow(h){ const r=h.r||{};
+  return `<button class="row" data-hk="${esc(h.id)}"><span class="row-name">${esc(h.name)}</span>
+    <span class="row-price"><b>${esc(hkKm(h))}</b><span>${esc(hkTime(h))}</span></span>
+    <span class="row-meta">${hkPill(h)}${r.difficulty?`<span>${esc(hkLab(HK_DIFF,r.difficulty))}</span>`:''}${r.cliffs==='yes'?'<span class="flag extra">Cliffs</span>':''}${r.water_shoes==='needed'?'<span class="flag info">Water shoes</span>':''}${r.firing_zone==='crosses'?'<span class="flag miss">Firing zone</span>':''}</span></button>`; }
+const hkRegions=list=>[...REGIONS.filter(r=>list.some(h=>h.region===r)), ...[...new Set(list.map(h=>h.region))].filter(r=>!REGIONS.includes(r)).sort()];
+async function reloadHikes(){ S.hikes=await DB.loadHikes(); if(S.tab==='hikes'||S.tab==='review') render(); }
+async function viewHikes(){
+  const view=document.getElementById('view');
+  if(!S.hikes){ view.innerHTML='<p class="hint" style="padding:24px 0">Loading hikes…</p>';
+    try{ S.hikes=await DB.loadHikes(); }catch(e){ if(S.tab==='hikes') view.innerHTML=`<div class="msg err">Couldn't load hikes: ${esc(e.message)}</div>`; return; }
+    if(S.tab==='hikes') render(); return; }
+  const regs=hkRegions(S.hikes); if(!S.hreg||(S.hreg!=='All'&&!regs.includes(S.hreg))) S.hreg='All';
+  view.innerHTML=`<div class="qt-intro"><h2>Hikes</h2><p>Official marked trails colleagues take groups on. Add the ones you know. After you walk one, add a report so the next guide knows what to expect.</p></div>
+    <label class="search" for="hq">${icons.search}<input id="hq" type="search" placeholder="Search hikes" value="${esc(S.hq||'')}" autocomplete="off"></label>
+    ${regs.length>1?`<div class="chips" role="group" aria-label="Filter hikes by region">${['All',...regs].map(r=>`<button class="chip" data-hreg="${esc(r)}" aria-pressed="${S.hreg===r}">${r==='All'?'All regions':esc(r||'No region')}</button>`).join('')}</div>`:''}
+    <div id="hkResults"></div>
+    <div class="disclaim">${esc(HK_DISCLAIM)} <a class="hk-link" href="${HK_SAFETY}" target="_blank" rel="noopener">Moked Teva: safety pages and firing zones</a></div>`;
+  const q=view.querySelector('#hq'); q.addEventListener('input',()=>{ S.hq=q.value; drawHikes(); });
+  view.querySelectorAll('[data-hreg]').forEach(c=>c.onclick=()=>{ S.hreg=c.dataset.hreg; viewHikes(); });
+  drawHikes();
+}
+function drawHikes(){
+  const box=document.getElementById('hkResults'); if(!box) return;
+  const n=normN(S.hq), all=S.hikes||[];
+  const rows=all.filter(h=>(S.hreg==='All'||h.region===S.hreg)&&(!n||normN([h.name,h.region,hkPlaceTxt(h.start_place),hkPlaceTxt(h.end_place),h.notes].join(' ')).includes(n)));
+  if(!all.length){ box.innerHTML='<div class="list" style="margin-top:14px"><div class="empty"><h3>No hikes yet</h3>Tap <b>Add hike</b> to add the first trail you know.</div></div>'; return; }
+  if(!rows.length){ box.innerHTML='<div class="list" style="margin-top:14px"><div class="empty"><h3>Nothing matches</h3>Try a shorter search or pick “All regions”.</div></div>'; return; }
+  box.innerHTML=`<div class="count">${rows.length===all.length?all.length:rows.length+' of '+all.length} hike${all.length>1?'s':''} · sorted by region</div>`+hkRegions(rows).map(r=>{ const hs=rows.filter(h=>h.region===r).sort((a,b)=>a.name.localeCompare(b.name));
+    return `<div class="hk-reg">${esc(r||'No region')} · ${hs.length}</div><div class="list">${hs.map(hkRow).join('')}</div>`; }).join('');
+  box.querySelectorAll('.row').forEach(r=>r.onclick=()=>openHike(r.dataset.hk));
+}
+function hkRepHtml(x){
+  const grp=[x.group_size?x.group_size+(x.group_size==='1'?' person':' people'):'', x.age_min&&x.age_max?'ages '+x.age_min+' to '+x.age_max:x.age_min?'youngest '+x.age_min:x.age_max?'oldest '+x.age_max:''].filter(Boolean).join(', ');
+  const bits=[[HK_DIFF,x.difficulty,'',''],[HK_YN,x.cliffs,'Cliffs: ',x.cliffs==='yes'?'extra':''],[HK_SHOES,x.water_shoes,'Water shoes: ',''],[HK_ZONE,x.firing_zone,'Firing zone: ',x.firing_zone==='crosses'?'miss':''],[HK_WATER,x.water_route,'Water on the route: ',''],[HK_YN,x.drinking_water,'Drinking water: ',''],[HK_YN,x.eat,'Eating: ','']]
+    .filter(b=>b[1]).map(b=>`<span class="flag ${b[3]||'info'}">${esc(b[2]+hkLab(b[0],b[1]).toLowerCase().replace(/^./,c=>b[2]?c:c.toUpperCase()))}</span>`);
+  const bath=String(x.bathrooms||'').split(',').map(k=>hkLab(HK_BATH,k)).filter(Boolean).join(', ').toLowerCase(); if(bath) bits.push(`<span class="flag info">Bathrooms: ${esc(bath)}</span>`);
+  const line=(k,v)=>v?`<p><span class="hint">${k}</span> ${esc(v)}</p>`:'';
+  return `<div class="hk-rep"><b>${esc(x.by)}${x.org?' <span class="tag">Organisation</span>':''}${x.mine?' <span class="tag">You</span>':''}</b>
+    <span class="meta">Walked ${esc(ilDate(x.walked_on))}${grp?' · '+esc(grp):''}</span>
+    ${bits.length?`<div class="flags">${bits.join('')}</div>`:''}
+    ${line('Cliffs:',x.cliffs_note)}${line('Points of interest:',x.poi)}${line('Where to eat:',x.eat_note)}${line('Start, as walked:',hkPlaceTxt(x.start_place))}${line('End, as walked:',hkPlaceTxt(x.end_place))}${x.note?`<p>${esc(x.note)}</p>`:''}
+    ${x.can_edit?`<div class="btn-row" style="margin-top:8px"><button class="mini" type="button" data-redit="${esc(x.id)}">Change</button><button class="mini" type="button" data-rhide="${esc(x.id)}">Take off</button></div>`:''}</div>`;
+}
+async function openHike(id){
+  let d; try{ d=await DB.hikeDetail(id); }catch(e){ toast(e.message); return; }
+  const h=d.hike, reps=d.reports||[], r=h.r||{}, n=hkN(h), nav=hkNav(h.start_place, h.name), mk=h.markers||[];
+  const row=(k,v)=>v?`<dt>${k}</dt><dd>${v}</dd>`:'';
+  const ages=r.age_min!=null&&r.age_max!=null?'ages '+r.age_min+' to '+r.age_max:r.age_min!=null?'youngest '+r.age_min:r.age_max!=null?'oldest '+r.age_max:'';
+  const groups=[r.group_min!=null?(r.group_min===r.group_max?r.group_min+(r.group_min===1?' person':' people'):r.group_min+' to '+r.group_max+' people'):'', ages].filter(Boolean).join(', ');
+  const sum=[['Difficulty',hkLab(HK_DIFF,r.difficulty)],['Cliffs (fear of heights)',hkLab(HK_YN,r.cliffs)],['Water shoes',hkLab(HK_SHOES,r.water_shoes)],['Firing zone',hkLab(HK_ZONE,r.firing_zone)],
+    ['Water on the route',hkLab(HK_WATER,r.water_route)],['Drinking water',hkLab(HK_YN,r.drinking_water)],['Bathrooms',String(r.bathrooms||'').split(',').map(k=>hkLab(HK_BATH,k)).filter(Boolean).join(', ')],
+    ['Eating on the hike',hkLab(HK_YN,r.eat)],['Groups that walked it',groups]].map(x=>row(x[0],esc(x[1]))).join('');
+  const src=h.source==='website'
+    ? `Taken from <a href="${esc(/^https?:\/\//i.test(h.source_url)?h.source_url:'#')}" target="_blank" rel="noopener">${esc(hkHost(h.source_url))}</a>, ${h.source_year?'page dated '+esc(h.source_year):'no date on the page'}. ${n?`Confirmed by ${n} colleague${n>1?'s':''} who walked it.`:'Unverified until a colleague has walked it.'}`
+    : `Added by ${esc(h.by)}${h.org?' (an organisation)':''}, ${esc(fmtDate(h.created_at))}.`;
+  const body=`<div style="display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin-bottom:14px"><span class="cat">${esc(h.region)}</span>${hkPill(h)}</div>
+    <div class="actions">
+      <a class="act" href="${esc(nav.waze)}" target="_blank" rel="noopener" title="Navigate to the start with Waze" aria-label="Navigate to the start with Waze">${bmark('waze',ic.nav)}Waze</a>
+      <a class="act" href="${esc(nav.maps)}" target="_blank" rel="noopener" title="Open the start with Google Maps" aria-label="Open the start with Google Maps">${bmark('google-maps',ic.maps)}Google Maps</a>
+      ${h.gpx?`<button class="act" type="button" data-hgpx>${hkFileIcon}Route file</button>`:''}
+      <button class="act" type="button" data-hrep>${hkRepIcon}Add report</button>
+    </div>
+    <dl class="dl">
+      ${row('Distance',`<span class="mono">${esc(hkKm(h))}</span>`.replace('<span class="mono"></span>',''))}
+      ${row('Usual time',`<span class="mono">${esc(hkTime(h,true))}</span>`.replace('<span class="mono"></span>',''))}
+      ${row('Start',esc(hkPlaceTxt(h.start_place)))}
+      ${row('End',h.is_loop?'A loop: it ends where it starts.':esc(hkPlaceTxt(h.end_place)))}
+      ${mk.length?row('Trail markers',`<span style="display:flex;flex-direction:column;gap:6px">${mk.map(m=>`<span class="hk-mrow">${hkMark(m.color)}<span>${esc(hkMarkTxt(m))}</span></span>`).join('')}${mk.length>1?'<span class="hint">In walking order</span>':''}</span>`):''}
+      ${h.gpx?row('Route file (GPX)',`On file<div class="hint">From ${esc(h.gpx.by)}, ${esc(fmtDate(h.gpx.at))}</div>`):row('Route file (GPX)','<span class="hint">None yet. Add one with your report.</span>')}
+    </dl>
+    ${r.cliffs==='yes'?'<div class="hk-warn bad">Cliffs on the way. Not for a fear of heights.</div>':''}
+    ${r.firing_zone==='crosses'?'<div class="hk-warn zone">Crosses a firing zone. Check that it is open before every trip.</div>':''}
+    ${h.notes?`<section class="panel" style="margin:10px 0 8px"><h3>Important notes</h3><p style="color:var(--ink);white-space:pre-wrap;overflow-wrap:anywhere;margin:0">${esc(h.notes)}</p></section>`:''}
+    <p class="hk-src">${src}</p>
+    <section class="panel"><h3>From colleagues who walked it</h3>
+      <p>${n?`${n} report${n>1?'s':''}, the latest walk on ${esc(ilDate(r.last))}`:'Nobody has reported on this hike yet. Walked it? Add what you saw.'}</p>
+      ${n&&sum?`<dl class="dl" style="border:0;padding:0;background:transparent;margin-bottom:6px">${sum}</dl>`:''}
+      ${reps.map(hkRepHtml).join('')}
+      <button class="btn accent" type="button" data-hrep style="width:100%;margin-top:10px">+ Add your report</button>
+    </section>
+    <section class="panel"><h3>Before every trip</h3><p style="margin:0"><a class="hk-link" href="${HK_SAFETY}" target="_blank" rel="noopener">Moked Teva: safety pages and firing zones</a></p></section>
+    <div class="disclaim">${esc(HK_DISCLAIM)}</div>
+    ${S.admin&&h.review_status!=='pending'?`<p style="margin:0"><button class="linkbtn" type="button" data-hdec="${h.review_status==='approved'?'no':'yes'}">${h.review_status==='approved'?'Take this hike off the list':'Put this hike back on the list'}</button></p>`:''}`;
+  const foot=`${h.can_edit?'<button class="btn soft" type="button" data-hedit>Change details</button>':'<button class="btn soft" type="button" data-hsug>Suggest a change</button>'}${S.admin&&h.review_status==='pending'?'<button class="btn soft" type="button" data-hdec="no">Turn down</button><button class="btn primary" type="button" data-hdec="yes">Approve</button>':''}`;
+  const w=sheet(h.name, body, foot);
+  w.querySelectorAll('[data-hrep]').forEach(b=>b.onclick=()=>openHikeReport(h, null));
+  const g=w.querySelector('[data-hgpx]'); if(g) g.onclick=()=>hkOpenGpx(h);
+  const ed=w.querySelector('[data-hedit]'); if(ed) ed.onclick=()=>openHikeForm(h);
+  const sg=w.querySelector('[data-hsug]'); if(sg) sg.onclick=()=>openHikeSuggest(h);
+  w.querySelectorAll('[data-hdec]').forEach(b=>b.onclick=async()=>{ const yes=b.dataset.hdec==='yes'; b.disabled=true;
+    try{ await DB.decideHike(h.id, yes, h.updated_at); toast(yes?'Approved. Colleagues can see it now.':'Taken off the list. It is kept, and you can put it back.'); closeSheet(); await reloadHikes(); }catch(e){ b.disabled=false; toast(e.message); if(/changed after/.test(e.message)){ try{ S.hikes=await DB.loadHikes(); }catch(e2){} openHike(h.id); } } });
+  w.querySelectorAll('[data-redit]').forEach(b=>b.onclick=()=>openHikeReport(h, reps.find(x=>x.id===b.dataset.redit)));
+  w.querySelectorAll('[data-rhide]').forEach(b=>b.onclick=async()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again to take it off'; return; } b.disabled=true;
+    try{ await DB.hideHikeReport(b.dataset.rhide); toast('Report taken off'); S.hikes=await DB.loadHikes(); if(S.tab==='hikes') render(); openHike(h.id); }catch(e){ b.disabled=false; toast(e.message); } });
+}
+function openHikeSuggest(h){
+  const w=sheet('Suggest a change', `<p style="margin:0 0 12px;color:var(--ink-2)">${esc(h.name)}. Say what is wrong or what has changed. Eretz Israel Tours reads it and updates the hike.</p>
+    <div class="f"><label for="hsT">What should change?</label><textarea id="hsT" rows="5" maxlength="2000" placeholder="The trailhead moved, the distance is closer to 6 km, the canyon is closed after rain…"></textarea></div><div class="msg err" id="hsE" hidden></div>`,
+    '<button class="btn soft" type="button" id="hsBack">Back</button><button class="btn primary" type="button" id="hsSend">Send</button>');
+  w.querySelector('#hsBack').onclick=()=>openHike(h.id);
+  w.querySelector('#hsSend').onclick=async e=>{ const t=w.querySelector('#hsT').value.trim(), err=w.querySelector('#hsE'); if(t.length<3){ err.textContent='Write what should change.'; err.hidden=false; return; }
+    e.target.disabled=true; try{ await DB.sendFeedback('Suggestion', t, ('Hike: '+h.name).slice(0,300), null); try{ await DB.loadFeedback(); }catch(e2){} toast('Sent to Eretz Israel Tours. Thank you.'); openHike(h.id); }catch(x){ e.target.disabled=false; err.textContent=x.message; err.hidden=false; } };
+}
+// A route file opens in a hiking app: on a phone that lets the browser hand a file over, straight from here; otherwise it is saved and opened from the phone's files.
+async function hkOpenGpx(h){
+  let g; try{ g=await DB.hikeGpx(h.id); }catch(e){ toast(e.message); return; }
+  const name=(String(h.name||'').normalize('NFKD').replace(/[^A-Za-z0-9\u05d0-\u05ea]+/g,'-').replace(/^-+|-+$/g,'').slice(0,60)||'route')+'.gpx';
+  let file=null; try{ file=new File([g.body], name, {type:'application/gpx+xml'}); }catch(e){}
+  let canShare=false; try{ canShare=!!(file&&navigator.canShare&&navigator.canShare({files:[file]})); }catch(e){}
+  const save=()=>{ try{ const url=URL.createObjectURL(new Blob([g.body],{type:'application/gpx+xml'})); const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),5000); return true; }catch(e){ toast('Could not save the file.'); return false; } };
+  const old=document.getElementById('hkModal'); if(old) old.remove();
+  const el=document.createElement('div'); el.className='modal'; el.id='hkModal';
+  el.innerHTML=`<div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="hkMT"><h3 id="hkMT">Route file</h3>
+    <p style="overflow-wrap:anywhere"><b>${esc(name)}</b><br><span class="hint">${esc(h.name)}</span></p>
+    ${canShare?'<button class="btn primary" type="button" data-g="share">Open in a hiking app</button>':''}
+    <button class="btn ${canShare?'soft':'primary'}" type="button" data-g="save">Save the file</button>
+    <p class="hint" id="hkMH" style="margin:4px 0 12px">${canShare?'Your phone shows its apps: choose your hiking app.':'Then open the saved file and choose your hiking app.'} It opens in any app that reads GPX files, such as ${HK_APPS.map(a=>`<a href="${a[1]}" target="_blank" rel="noopener">${a[0]}</a>`).join(' or ')}.</p>
+    <button class="btn soft" type="button" data-g="x">Close</button></div>`;
+  document.body.appendChild(el);
+  el.addEventListener('click',e=>{ if(e.target===el) el.remove(); });
+  el.querySelector('[data-g="x"]').onclick=()=>el.remove();
+  el.querySelector('[data-g="save"]').onclick=()=>{ if(save()) el.querySelector('#hkMH').textContent='Saved. Open the file from your downloads and choose your hiking app, such as '+HK_APPS.map(a=>a[0]).join(' or ')+'.'; };
+  const sh=el.querySelector('[data-g="share"]'); if(sh) sh.onclick=async()=>{ try{ await navigator.share({files:[file], title:h.name}); el.remove(); }catch(e){ if(e&&e.name!=='AbortError') toast('Could not hand the file over. Save it instead.'); } };
+}
+// Only the route leaves the phone. The file is read, and a new one is written from its points alone: track points,
+// route points and up to 200 marked spots, each with its place, its height if it has one, and for a marked spot a short
+// name. The recorder's name, email, the times of the walk, the name he gave the recording and any extra data a recording
+// app wrote all stay behind. A very long recording is thinned until it fits. The database takes exactly this form and
+// nothing else (_hike_gpx_put), so keep the two in step: one <gpx> opening tag, lat before lon, no spaces between tags.
+const HK_GPX_HEAD='<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="The Inner Circle">';
+function hkCleanGpx(text){
+  const bad='That does not look like a GPX route file. Save the route as GPX from your hiking app.';
+  const doc=new DOMParser().parseFromString(text,'application/xml');
+  if(doc.getElementsByTagName('parsererror').length||!doc.documentElement||doc.documentElement.localName!=='gpx') throw new Error(bad);
+  const kids=(el,name)=>[...el.children].filter(c=>c.localName===name);
+  const txt=(el,name)=>{ const c=kids(el,name)[0]; return c?String(c.textContent||'').replace(/[\s\u0000-\u001f\u007f]+/g,' ').trim():''; };
+  const xesc=t=>t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const pt=src=>{ const la=parseFloat(src.getAttribute('lat')), lo=parseFloat(src.getAttribute('lon')); if(!(la>=-90&&la<=90&&lo>=-180&&lo<=180)) return null;
+    const e=+parseFloat(txt(src,'ele')).toFixed(1); return {a:String(+la.toFixed(6)), o:String(+lo.toFixed(6)), e:isFinite(e)&&Math.abs(e)<100000?String(e):''}; };
+  const wpts=kids(doc.documentElement,'wpt').map(w=>{ const p=pt(w); if(p) p.n=[...txt(w,'name').replace(/[\ufffe\uffff]/g,'')].slice(0,60).join('').trim(); return p; }).filter(Boolean).slice(0,200);
+  const rtes=kids(doc.documentElement,'rte').map(r=>kids(r,'rtept').map(pt).filter(Boolean)).filter(a=>a.length);
+  const trks=kids(doc.documentElement,'trk').map(t=>kids(t,'trkseg').map(g=>kids(g,'trkpt').map(pt).filter(Boolean)).filter(a=>a.length)).filter(a=>a.length);
+  const count=()=>rtes.reduce((n,a)=>n+a.length,0)+trks.reduce((n,t)=>n+t.reduce((m,g)=>m+g.length,0),0);
+  if(count()<2) throw new Error('That route file has no route in it.');
+  const one=(tag,p)=>`<${tag} lat="${p.a}" lon="${p.o}"`+(p.e||p.n?`>${p.e?`<ele>${p.e}</ele>`:''}${p.n?`<name>${xesc(p.n)}</name>`:''}</${tag}>`:'/>');
+  const write=()=>HK_GPX_HEAD+wpts.map(p=>one('wpt',p)).join('')+rtes.map(a=>'<rte>'+a.map(p=>one('rtept',p)).join('')+'</rte>').join('')
+    +trks.map(t=>'<trk>'+t.map(g=>'<trkseg>'+g.map(p=>one('trkpt',p)).join('')+'</trkseg>').join('')+'</trk>').join('')+'</gpx>';
+  const half=a=>a.filter((p,i)=>i%2===0||i===a.length-1);
+  let out=write(), guard=0;
+  while(out.length>HK_GPX_THIN && guard++<12){ rtes.forEach((a,i)=>{ rtes[i]=half(a); }); trks.forEach(t=>t.forEach((g,i)=>{ t[i]=half(g); })); out=write(); }
+  return out;
+}
+async function hkReadGpx(file){
+  if(!file) return null; if(file.size>25000000) throw new Error('That file is too large to be a route file.');
+  const buf=new Uint8Array(await file.arrayBuffer()); let enc='utf-8';
+  if(buf[0]===0xFF&&buf[1]===0xFE) enc='utf-16le'; else if(buf[0]===0xFE&&buf[1]===0xFF) enc='utf-16be';
+  else{ const m=/encoding\s*=\s*["']([\w.:-]+)["']/i.exec(new TextDecoder('latin1').decode(buf.slice(0,300))); if(m&&!/^utf-?16|^ucs/i.test(m[1])){ try{ new TextDecoder(m[1]); enc=m[1]; }catch(e){} } }   // a file that says UTF-16 but has no byte-order mark is read as UTF-8
+  let t=new TextDecoder(enc).decode(buf).replace(/^﻿/,'').trim();
+  if(/<!ENTITY/i.test(t)) throw new Error('That route file holds something a GPX file should not. Save it again from your hiking app.');
+  t=hkCleanGpx(t);
+  if(t.length>HK_GPX_MAX) throw new Error('That route file is too large. Save it with fewer points and try again.');
+  return {gpx:t};
+}
+const hkGpxBox=(id,label,have)=>`<div class="upl"><span style="font-size:13px;color:var(--ink-2);flex-basis:100%">${label}</span>
+    <input type="file" id="${id}" hidden><button class="btn soft" type="button" data-pick="${id}">${have?'Choose another GPX file':'Choose a GPX file'}</button><span id="${id}N" style="font-size:14px;overflow-wrap:anywhere">${have?'This hike has a route file':''}</span>
+    <span class="hint">Your own recording, or a route you drew on an open map. Not a file copied from another site. Only the route is kept: not your name, not the file's name, and not the date or times of the walk.</span></div>`;
+function hkWireGpx(root, id, onFile){ const inp=root.querySelector('#'+id), nm=root.querySelector('#'+id+'N'); root.querySelector(`[data-pick="${id}"]`).onclick=()=>inp.click();
+  inp.onchange=async()=>{ const f=inp.files&&inp.files[0]; if(!f) return; try{ const g=await hkReadGpx(f); nm.textContent='Route read · ready to save'; onFile(g); }catch(e){ inp.value=''; nm.textContent=''; onFile(null); toast(e.message); } }; }
+function openHikeForm(h0){
+  const h=h0||{}, edit=!!h.id; let gpx=null;
+  const mks=(h.markers||[]).map(m=>({color:m.color||'',number:m.number||''})); if(!mks.length) mks.push({color:'',number:''});
+  const regs=REGIONS.filter(r=>r!=='Countrywide'); if(h.region&&!regs.includes(h.region)) regs.push(h.region);
+  const y=new Date().getFullYear();
+  const body=`<form id="hkf" novalidate>
+    <fieldset><legend>The hike</legend>
+      <div class="f" style="margin-bottom:10px"><label for="hkName">Name <em>*</em></label><input id="hkName" maxlength="120" value="${esc(h.name||'')}" placeholder="The name guides know it by" autocomplete="off"></div>
+      <div class="f" style="margin-bottom:10px"><label for="hkRegion">Region <em>*</em></label><select id="hkRegion"><option value="">Choose a region</option>${regs.map(r=>`<option${h.region===r?' selected':''}>${esc(r)}</option>`).join('')}</select></div>
+      <label class="check" for="hkOff" style="margin-bottom:0"><input id="hkOff" type="checkbox"${edit?' checked':''}><span><b>This is an official marked trail.</b> Only official marked trails are listed.</span></label>
+    </fieldset>
+    <fieldset><legend>The route</legend>
+      ${hkGpxBox('hkFile','Route file (GPX)', !!h.gpx)}
+      <div class="f" style="margin:14px 0 6px"><label>Trail markers and numbers, in walking order <span class="hint">(if you know them)</span></label></div>
+      <div id="hkMk"></div>
+      <button class="mini" type="button" id="hkMkAdd">+ Add another marker</button>
+      <p class="hint" style="margin:6px 0 14px">The colour painted along the trail and the number on the trail map.</p>
+      <div class="grid" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:10px">
+        <div class="f"><label for="hkKm">Distance, km <em>*</em></label><input id="hkKm" inputmode="decimal" maxlength="6" value="${esc(h.distance_km||'')}"></div>
+        <div class="f"><label for="hkH1">Hours, from <em>*</em></label><input id="hkH1" inputmode="decimal" maxlength="5" value="${esc(h.hours_from||'')}"></div>
+        <div class="f"><label for="hkH2">Hours, to</label><input id="hkH2" inputmode="decimal" maxlength="5" value="${esc(h.hours_to||'')}"></div>
+      </div>
+      <div class="f" style="margin-bottom:10px"><label for="hkStart">Start location</label><input id="hkStart" maxlength="300" value="${esc(h.start_place||'')}" placeholder="A place name, or a map link"></div>
+      <div class="f" id="hkEndBox"><label for="hkEnd">End location</label><input id="hkEnd" maxlength="300" value="${esc(h.end_place||'')}" placeholder="A place name, or a map link"></div>
+      <label class="check" for="hkLoop" style="margin:8px 0 0"><input id="hkLoop" type="checkbox"${h.is_loop?' checked':''}><span>Same as the start (a loop)</span></label>
+    </fieldset>
+    <fieldset><legend>Important notes</legend>
+      <div class="f"><textarea id="hkNotes" rows="3" maxlength="2000" aria-label="Important notes" placeholder="What a guide must know before taking a group: floods, shade, where the ride waits">${esc(h.notes||'')}</textarea></div>
+    </fieldset>
+    <fieldset><legend>Where this is from</legend>
+      <label class="check" for="hkSrcW" style="margin:0 0 6px"><input id="hkSrcW" type="radio" name="hkSrc" value="walked"${h.source!=='website'?' checked':''}><span>I walked it</span></label>
+      <label class="check" for="hkSrcS" style="margin:0 0 8px"><input id="hkSrcS" type="radio" name="hkSrc" value="website"${h.source==='website'?' checked':''}><span>A website</span></label>
+      <div id="hkWeb"><div class="grid" style="grid-template-columns:minmax(0,2fr) minmax(0,1fr)">
+        <div class="f"><label for="hkUrl">Link to the page <em>*</em></label><input id="hkUrl" type="url" maxlength="500" value="${esc(h.source_url||'')}" placeholder="https://"></div>
+        <div class="f"><label for="hkYear">Page dated</label><input id="hkYear" inputmode="numeric" maxlength="4" value="${esc(h.source_year||'')}" placeholder="${y}"></div></div>
+        <p class="hint" style="margin:6px 0 0">Write the facts in your own words; do not copy the page's text or its route file. It shows as Unverified until a colleague has walked it. Pages older than ${HK_YEARS} years are not taken. No date on the page? Leave the year empty.</p></div>
+    </fieldset>
+    ${S.admin?'':'<div class="msg ok" style="margin:0 0 10px">A new hike shows to colleagues once Eretz Israel Tours has approved it.</div>'}
+    <p class="hint" style="margin:0">After you walk it, add a report: group size, ages, difficulty, cliffs, water and the rest.</p>
+    <div class="msg err" id="hkErr" hidden></div>
+  </form>`;
+  const w=sheet(edit?'Change this hike':'Add a hike', body, `<button class="btn soft" type="button" id="hkCancel">Cancel</button><button class="btn primary" type="button" id="hkSave">${edit?'Save':'Save hike'}</button>`);
+  const $=s=>w.querySelector(s), err=$('#hkErr'), fail=(m,sel)=>{ err.textContent=m; err.hidden=false; err.scrollIntoView({block:'nearest'}); if(sel){ const el=$(sel); if(el) el.focus(); } };
+  const drawMk=()=>{ $('#hkMk').innerHTML=mks.map((m,i)=>`<div class="hk-mk">${hkMark(m.color)}<select data-mc="${i}" aria-label="Marker ${i+1}, colour"><option value="">Colour</option>${HK_COLORS.map(c=>`<option value="${c[0]}"${m.color===c[0]?' selected':''}>${c[1]}</option>`).join('')}</select>
+      <input data-mn="${i}" inputmode="numeric" maxlength="6" value="${esc(m.number)}" placeholder="Trail number" aria-label="Marker ${i+1}, trail number">${mks.length>1?`<button class="x" type="button" data-mx="${i}" aria-label="Take marker ${i+1} off">×</button>`:'<span></span>'}</div>`).join('');
+    $('#hkMkAdd').hidden=mks.length>=8;
+    w.querySelectorAll('[data-mc]').forEach(s=>s.onchange=()=>{ mks[+s.dataset.mc].color=s.value; drawMk(); });
+    w.querySelectorAll('[data-mn]').forEach(s=>s.oninput=()=>{ mks[+s.dataset.mn].number=s.value.replace(/\D/g,''); });
+    w.querySelectorAll('[data-mx]').forEach(s=>s.onclick=()=>{ mks.splice(+s.dataset.mx,1); drawMk(); }); };
+  drawMk(); $('#hkMkAdd').onclick=()=>{ if(mks.length<8){ mks.push({color:'',number:''}); drawMk(); } };
+  const sync=()=>{ $('#hkEndBox').hidden=$('#hkLoop').checked; $('#hkWeb').hidden=!$('#hkSrcS').checked; };
+  $('#hkLoop').onchange=sync; $('#hkSrcW').onchange=sync; $('#hkSrcS').onchange=sync; sync();
+  hkWireGpx(w, 'hkFile', g=>{ gpx=g; });
+  $('#hkCancel').onclick=()=>{ if(edit) openHike(h.id); else closeSheet(); };
+  $('#hkSave').onclick=async e=>{
+    const num=s=>String($(s).value||'').trim().replace(',','.');
+    const d={ id:h.id||'', name:$('#hkName').value.trim(), region:$('#hkRegion').value, official:$('#hkOff').checked, distance_km:num('#hkKm'), hours_from:num('#hkH1'), hours_to:num('#hkH2'),
+      start_place:$('#hkStart').value.trim(), end_place:$('#hkEnd').value.trim(), is_loop:$('#hkLoop').checked, markers:mks.filter(m=>m.color||m.number), notes:$('#hkNotes').value.trim(),
+      source:$('#hkSrcS').checked?'website':'walked', source_url:$('#hkUrl').value.trim(), source_year:$('#hkYear').value.trim() };
+    d.name=d.name.replace(/[\u200b\u2060\ufeff\u3164\u115f\u1160\uffa0]/g,'').replace(/[\s\u0000-\u001f\u007f\u00a0]+/g,' ').trim(); if(d.name.length<3) return fail('Add the name of the hike.','#hkName');
+    if(!d.region) return fail('Choose the region.','#hkRegion');
+    if(!d.official) return fail('Only official marked trails are listed. Tick the box if this is one.','#hkOff');
+    if(!(S.admin&&!d.distance_km)&&(!/^[0-9]{1,3}(\.[0-9]{1,2})?$/.test(d.distance_km)||+d.distance_km<=0)) return fail('Add the distance in kilometres, as a number.','#hkKm');
+    if(!(S.admin&&!d.hours_from)&&(!/^[0-9]{1,2}(\.[0-9]{1,2})?$/.test(d.hours_from)||+d.hours_from<=0)) return fail('Add how long it usually takes, in hours.','#hkH1');
+    if(d.hours_to&&!d.hours_from) return fail('Add how long it usually takes, in hours.','#hkH1');
+    if(d.hours_to&&(!/^[0-9]{1,2}(\.[0-9]{1,2})?$/.test(d.hours_to)||+d.hours_to<+d.hours_from)) return fail('The longer time is less than the shorter one.','#hkH2');
+    if(d.source==='website'){ if(!/^https?:\/\/\S+\.\S+$/i.test(d.source_url)) return fail('Add the link to the page the hike is from.','#hkUrl');
+      if(d.source_year&&!/^[0-9]{4}$/.test(d.source_year)) return fail('Write the year the page is dated, or leave it empty.','#hkYear');
+      if(d.source_year&&+d.source_year>y) return fail('That year has not come yet.','#hkYear');
+      if(d.source_year&&+d.source_year<y-HK_YEARS&&!(edit&&h.source==='website'&&h.source_year===d.source_year)) return fail('Pages older than '+HK_YEARS+' years are not taken.','#hkYear'); }
+    if(gpx) Object.assign(d, gpx);
+    e.target.disabled=true; err.hidden=true;
+    try{ const saved=await DB.saveHike(d); S.hikes=await DB.loadHikes(); if(S.tab==='hikes'||S.tab==='review') render();
+      toast(edit?'Saved':saved.review_status==='pending'?'Saved. It shows to colleagues once Eretz Israel Tours has approved it.':'Saved. Colleagues can see it now.'); openHike(saved.id);
+    }catch(x){ e.target.disabled=false; fail(x.message); }
+  };
+}
+function openHikeReport(h, r0){
+  const r=r0||{}, edit=!!r.id; let gpx=null;
+  const seg=(key,list,val)=>`<div class="hk-seg" data-seg="${key}" role="group">${list.map(([k,l])=>`<button type="button" class="tg" data-val="${k}" aria-pressed="${val===k}">${l}</button>`).join('')}</div>`;
+  const bath=String(r.bathrooms||'').split(',');
+  const body=`<form id="hrf" novalidate><p style="margin:0 0 14px;color:var(--ink-2)">${esc(h.name)}</p>
+    <fieldset><legend>The group</legend>
+      <div class="grid" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+        <div class="f"><label for="hrDate">Date walked <em>*</em></label><input id="hrDate" type="date" max="${today()}" value="${esc(r.walked_on||'')}"></div>
+        <div class="f"><label for="hrSize">Group size</label><input id="hrSize" inputmode="numeric" maxlength="3" value="${esc(r.group_size||'')}"></div>
+        <div class="f"><label for="hrA1">Youngest, age</label><input id="hrA1" inputmode="numeric" maxlength="3" value="${esc(r.age_min||'')}"></div>
+        <div class="f"><label for="hrA2">Oldest, age</label><input id="hrA2" inputmode="numeric" maxlength="3" value="${esc(r.age_max||'')}"></div>
+      </div>
+      <p class="hint" style="margin:6px 0 0">Numbers only. No client names and no trip details.</p>
+    </fieldset>
+    <fieldset><legend>The walk</legend>
+      <div class="f" style="margin-bottom:12px"><label>Difficulty level</label>${seg('difficulty',HK_DIFF,r.difficulty)}</div>
+      <div class="f" style="margin-bottom:12px"><label>Cliffs (fear of heights)</label>${seg('cliffs',HK_YN,r.cliffs)}<input id="hrCliff" maxlength="200" value="${esc(r.cliffs_note||'')}" placeholder="Where, and how exposed" aria-label="About the cliffs" style="margin-top:6px"></div>
+      <div class="f"><label>Water shoes</label>${seg('water_shoes',HK_SHOES,r.water_shoes)}</div>
+    </fieldset>
+    <fieldset><legend>Start and end</legend>
+      <div class="f" style="margin-bottom:10px"><label for="hrStart">Start location</label><input id="hrStart" maxlength="300" value="${esc(r.start_place||h.start_place||'')}"></div>
+      <div class="f"><label for="hrEnd">End location</label><input id="hrEnd" maxlength="300" value="${esc(r.end_place||(h.is_loop?'':h.end_place)||'')}" placeholder="${h.is_loop?'Same as the start':''}"></div>
+      <p class="hint" style="margin:6px 0 0">Change these only if you started or ended somewhere else.</p>
+    </fieldset>
+    <fieldset><legend>On the way</legend>
+      <div class="f" style="margin-bottom:12px"><label for="hrPoi">Points of interest</label><textarea id="hrPoi" rows="2" maxlength="600" placeholder="What is worth stopping for">${esc(r.poi||'')}</textarea></div>
+      <div class="f" style="margin-bottom:12px"><label>Firing zone</label>${seg('firing_zone',HK_ZONE,r.firing_zone)}<span class="hint">This says only whether the route crosses one. It never says the route is open.</span></div>
+      <div class="f" style="margin-bottom:12px"><label>Water on the route (springs, pools)</label>${seg('water_route',HK_WATER,r.water_route)}</div>
+      <div class="f" style="margin-bottom:12px"><label>Drinking water</label>${seg('drinking_water',HK_YN,r.drinking_water)}</div>
+      <div class="f" style="margin-bottom:12px"><label>Bathrooms</label><div class="hk-seg" id="hrBath" role="group">${HK_BATH.map(([k,l])=>`<button type="button" class="tg" data-k="${k}" aria-pressed="${bath.includes(k)}">${l}</button>`).join('')}</div></div>
+      <div class="f"><label>Can you eat on the hike?</label>${seg('eat',HK_YN,r.eat)}<input id="hrEat" maxlength="200" value="${esc(r.eat_note||'')}" placeholder="Where: shade, a flat spot, tables" aria-label="Where to eat" style="margin-top:6px"></div>
+    </fieldset>
+    <fieldset><legend>Anything else</legend>
+      <div class="f"><textarea id="hrNote" rows="3" maxlength="1500" aria-label="Anything else" placeholder="What you would tell a colleague before they take a group">${esc(r.note||'')}</textarea></div>
+    </fieldset>
+    ${h.gpx?'':hkGpxBox('hrFile','This hike has no route file yet. Add your recording (GPX)','')}
+    <div class="msg err" id="hrErr" hidden></div>
+  </form>`;
+  const w=sheet(edit?'Change your report':'Report after the hike', body, `<button class="btn soft" type="button" id="hrCancel">Cancel</button><button class="btn primary" type="button" id="hrSave">Save report</button>`);
+  const $=s=>w.querySelector(s), err=$('#hrErr'), fail=(m,sel)=>{ err.textContent=m; err.hidden=false; err.scrollIntoView({block:'nearest'}); if(sel){ const el=$(sel); if(el) el.focus(); } };
+  w.querySelectorAll('[data-seg] .tg').forEach(b=>b.onclick=()=>{ const on=b.getAttribute('aria-pressed')==='true'; b.parentNode.querySelectorAll('.tg').forEach(x=>x.setAttribute('aria-pressed','false')); b.setAttribute('aria-pressed',String(!on)); });
+  w.querySelectorAll('#hrBath .tg').forEach(b=>b.onclick=()=>{ const on=b.getAttribute('aria-pressed')!=='true'; b.setAttribute('aria-pressed',String(on));
+    if(on) w.querySelectorAll('#hrBath .tg').forEach(x=>{ if((b.dataset.k==='none')!==(x.dataset.k==='none')) x.setAttribute('aria-pressed','false'); }); });
+  if(!h.gpx) hkWireGpx(w, 'hrFile', g=>{ gpx=g; });
+  $('#hrCancel').onclick=()=>openHike(h.id);
+  $('#hrSave').onclick=async e=>{
+    const pick=k=>{ const on=w.querySelector(`[data-seg="${k}"] .tg[aria-pressed="true"]`); return on?on.dataset.val:''; }, v=s=>String($(s).value||'').trim();
+    const st=v('#hrStart'), en=v('#hrEnd');
+    const d={ id:r.id||'', walked_on:$('#hrDate').value, group_size:v('#hrSize'), age_min:v('#hrA1'), age_max:v('#hrA2'), difficulty:pick('difficulty'), cliffs:pick('cliffs'), cliffs_note:v('#hrCliff'), water_shoes:pick('water_shoes'),
+      start_place:st===String(h.start_place||'').trim()?'':st, end_place:en===String(h.end_place||'').trim()?'':en, poi:v('#hrPoi'), firing_zone:pick('firing_zone'), water_route:pick('water_route'), drinking_water:pick('drinking_water'),
+      bathrooms:[...w.querySelectorAll('#hrBath .tg[aria-pressed="true"]')].map(b=>b.dataset.k).join(','), eat:pick('eat'), eat_note:v('#hrEat'), note:v('#hrNote') };
+    if(!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(d.walked_on)) return fail('Add the date you walked it.','#hrDate_il');
+    if(d.walked_on>today()) return fail('That date has not come yet.','#hrDate_il');
+    if(d.group_size&&(!/^[0-9]{1,3}$/.test(d.group_size)||+d.group_size<1)) return fail('Write the group size as a number.','#hrSize');
+    if([d.age_min,d.age_max].some(a=>a&&(!/^[0-9]{1,3}$/.test(a)||+a>110))) return fail('Write the ages as numbers.','#hrA1');
+    if(d.age_min&&d.age_max&&+d.age_min>+d.age_max) return fail('The youngest is older than the oldest.','#hrA1');
+    if(gpx) Object.assign(d, gpx);
+    e.target.disabled=true; err.hidden=true;
+    try{ await DB.saveHikeReport(h.id, d); S.hikes=await DB.loadHikes(); if(S.tab==='hikes') render(); toast(edit?'Saved':'Thank you. Your report is added.'); openHike(h.id); }
+    catch(x){ e.target.disabled=false; fail(x.message); }
+  };
+}
+// Review tab: hikes colleagues added, waiting for Eretz Israel Tours.
+function hikesPanel(){
+  if(!S.admin||!hikesOn()) return ''; const p=(S.hikes||[]).filter(h=>h.review_status==='pending'); if(!p.length) return '';
+  return `<section class="panel"><h3>New hikes to check</h3><p>Hikes colleagues added. Each one shows to colleagues once you approve it. Only official marked trails are listed.</p>
+    ${p.map(h=>`<div class="rev"><div class="who2"><b>${esc(h.name)}</b><span>${esc(h.region)} · by ${esc(h.by)}${h.org?' (an organisation)':''} · ${esc(fmtDate(h.created_at))}${h.source==='website'?' · '+esc(hkSrc(h).toLowerCase()):''}</span></div>
+      <div class="btn-row"><button class="btn soft" type="button" data-hkv="${esc(h.id)}">View</button><button class="btn soft" type="button" data-hkno="${esc(h.id)}">Turn down</button><button class="btn primary" type="button" data-hkok="${esc(h.id)}">Approve</button></div></div>`).join('')}</section>`;
+}
+function wireHikesPanel(view){
+  view.querySelectorAll('[data-hkv]').forEach(b=>b.onclick=()=>openHike(b.dataset.hkv));
+  const dec=(b,yes)=>async()=>{ b.disabled=true; const id=yes?b.dataset.hkok:b.dataset.hkno, cur=(S.hikes||[]).find(x=>x.id===id); try{ await DB.decideHike(id, yes, cur?cur.updated_at:null); toast(yes?'Approved. Colleagues can see it now.':'Turned down. It is kept; its writer can change it and send it again.'); await reloadHikes(); }catch(e){ b.disabled=false; toast(e.message); if(/changed after/.test(e.message)){ try{ await reloadHikes(); }catch(e2){} } } };
+  view.querySelectorAll('[data-hkok]').forEach(b=>b.onclick=dec(b,true)); view.querySelectorAll('[data-hkno]').forEach(b=>b.onclick=dec(b,false));
+}
+const hikesWaiting=()=>S.admin&&S.hikes?S.hikes.filter(h=>h.review_status==='pending').length:0;
+
+// Preview only: sample hikes. Trail names are real places; every detail on them is invented for the preview.
+function demoHikesInit(){ if(S.demoHikes) return S.demoHikes;
+  const dd=n=>new Date(Date.now()-n*86400000).toISOString(), day=n=>dd(n).slice(0,10);
+  const P={noa:['noa.shalev@example.com','Noa Shalev'],avi:['avi.mizrahi@example.com','Avi Mizrahi'],rachel:['rachel.ops@gmail.com','Rachel Amar'],org:['avi@sample-yeshiva.org','Avi Stern']};
+  const rep=(id,who,o)=>Object.assign({id,author:P[who][0],author_name:P[who][1],org:who==='org',hidden:false,walked_on:day(30),group_size:'',age_min:'',age_max:'',difficulty:'',cliffs:'',cliffs_note:'',water_shoes:'',start_place:'',end_place:'',poi:'',firing_zone:'',water_route:'',drinking_water:'',bathrooms:'',eat:'',eat_note:'',note:'',created_at:dd(20)},o);
+  const hk=(id,o)=>Object.assign({id,region:'',distance_km:'',hours_from:'',hours_to:'',start_place:'',end_place:'',is_loop:false,markers:[],notes:'',official:true,source:'walked',source_url:'',source_year:'',review_status:'approved',added_by:OWNER,added_by_name:'Eretz Israel Tours',org:false,gpxFile:null,reports:[],created_at:dd(12),updated_at:dd(3)},o);
+  const y=new Date().getFullYear();
+  const SAMPLE_GPX=HK_GPX_HEAD+'<trk><trkseg><trkpt lat="31.8" lon="35.4"/><trkpt lat="31.801" lon="35.404"/><trkpt lat="31.802" lon="35.409"/></trkseg></trk></gpx>';
+  S.demoHikes=[
+    hk('hk1',{name:'Sataf springs loop',region:'Jerusalem',distance_km:'3',hours_from:'1.5',hours_to:'2',start_place:'Sataf upper car park',is_loop:true,markers:[{color:'green',number:''}],notes:'Sample. Steps on the way down. Busy on Fridays.',
+      reports:[rep('hr1','noa',{walked_on:day(9),group_size:'8',age_min:'6',age_max:'70',difficulty:'easy',cliffs:'no',water_shoes:'not_needed',firing_zone:'no',water_route:'yes',drinking_water:'yes',bathrooms:'start',eat:'yes',eat_note:'Tables by the upper spring',note:'Good first walk for a family.'}),
+               rep('hr2','org',{walked_on:day(40),group_size:'35',age_min:'14',age_max:'17',difficulty:'easy',cliffs:'no',firing_zone:'no',water_route:'yes',bathrooms:'start',eat:'yes'})]}),
+    hk('hk2',{name:'Nahal Katlav',region:'Jerusalem',distance_km:'8',hours_from:'4',hours_to:'',start_place:'Bar Giora',end_place:'Road 386',source:'website',source_url:'https://example.org/sample-hiking-site/nahal-katlav',source_year:String(y-2),notes:'Sample. Taken from a website: not checked by anyone here yet.'}),
+    hk('hk3',{name:'Nahal Og, lower canyon',region:'Dead Sea & Judean Desert',distance_km:'5',hours_from:'3',hours_to:'4',start_place:'Og trailhead, by Almog',end_place:'Road 90, north of the Dead Sea',markers:[{color:'blue',number:'9456'},{color:'black',number:'9452'}],
+      notes:'Sample. Not after rain: flood danger in the canyon. No shade after 10:00. Carry 3 litres of water each.',gpxFile:{name:'route.gpx',body:SAMPLE_GPX,added_by:P.avi[0],added_by_name:P.avi[1],at:dd(9),removed:false},
+      reports:[rep('hr3','avi',{walked_on:day(24),group_size:'12',age_min:'10',age_max:'58',difficulty:'moderate',cliffs:'yes',cliffs_note:'Metal rungs on three drops',water_shoes:'not_needed',poi:'The rungs, the narrow white canyon, the view of the Dead Sea',firing_zone:'crosses',water_route:'no',drinking_water:'no',bathrooms:'none',eat:'yes',eat_note:'A shaded ledge halfway',note:'The children loved the rungs. One adult turned back at the first drop.'}),
+               rep('hr4','noa',{walked_on:day(160),group_size:'24',age_min:'9',age_max:'67',difficulty:'moderate',cliffs:'yes',water_shoes:'not_needed',firing_zone:'crosses',water_route:'no',drinking_water:'no',bathrooms:'none',eat:'yes',note:'Too hot after 11:00. Start at 07:00.'}),
+               rep('hr5','rachel',{walked_on:day(220),group_size:'6',difficulty:'hard',cliffs:'yes',firing_zone:'unsure',water_route:'no'})]}),
+    hk('hk4',{name:'Nahal Darga',region:'Dead Sea & Judean Desert',distance_km:'7',hours_from:'6',hours_to:'7',start_place:'Metzoke Dragot',end_place:'Road 90',markers:[{color:'red',number:''}],notes:'Sample. Ropes and pools. Closed when floods are forecast.',
+      reports:[rep('hr6','avi',{walked_on:day(60),group_size:'9',age_min:'16',age_max:'45',difficulty:'hard',cliffs:'yes',cliffs_note:'Roped drops into pools',water_shoes:'needed',firing_zone:'no',water_route:'yes',drinking_water:'no',bathrooms:'none',eat:'yes'})]}),
+    hk('hk5',{name:'Ein Prat to Ein Mabua',region:'Binyamin & Shomron',distance_km:'8',hours_from:'4',hours_to:'5',start_place:'Ein Prat nature reserve',end_place:'Ein Mabua',source:'website',source_url:'https://example.org/sample-hiking-site/ein-prat',source_year:String(y-1),notes:'Sample. Taken from a website: not checked by anyone here yet.'}),
+    hk('hk6',{name:'Ein Avdat canyon',region:'Negev & Arava',distance_km:'2.5',hours_from:'2',hours_to:'',start_place:'Ein Avdat lower entrance',end_place:'Ein Avdat upper car park',notes:'Sample. One way only: the ladders go up. A ride is needed at the top.',
+      reports:[rep('hr7','rachel',{walked_on:day(75),group_size:'18',age_min:'8',age_max:'72',difficulty:'moderate',cliffs:'yes',cliffs_note:'Ladders and steps cut in the cliff',water_shoes:'not_needed',firing_zone:'no',water_route:'yes',drinking_water:'yes',bathrooms:'start,end',eat:'no'})]}),
+    hk('hk7',{name:'Red Canyon',region:'Eilat',distance_km:'2',hours_from:'1.5',hours_to:'',start_place:'Red Canyon car park, Road 12',is_loop:true,source:'website',source_url:'https://example.org/sample-hiking-site/red-canyon',source_year:'',notes:'Sample. Taken from a website with no date on the page.'}),
+    hk('hk8',{name:'Nahal Amud, upper part',region:'Galilee',distance_km:'6',hours_from:'3',hours_to:'4',start_place:'Upper Nahal Amud car park',end_place:'Road 85',markers:[{color:'black',number:''},{color:'israel_trail',number:''}],notes:'Sample. Waiting for approval in this preview.',review_status:'pending',added_by:P.noa[0],added_by_name:P.noa[1],created_at:dd(0)})
+  ];
+  return S.demoHikes; }
+const demoHkName=(e,n)=>e===OWNER?'Eretz Israel Tours':(n||'A colleague');
+const demoHkSeen=h=>h.review_status==='approved'||S.admin||h.added_by===S.user.email;
+function demoHkSummary(reps){ const v=reps.filter(x=>!x.hidden), num=k=>v.map(x=>x[k]).filter(x=>x!==''&&x!=null).map(Number);
+  const mode=k=>{ const c={}; v.forEach(x=>{ if(x[k]) c[x[k]]=(c[x[k]]||0)+1; }); return Object.keys(c).sort((a,b)=>c[b]-c[a]||(a<b?-1:1))[0]||null; };
+  const g=num('group_size'), a1=num('age_min'), a2=num('age_max');
+  return {n:v.length,last:v.map(x=>x.walked_on).sort().pop()||null,group_min:g.length?Math.min(...g):null,group_max:g.length?Math.max(...g):null,age_min:a1.length?Math.min(...a1):null,age_max:a2.length?Math.max(...a2):null,
+    difficulty:mode('difficulty'),cliffs:v.some(x=>x.cliffs==='yes')?'yes':mode('cliffs'),water_shoes:mode('water_shoes'),firing_zone:v.some(x=>x.firing_zone==='crosses')?'crosses':mode('firing_zone'),
+    water_route:mode('water_route'),drinking_water:mode('drinking_water'),bathrooms:mode('bathrooms'),eat:mode('eat')}; }
+function demoHikeView(h){ const mine=h.added_by===S.user.email, g=h.gpxFile&&!h.gpxFile.removed?h.gpxFile:null, o=Object.assign({},h);
+  delete o.added_by; delete o.added_by_name; delete o.reports; delete o.gpxFile;
+  return Object.assign(o,{by:demoHkName(h.added_by,h.added_by_name),mine,can_edit:S.admin||(mine&&h.review_status!=='approved'),gpx:g?{name:g.name,by:demoHkName(g.added_by,g.added_by_name),at:g.at}:null,r:demoHkSummary(h.reports)}); }
+function demoRepView(x){ const o=Object.assign({},x); delete o.author; delete o.author_name; delete o.hidden; return Object.assign(o,{by:demoHkName(x.author,x.author_name),mine:x.author===S.user.email,can_edit:S.admin||x.author===S.user.email}); }
+function demoHkDetail(h){ return {hike:demoHikeView(h), reports:h.reports.filter(x=>!x.hidden).sort((a,b)=>a.walked_on<b.walked_on?1:-1).map(demoRepView)}; }
+function demoHkFind(id){ const h=demoHikesInit().find(x=>x.id===id); if(!h||!demoHkSeen(h)) throw new Error('That hike is not available.'); return h; }
+Object.assign(DB, {
+  async loadHikes(){
+    if(LIVE) return await rpc('hikes_list',{});
+    return demoHikesInit().filter(demoHkSeen).map(demoHikeView); },
+  async hikeDetail(id){ if(LIVE) return await rpc('hike_detail',{p_id:id}); return demoHkDetail(demoHkFind(id)); },
+  async saveHike(d){
+    if(LIVE) return await rpc('hike_save',{p_hike:d});
+    const now=new Date().toISOString(), web=d.source==='website'; let h=d.id&&demoHkFind(d.id);
+    if(h&&!(S.admin||(h.added_by===S.user.email&&h.review_status!=='approved'))) throw new Error('This hike is approved. Suggest a change and Eretz Israel Tours will update it.');
+    if(!h){ h={id:'hk'+Date.now(),reports:[],gpxFile:null,added_by:S.user.email,added_by_name:S.me.name,org:lim(),review_status:S.admin?'approved':'pending',created_at:now}; demoHikesInit().push(h); }
+    Object.assign(h,{name:d.name,region:d.region,distance_km:d.distance_km,hours_from:d.hours_from,hours_to:d.hours_to===d.hours_from?'':d.hours_to,start_place:d.start_place,end_place:d.is_loop?'':d.end_place,is_loop:!!d.is_loop,
+      markers:(d.markers||[]).slice(0,8),notes:d.notes,official:true,source:web?'website':'walked',source_url:web?d.source_url:'',source_year:web?d.source_year:'',updated_at:now});
+    if(!S.admin&&h.review_status==='rejected') h.review_status='pending';
+    if(d.gpx) h.gpxFile={name:'route.gpx',body:d.gpx,added_by:S.user.email,added_by_name:S.me.name,at:now,removed:false};
+    return demoHikeView(h); },
+  async decideHike(id, yes, seen){ if(LIVE) return await rpc('hike_decide',{p_id:id,p_approve:!!yes,p_seen:seen||null}); const h=demoHkFind(id);
+    if(yes&&seen!==h.updated_at) throw new Error('This hike was changed after you opened it. Open it again and check it before you approve.'); h.review_status=yes?'approved':'rejected'; },
+  async saveHikeReport(hid, r){
+    if(LIVE) return await rpc('hike_report_save',{p_hike:hid,p_report:r});
+    const h=demoHkFind(hid), now=new Date().toISOString(); let x=r.id&&h.reports.find(y=>y.id===r.id&&!y.hidden);
+    if(r.id&&!(x&&(S.admin||x.author===S.user.email))) throw new Error('Only the person who wrote this report, or Eretz Israel Tours, can change it.');
+    if(h.review_status!=='approved') h.updated_at=now;
+    if(!x){ x={id:'hr'+Date.now(),author:S.user.email,author_name:S.me.name,org:lim(),hidden:false,created_at:now}; h.reports.push(x); }
+    ['walked_on','group_size','age_min','age_max','difficulty','cliffs','cliffs_note','water_shoes','start_place','end_place','poi','firing_zone','water_route','drinking_water','bathrooms','eat','eat_note','note'].forEach(k=>{ x[k]=r[k]||''; });
+    if(r.gpx&&!(h.gpxFile&&!h.gpxFile.removed)) h.gpxFile={name:'route.gpx',body:r.gpx,added_by:S.user.email,added_by_name:S.me.name,at:now,removed:false};
+    return demoHkDetail(h); },
+  async hideHikeReport(id){ if(LIVE) return await rpc('hike_report_hide',{p_id:id});
+    for(const h of demoHikesInit()){ const x=h.reports.find(y=>y.id===id&&!y.hidden); if(x){ if(!(S.admin||x.author===S.user.email)) break; x.hidden=true; return; } }
+    throw new Error('Only the person who wrote this report, or Eretz Israel Tours, can take it off.'); },
+  async hikeGpx(id){ if(LIVE) return await rpc('hike_gpx',{p_id:id}); const h=demoHkFind(id); if(!h.gpxFile||h.gpxFile.removed) throw new Error('This hike has no route file yet.'); return {name:h.gpxFile.name,body:h.gpxFile.body}; }
 });
 
 // ---------- welcome tour (first open after approval; again from My settings) ----------
