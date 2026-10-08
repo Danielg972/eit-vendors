@@ -274,14 +274,15 @@ Researched by web lookups per supplier (the supplier's own site first, a third-p
 - **Not tested:** production (PostgreSQL 17; the checks ran on 16); a real phone, and opening a route file in a hiking app; Safari and Firefox.
 
 ## The hike's map (8 Oct 2026, decision D-35)
-**Status: live since 8 Oct 2026 (pull request #31). Front end only. Hikes are still open to Eretz Israel Tours only.**
+**Status: live since 8 Oct 2026 (pull request #31). Front end only. Hikes are open to every approved member since D-36 (`hikes_for` = `all`).**
 - **The library.** Leaflet 1.9.4, unchanged from the npm package, in `vendor/leaflet-1.9.4/` (`leaflet.js`, `leaflet.css`, `LICENSE`). `hkLeaflet` loads both files the first time a map is needed; either failing, or 12 seconds passing, means no map and the next hike tries again.
 - **Map pictures.** `HK_TILES`: `https://tile.openstreetmap.org/{z}/{x}/{y}.png`, with its credit. Keep to the tile usage policy (https://operations.osmfoundation.org/policies/tiles/): credit always seen, no fetching ahead, no offline store, no referrer policy that hides this site's address. To use another map, change `HK_TILES`; Israel Hiking Map needs its authors' agreement first (D-35).
 - **What the map shows** (`hkMapData`): the recording's lines (each track part its own line) and its first and last point; with no recording, the points the start and end links carry (`hkPlaceLL`: a Google or Waze link with a point; for a named Google place only the place's own point; never a short link). Nothing to show, no map.
 - **Two maps** (`hkMapDraw`). On the page (`hkMapInline`) it does not move, so the page scrolls; nothing is laid over it. Full screen (`hkMapFull`, `hkMapFullClose`) it moves and zooms, the points open a box with Waze and Google Maps, and "Where am I" watches the phone's place until the map closes, and always brings the member onto the map: far from the hike, the map widens to hold both and says how far he is. `closeSheet` and Escape close the open map first.
+- **Location refused** (`hkWhereHelp`, D-36). A box that stays, with the steps for the member's kind of device (Chrome on Android, an installed copy, iPhone, computer) and "Try again". A slow fix only gets a short message; the phone keeps looking.
 - **When things fail.** Map pictures do not come: a note on the map, the line still drawn. Library does not come: `hkSketchHtml` draws the line alone in the map's place. Route file does not come: the map shows start and end if it can and says the recording did not load.
 - **Figures** (`hkFiguresHtml`, `hkProfileHtml`): height along the walk (only when heights differ by 10 m or more), then length, climb, descent, lowest, highest.
-- **Checks:** `supabase/tests/hikes/hike_page_walk.py` (92 checks; needs Pillow for the stand-in map pictures) and `preview_walk.py` (200; it does not serve the library, so it walks the no-library path).
+- **Checks:** `supabase/tests/hikes/hike_page_walk.py` (97 checks; needs Pillow for the stand-in map pictures) and `preview_walk.py` (200; it does not serve the library, so it walks the no-library path).
 
 ## The hike's page (8 Oct 2026, decision D-34)
 **Status: live since 8 Oct 2026 (pull request #31, together with D-35). Front end only.**
@@ -293,7 +294,7 @@ Researched by web lookups per supplier (the supplier's own site first, a third-p
 - **Checks:** `supabase/tests/hikes/hike_page_walk.py` (58 checks; needs no server) and `preview_walk.py` (200). Neither can stand in for a tap on a real Android phone.
 
 ## Hikes and parks: a hike names its park, parks hold brochures (8 Oct 2026, decision D-32)
-**Status: live since 8 Oct 2026 (both database files run and checked, the files function deployed as version 12, pull request #30 merged). Hikes are still open to Eretz Israel Tours only.**
+**Status: live since 8 Oct 2026 (both database files run and checked, the files function deployed as version 12, pull request #30 merged). Hikes were then open to Eretz Israel Tours only (open to every member since D-36).**
 - **What it is.** A hike can be connected to the supplier it lies in (a national park, nature reserve or site). The hike's page shows "Part of" with the park's name (opens the park's page), its hours and last entry, "Book entry" and "Brochure". The park's page shows its brochure near the top and a section "Hikes here", with "Add a hike here". In the list, a place with hikes is one card holding every hike there, and its head opens the place. Under "Before every trip" the park's own page comes first and Moked Teva is named as the whole-country page it is. Start and end, on the hike's page and in each report, open Google Maps.
 - **Who sees what.** The database sends a hike's park only to a member who can see that supplier (`_hike_park`: the supplier exists, is not hidden, and the member is Eretz Israel Tours or has its section). To anyone else the hike has no park. A member can only connect a hike to a supplier he can see. Brochures are a kind of file open to every member who can open the supplier, organisations included.
 - **Links.** A start or end link is either a Google Maps link found in the text (`hkMapUrl`) or a Google Maps search for the text (`hkGmaps`). Nothing else is ever built into a link. A booking link is used only when it is a web link (`hkHttp`).

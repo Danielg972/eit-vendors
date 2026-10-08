@@ -1836,7 +1836,7 @@ function sheet(title, body, foot){
   return wrap;
 }
 function closeSheet(){ S.openVendor=null; hkMapFullClose(); hkMapDrop(); const w=document.getElementById('sheetWrap'); if(w){ w.remove(); document.body.style.overflow=''; } }
-document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ if(hkMapFullClose()) return; closeSheet(); } });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ const lm=document.getElementById('hkLocModal'); if(lm){ lm.remove(); return; } if(hkMapFullClose()) return; closeSheet(); } });
 
 function vatLabel(x){ const f=VAT.find(p=>p[0]===x); return f&&x?f[1]:''; }
 const AUDIENCES=['Adult','Child','Israeli senior','Senior','Student','Soldier','Group','Private','Vehicle','Other'];
@@ -4768,14 +4768,36 @@ function hkMapFull(h, d, from){ hkMapFullClose(); const L=window.L; if(!hkLeafOk
     if(asked){ asked=false; show(e.latlng); } });
   // Refused: the watch is ended and the page says how to allow it. Too slow or not found: the phone keeps looking,
   // and the member's place is shown when it comes.
-  map.on('locationerror',e=>{ if(e&&e.code===1){ watching=false; map.stopLocate(); if(asked){ asked=false; toast('Your phone did not give its place. Allow location for this site, then try again.'); } return; }
-    if(asked) toast('Still looking for where you are. It can take a minute in a canyon.'); });
-  el.querySelector('[data-me]').onclick=()=>{ if(me&&watching){ show(me.getLatLng()); return; } asked=true;
+  const whereAmI=()=>{ if(me&&watching){ show(me.getLatLng()); return; } asked=true;
     if(!watching){ watching=true; map.stopLocate(); map.locate({watch:true, enableHighAccuracy:true, maximumAge:5000, timeout:20000}); } };
+  map.on('locationerror',e=>{ if(e&&e.code===1){ watching=false; map.stopLocate(); if(asked){ asked=false; hkWhereHelp(whereAmI); } return; }
+    if(asked) toast('Still looking for where you are. It can take a minute in a canyon.'); });
+  el.querySelector('[data-me]').onclick=whereAmI;
   el.querySelector('[data-fit]').onclick=()=>m.fit();
   el.querySelector('[data-x]').onclick=()=>hkMapFullClose();
   el.querySelector('[data-x]').focus(); }
-function hkMapFullClose(){ if(!hkFullNow) return false; const f=hkFullNow; hkFullNow=null; try{ f.map.stopLocate(); f.map.remove(); }catch(e){} f.el.remove();
+// The phone or the browser refused to say where the member is. A box says, for his kind of phone, where to allow it,
+// and stays until he closes it. "Try again" asks the phone again.
+function hkWhereHelp(again){ const old=document.getElementById('hkLocModal'); if(old) old.remove();
+  const ua=navigator.userAgent||''; let alone=false; try{ alone=matchMedia('(display-mode: standalone)').matches||navigator.standalone===true; }catch(e){}
+  const apple=/iPhone|iPad|iPod/i.test(ua)||(/Macintosh/i.test(ua)&&navigator.maxTouchPoints>1);
+  const steps=apple?['Open the iPhone\'s <b>Settings</b>, then <b>Privacy &amp; Security</b>, then <b>Location Services</b>. Switch it on.','In that same list tap <b>Safari Websites</b> (or the browser you use) and choose <b>While Using the App</b>.','Come back here and tap <b>Try again</b>. When the phone asks, choose <b>Allow</b>.']
+    :hkAndroid()?[alone?'Press and hold this app\'s icon on your home screen and tap <b>Site settings</b>.':'Tap the small icon at the left of the address bar, at the top of the screen.','Tap <b>Permissions</b>, then <b>Location</b>, and choose <b>Allow</b>.','Come back here and tap <b>Try again</b>.']
+    :['Click the icon at the left of the address bar.','Set <b>Location</b> to <b>Allow</b>.','Come back here and click <b>Try again</b>.'];
+  const more=hkAndroid()?'<p class="hint" style="margin:0 0 12px"><b>Location is not listed there?</b> Then Chrome itself may not use location. In Chrome\'s menu (the three dots) open Settings, Site settings, Location: switch it on and take this site off "Blocked". In the phone\'s Settings open Apps, Chrome, Permissions, Location and choose "Allow only while using the app". Check that the phone\'s own Location is on.</p>':'';
+  const el=document.createElement('div'); el.className='modal'; el.id='hkLocModal';
+  el.innerHTML=`<div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="hkLT" style="max-height:calc(100% - 8px);overflow-y:auto"><h3 id="hkLT">Allow location</h3>
+    <p>Your ${hkAndroid()||apple?'phone':'browser'} did not say where you are, so the map cannot show you. Allow it once:</p>
+    <ol class="hkp-steps" style="font-size:14.5px;color:var(--ink);margin-bottom:12px">${steps.map(x=>'<li>'+x+'</li>').join('')}</ol>${more}
+    <p class="hint" style="margin:0 0 14px">Your place is drawn on your own screen only. It is not sent to Eretz Israel Tours or to anyone else.</p>
+    <button class="btn primary" type="button" data-g="again">Try again</button><button class="btn soft" type="button" data-g="x">Close</button></div>`;
+  document.body.appendChild(el);
+  el.addEventListener('click',e=>{ if(e.target===el) el.remove(); });
+  el.querySelector('[data-g="x"]').onclick=()=>el.remove();
+  el.querySelector('[data-g="again"]').onclick=()=>{ el.remove(); again(); };
+  el.querySelector('[data-g="again"]').focus(); }
+function hkMapFullClose(){ const lm=document.getElementById('hkLocModal'); if(lm) lm.remove();
+  if(!hkFullNow) return false; const f=hkFullNow; hkFullNow=null; try{ f.map.stopLocate(); f.map.remove(); }catch(e){} f.el.remove();
   if(f.from&&document.body.contains(f.from)){ try{ f.from.focus(); }catch(e){} } return true; }
 // The file as it is handed over: the stored route with the lines a hiking app expects around it (the XML opening line,
 // and the hike's name on the file and on its track, so the app shows a name and not "route").
