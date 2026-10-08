@@ -1,9 +1,10 @@
--- Hikes (D-31): probe for the live database. Changes nothing.
--- It adds a temporary Eretz Israel Tours member, a temporary guide and a temporary organisation, opens hikes to all
--- inside its own transaction, calls the app's functions as each of them, and ends by raising an error that carries
--- the results, so everything it did is rolled back: members, setting, hikes, reports and route file. Read the JSON
--- after "PROBE". Run it as one statement (Supabase SQL editor, or the connector's execute_sql) after
--- supabase/migrations/2026-10-08_hikes.sql has been run, and after any later change to a hike function.
+-- Hikes (D-31) and hikes with parks (D-32): probe for the live database. Changes nothing.
+-- It adds a temporary Eretz Israel Tours member, a temporary guide, a temporary organisation and a temporary
+-- supplier (a park), opens hikes to all inside its own transaction, calls the app's functions as each of them, and
+-- ends by raising an error that carries the results, so everything it did is rolled back: members, supplier, files,
+-- setting, hikes, reports and route file. Read the JSON after "PROBE". Run it as one statement (Supabase SQL editor,
+-- or the connector's execute_sql) after supabase/migrations/2026-10-08_hikes.sql, 2026-10-08c_brochure_kind.sql and
+-- 2026-10-08b_hikes_parks.sql have been run, and after any later change to a hike function.
 --
 -- What must come back:
 --   closed_member_list = []                closed_member_save = "Hikes are not open yet."
@@ -20,6 +21,13 @@
 --   bad_gpx = "That route file holds something a GPX file should not. Save it again from your hiking app."
 --   gpx_name = "route.gpx"; gpx_same = true
 --   second_gpx = "This hike already has a route file."
+--   park_admin = true; park_guide = true   (the hike carries its park's id for Eretz Israel Tours and for a guide)
+--   park_org_no_sites = ""                 (the organisation's sections are transport only: it gets the hike with no park)
+--   park_kept_without_key = true           (a save that does not send vendor_id leaves the park as it is)
+--   park_unknown = "Choose the place from the list."     (an id that is no supplier)
+--   park_org_save = "Choose the place from the list."    (the organisation cannot link a hike to a supplier outside its sections)
+--   brochure_kind = "taken"                ("refused" means 2026-10-08c_brochure_kind.sql has not been run yet)
+--   org_sees_brochure = true; org_sees_price_list = false
 --   emails_in_output = 0                   (no member's email, the probe's or a real one, in anything a hike call returned)
 --   helpers_callable = false; tables_open = false; calls_granted = 7
 --   rows_before = rows_now_minus_probe   (nothing of the list's own was touched)
@@ -27,7 +35,7 @@ do $probe$
 declare ta text := 'probe-admin-' || md5(random()::text) || md5(random()::text);
   tg text := 'probe-guide-' || md5(random()::text) || md5(random()::text);
   tl text := 'probe-org-' || md5(random()::text) || md5(random()::text);
-  r jsonb := '{}'::jsonb; a jsonb; g jsonb; d jsonb; x jsonb; err text; n0 int; seen timestamptz;
+  r jsonb := '{}'::jsonb; a jsonb; g jsonb; d jsonb; x jsonb; err text; n0 int; seen timestamptz; pv text; mo public.members;
   gpx text := '<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="The Inner Circle"><wpt lat="31.5" lon="35.4"><name>Probe spot</name></wpt><trk><trkseg><trkpt lat="31.5" lon="35.4"><ele>-300</ele></trkpt><trkpt lat="31.51" lon="35.41"/></trkseg></trk></gpx>';
   base jsonb := '{"region":"Dead Sea & Judean Desert","official":true,"distance_km":"5","hours_from":"3","hours_to":"4","start_place":"Probe trailhead","notes":"Probe."}'::jsonb;
 begin
@@ -68,6 +76,29 @@ begin
   r := r || jsonb_build_object('org_sees_after', exists (select 1 from jsonb_array_elements(public.hikes_list(tl)::jsonb) e where e->>'id' = g->>'id'));
   begin perform public.hike_save(tg, base || jsonb_build_object('id', g->>'id', 'name','Probe renamed')); r := r || '{"writer_edit_after":"SAVED"}';
   exception when others then get stacked diagnostics err = message_text; r := r || jsonb_build_object('writer_edit_after', err); end;
+
+  -- D-32: the park. A temporary supplier, which goes with everything else when the probe ends.
+  insert into public.vendors (name, category) values ('Probe Park ' || md5(random()::text), 'National Parks') returning id into pv;
+  x := public.hike_save(ta, base || jsonb_build_object('id', g->>'id', 'name','Probe guide hike','end_place','Probe road changed','vendor_id', pv))::jsonb;
+  r := r || jsonb_build_object('park_admin', (x->>'vendor_id') = pv,
+    'park_guide', (select (e->>'vendor_id') = pv from jsonb_array_elements(public.hikes_list(tg)::jsonb) e where e->>'id' = g->>'id'),
+    'park_org_no_sites', (select e->>'vendor_id' from jsonb_array_elements(public.hikes_list(tl)::jsonb) e where e->>'id' = g->>'id'));
+  x := public.hike_save(ta, base || jsonb_build_object('id', g->>'id', 'name','Probe guide hike','end_place','Probe road changed'))::jsonb;
+  r := r || jsonb_build_object('park_kept_without_key', (x->>'vendor_id') = pv);
+  begin perform public.hike_save(ta, base || jsonb_build_object('id', a->>'id', 'name','Probe admin hike','is_loop',true,'vendor_id','vendor_no_such_probe')); r := r || '{"park_unknown":"SAVED"}';
+  exception when others then get stacked diagnostics err = message_text; r := r || jsonb_build_object('park_unknown', err); end;
+  begin perform public.hike_save(tl, base || jsonb_build_object('name','Probe org hike','vendor_id', pv)); r := r || '{"park_org_save":"SAVED"}';
+  exception when others then get stacked diagnostics err = message_text; r := r || jsonb_build_object('park_org_save', err); end;
+  -- D-32: brochures. Two temporary file rows on the temporary supplier (rows only: nothing is put in storage).
+  select * into mo from public.members where email = 'probe-org@invalid.test';
+  begin
+    insert into public.vendor_files (vendor_id, path, file_name, kind, uploaded_by) values (pv, pv || '/probe-brochure.pdf', 'probe-brochure.pdf', 'Brochure', 'probe-guide@invalid.test'),
+      (pv, pv || '/probe-prices.pdf', 'probe-prices.pdf', 'Price list', 'probe-guide@invalid.test');
+    r := r || jsonb_build_object('brochure_kind', 'taken',
+      'org_sees_brochure', (select public._file_visible(f, mo) from public.vendor_files f where f.path = pv || '/probe-brochure.pdf'),
+      'org_sees_price_list', (select public._file_visible(f, mo) from public.vendor_files f where f.path = pv || '/probe-prices.pdf'));
+  exception when check_violation then r := r || '{"brochure_kind":"refused"}';
+  end;
 
   d := public.hike_report_save(tl, (g->>'id')::uuid, '{"walked_on":"2026-09-01","group_size":"30","age_min":"14","age_max":"17","difficulty":"moderate","cliffs":"yes","firing_zone":"crosses","bathrooms":"none"}')::jsonb;
   r := r || jsonb_build_object('org_report', jsonb_build_object('n', d->'hike'->'r'->'n', 'org', d->'reports'->0->'org', 'by', d->'reports'->0->'by', 'cliffs', d->'hike'->'r'->'cliffs'));

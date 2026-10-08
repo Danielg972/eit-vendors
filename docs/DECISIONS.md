@@ -10,6 +10,72 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-32 · Hikes and parks: a hike names its park, parks hold brochures, start and end open Google Maps (live for Eretz Israel Tours since 8 Oct 2026)
+
+**Decided by:** the owner (Eretz Israel Tours), 8 October 2026, between 15:12 and 15:34 Israel time, a few minutes after the Hikes tab went live (D-31).
+
+**In his words:**
+
+- 15:12: "Some hikes are connected to national parks. for instance right now I want to add Ein ovdat which I just did today and it's part of that nature reserve perhaps for something like that a see the link hike should be there which will take you to the hike page also for the national parks they all have brochures. There should be a place where they're uploaded."
+- 15:14: "Also start and end. Location should. Open Google maps"
+- 15:21: "Also the moked teva page link. Only opens general.. Nothing specific to this hike"
+- 15:34: "Also, most places that have hikes have different variations of hikes. Like Ein Gedi might have Nachal David. Or the D-U-D-I-M caves. Etc. There are many ways to do Nachal Prat also. So one card should have many different hike options."
+
+**How it was read:**
+
+- A hike can be connected to the supplier it lies in: the national park, nature reserve or site. The link works both ways. The hike's page names the park and opens the park's page; the park's page lists its hikes and opens each one.
+- A park's page has a place for its brochure. Brochures are a new kind of file on a supplier, next to photos, price lists and the rest, and show near the top of the page.
+- On a hike's page the start and the end are each tappable and open Google Maps.
+- The links under "Before every trip" should be about this hike. Moked Teva has no page for one hike that could be linked to (its site could not be read from the session to check), so the park's own page comes first and Moked Teva is named as the whole-country page it is.
+- A place with several hikes is one card in the list, holding every hike there. The place is the park or site the hikes are connected to, so this needs nothing new in the database. A hike connected to no place stays on its own.
+
+**What was built:**
+
+- **The hike form** has a field "Part of a park or site". It offers the suppliers the member can see whose category, or one of their "also offers", is National Parks or Attraction / Site: None first, then the places in the hike's region, then the rest by name. With more than eight places a search box narrows the list.
+- **The hike's page** shows "Part of" with the park's name, which closes the hike and opens the park's page. Under it: the park's opening hours and last entry as its own page holds them, marked Verified or Unverified; "Book entry" when the park has a booking link (web links only, in a new tab); "Brochure" when the park has one (several open a short list).
+- **The park's page** shows its brochure near the top, under the hours, and a section "Hikes here" with each hike's name, distance and usual time, and "Add a hike here", which opens the hike form with the place and its region chosen. A supplier that is not a park or site and has no hikes shows nothing. A park or site with no brochure offers "Add brochure".
+- **The list of hikes** shows one card per place inside each region: the place's name, how many hikes it has, and under it every hike there. The card's head opens the place's page. Hikes connected to no place share a plain card below. The search finds a hike by its place.
+- **Before every trip**, on a hike's page: first the park's own page, when the hike has a park and the park has a website ("its own page, for closures and changes"), then Moked Teva, worded as trail updates and firing zones for the whole country, with a line saying it has no page for one hike.
+- **Start and end**, on the hike's page and inside each report, open Google Maps in a new tab. Only two kinds of link are ever built: a Google Maps link found in the text (the same test as the buttons at the top), or a Google Maps search for the text. A Waze link in the text is never opened as Google Maps: the search is used, by the text, or by the hike's name when no text is left. Any other link in the text stays text. The Waze and Google Maps buttons at the top are as they were.
+
+**Who sees what:**
+
+- A hike never shows a supplier to a member who cannot open that supplier. The database sends the park's id only when the supplier exists, is not hidden, and the member is Eretz Israel Tours or has the supplier's section (`_hike_park`). To anyone else the hike reads as having no park: no name, no hours, no booking, no brochure. An organisation without the sites section gets every hike, and no park on any of them.
+- A member can only connect a hike to a supplier he can see himself; anything else is refused with "Choose the place from the list."
+- Brochures are open to every member who can open the supplier, organisations included, like photos and kosher certificates. A brochure marked "only me and Eretz Israel Tours" stays private. An organisation still never gets a guide's or agent's price list, receipt, contract, booking confirmation or quote.
+- Names only, as before: nothing here sends a member's email, phone or licence number.
+
+**Implementation choices, his to change:**
+
+- The link is the supplier's id on the hike, with no foreign key. A supplier taken off the list, merged or hidden leaves the id where it is, and the hike reads as having no park until the supplier is there again.
+- A hidden supplier reads as no park for everyone, Eretz Israel Tours included, and cannot be chosen.
+- An older copy of the page, which does not send the park, leaves it as it is. The page itself sends the park with a new hike, and with a change only when the member changed it in the form: a member who cannot see a hike's park is shown None, and his save of another field does not take the park off.
+- Setting or changing the park on a waiting hike counts as a change to it, like any other field: an approval of the version read before is refused (D-31).
+- The picker offers National Parks and sites only. **Which other suppliers should be offered is the owner's to widen.**
+- The hours on a hike's page are shown as text with Verified or Unverified. Marking hours as verified stays on the park's own page.
+- "Book entry" and the brochure open in a new tab without passing the app's address on.
+- Preview mode has three sample parks and sites (real place names, every detail invented and marked as a sample), three sample hikes connected to them, one sample brochure, and a second sample organisation that has no sites section, to show what such a member gets.
+
+**Database, two files:**
+
+- `supabase/migrations/2026-10-08c_brochure_kind.sql`: one statement, the list of kinds a supplier's file can have gains Brochure. It takes the old list off and puts the new one in its place, so **the owner runs it himself in the SQL editor** (rulebook G5). Safe to run twice. It must be run before the new files function and the new page go live.
+- `supabase/migrations/2026-10-08b_hikes_parks.sql`: adds and replaces only, safe to run twice. One new column, `hikes.vendor_id`, with a length check and an index. One new internal helper, `_hike_park`, not callable from outside. Three functions replaced: `_hike_json` (one new key, `vendor_id`), `hike_save` (takes the key `vendor_id`; everything else, its lock order and every earlier check as they were) and `_file_visible` (Brochure joins Photo and Kosher certificate as a kind open to organisations). 154 functions become 155.
+- The files edge function, version 12 in the repository: Brochure added to the kinds it takes and to the kinds open to organisations. **Not deployed.**
+
+**Checked (on a local PostgreSQL 16):** a database built from `supabase/schema.sql`, one built from the schema before D-31 with all three files run twice, and one built from the schema on `main` with files c and b run twice each have the same functions, the same roles allowed to call each one, the same columns, constraints, indexes and triggers on every table, and the same privileges and row security on every table and sequence. 225 checks in `supabase/tests/hikes/` as Eretz Israel Tours, two guides and two organisations (156 before); the 98 limited-member checks still pass; the probe for the live database returns what its header lists on the local copies and leaves nothing behind. In preview (`supabase/tests/hikes/preview_walk.py`), 186 checks at phone and desktop size as Eretz Israel Tours, a guide, an organisation that sees sites and one that does not, with no page errors and nothing running off the side of the screen (84 before).
+
+**Not checked:** production (nothing has been run there); PostgreSQL 17; the files edge function, which was changed by hand and read, not run (no Deno on the build machine; its text passes a syntax check only); uploading and opening a real brochure through the live files function; a real phone; whether a tap on start or end opens the Google Maps app on a phone; Safari and Firefox. No second session has tried to break this change yet (D-31 had four such rounds).
+
+**Open:**
+
+- **For the lawyer's list:** brochures are the Parks Authority's own handouts. Members upload them for colleagues' use inside the app only. They are never placed on a client-facing page. Whether keeping copies for colleagues is in order is a question for a lawyer.
+- Which suppliers besides National Parks and sites the picker should offer: the owner's to widen.
+- The line in the terms, and the Hebrew side, as for D-31.
+
+**Status: live since 8 October 2026, about 16:40 Israel time**, on the owner's word at 16:31 ("Make. Them live."). Hikes are still open to Eretz Israel Tours only, so colleagues see the brochure kind and nothing else of this until he opens Hikes. In order: the owner ran `2026-10-08c_brochure_kind.sql` himself in the SQL editor (16:33, "I think I did it in supabase"; the list of kinds was read afterwards and holds Brochure); `2026-10-08b_hikes_parks.sql` went through the connector in two parts (`hikes_parks_2026_10_08b_part1_column_helper_hike_json`, `part2_hike_save_file_visible`); all 155 function fingerprints equal `supabase/tests/hikes/expected_fingerprints.txt`, with 30 tables, 91 functions callable from outside, 0 table grants and 0 policies; the files function was deployed as version 12 and its deployed source read back equal to the repository file; `supabase/tests/hikes/production_probe.sql` returned every expected value and left nothing behind; then pull request #30 was merged by the session. Not checked: the files function answering a real call (the session cannot reach it), a real upload of a brochure, the live page in a browser, a real phone.
+
+---
+
 ## D-31 · Hikes: official marked trails, with a report after the walk (live for Eretz Israel Tours since 8 Oct 2026)
 
 **Live since 8 October 2026, about 15:02 Israel time, for Eretz Israel Tours only.** The owner merged pull request #28 himself at 14:57 ("Merged"). The database file was then run on production through the connector, in parts (`hikes_2026_10_08_part1_tables` to `part5_set_setting_whoami`), with `whoami` last so the tab appeared only once everything behind it was in place. Checked after (G4): 30 tables, 154 functions, 91 callable from outside, 0 table grants, 0 policies; all 154 function fingerprints equal `supabase/tests/hikes/expected_fingerprints.txt`; the three new tables equal the schema record (columns, constraints, indexes, row security); `supabase/tests/hikes/production_probe.sql` returned every expected value and left nothing behind (0 hikes, 0 reports, 0 route files, no probe member, no `hikes_for` row). Colleagues do not have the tab: `hikes_for` is not set, which reads as Eretz Israel Tours only. Not checked: the live page in a browser (no browser was reachable from the session), a real phone, a route file opened in a hiking app.

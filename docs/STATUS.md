@@ -21,6 +21,10 @@
 
 A Hikes tab: official marked trails with a route file (GPX), notes, distance and time, and a report members add after walking one. Built 8 October 2026; pull request #28 merged by the owner at 14:57 and **the database file `supabase/migrations/2026-10-08_hikes.sql` run on production at about 15:01, checked by fingerprints and the rolled-back probe.** It adds three tables (`hikes`, `hike_reports`, `hike_gpx`) and thirteen functions, and replaces `whoami` and `set_setting` (each gains only the hikes switch). It is open to Eretz Israel Tours only, until the owner changes the setting `hikes_for` in the Team tab ("Open Hikes to all colleagues"): his decision. No hikes are entered yet. No terms change in the branch. Nothing in it touches suppliers, prices, quotes or any field the Cockpit could read. Details: `docs/DECISIONS.md`, D-31.
 
+## Hikes and parks (D-32): live since 8 October 2026
+
+A hike can name the park or site it lies in, a park's page lists its hikes and holds its brochures, and start and end open Google Maps. Built 8 October 2026 and **live the same day at about 16:40, on the owner's word: both database files run and checked (155 fingerprints, the rolled-back probe), the files function deployed as version 12, pull request #30 merged.** Hikes are still open to Eretz Israel Tours only. Two database files: `2026-10-08c_brochure_kind.sql` (one statement; the owner runs it himself in the SQL editor, rulebook G5) and `2026-10-08b_hikes_parks.sql` (adds and replaces only: one column on `hikes`, one new helper, three functions replaced; 154 functions become 155). The files edge function is version 12 in the repository and on production. It reads `vendors.id`, `hours`, `hours_last` and `npResLink` on the page and changes no supplier field, price or quote: nothing the Cockpit could read is touched. Go-live order: `README.md`, "Hikes and parks". Details and what is open: `docs/DECISIONS.md`, D-32.
+
 ## Integration with the Cockpit
 
 | | |

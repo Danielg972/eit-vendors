@@ -1,0 +1,13 @@
+-- Brochures (8 Oct 2026). See docs/DECISIONS.md D-32. One statement: the list of kinds a supplier's file can have
+-- gains 'Brochure'. supabase/schema.sql already includes it; this file is the step-by-step change.
+--
+-- THE OWNER RUNS THIS FILE HIMSELF, in the Supabase SQL editor for project wjuqtjlrtcywjaspjpwu. Project rule G5: a
+-- statement that removes something is never sent through the connector, and this one removes the old list of kinds
+-- before it puts the new one in its place (both in the one statement, so there is no moment without a list).
+--
+-- Run it BEFORE the new files function and the new page go live: until it has run, the database refuses a file of
+-- the kind 'Brochure'. It can be run before or after 2026-10-08b_hikes_parks.sql.
+--
+-- Safe to run twice: the second run takes the list off and puts the same list back. Every file already stored keeps
+-- its kind; the new list holds every kind of the old one.
+alter table public.vendor_files drop constraint vendor_files_kind_check, add constraint vendor_files_kind_check check (kind = any (array['Photo'::text, 'Receipt'::text, 'Price list'::text, 'Booking confirmation'::text, 'Contract'::text, 'Quote'::text, 'Kosher certificate'::text, 'Brochure'::text, 'Other'::text]));

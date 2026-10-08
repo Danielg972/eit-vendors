@@ -530,6 +530,10 @@ button.bkcard{display:block;width:100%;text-align:left;font:inherit;color:inheri
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(140px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--ground);padding:10px 16px;border-radius:999px;font-size:14px;z-index:40;max-width:calc(100% - 32px)}
 /* Hikes (D-31) */
 .hk-reg{font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--ochre);font-weight:600;margin:14px 2px 6px}
+#hkResults .list+.list{margin-top:10px}
+.hk-phead{display:flex;flex-direction:column;gap:2px;width:100%;min-height:44px;padding:12px 16px;border:0;border-bottom:1px solid var(--line);background:var(--ochre-wash);text-align:left;font:inherit;cursor:pointer}
+.hk-phead b{font-size:16px;font-weight:600;color:var(--ink);overflow-wrap:anywhere}
+.hk-phead span{font-size:12px;color:var(--ink-2)}
 .hk-mark{display:inline-flex;flex:none;width:24px;height:14px;border:1px solid var(--ink-3);border-radius:2px;overflow:hidden}
 .hk-mark i{flex:1;background:#fff}
 .hk-mark.none{border-style:dashed;background:transparent}
@@ -548,6 +552,19 @@ button.bkcard{display:block;width:100%;text-align:left;font:inherit;color:inheri
 .hk-seg .tg{border-radius:8px;min-height:44px;padding:8px 6px;font-size:15px}
 button.act{font-family:inherit;cursor:pointer}
 a.hk-link,.hk-src a{color:var(--tab-on)}
+/* Hikes and parks (D-32) */
+.hk-park{display:flex;flex-wrap:wrap;gap:2px 8px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;margin:0 0 16px;font-size:14px}
+.hk-park b{font-weight:500;flex-basis:100%;min-width:0;overflow-wrap:anywhere}
+.hk-park .brk{flex-basis:100%;margin-top:8px}
+.hk-park .btn-row{flex-basis:100%;margin-top:12px}
+.hk-park a.btn{display:inline-block;text-decoration:none}
+.hk-parkname{flex-basis:100%;min-height:44px;border:0;background:none;padding:4px 0;margin:0;text-align:left;font:inherit;font-size:17px;font-weight:600;color:var(--tab-on);text-decoration:underline;overflow-wrap:anywhere;cursor:pointer}
+a.hk-place{display:block;color:var(--ink);text-decoration:none}
+a.hk-place span{display:block;font-size:12px;color:var(--tab-on);text-decoration:underline;margin-top:2px}
+.hk-rep p a{color:var(--tab-on)}
+.bro-row{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;margin:-6px 0 14px}
+.mini.bro{background:var(--ochre-wash);border-color:var(--ochre);color:var(--ink);font-weight:600;font-size:14px;padding:8px 12px}
+.hk-pick input,.hk-pick select{width:100%}
 </style>
 <style>
 /* Base reset (the Claude preview adds this itself; the live site needs it) */
@@ -706,6 +723,10 @@ function sample(){
     v({id:'vendor_k3m9p2x',name:'Golan Heights Jeep Tours',category:'Adventure',tags:'Jeep, Shomer Shabbat',hours:'Sun–Thu 8:00–17:00, Fri 8:00–13:00, closed Shabbat',hours_last:'Last tour starts 15:30',hours_source:'their website, 2 Oct 2026',contactPerson:'Moshe Levi',phone:'+972 52 555 0142',whatsapp:'+972 52 555 0142',location:'Golan Heights',languages:'English, Hebrew',maxCap:'28',listedPrice:'450',listedPriceVatTreatment:'including_vat',agentPrice:'360',agentPriceVatTreatment:'plus_vat',priceBasis:'Per person',payTerms:'Invoice after the tour',cancelPolicy:'Free cancellation up to 72 hours before',cancelNoticeAmount:'72',cancelNoticeUnit:'Hours',cancelPenalty:'Full charge inside 72h',cancelPolicyVerifiedDate:'2026-08-14',rateReliability:'5',rateService:'4',rateValue:'4',strengths:'Punctual, drivers speak good English',notes:'Book 2 weeks ahead in Sukkot'}),
     v({id:'vendor_a81qz0c',name:'Dan Panorama Jerusalem',category:'Hotel',contactPerson:'Group desk',phone:'+972 2 569 5695',email:'groups@example-hotel.co.il',location:'Jerusalem',kosher:'Rabbanut',maxCap:'290',agentPrice:'1150',agentPriceVatTreatment:'not_applicable',listedPrice:'1400',priceBasis:'Per group',currency:'USD',payTerms:'30% deposit, balance 14 days before',cancelNoticeAmount:'21',cancelNoticeUnit:'Days',cancelDayType:'Calendar days',rateReliability:'4',rateService:'4',rateValue:'3'}),
     v({id:'vendor_7tt2w4n',reservation:'required',name:'Ein Gedi Nature Reserve',category:'National Parks',location:'Dead Sea',npResLink:'https://www.parks.org.il',listedPrice:'33',listedPriceVatTreatment:'including_vat',agentPrice:'29',agentPriceVatTreatment:'including_vat',priceBasis:'Per person',review_status:'pending',created_by:'yossi.guide@gmail.com',updated_by:'yossi.guide@gmail.com',updated_at:d(1)}),
+    // Preview only, for hikes and parks (D-32): the place names are real, every detail on them is invented.
+    v({id:'vendor_p4avd01',name:'Ein Avdat National Park',category:'National Parks',location:'Sde Boker',region:'Negev & Arava',hours:'Sample hours: Sun–Thu 8:00–17:00, Fri 8:00–16:00',hours_last:'Sample: last entry one hour before closing',hours_source:'sample data',npResLink:'https://example.org/sample-park-booking',website:'https://example.org/sample-park-page',listedPrice:'30',listedPriceVatTreatment:'including_vat',priceBasis:'Per person',notes:'Sample details, made up for the preview.'}),
+    v({id:'vendor_p4prt02',name:'Ein Prat Nature Reserve',category:'National Parks',location:'Wadi Qelt',region:'Binyamin & Shomron',hours:'Sample hours: every day 8:00–16:00',hours_source:'sample data',listedPrice:'30',listedPriceVatTreatment:'including_vat',priceBasis:'Per person',notes:'Sample details, made up for the preview.'}),
+    v({id:'vendor_p4stf03',name:'Sataf',category:'Attraction / Site',location:'Jerusalem hills',region:'Jerusalem',notes:'Sample details, made up for the preview.'}),
     v({id:'vendor_p0lk5sd',name:'Shomron Bus Lines',category:'Transport',contactPerson:'Avi',phone:'+972 54 000 1234',location:'Ariel',maxCap:'50',agentPrice:'2400',agentPriceVatTreatment:'plus_vat',priceBasis:'Per day',payTerms:'Cash or transfer on the day',rateReliability:'3',review_status:'pending',created_by:'rachel.ops@gmail.com',updated_by:'rachel.ops@gmail.com',updated_at:d(0)}),
     v({id:'vendor_g4l1c0a',name:'Galil Buses',category:'Transport',contactPerson:'Dudu',phone:'+972 54 000 5678',location:'Tiberias',region:'Galilee',maxCap:'55',priceBasis:'Per day',tags:'Bus, Midibus'}),
     v({id:'vendor_n3g7v2t',name:'Negev & Arava Transport',category:'Transport',contactPerson:'Eli',phone:'+972 54 000 9012',location:'Beer Sheva',region:'Negev & Arava',maxCap:'53',priceBasis:'Per day',tags:'Bus, Van 17–20 seats, Van 9–10 seats'}),
@@ -756,6 +777,10 @@ const DB = {
       const pic=(a,b,c)=>'data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="${a}"/><circle cx="148" cy="56" r="22" fill="${c}"/><path d="M0 150 L50 96 L92 136 L134 84 L200 148 V200 H0Z" fill="${b}"/><text x="100" y="186" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#fff">Sample picture</text></svg>`);
       S.files['vendor_n0a5h4l']=[['#c9a36b','#7a5a36','#f3e2b8'],['#8fb3c9','#3f5f4a','#fff4d6']].map((c,i)=>({id:'cp'+i,path:'cp'+i,vendor_id:'vendor_n0a5h4l',file_name:'sample-'+(i+1)+'.svg',mime_type:'image/svg+xml',size_bytes:900,kind:'Photo',for_clients:true,uploaded_by:OWNER,mine:true,created_at:dd(9-i),url:pic(c[0],c[1],c[2])}));
       S.vendors.find(x=>x.id==='vendor_n0a5h4l')._files=2;
+      // one sample brochure on a sample park (D-32): a drawn page that says it is a sample, not a real park's handout
+      let bro=''; try{ bro=URL.createObjectURL(new Blob([`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 420"><rect width="300" height="420" fill="#f6ead9"/><rect x="18" y="18" width="264" height="150" fill="#c9a36b"/><path d="M18 168 L90 96 L150 140 L204 80 L282 168Z" fill="#7a5a36"/><text x="150" y="212" text-anchor="middle" font-family="sans-serif" font-size="22" fill="#1f3a2e">Sample brochure</text><text x="150" y="244" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#1f3a2e">Made up for the preview.</text><text x="150" y="264" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#1f3a2e">Not a real park handout.</text></svg>`],{type:'image/svg+xml'})); }catch(e){}
+      S.files['vendor_p4avd01']=[{id:'br1',path:'br1',vendor_id:'vendor_p4avd01',file_name:'sample-brochure.svg',mime_type:'image/svg+xml',size_bytes:700,kind:'Brochure',uploaded_by:OWNER,mine:false,created_at:dd(6),url:bro}];
+      S.vendors.find(x=>x.id==='vendor_p4avd01')._files=1;
       S.demo['vendor_k3m9p2x']={
         prices:[
           {id:'p1',label:'2-hour jeep tour',audience:'Adult',price:'360',currency:'ILS',vat:'plus_vat',basis:'Per person',is_agent:true,pax_min:'',pax_max:'',season:'',source:'Quote from Moshe, WhatsApp',checked_on:'2026-08-14',note:''},
@@ -1918,6 +1943,7 @@ function openDetail(id, opt){
     <div class="hrs"><span class="hint">Opening hours</span>${v.hours?`<b>${esc(v.hours)}</b>`:`<span class="hint">· not added yet</span><button class="mini" id="addHours" type="button">+ Add hours</button>`}
       ${v.hours_last?`<span class="hint brk">Last entry and other times</span><b>${esc(v.hours_last)}</b>`:''}
       ${hoursCheck(v)}</div>
+    <div id="broBox"></div>
     ${isTr?`<fieldset><legend>Vehicles</legend>${(fl=>fl.length?`<div class="flags" style="margin:0 0 4px">${fl.map(x=>`<span class="flag info" style="font-size:13.5px;padding:5px 10px">${esc(x[1])}</span>`).join('')}</div>`:`<p class="hint" style="margin:0">Not marked yet. Tap Edit and choose which vehicles ${indep?'he has':'they have'}: buses, vans by size, cars.</p>`)(VEHICLES.filter(x=>fleetOf(v).has(x[0])))}</fieldset>`:''}
     <div id="parentBox"></div>
     ${contactBar(v)}
@@ -1927,6 +1953,7 @@ function openDetail(id, opt){
     <div id="reqBox"></div>
     ${isGuide(v)?clientBox(v):''}
     <div id="sitesWrap"></div>
+    ${hikesOn()?'<div id="hikesHere"></div>':''}
     <fieldset><div class="sec-head"><legend>Quotes</legend><button class="mini" id="addQuote" type="button">+ Add quote</button></div><div id="quotesBox"><p class="hint">Loading…</p></div></fieldset>
     ${isTr&&bookingsOn()?`<fieldset><div class="sec-head"><legend>Booking sheets</legend><button class="mini" id="addBooking" type="button">+ New booking sheet</button></div><div id="bookingsBox"><p class="hint">Loading…</p></div></fieldset>`:''}
     ${isTr?`<fieldset class="drv-pane keep"><div class="sec-head"><legend>${indep?'Driver':'Drivers of '+esc(v.name)}</legend><button class="mini" id="addDriver" type="button">+ Add or find a driver</button></div>
@@ -1971,6 +1998,7 @@ function openDetail(id, opt){
   drawFiles(v);
   drawExtras(v);
   drawFood(v);
+  drawHikesHere(v);
   w.querySelector('#addPrice').onclick=async()=>{ let pp=false; try{ pp=(await DB.detail(v.id)).prices_private; }catch(e){} openPriceForm(v,null,null,pp); };
   const ppt=w.querySelector('#ppToggle'); if(ppt) ppt.onchange=async()=>{ try{ await DB.setPricesPrivate(v.id, ppt.checked); toast(ppt.checked?'Prices are now private to you':'Prices are visible to colleagues'); }catch(e){ ppt.checked=!ppt.checked; toast(e.message); } };
   w.querySelector('#addQuote').onclick=()=>openQuoteForm(v,null);
@@ -3360,7 +3388,7 @@ function openDealForm(v){
     catch(e){ w.querySelector('#dlErr').innerHTML=`<div class="msg err">${esc(e.message)}</div>`; } };
 }
 
-const KINDS=['Price list','Booking confirmation','Receipt','Quote','Contract','Kosher certificate','Photo','Other'];
+const KINDS=['Price list','Booking confirmation','Receipt','Quote','Contract','Kosher certificate','Brochure','Photo','Other'];
 function loadScript(src){ return new Promise((res,rej)=>{ if(document.querySelector(`script[src="${src}"]`)) return res(); const sc=document.createElement('script'); sc.src=src; sc.onload=res; sc.onerror=()=>rej(new Error('Could not load '+src)); document.head.appendChild(sc); }); }
 const PDFJS='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js', PDFJS_WORKER='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js', JSPDF='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
 async function fileToCanvases(f){
@@ -3431,6 +3459,12 @@ async function drawFiles(v, qid, boxId, canAdd){
   if(!qid){ const kc=document.getElementById('kcert'), cert=files.find(f=>f.kind==='Kosher certificate');
     if(kc){ kc.innerHTML = cert&&cert.url ? ` <a href="${esc(cert.url)}" target="_blank" rel="noopener">📄 See certificate</a>` : (canAdd?`<br><button type="button" class="btn soft" id="kcAdd" style="margin-top:6px">📷 Add kosher certificate</button>`:'');
       const ka=document.getElementById('kcAdd'); if(ka) ka.onclick=()=>{ const sel=document.getElementById(sid+'_kind'); if(sel) sel.value='Kosher certificate'; const inp=document.getElementById(sid+'_file'); if(inp) inp.click(); }; } }
+  // Brochures (D-32) show near the top of the supplier's page, as the kosher certificate does. A park or site with none offers to add one.
+  if(!qid){ const bb=document.getElementById('broBox');
+    if(bb){ const bros=broOf(files), add=canAdd&&!bros.length&&hkIsParkCat(v);
+      bb.innerHTML = bros.length||add ? `<div class="bro-row">${broBtnHtml(bros,'mini bro')}${add?'<button class="mini" type="button" id="broAdd">+ Add brochure</button>':''}</div>` : '';
+      broWire(bb, bros, v.name);
+      const ba=document.getElementById('broAdd'); if(ba) ba.onclick=()=>{ const sel=document.getElementById(sid+'_kind'); if(sel) sel.value='Brochure'; const inp=document.getElementById(sid+'_file'); if(inp) inp.click(); }; } }
   box.innerHTML = (files.length?`<div class="files" style="margin-top:8px">${files.map((f,i)=>{
       const img=/^image\//.test(f.mime_type) && !/hei[cf]/.test(f.mime_type);
       const inner = img && f.url ? `<img src="${esc(f.url)}" alt="${esc(f.file_name)}" loading="lazy">` : `<span class="doc">${/pdf/.test(f.mime_type)?'PDF':'FILE'}</span>`;
@@ -3443,7 +3477,7 @@ async function drawFiles(v, qid, boxId, canAdd){
       <label class="btn accent" for="${sid}_file" style="display:inline-block">Add photo or file</label>
       <input id="${sid}_file" type="file" accept="image/*,application/pdf" multiple hidden>
       <label class="check" for="${sid}_priv" style="margin:0;flex-basis:100%"><input id="${sid}_priv" type="checkbox"><span>Only me and Eretz Israel Tours can see this file</span></label>
-      <span class="hint" id="${sid}_msg">Price lists, booking confirmations, receipts: photos or PDFs up to 10 MB. Before saving you can black out names, phone numbers, card details or anything private.</span></div>`:'');
+      <span class="hint" id="${sid}_msg">Price lists, booking confirmations, receipts, brochures: photos or PDFs up to 10 MB. Before saving you can black out names, phone numbers, card details or anything private.</span></div>`:'');
   box.querySelectorAll('.rm').forEach(b=>b.onclick=async()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again'; return; }
     try{ await DB.removeFile(files[+b.dataset.i]); toast('File removed'); redraw(); }catch(e){ toast(e.message); } });
   const input=box.querySelector('#'+sid+'_file'), msg=box.querySelector('#'+sid+'_msg'); if(!input) return;
@@ -3776,11 +3810,13 @@ const DEMO_PEOPLE={
   owner:{label:'Noa Shalev, a guide (her own page is claimed)',name:'Noa Shalev',email:'noa.shalev@example.com',is_admin:false,role:'Licensed tour guide'},
   guide:{label:'Avi Mizrahi, another guide',name:'Avi Mizrahi',email:'avi.mizrahi@example.com',is_admin:false,role:'Licensed tour guide'},
   agent:{label:'Rachel Amar, a travel agent',name:'Rachel Amar',email:'rachel.ops@gmail.com',is_admin:false,role:'Travel agent'},
-  org:{label:'Avi Stern, an organisation (limited member)'}};
+  org:{label:'Avi Stern, an organisation (limited member)'},
+  org2:{label:'Dina Bar, an organisation with no sites'}};
 // Preview only: turn the sample data into what an organisation (limited member) is sent. A rough copy of what the database does for real.
-function demoLimited(){
-  S.admin=false; S.user={email:'avi@sample-yeshiva.org'};
-  S.me={name:'Avi Stern',email:'avi@sample-yeshiva.org',status:'approved',is_admin:false,role:ORG_ROLE,org:'Sample Yeshiva',member_type:'limited',sections:DEF_SECTIONS,see_quotes:true,see_guide_rates:false,see_transport_reviews:true,see_reviews:false,bookings:true,jobs:false,jobs_post:false};
+function demoLimited(k){
+  const two=k==='org2', em=two?'dina@sample-school.org':'avi@sample-yeshiva.org';   // org2 has no sites section, so no park reaches it (D-32)
+  S.admin=false; S.user={email:em};
+  S.me={name:two?'Dina Bar':'Avi Stern',email:em,status:'approved',is_admin:false,role:ORG_ROLE,org:two?'Sample School':'Sample Yeshiva',member_type:'limited',sections:two?'transport,hotels':DEF_SECTIONS,see_quotes:true,see_guide_rates:false,see_transport_reviews:true,see_reviews:false,bookings:true,jobs:false,jobs_post:false};
   S.vendors=S.vendors.filter(v=>v.review_status==='approved'&&catsOf(v).some(c=>mySections().includes(secOf(c)))).map(v=>{ const o=Object.assign({},v,{agentPrice:'',agentPriceVatTreatment:'',agent_link:'',agent_howto:''});
   if(v.category==='Guide') Object.assign(o,{listedPrice:'',maxPax:'',retail_price:''}); if(!catsOf(v).includes('Transport')) Object.assign(o,{rateReliability:'',rateService:'',rateValue:'',strengths:'',weaknesses:'',notes:''}); return o; });
   Object.keys(S.demo).forEach(k=>{ const dd2=S.demo[k]; if(dd2&&dd2.prices){ dd2.prices=dd2.prices.filter(p=>!p.is_agent); dd2.notes=[]; const vv=S.vendors.find(x=>x.id===k); if(vv){ vv._prices=dd2.prices.length; vv._notes=0; } } });
@@ -3792,7 +3828,7 @@ function demoFlags(){ S.vendors.forEach(v=>{ v._claimed=!!v.claimed_by; v._mine=
 function demoAs(k){
   const KEEP=['vendors','demo','demoQuotes','demoBookings','requests','demoRequests','members','myTop','feedback','jobs','claims','noteQueue','reports'];
   if(S._demoSnap){ Object.assign(S, JSON.parse(S._demoSnap)); S._demoSnap=null; }   // leaving the organisation: the full sample data comes back
-  if(k==='org'){ S._demoSnap=JSON.stringify(Object.fromEntries(KEEP.map(x=>[x,S[x]===undefined?null:S[x]]))); demoLimited(); S.demoAs='org'; S.contributor=true;
+  if(k==='org'||k==='org2'){ S._demoSnap=JSON.stringify(Object.fromEntries(KEEP.map(x=>[x,S[x]===undefined?null:S[x]]))); demoLimited(k); S.demoAs=k; S.contributor=true;
     if(S.tab!=='vendors'&&S.tab!=='quotes'&&S.tab!=='hikes') S.tab='vendors'; S.hikes=null; demoFlags(); closeSheet(); render(); return; }
   const p=DEMO_PEOPLE[k]||DEMO_PEOPLE.admin; S.demoAs=k; S.user={email:p.email};
   S.me={name:p.name,email:p.email,status:'approved',is_admin:p.is_admin,role:p.role,member_type:'full'}; S.admin=p.is_admin; S.contributor=true;
@@ -4310,6 +4346,52 @@ function hkNav(place, name){ const url=hkMapUrl(place), ll=coordsOf(url), txt=St
   let isWaze=false; try{ isWaze=!!url&&/(^|\.)waze\.com$/i.test(new URL(url).hostname); }catch(e){}
   return { waze: ll?`https://waze.com/ul?ll=${ll}&navigate=yes`:(isWaze?url:`https://waze.com/ul?q=${q}&navigate=yes`),
            maps: url&&!isWaze?url:`https://www.google.com/maps/search/?api=1&query=${ll||q}` }; }
+// ---- Hikes and parks (8 Oct 2026, D-32) ----
+// A hike can name the supplier it lies in: a national park, a nature reserve or a site. The database sends that
+// supplier's id only to a member who can see the supplier; the page shows it only when the supplier is in S.vendors too.
+// Start and end open Google Maps. Only two kinds of link are ever built: a Google Maps link found in the text (one
+// that hkMapUrl accepts), or a Google Maps search for the text. A Waze link is never opened as if it were Google Maps.
+const HK_PARK_CATS=['National Parks','Attraction / Site'];
+const hkIsParkCat=v=>catsOf(v).some(c=>HK_PARK_CATS.includes(c));
+const hkParkOf=h=>h&&h.vendor_id?(S.vendors.find(v=>v.id===h.vendor_id)||null):null;
+const hkParkList=()=>S.vendors.filter(v=>!v.hidden&&hkIsParkCat(v)).sort((a,b)=>a.name.localeCompare(b.name));
+const hkHttp=u=>{ try{ const x=new URL(String(u||'').trim()); return x.protocol==='https:'||x.protocol==='http:'?x.href:''; }catch(e){ return ''; } };
+const hkFileHref=u=>{ try{ const x=new URL(String(u||'')); return ['https:','http:','blob:'].includes(x.protocol)?x.href:''; }catch(e){ return ''; } };
+const HK_LINK=/https?:\/\/[^\s<>"']+/gi;
+const hkIsWaze=u=>{ try{ return /(^|\.)waze\.com$/i.test(new URL(u).hostname); }catch(e){ return false; } };
+function hkGmaps(place, name){
+  for(const raw of String(place||'').match(HK_LINK)||[]){ const u=hkMapUrl(raw); if(u&&!hkIsWaze(u)) return u; }
+  const txt=String(place||'').replace(HK_LINK,' ').replace(/\s+/g,' ').trim()||String(name||'').replace(/\s+/g,' ').trim();
+  return txt?'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(txt):''; }
+// A start or end as it shows on the hike's page: the text, and under it the words that say a tap opens Google Maps.
+function hkPlaceLink(place, name, what, label){ const t=label||hkPlaceTxt(place); if(!t) return ''; const u=hkGmaps(place, name);
+  return u?`<a class="hk-place" href="${esc(u)}" target="_blank" rel="noopener noreferrer" aria-label="${esc('Open the '+what+' in Google Maps')}">${esc(t)}<span>Open in Google Maps</span></a>`:esc(t); }
+// Brochures: a kind of file on a supplier. One brochure is a link that opens it; several open a short list.
+const broOf=files=>(files||[]).filter(f=>f.kind==='Brochure'&&hkFileHref(f.url));
+function broBtnHtml(list, cls){ if(!list.length) return '';
+  return list.length===1?`<a class="${cls}" href="${esc(hkFileHref(list[0].url))}" target="_blank" rel="noopener noreferrer" data-bro1>Brochure</a>`:`<button class="${cls}" type="button" data-bros>Brochures (${list.length})</button>`; }
+function broWire(root, list, name){ const b=root.querySelector('[data-bros]'); if(!b) return;
+  b.onclick=()=>{ const old=document.getElementById('broModal'); if(old) old.remove();
+    const el=document.createElement('div'); el.className='modal'; el.id='broModal';
+    el.innerHTML=`<div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="broMT"><h3 id="broMT">Brochures</h3><p style="overflow-wrap:anywhere">${esc(name)}</p>
+      ${list.map(f=>`<a class="btn soft" style="display:block;text-decoration:none;text-align:center;overflow-wrap:anywhere" href="${esc(hkFileHref(f.url))}" target="_blank" rel="noopener noreferrer">${esc(f.file_name||'Brochure')}</a>`).join('')}
+      <button class="btn soft" type="button" data-g="x">Close</button></div>`;
+    document.body.appendChild(el); el.addEventListener('click',e=>{ if(e.target===el) el.remove(); }); el.querySelector('[data-g="x"]').onclick=()=>el.remove(); }; }
+// The supplier's page: the hikes that lie in this place, and a way to add one. Nothing shows on a supplier that is
+// not a park or site and has no hikes.
+async function drawHikesHere(v){
+  const box=document.getElementById('hikesHere'); if(!box||!hikesOn()) return;
+  if(!S.hikes){ let got; try{ got=await DB.loadHikes(); }catch(e){ return; } if(!S.hikes) S.hikes=got; }
+  if(!document.body.contains(box)) return;
+  const hs=S.hikes.filter(h=>h.vendor_id===v.id).sort((a,b)=>a.name.localeCompare(b.name));
+  if(!hs.length&&!hkIsParkCat(v)){ box.innerHTML=''; return; }
+  const sub=h=>[hkKm(h), hkTime(h,true), h.review_status==='pending'?'waiting for approval':h.review_status==='rejected'?'not listed':''].filter(Boolean).join(' · ');
+  box.innerHTML=`<fieldset><div class="sec-head"><legend>Hikes here</legend><button class="mini" id="addHikeHere" type="button">+ Add a hike here</button></div>
+    ${hs.length?`<div class="sitelist">${hs.map(h=>`<button type="button" data-hkh="${esc(h.id)}"><span style="min-width:0;overflow-wrap:anywhere">${esc(h.name)}<br><span class="hint" style="white-space:normal">${esc(sub(h))}</span></span><span class="hint" style="align-self:center">›</span></button>`).join('')}</div>`
+      :'<p class="hint" style="margin:0 0 10px">No hikes here yet. Know a marked trail in this place? Add it.</p>'}</fieldset>`;
+  box.querySelectorAll('[data-hkh]').forEach(b=>b.onclick=()=>openHike(b.dataset.hkh));
+  box.querySelector('#addHikeHere').onclick=()=>openHikeForm({vendor_id:v.id, region:v.region||'', from_vendor:v.id});
+}
 function hkPill(h){
   if(h.review_status==='pending') return '<span class="pill pending">Waiting for approval</span>';
   if(h.review_status==='rejected') return '<span class="pill rejected">Not listed</span>';
@@ -4341,23 +4423,30 @@ async function viewHikes(){
 function drawHikes(){
   const box=document.getElementById('hkResults'); if(!box) return;
   const n=normN(S.hq), all=S.hikes||[];
-  const rows=all.filter(h=>(S.hreg==='All'||h.region===S.hreg)&&(!n||normN([h.name,h.region,hkPlaceTxt(h.start_place),hkPlaceTxt(h.end_place),h.notes].join(' ')).includes(n)));
+  const rows=all.filter(h=>(S.hreg==='All'||h.region===S.hreg)&&(!n||normN([h.name,h.region,(hkParkOf(h)||{}).name,hkPlaceTxt(h.start_place),hkPlaceTxt(h.end_place),h.notes].join(' ')).includes(n)));
   if(!all.length){ box.innerHTML='<div class="list" style="margin-top:14px"><div class="empty"><h3>No hikes yet</h3>Tap <b>Add hike</b> to add the first trail you know.</div></div>'; return; }
   if(!rows.length){ box.innerHTML='<div class="list" style="margin-top:14px"><div class="empty"><h3>Nothing matches</h3>Try a shorter search or pick “All regions”.</div></div>'; return; }
-  box.innerHTML=`<div class="count">${rows.length===all.length?all.length:rows.length+' of '+all.length} hike${all.length>1?'s':''} · sorted by region</div>`+hkRegions(rows).map(r=>{ const hs=rows.filter(h=>h.region===r).sort((a,b)=>a.name.localeCompare(b.name));
-    return `<div class="hk-reg">${esc(r||'No region')} · ${hs.length}</div><div class="list">${hs.map(hkRow).join('')}</div>`; }).join('');
+  box.innerHTML=`<div class="count">${rows.length===all.length?all.length:rows.length+' of '+all.length} hike${all.length>1?'s':''} · by region and place</div>`+hkRegions(rows).map(r=>{ const hs=rows.filter(h=>h.region===r).sort((a,b)=>a.name.localeCompare(b.name));
+    // One card per place (the park or site the hikes lie in), holding every hike there; hikes with no place share a plain card.
+    const places=[], lone=[]; hs.forEach(h=>{ const p=hkParkOf(h); if(!p){ lone.push(h); return; } let g=places.find(x=>x.p.id===p.id); if(!g) places.push(g={p,hs:[]}); g.hs.push(h); });
+    places.sort((a,b)=>a.p.name.localeCompare(b.p.name));
+    return `<div class="hk-reg">${esc(r||'No region')} · ${hs.length}</div>`
+      + places.map(g=>`<div class="list hk-pcard"><button class="hk-phead" type="button" data-hkp="${esc(g.p.id)}"><b>${esc(g.p.name)}</b><span>${g.hs.length===1?'1 hike here':g.hs.length+' hikes here'} · Open the place ›</span></button>${g.hs.map(hkRow).join('')}</div>`).join('')
+      + (lone.length?`<div class="list">${lone.map(hkRow).join('')}</div>`:''); }).join('');
   box.querySelectorAll('.row').forEach(r=>r.onclick=()=>openHike(r.dataset.hk));
+  box.querySelectorAll('[data-hkp]').forEach(b=>b.onclick=()=>openDetail(b.dataset.hkp));
 }
-function hkRepHtml(x){
+function hkRepHtml(x, name){
   const grp=[x.group_size?x.group_size+(x.group_size==='1'?' person':' people'):'', x.age_min&&x.age_max?'ages '+x.age_min+' to '+x.age_max:x.age_min?'youngest '+x.age_min:x.age_max?'oldest '+x.age_max:''].filter(Boolean).join(', ');
   const bits=[[HK_DIFF,x.difficulty,'',''],[HK_YN,x.cliffs,'Cliffs: ',x.cliffs==='yes'?'extra':''],[HK_SHOES,x.water_shoes,'Water shoes: ',''],[HK_ZONE,x.firing_zone,'Firing zone: ',x.firing_zone==='crosses'?'miss':''],[HK_WATER,x.water_route,'Water on the route: ',''],[HK_YN,x.drinking_water,'Drinking water: ',''],[HK_YN,x.eat,'Eating: ','']]
     .filter(b=>b[1]).map(b=>`<span class="flag ${b[3]||'info'}">${esc(b[2]+hkLab(b[0],b[1]).toLowerCase().replace(/^./,c=>b[2]?c:c.toUpperCase()))}</span>`);
   const bath=String(x.bathrooms||'').split(',').map(k=>hkLab(HK_BATH,k)).filter(Boolean).join(', ').toLowerCase(); if(bath) bits.push(`<span class="flag info">Bathrooms: ${esc(bath)}</span>`);
   const line=(k,v)=>v?`<p><span class="hint">${k}</span> ${esc(v)}</p>`:'';
+  const place=(k,p)=>{ const t=hkPlaceTxt(p), u=t?hkGmaps(p, name):''; return !t?'':u?`<p><span class="hint">${k}</span> <a href="${esc(u)}" target="_blank" rel="noopener noreferrer" title="Open in Google Maps">${esc(t)}</a></p>`:line(k,t); };
   return `<div class="hk-rep"><b>${esc(x.by)}${x.org?' <span class="tag">Organisation</span>':''}${x.mine?' <span class="tag">You</span>':''}</b>
     <span class="meta">Walked ${esc(ilDate(x.walked_on))}${grp?' · '+esc(grp):''}</span>
     ${bits.length?`<div class="flags">${bits.join('')}</div>`:''}
-    ${line('Cliffs:',x.cliffs_note)}${line('Points of interest:',x.poi)}${line('Where to eat:',x.eat_note)}${line('Start, as walked:',hkPlaceTxt(x.start_place))}${line('End, as walked:',hkPlaceTxt(x.end_place))}${x.note?`<p>${esc(x.note)}</p>`:''}
+    ${line('Cliffs:',x.cliffs_note)}${line('Points of interest:',x.poi)}${line('Where to eat:',x.eat_note)}${place('Start, as walked:',x.start_place)}${place('End, as walked:',x.end_place)}${x.note?`<p>${esc(x.note)}</p>`:''}
     ${x.can_edit?`<div class="btn-row" style="margin-top:8px"><button class="mini" type="button" data-redit="${esc(x.id)}">Change</button><button class="mini" type="button" data-rhide="${esc(x.id)}">Take off</button></div>`:''}</div>`;
 }
 async function openHike(id){
@@ -4372,6 +4461,14 @@ async function openHike(id){
   const src=h.source==='website'
     ? `Taken from <a href="${esc(/^https?:\/\//i.test(h.source_url)?h.source_url:'#')}" target="_blank" rel="noopener">${esc(hkHost(h.source_url))}</a>, ${h.source_year?'page dated '+esc(h.source_year):'no date on the page'}. ${n?`Confirmed by ${n} colleague${n>1?'s':''} who walked it.`:'Unverified until a colleague has walked it.'}`
     : `Added by ${esc(h.by)}${h.org?' (an organisation)':''}, ${esc(fmtDate(h.created_at))}.`;
+  // The park or site, when this member can see it: its name (opens its page), its hours as the supplier's page holds them, booking and brochure.
+  const park=hikesOn()?hkParkOf(h):null, book=park?hkHttp(park.npResLink):'';
+  const site0=park?String(park.website||'').trim():'', parkSite=site0&&!/\s/.test(site0)?hkHttp(/^https?:\/\//i.test(site0)?site0:'https://'+site0):'';
+  const parkBox=park?`<div class="hk-park"><span class="hint">Part of</span><button class="hk-parkname" type="button" data-hpark>${esc(park.name)} ›</button>
+      ${park.hours?`<span class="hint brk">Opening hours</span><b>${esc(park.hours)}</b>`:''}
+      ${park.hours_last?`<span class="hint brk">Last entry</span><b>${esc(park.hours_last)}</b>`:''}
+      ${park.hours||park.hours_last?(park.hours_verified_how?'<span class="pill approved brk" style="flex-basis:auto">✓ Verified</span>':'<span class="pill pending brk" style="flex-basis:auto">Unverified</span><span class="hint brk" style="flex-basis:auto">Check the hours before you go.</span>'):''}
+      <div class="btn-row" id="hkParkBtns"${book?'':' hidden'}>${book?`<a class="btn soft" href="${esc(book)}" target="_blank" rel="noopener noreferrer">Book entry</a>`:''}</div></div>`:'';
   const body=`<div style="display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin-bottom:14px"><span class="cat">${esc(h.region)}</span>${hkPill(h)}</div>
     <div class="actions">
       <a class="act" href="${esc(nav.waze)}" target="_blank" rel="noopener" title="Navigate to the start with Waze" aria-label="Navigate to the start with Waze">${bmark('waze',ic.nav)}Waze</a>
@@ -4379,11 +4476,12 @@ async function openHike(id){
       ${h.gpx?`<button class="act" type="button" data-hgpx>${hkFileIcon}Route file</button>`:''}
       <button class="act" type="button" data-hrep>${hkRepIcon}Add report</button>
     </div>
+    ${parkBox}
     <dl class="dl">
       ${row('Distance',`<span class="mono">${esc(hkKm(h))}</span>`.replace('<span class="mono"></span>',''))}
       ${row('Usual time',`<span class="mono">${esc(hkTime(h,true))}</span>`.replace('<span class="mono"></span>',''))}
-      ${row('Start',esc(hkPlaceTxt(h.start_place)))}
-      ${row('End',h.is_loop?'A loop: it ends where it starts.':esc(hkPlaceTxt(h.end_place)))}
+      ${row('Start',hkPlaceLink(h.start_place, h.name, 'start'))}
+      ${row('End',h.is_loop?hkPlaceLink(h.start_place, h.name, 'end', 'A loop: it ends where it starts.'):hkPlaceLink(h.end_place, h.name, 'end'))}
       ${mk.length?row('Trail markers',`<span style="display:flex;flex-direction:column;gap:6px">${mk.map(m=>`<span class="hk-mrow">${hkMark(m.color)}<span>${esc(hkMarkTxt(m))}</span></span>`).join('')}${mk.length>1?'<span class="hint">In walking order</span>':''}</span>`):''}
       ${h.gpx?row('Route file (GPX)',`On file<div class="hint">From ${esc(h.gpx.by)}, ${esc(fmtDate(h.gpx.at))}</div>`):row('Route file (GPX)','<span class="hint">None yet. Add one with your report.</span>')}
     </dl>
@@ -4394,14 +4492,19 @@ async function openHike(id){
     <section class="panel"><h3>From colleagues who walked it</h3>
       <p>${n?`${n} report${n>1?'s':''}, the latest walk on ${esc(ilDate(r.last))}`:'Nobody has reported on this hike yet. Walked it? Add what you saw.'}</p>
       ${n&&sum?`<dl class="dl" style="border:0;padding:0;background:transparent;margin-bottom:6px">${sum}</dl>`:''}
-      ${reps.map(hkRepHtml).join('')}
+      ${reps.map(x=>hkRepHtml(x, h.name)).join('')}
       <button class="btn accent" type="button" data-hrep style="width:100%;margin-top:10px">+ Add your report</button>
     </section>
-    <section class="panel"><h3>Before every trip</h3><p style="margin:0"><a class="hk-link" href="${HK_SAFETY}" target="_blank" rel="noopener">Moked Teva: safety pages and firing zones</a></p></section>
+    <section class="panel"><h3>Before every trip</h3>
+      ${parkSite?`<p style="margin:0 0 8px"><a class="hk-link" href="${esc(parkSite)}" target="_blank" rel="noopener noreferrer">${esc(park.name)}: its own page, for closures and changes</a></p>`:''}
+      <p style="margin:0"><a class="hk-link" href="${HK_SAFETY}" target="_blank" rel="noopener">Moked Teva: trail updates and firing zones, whole country</a><br><span class="hint">Moked Teva has no page for one hike. Look for the area there, or phone them.</span></p></section>
     <div class="disclaim">${esc(HK_DISCLAIM)}</div>
     ${S.admin&&h.review_status!=='pending'?`<p style="margin:0"><button class="linkbtn" type="button" data-hdec="${h.review_status==='approved'?'no':'yes'}">${h.review_status==='approved'?'Take this hike off the list':'Put this hike back on the list'}</button></p>`:''}`;
   const foot=`${h.can_edit?'<button class="btn soft" type="button" data-hedit>Change details</button>':'<button class="btn soft" type="button" data-hsug>Suggest a change</button>'}${S.admin&&h.review_status==='pending'?'<button class="btn soft" type="button" data-hdec="no">Turn down</button><button class="btn primary" type="button" data-hdec="yes">Approve</button>':''}`;
   const w=sheet(h.name, body, foot);
+  if(park){ w.querySelector('[data-hpark]').onclick=()=>openDetail(park.id);   // opening the supplier's page closes this one
+    DB.listFiles(park.id).then(files=>{ const box=w.querySelector('#hkParkBtns'), bros=broOf(files); if(!box||!document.body.contains(box)||!bros.length) return;
+      box.insertAdjacentHTML('beforeend', broBtnHtml(bros,'btn soft')); box.hidden=false; broWire(box, bros, park.name); }).catch(()=>{}); }
   w.querySelectorAll('[data-hrep]').forEach(b=>b.onclick=()=>openHikeReport(h, null));
   const g=w.querySelector('[data-hgpx]'); if(g) g.onclick=()=>hkOpenGpx(h);
   const ed=w.querySelector('[data-hedit]'); if(ed) ed.onclick=()=>openHikeForm(h);
@@ -4489,11 +4592,17 @@ function openHikeForm(h0){
   const h=h0||{}, edit=!!h.id; let gpx=null;
   const mks=(h.markers||[]).map(m=>({color:m.color||'',number:m.number||''})); if(!mks.length) mks.push({color:'',number:''});
   const regs=REGIONS.filter(r=>r!=='Countrywide'); if(h.region&&!regs.includes(h.region)) regs.push(h.region);
+  // The parks and sites this member can see. The hike's own one stays on offer even if its category has changed since.
+  const parks=hikesOn()?hkParkList():[], cur=hikesOn()?hkParkOf(h):null; if(cur&&!cur.hidden&&!parks.includes(cur)) parks.push(cur);
   const y=new Date().getFullYear();
   const body=`<form id="hkf" novalidate>
     <fieldset><legend>The hike</legend>
       <div class="f" style="margin-bottom:10px"><label for="hkName">Name <em>*</em></label><input id="hkName" maxlength="120" value="${esc(h.name||'')}" placeholder="The name guides know it by" autocomplete="off"></div>
       <div class="f" style="margin-bottom:10px"><label for="hkRegion">Region <em>*</em></label><select id="hkRegion"><option value="">Choose a region</option>${regs.map(r=>`<option${h.region===r?' selected':''}>${esc(r)}</option>`).join('')}</select></div>
+      ${parks.length?`<div class="f hk-pick" style="margin-bottom:10px"><label for="hkPark">Part of a park or site <span class="hint">(if it is)</span></label>
+        ${parks.length>8?'<input id="hkParkQ" type="search" placeholder="Search parks and sites" autocomplete="off" aria-label="Search parks and sites" style="margin-bottom:6px">':''}
+        <select id="hkPark"></select><span class="hint" id="hkParkNo" hidden>No park or site with that name. Add it first in the Suppliers tab.</span>
+        <span class="hint">The hike's page then links to that place: its hours, booking and brochure.</span></div>`:''}
       <label class="check" for="hkOff" style="margin-bottom:0"><input id="hkOff" type="checkbox"${edit?' checked':''}><span><b>This is an official marked trail.</b> Only official marked trails are listed.</span></label>
     </fieldset>
     <fieldset><legend>The route</legend>
@@ -4538,7 +4647,16 @@ function openHikeForm(h0){
   const sync=()=>{ $('#hkEndBox').hidden=$('#hkLoop').checked; $('#hkWeb').hidden=!$('#hkSrcS').checked; };
   $('#hkLoop').onchange=sync; $('#hkSrcW').onchange=sync; $('#hkSrcS').onchange=sync; sync();
   hkWireGpx(w, 'hkFile', g=>{ gpx=g; });
-  $('#hkCancel').onclick=()=>{ if(edit) openHike(h.id); else closeSheet(); };
+  // The picker: None, then the places in the hike's region, then the rest, by name. The search box narrows it.
+  const pSel=$('#hkPark'), pQ=$('#hkParkQ'); let park0='';
+  const drawPark=first=>{ if(!pSel) return; const keep=first?(cur&&!cur.hidden?cur.id:''):pSel.value, reg=$('#hkRegion').value, n=normN(pQ?pQ.value:'');
+    const hit=parks.filter(v=>v.id===keep||!n||normN([v.name,v.region,v.location].join(' ')).includes(n));
+    const opt=(v,where)=>`<option value="${esc(v.id)}"${v.id===keep?' selected':''}>${esc(v.name)}${where&&(v.region||v.location)?' · '+esc(v.region||v.location):''}</option>`;
+    const near=reg?hit.filter(v=>v.region===reg):[], rest=hit.filter(v=>!near.includes(v));
+    pSel.innerHTML='<option value="">None</option>'+(near.length?`<optgroup label="${esc('In '+reg)}">${near.map(v=>opt(v,false)).join('')}</optgroup>${rest.length?`<optgroup label="Other places">${rest.map(v=>opt(v,true)).join('')}</optgroup>`:''}`:rest.map(v=>opt(v,true)).join(''));
+    $('#hkParkNo').hidden=!(n&&!hit.some(v=>v.id!==keep)); };
+  drawPark(true); if(pSel){ park0=pSel.value; $('#hkRegion').addEventListener('change',()=>drawPark()); if(pQ) pQ.addEventListener('input',()=>drawPark()); }
+  $('#hkCancel').onclick=()=>{ if(edit) openHike(h.id); else if(h.from_vendor&&S.vendors.some(v=>v.id===h.from_vendor)) openDetail(h.from_vendor); else closeSheet(); };
   $('#hkSave').onclick=async e=>{
     const num=s=>String($(s).value||'').trim().replace(',','.');
     const d={ id:h.id||'', name:$('#hkName').value.trim(), region:$('#hkRegion').value, official:$('#hkOff').checked, distance_km:num('#hkKm'), hours_from:num('#hkH1'), hours_to:num('#hkH2'),
@@ -4556,6 +4674,9 @@ function openHikeForm(h0){
       if(d.source_year&&+d.source_year>y) return fail('That year has not come yet.','#hkYear');
       if(d.source_year&&+d.source_year<y-HK_YEARS&&!(edit&&h.source==='website'&&h.source_year===d.source_year)) return fail('Pages older than '+HK_YEARS+' years are not taken.','#hkYear'); }
     if(gpx) Object.assign(d, gpx);
+    // The park is sent with a new hike, and with a change only when the member changed it here: a member who cannot
+    // see the hike's park is shown None, and his save of another field must not take the park off.
+    if(pSel&&(!edit||pSel.value!==park0)) d.vendor_id=pSel.value;
     e.target.disabled=true; err.hidden=true;
     try{ const saved=await DB.saveHike(d); S.hikes=await DB.loadHikes(); if(S.tab==='hikes'||S.tab==='review') render();
       toast(edit?'Saved':saved.review_status==='pending'?'Saved. It shows to colleagues once Eretz Israel Tours has approved it.':'Saved. Colleagues can see it now.'); openHike(saved.id);
@@ -4643,11 +4764,11 @@ function demoHikesInit(){ if(S.demoHikes) return S.demoHikes;
   const dd=n=>new Date(Date.now()-n*86400000).toISOString(), day=n=>dd(n).slice(0,10);
   const P={noa:['noa.shalev@example.com','Noa Shalev'],avi:['avi.mizrahi@example.com','Avi Mizrahi'],rachel:['rachel.ops@gmail.com','Rachel Amar'],org:['avi@sample-yeshiva.org','Avi Stern']};
   const rep=(id,who,o)=>Object.assign({id,author:P[who][0],author_name:P[who][1],org:who==='org',hidden:false,walked_on:day(30),group_size:'',age_min:'',age_max:'',difficulty:'',cliffs:'',cliffs_note:'',water_shoes:'',start_place:'',end_place:'',poi:'',firing_zone:'',water_route:'',drinking_water:'',bathrooms:'',eat:'',eat_note:'',note:'',created_at:dd(20)},o);
-  const hk=(id,o)=>Object.assign({id,region:'',distance_km:'',hours_from:'',hours_to:'',start_place:'',end_place:'',is_loop:false,markers:[],notes:'',official:true,source:'walked',source_url:'',source_year:'',review_status:'approved',added_by:OWNER,added_by_name:'Eretz Israel Tours',org:false,gpxFile:null,reports:[],created_at:dd(12),updated_at:dd(3)},o);
+  const hk=(id,o)=>Object.assign({id,region:'',vendor_id:'',distance_km:'',hours_from:'',hours_to:'',start_place:'',end_place:'',is_loop:false,markers:[],notes:'',official:true,source:'walked',source_url:'',source_year:'',review_status:'approved',added_by:OWNER,added_by_name:'Eretz Israel Tours',org:false,gpxFile:null,reports:[],created_at:dd(12),updated_at:dd(3)},o);
   const y=new Date().getFullYear();
   const SAMPLE_GPX=HK_GPX_HEAD+'<trk><trkseg><trkpt lat="31.8" lon="35.4"/><trkpt lat="31.801" lon="35.404"/><trkpt lat="31.802" lon="35.409"/></trkseg></trk></gpx>';
   S.demoHikes=[
-    hk('hk1',{name:'Sataf springs loop',region:'Jerusalem',distance_km:'3',hours_from:'1.5',hours_to:'2',start_place:'Sataf upper car park',is_loop:true,markers:[{color:'green',number:''}],notes:'Sample. Steps on the way down. Busy on Fridays.',
+    hk('hk1',{name:'Sataf springs loop',region:'Jerusalem',vendor_id:'vendor_p4stf03',distance_km:'3',hours_from:'1.5',hours_to:'2',start_place:'Sataf upper car park',is_loop:true,markers:[{color:'green',number:''}],notes:'Sample. Steps on the way down. Busy on Fridays.',
       reports:[rep('hr1','noa',{walked_on:day(9),group_size:'8',age_min:'6',age_max:'70',difficulty:'easy',cliffs:'no',water_shoes:'not_needed',firing_zone:'no',water_route:'yes',drinking_water:'yes',bathrooms:'start',eat:'yes',eat_note:'Tables by the upper spring',note:'Good first walk for a family.'}),
                rep('hr2','org',{walked_on:day(40),group_size:'35',age_min:'14',age_max:'17',difficulty:'easy',cliffs:'no',firing_zone:'no',water_route:'yes',bathrooms:'start',eat:'yes'})]}),
     hk('hk2',{name:'Nahal Katlav',region:'Jerusalem',distance_km:'8',hours_from:'4',hours_to:'',start_place:'Bar Giora',end_place:'Road 386',source:'website',source_url:'https://example.org/sample-hiking-site/nahal-katlav',source_year:String(y-2),notes:'Sample. Taken from a website: not checked by anyone here yet.'}),
@@ -4658,8 +4779,9 @@ function demoHikesInit(){ if(S.demoHikes) return S.demoHikes;
                rep('hr5','rachel',{walked_on:day(220),group_size:'6',difficulty:'hard',cliffs:'yes',firing_zone:'unsure',water_route:'no'})]}),
     hk('hk4',{name:'Nahal Darga',region:'Dead Sea & Judean Desert',distance_km:'7',hours_from:'6',hours_to:'7',start_place:'Metzoke Dragot',end_place:'Road 90',markers:[{color:'red',number:''}],notes:'Sample. Ropes and pools. Closed when floods are forecast.',
       reports:[rep('hr6','avi',{walked_on:day(60),group_size:'9',age_min:'16',age_max:'45',difficulty:'hard',cliffs:'yes',cliffs_note:'Roped drops into pools',water_shoes:'needed',firing_zone:'no',water_route:'yes',drinking_water:'no',bathrooms:'none',eat:'yes'})]}),
-    hk('hk5',{name:'Ein Prat to Ein Mabua',region:'Binyamin & Shomron',distance_km:'8',hours_from:'4',hours_to:'5',start_place:'Ein Prat nature reserve',end_place:'Ein Mabua',source:'website',source_url:'https://example.org/sample-hiking-site/ein-prat',source_year:String(y-1),notes:'Sample. Taken from a website: not checked by anyone here yet.'}),
-    hk('hk6',{name:'Ein Avdat canyon',region:'Negev & Arava',distance_km:'2.5',hours_from:'2',hours_to:'',start_place:'Ein Avdat lower entrance',end_place:'Ein Avdat upper car park',notes:'Sample. One way only: the ladders go up. A ride is needed at the top.',
+    hk('hk5',{name:'Ein Prat to Ein Mabua',region:'Binyamin & Shomron',vendor_id:'vendor_p4prt02',distance_km:'8',hours_from:'4',hours_to:'5',start_place:'Ein Prat nature reserve',end_place:'Ein Mabua',source:'website',source_url:'https://example.org/sample-hiking-site/ein-prat',source_year:String(y-1),notes:'Sample. Taken from a website: not checked by anyone here yet.'}),
+    hk('hk9',{name:'Ein Prat, the pools walk',region:'Binyamin & Shomron',vendor_id:'vendor_p4prt02',distance_km:'1.5',hours_from:'1',hours_to:'',start_place:'Ein Prat nature reserve car park',is_loop:true,markers:[{color:'red',number:''}],notes:'Sample. A short walk between the pools. Good with small children.'}),
+    hk('hk6',{name:'Ein Avdat canyon',region:'Negev & Arava',vendor_id:'vendor_p4avd01',distance_km:'2.5',hours_from:'2',hours_to:'',start_place:'Ein Avdat lower entrance',end_place:'Ein Avdat upper car park',notes:'Sample. One way only: the ladders go up. A ride is needed at the top.',
       reports:[rep('hr7','rachel',{walked_on:day(75),group_size:'18',age_min:'8',age_max:'72',difficulty:'moderate',cliffs:'yes',cliffs_note:'Ladders and steps cut in the cliff',water_shoes:'not_needed',firing_zone:'no',water_route:'yes',drinking_water:'yes',bathrooms:'start,end',eat:'no'})]}),
     hk('hk7',{name:'Red Canyon',region:'Eilat',distance_km:'2',hours_from:'1.5',hours_to:'',start_place:'Red Canyon car park, Road 12',is_loop:true,source:'website',source_url:'https://example.org/sample-hiking-site/red-canyon',source_year:'',notes:'Sample. Taken from a website with no date on the page.'}),
     hk('hk8',{name:'Nahal Amud, upper part',region:'Galilee',distance_km:'6',hours_from:'3',hours_to:'4',start_place:'Upper Nahal Amud car park',end_place:'Road 85',markers:[{color:'black',number:''},{color:'israel_trail',number:''}],notes:'Sample. Waiting for approval in this preview.',review_status:'pending',added_by:P.noa[0],added_by_name:P.noa[1],created_at:dd(0)})
@@ -4667,6 +4789,8 @@ function demoHikesInit(){ if(S.demoHikes) return S.demoHikes;
   return S.demoHikes; }
 const demoHkName=(e,n)=>e===OWNER?'Eretz Israel Tours':(n||'A colleague');
 const demoHkSeen=h=>h.review_status==='approved'||S.admin||h.added_by===S.user.email;
+// The hike's park as whoever is looking may know it: only a supplier in the list he was sent, and never a hidden one (as _hike_park does for real).
+const demoHkPark=id=>id&&S.vendors.some(v=>v.id===id&&!v.hidden)?id:'';
 function demoHkSummary(reps){ const v=reps.filter(x=>!x.hidden), num=k=>v.map(x=>x[k]).filter(x=>x!==''&&x!=null).map(Number);
   const mode=k=>{ const c={}; v.forEach(x=>{ if(x[k]) c[x[k]]=(c[x[k]]||0)+1; }); return Object.keys(c).sort((a,b)=>c[b]-c[a]||(a<b?-1:1))[0]||null; };
   const g=num('group_size'), a1=num('age_min'), a2=num('age_max');
@@ -4675,7 +4799,7 @@ function demoHkSummary(reps){ const v=reps.filter(x=>!x.hidden), num=k=>v.map(x=
     water_route:mode('water_route'),drinking_water:mode('drinking_water'),bathrooms:mode('bathrooms'),eat:mode('eat')}; }
 function demoHikeView(h){ const mine=h.added_by===S.user.email, g=h.gpxFile&&!h.gpxFile.removed?h.gpxFile:null, o=Object.assign({},h);
   delete o.added_by; delete o.added_by_name; delete o.reports; delete o.gpxFile;
-  return Object.assign(o,{by:demoHkName(h.added_by,h.added_by_name),mine,can_edit:S.admin||(mine&&h.review_status!=='approved'),gpx:g?{name:g.name,by:demoHkName(g.added_by,g.added_by_name),at:g.at}:null,r:demoHkSummary(h.reports)}); }
+  return Object.assign(o,{vendor_id:demoHkPark(h.vendor_id),by:demoHkName(h.added_by,h.added_by_name),mine,can_edit:S.admin||(mine&&h.review_status!=='approved'),gpx:g?{name:g.name,by:demoHkName(g.added_by,g.added_by_name),at:g.at}:null,r:demoHkSummary(h.reports)}); }
 function demoRepView(x){ const o=Object.assign({},x); delete o.author; delete o.author_name; delete o.hidden; return Object.assign(o,{by:demoHkName(x.author,x.author_name),mine:x.author===S.user.email,can_edit:S.admin||x.author===S.user.email}); }
 function demoHkDetail(h){ return {hike:demoHikeView(h), reports:h.reports.filter(x=>!x.hidden).sort((a,b)=>a.walked_on<b.walked_on?1:-1).map(demoRepView)}; }
 function demoHkFind(id){ const h=demoHikesInit().find(x=>x.id===id); if(!h||!demoHkSeen(h)) throw new Error('That hike is not available.'); return h; }
@@ -4688,9 +4812,12 @@ Object.assign(DB, {
     if(LIVE) return await rpc('hike_save',{p_hike:d});
     const now=new Date().toISOString(), web=d.source==='website'; let h=d.id&&demoHkFind(d.id);
     if(h&&!(S.admin||(h.added_by===S.user.email&&h.review_status!=='approved'))) throw new Error('This hike is approved. Suggest a change and Eretz Israel Tours will update it.');
-    if(!h){ h={id:'hk'+Date.now(),reports:[],gpxFile:null,added_by:S.user.email,added_by_name:S.me.name,org:lim(),review_status:S.admin?'approved':'pending',created_at:now}; demoHikesInit().push(h); }
+    const vid='vendor_id' in d?String(d.vendor_id==null?'':d.vendor_id).trim():null;   // not sent = the park stays as it is
+    if(vid&&!demoHkPark(vid)) throw new Error('Choose the place from the list.');
+    if(!h){ h={id:'hk'+Date.now(),vendor_id:'',reports:[],gpxFile:null,added_by:S.user.email,added_by_name:S.me.name,org:lim(),review_status:S.admin?'approved':'pending',created_at:now}; demoHikesInit().push(h); }
     Object.assign(h,{name:d.name,region:d.region,distance_km:d.distance_km,hours_from:d.hours_from,hours_to:d.hours_to===d.hours_from?'':d.hours_to,start_place:d.start_place,end_place:d.is_loop?'':d.end_place,is_loop:!!d.is_loop,
       markers:(d.markers||[]).slice(0,8),notes:d.notes,official:true,source:web?'website':'walked',source_url:web?d.source_url:'',source_year:web?d.source_year:'',updated_at:now});
+    if(vid!==null) h.vendor_id=vid;
     if(!S.admin&&h.review_status==='rejected') h.review_status='pending';
     if(d.gpx) h.gpxFile={name:'route.gpx',body:d.gpx,added_by:S.user.email,added_by_name:S.me.name,at:now,removed:false};
     return demoHikeView(h); },

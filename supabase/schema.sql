@@ -248,6 +248,7 @@ create table public.hikes (
   decided_at timestamp with time zone,
   created_at timestamp with time zone default now() not null,
   updated_at timestamp with time zone default now() not null,
+  vendor_id text default ''::text not null,   -- D-32: the park or site the hike lies in (a supplier's id); '' = none. No foreign key: an id whose supplier is gone reads as no park.
   constraint hikes_pkey primary key (id),
   constraint hikes_name_check check (length(trim(both from name)) >= 3 and length(name) <= 120),
   constraint hikes_source_check check (source = any (array['walked'::text, 'website'::text])),
@@ -256,11 +257,13 @@ create table public.hikes (
     and (hours_from = ''::text or hours_from ~ '^[0-9]{1,2}(\.[0-9]{1,2})?$'::text) and (hours_to = ''::text or hours_to ~ '^[0-9]{1,2}(\.[0-9]{1,2})?$'::text)
     and (source_year = ''::text or source_year ~ '^[0-9]{4}$'::text)),
   constraint hikes_lengths_check check (length(region) <= 60 and length(start_place) <= 300 and length(end_place) <= 300
-    and length(notes) <= 2000 and length(source_url) <= 500 and length(markers::text) <= 1200)
+    and length(notes) <= 2000 and length(source_url) <= 500 and length(markers::text) <= 1200),
+  constraint hikes_vendor_id_check check (length(vendor_id) <= 60)
 );
 alter table public.hikes enable row level security;
 CREATE INDEX hikes_status_idx on public.hikes using btree (review_status, region);
 CREATE INDEX hikes_added_idx on public.hikes using btree (added_by);
+CREATE INDEX hikes_vendor_idx on public.hikes using btree (vendor_id);
 
 -- One row per walk a member reports. hidden = taken off by its writer or by Eretz Israel Tours; the row is kept.
 create table public.hike_reports (
@@ -609,7 +612,7 @@ create table public.vendor_files (
   for_clients boolean default false not null,
   constraint vendor_files_path_key UNIQUE (path),
   constraint vendor_files_pkey PRIMARY KEY (id),
-  constraint vendor_files_kind_check CHECK ((kind = ANY (ARRAY['Photo'::text, 'Receipt'::text, 'Price list'::text, 'Booking confirmation'::text, 'Contract'::text, 'Quote'::text, 'Kosher certificate'::text, 'Other'::text])))
+  constraint vendor_files_kind_check CHECK ((kind = ANY (ARRAY['Photo'::text, 'Receipt'::text, 'Price list'::text, 'Booking confirmation'::text, 'Contract'::text, 'Quote'::text, 'Kosher certificate'::text, 'Brochure'::text, 'Other'::text])))
 );
 alter table public.vendor_files enable row level security;
 CREATE INDEX vendor_files_vendor_idx ON public.vendor_files USING btree (vendor_id);
@@ -978,14 +981,14 @@ as $function$
          or public._reviews_open(m, v.category, v.also_categories)))
 $function$;
 
--- A file on a supplier, for a limited member: his own, another organisation's, or a photo or kosher certificate.
+-- A file on a supplier, for a limited member: his own, another organisation's, or a photo, kosher certificate or brochure (D-32).
 -- Price lists, receipts, contracts, booking confirmations and quotes from guides and agents can carry agent rates.
 create or replace function public._file_visible(f public.vendor_files, m public.members)
  returns boolean language sql stable set search_path to ''
 as $function$
   select case when coalesce(m.is_admin, false) or f.uploaded_by = m.email then true
     when f.private then false
-    when public._limited(m) then f.org or f.kind in ('Photo','Kosher certificate')
+    when public._limited(m) then f.org or f.kind in ('Photo','Kosher certificate','Brochure')
     else true end
 $function$;
 
@@ -3383,14 +3386,28 @@ as $function$
 $function$;
 revoke all on function public._hike_markers_clean(jsonb) from public, anon, authenticated;
 
+-- D-32: the hike's park as this member may know it: the supplier's id when the supplier exists, is not hidden, and the
+-- member is Eretz Israel Tours or has the supplier's section. Otherwise empty, so a hike never shows a supplier to a
+-- member who cannot open that supplier.
+create or replace function public._hike_park(h public.hikes, m public.members)
+ returns text language sql stable security definer set search_path to ''
+as $function$
+  select coalesce((select v.id from public.vendors v
+    where m.id is not null and h.vendor_id <> '' and v.id = h.vendor_id and not v.hidden
+      and (m.is_admin or public._can_see(m, v.category, v.also_categories))), '')
+$function$;
+revoke all on function public._hike_park(public.hikes,public.members) from public, anon, authenticated;
+
 -- A hike as one member receives it, with a summary of the reports. Names only: never an email.
 -- Cliffs and firing zone: one report saying yes is enough for the summary to say so.
+-- D-32: 'vendor_id' is the hike's park, through _hike_park.
 create or replace function public._hike_json(h public.hikes, m public.members)
  returns json language sql stable security definer set search_path to ''
 as $function$
   select json_build_object('id',h.id,'name',h.name,'region',h.region,'distance_km',h.distance_km,'hours_from',h.hours_from,'hours_to',h.hours_to,
     'start_place',h.start_place,'end_place',h.end_place,'is_loop',h.is_loop,'markers',h.markers,'notes',h.notes,'official',h.official,
     'source',h.source,'source_url',h.source_url,'source_year',h.source_year,'review_status',h.review_status,
+    'vendor_id',public._hike_park(h, m),
     'by',public._name(h.added_by),'org',h.org,'mine',h.added_by = m.email,
     'can_edit',m.is_admin or (h.added_by = m.email and h.review_status <> 'approved'),
     'created_at',h.created_at,'updated_at',h.updated_at,
@@ -3495,10 +3512,12 @@ revoke all on function public.hike_detail(text,uuid) from public; grant execute 
 
 -- Add a hike, or change one. A member's new hike waits for approval. Once approved, only Eretz Israel Tours changes it.
 -- The 3-year rule is asked when a hike is added or its page year is changed, not when an older entry is corrected.
+-- D-32: the key vendor_id. Sent empty, the hike has no park. Sent with a supplier's id, that supplier must be one this
+-- member can see, or the save is refused. Not sent at all, the hike keeps the park it has.
 create or replace function public.hike_save(p_token text, p_hike jsonb)
  returns json language plpgsql security definer set search_path to ''
 as $function$
-declare m public.members; hid uuid; h public.hikes; src text; yr text; nm text;
+declare m public.members; hid uuid; h public.hikes; src text; yr text; nm text; vid text;
   y0 int := extract(year from now() at time zone 'Asia/Jerusalem')::int;
   km text := trim(coalesce(p_hike->>'distance_km','')); h1 text := trim(coalesce(p_hike->>'hours_from','')); h2 text := trim(coalesce(p_hike->>'hours_to',''));
   url text := trim(coalesce(p_hike->>'source_url','')); lp boolean := coalesce(p_hike->>'is_loop','') in ('true','t');
@@ -3536,6 +3555,14 @@ begin
   else
     url := ''; yr := '';
   end if;
+  -- the park or site the hike lies in: only when the page sent it (an older copy of the page leaves it as it is).
+  -- Empty clears it. Otherwise it must be a supplier this member can see: the same test as _hike_park.
+  if p_hike ? 'vendor_id' then
+    vid := trim(coalesce(p_hike->>'vendor_id',''));
+    if vid <> '' and (length(vid) > 60 or not exists (select 1 from public.vendors v where v.id = vid and not v.hidden
+        and (m.is_admin or public._can_see(m, v.category, v.also_categories)))) then
+      raise exception 'Choose the place from the list.'; end if;
+  end if;
   if hid is null then
     if not m.is_admin and (select count(*) from public.hikes where added_by = m.email and created_at > now() - interval '1 day') >= 20 then
       raise exception 'Too many hikes in one day. Try again tomorrow.'; end if;
@@ -3554,6 +3581,7 @@ begin
     markers = public._hike_markers_clean(p_hike->'markers'),
     notes = left(trim(coalesce(p_hike->>'notes','')),2000),
     official = true, source = src, source_url = left(url,500), source_year = yr,
+    vendor_id = case when p_hike ? 'vendor_id' then vid else vendor_id end,
     review_status = case when not m.is_admin and review_status = 'rejected' then 'pending' else review_status end,
     updated_at = clock_timestamp()   -- the clock, not the start of the call: each change is its own version (see hike_decide)
   where id = hid returning * into h;
