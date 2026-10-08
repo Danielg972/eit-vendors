@@ -10,7 +10,9 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
-## D-35 · The hike's page: a real map with the route on it (built; not live)
+## D-35 · The hike's page: a real map with the route on it (live since 8 October 2026)
+
+**Live since 8 October 2026, about 22:50, on the owner's word.** He tried the trial copy on his phone and wrote at 22:35: "Open map works full screen 2 where am I doesn't work file saves ask Israel hiking map Route saved. Make it live no one uses the app anyway". So, on his Android phone: the map opens full screen; the saved route file was taken by Israel Hiking Map (as this session reads his words); "Where am I" did not work. Why it did not is not known: he did not say what the phone showed. The likeliest cause was the app's own doing: he was far from the hike, and the first version then refused to show him at all. That is changed before go-live: his place always comes onto the map, the map widens to hold him and the hike, and it says how many kilometres away he is. If the cause was the phone not giving its place, the page says so and how to allow it. Pull request #31 merged; front end only; D-34 went live with it.
 
 **Decided by:** the owner (Eretz Israel Tours), 8 October 2026, 20:45 Israel time, after trying the trial copy of D-34 on his phone.
 
@@ -38,11 +40,11 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 **Not checked, and it matters:** nothing on a real phone; iPhone; "Where am I" with a real phone's place; the phone's Back button does not close the open map (the app has no handling of Back anywhere).
 
-**Open, the owner's:** go-live of the branch (D-34 and D-35 together); asking the Israel Hiking Map authors; the privacy line before Hikes opens to colleagues.
+**Open, the owner's:** whether "Where am I" works for him now, and what the phone says if not; asking the Israel Hiking Map authors; the privacy line before Hikes opens to colleagues.
 
 ---
 
-## D-34 · The hike's page: laid out as a finished page, map links that open, a route file that can be used (built; not live)
+## D-34 · The hike's page: laid out as a finished page, map links that open, a route file that can be used (live since 8 October 2026, with D-35)
 
 **Decided by:** the owner (Eretz Israel Tours), 8 October 2026, about 18:30 Israel time, testing the live Hikes tab on his Android phone (Chrome, a Samsung) after adding a route file to his own hike.
 

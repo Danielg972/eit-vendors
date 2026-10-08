@@ -274,17 +274,17 @@ Researched by web lookups per supplier (the supplier's own site first, a third-p
 - **Not tested:** production (PostgreSQL 17; the checks ran on 16); a real phone, and opening a route file in a hiking app; Safari and Firefox.
 
 ## The hike's map (8 Oct 2026, decision D-35)
-**Status: built on the branch `hike-page-fixes`, on top of D-34. Not live. Front end only.**
+**Status: live since 8 Oct 2026 (pull request #31). Front end only. Hikes are still open to Eretz Israel Tours only.**
 - **The library.** Leaflet 1.9.4, unchanged from the npm package, in `vendor/leaflet-1.9.4/` (`leaflet.js`, `leaflet.css`, `LICENSE`). `hkLeaflet` loads both files the first time a map is needed; either failing, or 12 seconds passing, means no map and the next hike tries again.
 - **Map pictures.** `HK_TILES`: `https://tile.openstreetmap.org/{z}/{x}/{y}.png`, with its credit. Keep to the tile usage policy (https://operations.osmfoundation.org/policies/tiles/): credit always seen, no fetching ahead, no offline store, no referrer policy that hides this site's address. To use another map, change `HK_TILES`; Israel Hiking Map needs its authors' agreement first (D-35).
 - **What the map shows** (`hkMapData`): the recording's lines (each track part its own line) and its first and last point; with no recording, the points the start and end links carry (`hkPlaceLL`: a Google or Waze link with a point; for a named Google place only the place's own point; never a short link). Nothing to show, no map.
-- **Two maps** (`hkMapDraw`). On the page (`hkMapInline`) it does not move, so the page scrolls; nothing is laid over it. Full screen (`hkMapFull`, `hkMapFullClose`) it moves and zooms, the points open a box with Waze and Google Maps, and "Where am I" watches the phone's place until the map closes. `closeSheet` and Escape close the open map first.
+- **Two maps** (`hkMapDraw`). On the page (`hkMapInline`) it does not move, so the page scrolls; nothing is laid over it. Full screen (`hkMapFull`, `hkMapFullClose`) it moves and zooms, the points open a box with Waze and Google Maps, and "Where am I" watches the phone's place until the map closes, and always brings the member onto the map: far from the hike, the map widens to hold both and says how far he is. `closeSheet` and Escape close the open map first.
 - **When things fail.** Map pictures do not come: a note on the map, the line still drawn. Library does not come: `hkSketchHtml` draws the line alone in the map's place. Route file does not come: the map shows start and end if it can and says the recording did not load.
 - **Figures** (`hkFiguresHtml`, `hkProfileHtml`): height along the walk (only when heights differ by 10 m or more), then length, climb, descent, lowest, highest.
-- **Checks:** `supabase/tests/hikes/hike_page_walk.py` (91 checks; needs Pillow for the stand-in map pictures) and `preview_walk.py` (200; it does not serve the library, so it walks the no-library path).
+- **Checks:** `supabase/tests/hikes/hike_page_walk.py` (92 checks; needs Pillow for the stand-in map pictures) and `preview_walk.py` (200; it does not serve the library, so it walks the no-library path).
 
 ## The hike's page (8 Oct 2026, decision D-34)
-**Status: built on the branch `hike-page-fixes`. Not live. Front end only.**
+**Status: live since 8 Oct 2026 (pull request #31, together with D-35). Front end only.**
 - **Sections.** Key facts (distance, usual time, difficulty), warnings, the four tiles, "Getting there", "The trail", "The place", "Important notes", reports, "Before every trip".
 - **Map links** (`hkLinkProps`). On Android a link to Google Maps or Waze is an app link (`intent://…;package=…;S.browser_fallback_url=…;end`) with no new tab; elsewhere, and in a bare in-app web view, an ordinary link in a new tab. Only addresses `hkMapUrl` accepted, or ones the page built, go through it.
 - **A place's buttons** (`hkPlaceRow`, `hkGmaps`, `hkWaze`). Google Maps: a Google link in the text, else the point of a Waze link, else the words. Waze: a Waze link, else the point of a Google link, else the words. No button when there is nothing to go by; the hike's name is no longer searched for.

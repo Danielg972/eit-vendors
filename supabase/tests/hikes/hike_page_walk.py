@@ -286,9 +286,13 @@ async def main():
         check('refused: the page says how to allow it, a second tap asks again, and no watch is left running after the map closes', t2.startswith('Your phone did not give its place.') and w2[0]==[1,2,3] and all(i in w2[1] for i in (1,2,3)), [t2,w2]); await b.close()
         # ================= far from the hike, and a phone that will not give its place =================
         b,pg=await start(p,'far',ANDROID,411,812, geo=(32.8,35.0)); await open_hike(pg,'Nahal Og'); await pg.wait_for_selector('#hkMap .leaflet-container'); await pg.click('#hkMapCap [data-hmap]'); await pg.wait_for_selector('#hkMapFull')
-        c0=await pg.evaluate('()=>{ const c=__full().map.getCenter(); return [c.lat.toFixed(4),c.lng.toFixed(4)]; }'); await pg.click('#hkMapFull [data-me]'); await pg.wait_for_selector('.toast')
-        fr=await pg.evaluate('()=>{ const c=__full().map.getCenter(), t=document.querySelector(".toast"), r=t.getBoundingClientRect(); return [[c.lat.toFixed(4),c.lng.toFixed(4)], t.textContent, document.elementFromPoint(r.left+r.width/2, r.top+r.height/2)===t]; }')
-        check('far away: "Where am I" says the member is far from the hike, the map stays on the hike, and the message is seen above the map', fr==[c0,'You are far from this hike. The map stays on the hike.',True], fr); await b.close()
+        await pg.click('#hkMapFull [data-me]'); await pg.wait_for_selector('.toast'); await pg.wait_for_timeout(600)
+        fr=await pg.evaluate('()=>{ const m=__full().map, L=window.L, t=document.querySelector(".toast"), r=t.getBoundingClientRect(); let me=null, line=null; m.eachLayer(l=>{ if(l.getTooltip&&l.getTooltip()&&l.getTooltip().getContent()==="You") me=l.getLatLng(); else if(l instanceof L.Polyline&&!line) line=l.getBounds(); }); return [me&&[me.lat,me.lng], me&&m.getBounds().contains(me), m.getBounds().contains(line), t.textContent, document.elementFromPoint(r.left+r.width/2, r.top+r.height/2)===t]; }')
+        import re as _re
+        km=_re.match(r'You are about (\d+) km from this hike\. The map shows you and the hike\.$', fr[3])
+        check('far away: "Where am I" still shows the member: the map widens to hold him and the hike, and says how far he is, in a message seen above the map', fr[0]==[32.8,35.0] and fr[1] is True and fr[2] is True and km and 110<=int(km.group(1))<=125 and fr[4] is True, fr)
+        await pg.click('#hkMapFull [data-fit]'); await pg.wait_for_timeout(300)
+        check('far away: "Whole route" brings the map back to the hike', await pg.evaluate('()=>__full().map.getZoom()>=13'), await pg.evaluate('()=>__full().map.getZoom()')); await b.close()
         b,pg=await start(p,'no_place',ANDROID,411,812); await open_hike(pg,'Nahal Og'); await pg.wait_for_selector('#hkMap .leaflet-container'); await pg.click('#hkMapCap [data-hmap]'); await pg.wait_for_selector('#hkMapFull'); await pg.click('#hkMapFull [data-me]'); await pg.wait_for_selector('.toast')
         check('no place given: the page says so and how to allow it', (await pg.inner_text('.toast')).startswith('Your phone did not give its place.'), await pg.inner_text('.toast')); await b.close()
     bad=[n for n,c in res if not c]

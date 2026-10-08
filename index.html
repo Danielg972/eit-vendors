@@ -4757,8 +4757,11 @@ function hkMapFull(h, d, from){ hkMapFullClose(); const L=window.L; if(!hkLeafOk
   if(d.start) go(m.ms.start, d.rec?(d.same?'Where the recording starts and ends':'Where the recording starts'):(d.same?'Start and end':'Start'), d.start);
   if(d.end) go(m.ms.end, d.rec?'Where the recording ends':'End', d.end);
   let me=null, ring=null, asked=false, watching=false;
-  const show=ll=>{ if(m.bounds.getCenter().distanceTo(ll)>30000){ toast('You are far from this hike. The map stays on the hike.'); return; }
-    map.fitBounds(L.latLngBounds(m.bounds.getSouthWest(), m.bounds.getNorthEast()).extend(ll),{padding:[48,44],maxZoom:17}); };
+  // The member's place always comes onto the map, however far he is: the map widens to hold him and the hike, and
+  // says how far he is when that is more than a walk. "Whole route" brings the hike back.
+  const show=ll=>{ const far=m.bounds.getCenter().distanceTo(ll);
+    map.fitBounds(L.latLngBounds(m.bounds.getSouthWest(), m.bounds.getNorthEast()).extend(ll),{padding:[48,44],maxZoom:17});
+    if(far>3000) toast('You are about '+(far>=10000?Math.round(far/1000):(far/1000).toFixed(1))+' km from this hike. The map shows you and the hike.'); };
   map.on('locationfound',e=>{ if(!me){ ring=L.circle(e.latlng,{radius:e.accuracy,color:'#1d4ed8',weight:1,fillOpacity:.12,interactive:false}).addTo(map);
       me=L.circleMarker(e.latlng,{radius:7,color:'#fff',weight:3,fillColor:'#1d4ed8',fillOpacity:1,interactive:false}).addTo(map).bindTooltip('You',{permanent:true,direction:'right',offset:[10,0]}); }
     else{ me.setLatLng(e.latlng); ring.setLatLng(e.latlng).setRadius(e.accuracy); }
