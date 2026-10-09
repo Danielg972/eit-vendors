@@ -4778,24 +4778,31 @@ function hkMapFull(h, d, from){ hkMapFullClose(); const L=window.L; if(!hkLeafOk
   el.querySelector('[data-x]').focus(); }
 // The phone or the browser refused to say where the member is. A box says, for his kind of phone, where to allow it,
 // and stays until he closes it. "Try again" asks the phone again.
+// On Android two switches decide it, and neither is on the page of this one site: Chrome's own Location switch, and the
+// phone's permission for Chrome. A copy of the app put on the home screen runs on Chrome and has no menu of its own,
+// so the box says to open Chrome itself. (The owner's phone, 9 Oct 2026: the site's own settings showed no Location at all.)
 function hkWhereHelp(again){ const old=document.getElementById('hkLocModal'); if(old) old.remove();
   const ua=navigator.userAgent||''; let alone=false; try{ alone=matchMedia('(display-mode: standalone)').matches||navigator.standalone===true; }catch(e){}
-  const apple=/iPhone|iPad|iPod/i.test(ua)||(/Macintosh/i.test(ua)&&navigator.maxTouchPoints>1);
-  const steps=apple?['Open the iPhone\'s <b>Settings</b>, then <b>Privacy &amp; Security</b>, then <b>Location Services</b>. Switch it on.','In that same list tap <b>Safari Websites</b> (or the browser you use) and choose <b>While Using the App</b>.','Come back here and tap <b>Try again</b>. When the phone asks, choose <b>Allow</b>.']
-    :hkAndroid()?[alone?'Press and hold this app\'s icon on your home screen and tap <b>Site settings</b>.':'Tap the small icon at the left of the address bar, at the top of the screen.','Tap <b>Permissions</b>, then <b>Location</b>, and choose <b>Allow</b>.','Come back here and tap <b>Try again</b>.']
-    :['Click the icon at the left of the address bar.','Set <b>Location</b> to <b>Allow</b>.','Come back here and click <b>Try again</b>.'];
-  const more=hkAndroid()?'<p class="hint" style="margin:0 0 12px"><b>Location is not listed there?</b> Then Chrome itself may not use location. In Chrome\'s menu (the three dots) open Settings, Site settings, Location: switch it on and take this site off "Blocked". In the phone\'s Settings open Apps, Chrome, Permissions, Location and choose "Allow only while using the app". Check that the phone\'s own Location is on.</p>':'';
+  const apple=/iPhone|iPad|iPod/i.test(ua)||(/Macintosh/i.test(ua)&&navigator.maxTouchPoints>1), droid=hkAndroid();
+  const ol=a=>'<ol class="hkp-steps" style="font-size:14.5px;color:var(--ink);margin:4px 0 12px">'+a.map(x=>'<li>'+x+'</li>').join('')+'</ol>';
+  const h=t=>'<p style="margin:0;font-weight:600">'+t+'</p>';
+  const steps=droid
+    ? h('1. In Chrome')+ol([(alone?'This app runs on Chrome, so the switch is there. Open the <b>Chrome</b> browser itself, on any page.':'Tap the three dots at the top right of Chrome.'),(alone?'Tap the three dots at the top right, then <b>Settings</b>.':'Tap <b>Settings</b>.'),'Tap <b>Site settings</b>, then <b>Location</b>, and turn the switch <b>on</b>.','If this site is listed there as blocked, tap it and choose <b>Allow</b>.'])
+      +h('2. In the phone\'s Settings')+ol(['Tap <b>Apps</b>, then <b>Chrome</b>, then <b>Permissions</b>, then <b>Location</b>.','Choose <b>Allow only while using the app</b>.'])
+      +h('3. Back here')+'<p style="margin:4px 0 12px;font-size:14.5px">Tap <b>Try again</b>. When the phone asks, tap <b>Allow</b>.</p>'
+    : ol(apple?['Open the iPhone\'s <b>Settings</b>, then <b>Privacy &amp; Security</b>, then <b>Location Services</b>. Switch it on.','In that same list tap <b>Safari Websites</b> (or the browser you use) and choose <b>While Using the App</b>.','Come back here and tap <b>Try again</b>. When the phone asks, choose <b>Allow</b>.']
+      :['Click the icon at the left of the address bar.','Set <b>Location</b> to <b>Allow</b>.','Come back here and click <b>Try again</b>.']);
   const el=document.createElement('div'); el.className='modal'; el.id='hkLocModal';
   el.innerHTML=`<div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="hkLT" style="max-height:calc(100% - 8px);overflow-y:auto"><h3 id="hkLT">Allow location</h3>
-    <p>Your ${hkAndroid()||apple?'phone':'browser'} did not say where you are, so the map cannot show you. Allow it once:</p>
-    <ol class="hkp-steps" style="font-size:14.5px;color:var(--ink);margin-bottom:12px">${steps.map(x=>'<li>'+x+'</li>').join('')}</ol>${more}
-    <p class="hint" style="margin:0 0 14px">Your place is drawn on your own screen only. It is not sent to Eretz Israel Tours or to anyone else.</p>
+    <p>Your ${droid||apple?'phone':'browser'} did not say where you are, so the map cannot show you. ${droid?'Two switches decide this. Check both:':'Allow it once:'}</p>
+    ${steps}
+    <p class="hint" style="margin:0 0 14px">${droid?'Turning these on only lets a site ask. A site sees where you are only after you tap Allow for that site. ':''}Your place is drawn on your own screen only. It is not sent to Eretz Israel Tours or to anyone else.</p>
     <button class="btn primary" type="button" data-g="again">Try again</button><button class="btn soft" type="button" data-g="x">Close</button></div>`;
   document.body.appendChild(el);
   el.addEventListener('click',e=>{ if(e.target===el) el.remove(); });
   el.querySelector('[data-g="x"]').onclick=()=>el.remove();
   el.querySelector('[data-g="again"]').onclick=()=>{ el.remove(); again(); };
-  el.querySelector('[data-g="again"]').focus(); }
+  try{ el.querySelector('[data-g="again"]').focus({preventScroll:true}); }catch(e){} el.firstChild.scrollTop=0; }   // the box opens at its first line, not at its buttons
 function hkMapFullClose(){ const lm=document.getElementById('hkLocModal'); if(lm) lm.remove();
   if(!hkFullNow) return false; const f=hkFullNow; hkFullNow=null; try{ f.map.stopLocate(); f.map.remove(); }catch(e){} f.el.remove();
   if(f.from&&document.body.contains(f.from)){ try{ f.from.focus(); }catch(e){} } return true; }

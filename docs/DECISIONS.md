@@ -32,6 +32,8 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 **Not checked:** the box on a real phone; whether the installed copy's "Site settings" step is worded as Samsung phones word it.
 
+**The box rewritten, 9 October 2026, about 14:40, on the owner's word ("Rewrite in app how to fix location").** The first box sent him to the page of this one site, where there was no Location to switch: a site that was never asked is not listed there, and he uses the copy on his home screen, which has no Chrome menu. What worked on his phone was switching location on for Chrome as a whole. The box now gives the two switches that decide it on Android, in order: Chrome's own (Chrome, three dots, Settings, Site settings, Location), then the phone's permission for Chrome (Settings, Apps, Chrome, Permissions, Location), then "Try again". On the home-screen copy it says to open Chrome itself. It adds that switching these on only lets a site ask. It opens at its first line. iPhone and computer steps are unchanged. Which of the two switches was off on his phone is not known; he did not say. Checked: `hike_page_walk.py` 102 checks. Not seen: on a phone.
+
 **"Can we add more hikes?":** yes. A second list is being put together for him to choose from, as the first was.
 
 ---
