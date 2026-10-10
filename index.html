@@ -602,7 +602,9 @@ a.hk-link,.hk-src a{color:var(--tab-on)}
 .hkmf-map{position:relative;flex:1;min-height:0}
 .hkmf-map>div:first-child{position:absolute;inset:0}
 .hkmf-tools{display:flex;flex-wrap:wrap;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));background:var(--card);border-top:1px solid var(--line)}
-.hkmf-tools .hkp-go{flex:1;justify-content:center;white-space:nowrap}
+.hkmf-tools .hkp-go{flex:1 1 40%;justify-content:center;white-space:nowrap;min-width:0}
+.hkmf-tools a.hkp-go{text-decoration:none}
+.hkmf-tools .hkp-go svg{flex:none}
 .hkmf .hkm-note{left:62px;max-width:calc(100% - 72px)}
 .act .act-sub{display:block;font-size:10.5px;font-weight:400;color:var(--ink-2)}
 .hkp-prof{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 8px;margin-top:6px;font-size:11.5px;color:var(--ink-3);font-variant-numeric:tabular-nums}
@@ -4369,7 +4371,7 @@ const HK_COLORS=[['red','Red','#c0392b'],['blue','Blue','#1d5fbf'],['green','Gre
 const HK_DIFF=[['easy','Easy'],['moderate','Moderate'],['hard','Hard']], HK_SHOES=[['needed','Needed'],['useful','Useful'],['not_needed','Not needed']],
   HK_ZONE=[['crosses','Crosses one'],['no','Does not'],['unsure','Not sure']], HK_WATER=[['yes','Yes'],['season','In season'],['no','No']], HK_YN=[['yes','Yes'],['no','No']],
   HK_BATH=[['start','At the start'],['end','At the end'],['none','None']];
-const HK_APPS=[['Israel Hiking Map','https://israelhiking.osm.org.il/'],['Amud Anan','https://amudanan.co.il/']];
+const HK_APPS=[['Mapeak','https://mapeak.com/'],['Amud Anan','https://amudanan.co.il/']];   // Mapeak was called Israel Hiking Map until 2025
 const HK_SAFETY='https://www.mokedteva.co.il/InfoCenter/InfoPages';
 const HK_DISCLAIM="Hike details are colleagues' reports and notes taken from websites. Eretz Israel Tours and the members take no responsibility for them. Check the route, the weather and any firing zone yourself before every trip.";
 const HK_GPX_MAX=1900000, HK_GPX_THIN=1200000, HK_YEARS=3;
@@ -4685,7 +4687,13 @@ function hkFiguresHtml(t){
 // A member's own position, when he asks for it, is drawn on his screen and goes nowhere else.
 const HK_LEAF='vendor/leaflet-1.9.4/', HK_LINE='#b5179e';
 const HK_TILES={url:'https://tile.openstreetmap.org/{z}/{x}/{y}.png', max:19, credit:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors'};
-var hkMapNow=null, hkFullNow=null, hkLeafP=null, hkLeafOk=false;
+// The marked trails, drawn over the map: Waymarked Trails' own picture of the trails OpenStreetMap holds (its terms,
+// read 10 Oct 2026: free to use on other sites at a moderate rate, with OpenStreetMap and Waymarked Trails named).
+// It only adds lines to the map; the app takes and keeps no trail data. A trial, at the owner's wish (10 Oct 2026).
+const HK_TRAILS={url:'https://tile.waymarkedtrails.org/hiking/{z}/{x}/{y}.png', max:17, credit:'marked trails: <a href="https://hiking.waymarkedtrails.org" target="_blank" rel="noopener noreferrer">Waymarked Trails</a>'};
+// Mapeak (until 2025 Israel Hiking Map): its own map opened at a point. A plain link; nothing of Mapeak's is shown here.
+const hkMapeak=ll=>'https://mapeak.com/map/15.00/'+ll[0].toFixed(4)+'/'+ll[1].toFixed(4);
+var hkMapNow=null, hkFullNow=null, hkLeafP=null, hkLeafOk=false, hkTrailsOn=true;
 // The map library is ready only when both its script and its style sheet have come; either one failing, or twelve
 // seconds passing, counts as no map, and the next hike tries again from the start.
 function hkLeaflet(){ if(hkLeafOk&&window.L&&window.L.map) return Promise.resolve(window.L);
@@ -4715,6 +4723,7 @@ function hkMapDraw(L, el, d, live){
   try{
   map.attributionControl.setPrefix(false);
   const tiles=L.tileLayer(HK_TILES.url,{maxZoom:HK_TILES.max, attribution:HK_TILES.credit}).addTo(map), pts=[];
+  const trails=L.tileLayer(HK_TRAILS.url,{maxZoom:HK_TILES.max, maxNativeZoom:HK_TRAILS.max, attribution:HK_TRAILS.credit, opacity:.9}); if(hkTrailsOn) trails.addTo(map);
   d.segs.forEach(s=>L.polyline(s,{color:'#fff',weight:8,opacity:.85,interactive:false}).addTo(map));
   d.segs.forEach(s=>{ L.polyline(s,{color:HK_LINE,weight:4,opacity:1,interactive:false}).addTo(map); s.forEach(q=>pts.push(q)); });
   // each point is a dot with its name; on the open map a wider, unseen ring around it takes the tap
@@ -4728,7 +4737,7 @@ function hkMapDraw(L, el, d, live){
   // the map's picture did not come: say so, the line and the points are still right
   const note=el.parentNode.querySelector('.hkm-note'); let got=0;
   tiles.on('tileload',()=>{ got++; if(note) note.hidden=true; }); tiles.on('tileerror',()=>{ if(!got&&note){ note.textContent='The map did not load. Check the connection.'; note.hidden=false; } });
-  return {map, ms, fit, bounds};
+  return {map, ms, fit, bounds, trails};
   }catch(e){ try{ map.remove(); }catch(e2){} throw e; } }
 function hkMapDrop(){ if(hkMapNow){ try{ hkMapNow.remove(); }catch(e){} hkMapNow=null; } }
 // The map at the head of the hike's page. It stays still, so the page scrolls under a finger; a tap opens it full screen.
@@ -4741,6 +4750,7 @@ async function hkMapInline(box, h, d){ let L; try{ L=await hkLeaflet(); }catch(e
   setTimeout(()=>{ if(hkMapNow===m.map){ m.map.invalidateSize(); m.fit(); } },320);   // after the page has slid up
   return true; }
 const hkWideIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>';
+const hkTrailIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19c3-1 4-4 6-6s4-2 5-5 3-3 5-4"/><circle cx="4" cy="19" r="1.4" fill="currentColor"/><circle cx="20" cy="4" r="1.4" fill="currentColor"/></svg>';
 const hkMeIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>';
 // The same map over the whole screen: it moves and zooms, start and end offer the way there, and "Where am I" shows
 // the member's own position against the route.
@@ -4748,7 +4758,8 @@ function hkMapFull(h, d, from){ hkMapFullClose(); const L=window.L; if(!hkLeafOk
   const el=document.createElement('div'); el.id='hkMapFull'; el.className='hkmf'; el.setAttribute('role','dialog'); el.setAttribute('aria-modal','true'); el.setAttribute('aria-label','Map: '+h.name);
   el.innerHTML=`<div class="hkmf-bar"><b>${esc(h.name)}</b><button class="btn soft" type="button" data-x>Close the map</button></div>
     <div class="hkmf-map"><div></div><div class="hkm-note" role="status" hidden></div></div>
-    <div class="hkmf-tools"><button class="hkp-go" type="button" data-me>${hkMeIcon}Where am I</button><button class="hkp-go" type="button" data-fit>${ic.maps}${d.rec?'Whole route':d.start&&d.end?'Start and end':d.start?'The start':'The end'}</button></div>`;
+    <div class="hkmf-tools"><button class="hkp-go" type="button" data-me>${hkMeIcon}Where am I</button><button class="hkp-go" type="button" data-fit>${ic.maps}${d.rec?'Whole route':d.start&&d.end?'Start and end':d.start?'The start':'The end'}</button>
+      <button class="hkp-go" type="button" data-trails aria-pressed="${hkTrailsOn}">${hkTrailIcon}<span>${hkTrailsOn?'Marked trails: on':'Marked trails: off'}</span></button><a class="hkp-go" data-mapeak href="${esc(hkMapeak(d.start||d.end))}" target="_blank" rel="noopener noreferrer">${hkWideIcon}Open in Mapeak</a></div>`;
   document.body.appendChild(el);
   let m; try{ m=hkMapDraw(L, el.querySelector('.hkmf-map>div'), d, true); }catch(e){ el.remove(); toast('The map could not open.'); return; }
   const map=m.map; hkFullNow={el, map, from};
@@ -4774,6 +4785,9 @@ function hkMapFull(h, d, from){ hkMapFullClose(); const L=window.L; if(!hkLeafOk
     if(asked) toast('Still looking for where you are. It can take a minute in a canyon.'); });
   el.querySelector('[data-me]').onclick=whereAmI;
   el.querySelector('[data-fit]').onclick=()=>m.fit();
+  // marked trails on or off; the choice holds for the next map opened, until the page is loaded again
+  const tb=el.querySelector('[data-trails]'); tb.onclick=()=>{ hkTrailsOn=!hkTrailsOn; if(hkTrailsOn) m.trails.addTo(map); else map.removeLayer(m.trails);
+    tb.setAttribute('aria-pressed',hkTrailsOn); tb.querySelector('span').textContent=hkTrailsOn?'Marked trails: on':'Marked trails: off'; };
   el.querySelector('[data-x]').onclick=()=>hkMapFullClose();
   el.querySelector('[data-x]').focus(); }
 // The phone or the browser refused to say where the member is. A box says, for his kind of phone, where to allow it,
@@ -4822,19 +4836,25 @@ async function hkOpenGpx(h){
   let canShare=false; try{ canShare=!hkAndroid()&&!!(file&&navigator.canShare&&navigator.canShare({files:[file]})); }catch(e){}
   const save=()=>{ try{ const url=URL.createObjectURL(new Blob([text],{type:'application/gpx+xml'})); const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),5000); return true; }catch(e){ toast('Could not save the file.'); return false; } };
   const apps=HK_APPS.map(a=>`<a class="hk-link" href="${a[1]}" target="_blank" rel="noopener">${a[0]}</a>`).join(' or ');
-  const steps=`<ol class="hkp-steps"><li>Choose <b>Save the file</b>. It goes to Downloads as <b>${esc(name)}</b>.</li><li>Open your hiking app and open the file from there. On a phone you can also tap the file in Downloads and choose the hiking app.</li><li>No hiking app yet? Nothing can open the file until one is installed: ${apps}.</li></ol>`;
+  // On Android the phone itself asks which app opens a saved route file; the page cannot ask for it, so it says where that question comes up.
+  const noApp=`<li>No hiking app yet? Nothing can open the file until one is installed: ${apps}. Mapeak is the new name of Israel Hiking Map.</li>`;
+  const steps=hkAndroid()
+    ? `<ol class="hkp-steps"><li>Tap <b>Save the file</b>. It goes to Downloads as <b>${esc(name)}</b>.</li><li>When the download is done, Chrome shows a message at the bottom of the screen. Tap <b>Open</b> on it. (Missed it? Tap the file in Downloads.)</li><li>Your phone asks which app to open it with. Choose <b>Mapeak</b> or <b>Amud Anan</b>.</li>${noApp}</ol>`
+    : `<ol class="hkp-steps"><li>Choose <b>Save the file</b>. It goes to Downloads as <b>${esc(name)}</b>.</li><li>Open your hiking app and open the file from there. On a phone you can also tap the file in Downloads and choose the hiking app.</li>${noApp}</ol>`;
   const old=document.getElementById('hkModal'); if(old) old.remove();
   const el=document.createElement('div'); el.className='modal'; el.id='hkModal';
   el.innerHTML=`<div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="hkMT"><h3 id="hkMT">Route file</h3>
     <p style="overflow-wrap:anywhere"><b>${esc(name)}</b><br><span class="hint">${esc(h.name)}</span></p>
     ${canShare?'<button class="btn primary" type="button" data-g="share">Open in a hiking app</button>':''}
     <button class="btn ${canShare?'soft':'primary'}" type="button" data-g="save">Save the file</button>
+    <p id="hkMS" role="status" hidden style="margin:8px 0 0;font-weight:600"></p>
     <div class="hint" id="hkMH" style="margin:4px 0 12px">${canShare?`Your phone shows its apps: choose your hiking app. It opens in any app that reads GPX files, such as ${apps}.`:steps}</div>
     <button class="btn soft" type="button" data-g="x">Close</button></div>`;
   document.body.appendChild(el);
   el.addEventListener('click',e=>{ if(e.target===el) el.remove(); });
   el.querySelector('[data-g="x"]').onclick=()=>el.remove();
-  el.querySelector('[data-g="save"]').onclick=()=>{ if(save()) toast('Saving '+name); };
+  el.querySelector('[data-g="save"]').onclick=()=>{ if(!save()) return; toast('Saving '+name);
+    const st=el.querySelector('#hkMS'); st.textContent=hkAndroid()?'Saved. Now tap Open on Chrome\'s message at the bottom of the screen, then choose Mapeak or Amud Anan.':'Saved to Downloads. Open it from your hiking app.'; st.hidden=false; };
   const sh=el.querySelector('[data-g="share"]'); if(sh) sh.onclick=async()=>{ try{ await navigator.share({files:[file], title:h.name}); el.remove(); }
     catch(e){ if(e&&e.name==='AbortError') return; sh.remove(); const sv=el.querySelector('[data-g="save"]'); sv.className='btn primary'; el.querySelector('#hkMH').innerHTML='This phone would not pass the file to another app. Do it this way:'+steps; } };
 }

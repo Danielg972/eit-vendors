@@ -17,7 +17,10 @@ ROOT=os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','..','..')
 def tile_png():   # a stand-in for a map picture: pale ground, a grid, the words "test tile"
     im=Image.new('RGB',(256,256),(236,232,220)); d=ImageDraw.Draw(im); d.rectangle([0,0,255,255],outline=(205,198,180)); d.line([0,128,255,128],fill=(222,216,200)); d.line([128,0,128,255],fill=(222,216,200)); d.text((8,8),'test tile',fill=(170,160,140))
     b=io.BytesIO(); im.save(b,'PNG'); return b.getvalue()
-TILE=tile_png(); TILES=[]; OTHER=[]
+def trail_png():   # a stand-in for the marked-trails picture: see-through, with one green line across it
+    im=Image.new('RGBA',(256,256),(0,0,0,0)); d=ImageDraw.Draw(im); d.line([0,40,255,200],fill=(46,139,61,255),width=4)
+    b=io.BytesIO(); im.save(b,'PNG'); return b.getvalue()
+TILE=tile_png(); TRAIL=trail_png(); TILES=[]; TRAILS=[]; OTHER=[]
 def check(n,c,d=''):
     res.append((n,bool(c))); print(("PASS " if c else "FAIL ")+n+((" :: "+str(d)[:3000]) if not c else ''))
 ANDROID='Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Mobile Safari/537.36'
@@ -45,9 +48,14 @@ async def start(p, tag, ua, w, h, init='', opts=(), geo=None):
         if 'no_tiles' in opts: await route.abort()
         else: await route.fulfill(body=TILE, content_type='image/png')
     await ctx.route('https://tile.openstreetmap.org/**', tile)
+    async def trail(route):
+        TRAILS.append(route.request.url)
+        if 'no_trails' in opts: await route.abort()
+        else: await route.fulfill(body=TRAIL, content_type='image/png')
+    await ctx.route('https://tile.waymarkedtrails.org/**', trail)
     if geo: await ctx.grant_permissions(['geolocation']); await ctx.set_geolocation({'latitude':geo[0],'longitude':geo[1],'accuracy':12})
     pg=await ctx.new_page(); pg.on('pageerror', lambda e: errs.append(tag+' pageerror: '+str(e)))
-    pg.on('request', lambda r: OTHER.append(r.url) if not r.url.startswith(('http://localhost:8765/','https://tile.openstreetmap.org/','https://fonts.','https://cdn.jsdelivr.net/','data:','blob:')) else None)
+    pg.on('request', lambda r: OTHER.append(r.url) if not r.url.startswith(('http://localhost:8765/','https://tile.openstreetmap.org/','https://tile.waymarkedtrails.org/','https://fonts.','https://cdn.jsdelivr.net/','data:','blob:')) else None)
     await pg.goto('http://localhost:8765/index.html'); await pg.wait_for_selector('[data-tab="hikes"]')
     await pg.add_style_tag(content='#demoAs,.demo-bar{display:none!important}')   # the preview's own "View as" bar is wider than a small phone
     return b, pg
@@ -101,7 +109,7 @@ async def main():
         s_ll='%.6f,%.6f'%(pts[0][0],pts[0][1]); e_ll='%.6f,%.6f'%(pts[-1][0],pts[-1][1])
         check('android: the map shows the whole recording as a line, every point of it, inside the frame', M['lines']==[[48,'#fff',True],[48,'#b5179e',True]], M['lines'])
         check('android: start and end are marked together on the map, at the first and the last point', M['tips']==[['Start',s_ll],['End',e_ll]], M['tips'])
-        check('android: the map\'s pictures come from OpenStreetMap only, they load, and its credit is on the map with a link', M['tiles']==['tile.openstreetmap.org'] and M['loaded']>=4 and M['att']=='© OpenStreetMap contributors' and M['attLink']=='https://www.openstreetmap.org/copyright' and M['attSeen'], M)
+        check('android: the map\'s pictures come from OpenStreetMap, the marked trails over them from Waymarked Trails, both load, and both are credited on the map with links', sorted(M['tiles'])==['tile.openstreetmap.org','tile.waymarkedtrails.org'] and M['loaded']>=8 and M['att']=='© OpenStreetMap contributors, marked trails: Waymarked Trails' and M['attLink']=='https://www.openstreetmap.org/copyright' and M['attSeen'], M)
         check('android: the map on the page stays still, so a finger on it scrolls the page', M['still'][:4]==[False,False,False,False] and M['still'][4]!='none', M['still'])
         check('android: nothing lies over the map: the names of start and end are whole and seen, and the line under the map says what it is', M['dots']==[True,True] and M['cap']=='The recorded route. Open the map to move around it and to see where you are on it.', [M['dots'],M['cap']])
         pr=await pg.eval_on_selector('#hkRouteBox .hkp-prof polyline','e=>e.getAttribute("points").trim().split(/\\s+/).map(p=>p.split(",").map(Number))')
@@ -113,7 +121,15 @@ async def main():
         check('android: on the open map, start and end each offer Waze and the Google Maps app, at the first and the last point of the recording', ends==[['Where the recording starts',['Waze',intent('https://waze.com/ul?ll='+s_ll+'&navigate=yes',WAZE),'',''],['Google Maps',intent(G+s_ll,MAPS),'','']],['Where the recording ends',['Waze',intent('https://waze.com/ul?ll='+e_ll+'&navigate=yes',WAZE),'',''],['Google Maps',intent(G+e_ll,MAPS),'','']]], ends)
         await pg.click('#hkMapCap [data-hmap]'); await pg.wait_for_selector('#hkMapFull .leaflet-container')
         F=await pg.evaluate('''()=>{ const f=__full(), el=f.el, r=el.getBoundingClientRect(), mid=document.elementFromPoint(innerWidth/2, innerHeight/2); return {covers:r.top===0&&r.left===0&&Math.round(r.width)===innerWidth&&Math.round(r.height)===innerHeight, onTop:el.contains(mid), moves:[f.map.dragging.enabled(), f.map.touchZoom.enabled()], bar:el.querySelector('.hkmf-bar').textContent.trim().replace(/\\s+/g,' '), tools:[...el.querySelectorAll('.hkmf-tools button')].map(b=>[b.textContent.trim(), Math.round(b.getBoundingClientRect().height)>=40]), att:el.querySelector('.leaflet-control-attribution').textContent.trim(), over:document.documentElement.scrollWidth>innerWidth+1}; }''')
-        check('android: a tap on the map opens it over the whole screen, where it moves and zooms, with its credit', F=={'covers':True,'onTop':True,'moves':[True,True],'bar':'Nahal Og, lower canyonClose the map','tools':[['Where am I',True],['Whole route',True]],'att':'© OpenStreetMap contributors','over':False}, F)
+        check('android: a tap on the map opens it over the whole screen, where it moves and zooms, with its credit', F=={'covers':True,'onTop':True,'moves':[True,True],'bar':'Nahal Og, lower canyonClose the map','tools':[['Where am I',True],['Whole route',True],['Marked trails: on',True]],'att':'© OpenStreetMap contributors, marked trails: Waymarked Trails','over':False}, F)
+        mk=await pg.evaluate('''()=>{ const a=document.querySelector('#hkMapFull [data-mapeak]'), r=a.getBoundingClientRect(); return [a.textContent.trim(), a.getAttribute('href'), a.target, a.rel, Math.round(r.height)>=40, r.right<=innerWidth&&r.bottom<=innerHeight]; }''')
+        check('android: the open map offers "Open in Mapeak", an ordinary link to Mapeak\'s own map at the start of the walk', mk==['Open in Mapeak','https://mapeak.com/map/15.00/%.4f/%.4f'%(pts[0][0],pts[0][1]),'_blank','noopener noreferrer',True,True], mk)
+        tr=[await pg.evaluate('()=>document.querySelectorAll("#hkMapFull img.leaflet-tile[src*=waymarkedtrails]").length')]
+        await pg.click('#hkMapFull [data-trails]'); await pg.wait_for_timeout(200)
+        tr+=[await pg.evaluate('()=>document.querySelectorAll("#hkMapFull img.leaflet-tile[src*=waymarkedtrails]").length'), await pg.inner_text('#hkMapFull [data-trails]'), await pg.get_attribute('#hkMapFull [data-trails]','aria-pressed'), await pg.inner_text('#hkMapFull .leaflet-control-attribution')]
+        await pg.click('#hkMapFull [data-trails]'); await pg.wait_for_timeout(300)
+        tr+=[await pg.evaluate('()=>document.querySelectorAll("#hkMapFull img.leaflet-tile[src*=waymarkedtrails]").length>0'), await pg.inner_text('#hkMapFull [data-trails]')]
+        check('android: "Marked trails" takes the trails off the map and puts them back, and the credit follows', tr[0]>0 and tr[1:5]==[0,'Marked trails: off','false','© OpenStreetMap contributors'] and tr[5:]==[True,'Marked trails: on'], tr)
         await pg.click('#hkMapFull [data-me]'); await pg.wait_for_function('()=>{ let n=0; __full().map.eachLayer(l=>{ if(l.getTooltip&&l.getTooltip()&&l.getTooltip().getContent()==="You") n++; }); return n===1; }')
         me=await pg.evaluate('()=>{ let p=null; const m=__full().map; m.eachLayer(l=>{ if(l.getTooltip&&l.getTooltip()&&l.getTooltip().getContent()==="You") p=l.getLatLng(); }); return [p.lat,p.lng,m.getBounds().contains(p)]; }')
         check('android: "Where am I" puts the member\'s own place on the map, with the route still in view', me==[31.805,35.405,True], me)
@@ -122,7 +138,7 @@ async def main():
         check('android: Escape closes the map first and leaves the hike\'s page open', await pg.locator('#hkMapFull').count()==0 and await pg.locator('#sheetWrap .hkp-card').count()>0 and await pg.evaluate('()=>__full()===null'))
         await pg.click('#hkMapCap [data-hmap]'); await pg.wait_for_selector('#hkMapFull'); await pg.click('#hkMapFull [data-x]')
         check('android: "Close the map" closes it', await pg.locator('#hkMapFull').count()==0)
-        check('android: no part of the member\'s place, and nothing else, went anywhere but the map\'s own pictures', OTHER==[] and all(u.startswith('https://tile.openstreetmap.org/') and u.endswith('.png') and '?' not in u for u in TILES) and len(TILES)>0, [OTHER[:3], TILES[:2]])
+        check('android: no part of the member\'s place, and nothing else, went anywhere but the map\'s own pictures', OTHER==[] and all(u.startswith('https://tile.openstreetmap.org/') and u.endswith('.png') and '?' not in u for u in TILES) and len(TILES)>0 and all(u.startswith('https://tile.waymarkedtrails.org/hiking/') and u.endswith('.png') and '?' not in u for u in TRAILS) and len(TRAILS)>0, [OTHER[:3], TILES[:2]])
         pb=await pg.eval_on_selector_all('#sheetWrap .hkp-card .hkp-row:not(#hkRoute) > .hkp-btns a','els=>els.map(a=>[a.textContent,a.getAttribute("href"),a.getAttribute("target")||""])')
         check('android: start and end each have a Google Maps and a Waze button that ask for the app, by the words of the place', pb==[['Google Maps',intent(G+quote('Og trailhead, by Almog',safe="-_.!~*'()"),MAPS),''],['Waze',intent('https://waze.com/ul?q='+quote('Og trailhead, by Almog',safe="-_.!~*'()")+'&navigate=yes',WAZE),''],['Google Maps',intent(G+quote('Road 90, north of the Dead Sea',safe="-_.!~*'()"),MAPS),''],['Waze',intent('https://waze.com/ul?q='+quote('Road 90, north of the Dead Sea',safe="-_.!~*'()")+'&navigate=yes',WAZE),'']], pb)
         tiles=await pg.eval_on_selector_all('#sheetWrap .actions a.act','els=>els.map(a=>[a.textContent.trim(),a.getAttribute("href").slice(0,9),a.getAttribute("target")||""])')
@@ -130,10 +146,12 @@ async def main():
         await pg.eval_on_selector('.hkp-top','e=>e.scrollIntoView({block:"start"})'); await pg.wait_for_timeout(300); await pg.screenshot(path=OUT+'hp_3_below_map.png')
         await pg.eval_on_selector('#hkRoute','e=>e.scrollIntoView({block:"start"})'); await pg.wait_for_timeout(300); await pg.screenshot(path=OUT+'hp_4_trail.png')
         await pg.click('[data-hgpx]'); await pg.wait_for_selector('#hkModal'); mt=await pg.inner_text('#hkModal')
-        check('android: the route file box does not offer what Android refuses; it says how to do it', await pg.locator('#hkModal [data-g="share"]').count()==0 and 'Save the file' in mt and 'open the file from there' in mt and 'Nothing can open the file until one is installed' in mt and 'Israel Hiking Map' in mt and 'Amud Anan' in mt, mt)
+        check('android: the route file box does not offer what Android refuses; it says how to do it', await pg.locator('#hkModal [data-g="share"]').count()==0 and 'Tap Save the file' in mt and 'Tap Open on it' in mt and 'Your phone asks which app to open it with. Choose Mapeak or Amud Anan.' in mt and 'Nothing can open the file until one is installed: Mapeak or Amud Anan' in mt and 'Mapeak is the new name of Israel Hiking Map' in mt and await pg.locator('#hkModal #hkMS').is_hidden() and [await pg.get_attribute('#hkModal .hkp-steps a >> nth=0','href'), await pg.get_attribute('#hkModal .hkp-steps a >> nth=1','href')]==['https://mapeak.com/','https://amudanan.co.il/'], mt)
         await pg.screenshot(path=OUT+'hp_5_route_file.png')
         async with pg.expect_download() as dl: await pg.click('#hkModal [data-g="save"]')
         d=await dl.value; body=open(await d.path(),encoding='utf-8').read()
+        sv=[await pg.locator('#hkModal #hkMS').is_visible(), await pg.inner_text('#hkModal #hkMS')]
+        check('android: once the file is saved the box says what to tap next, and it stays', sv==[True,"Saved. Now tap Open on Chrome's message at the bottom of the screen, then choose Mapeak or Amud Anan."], sv)
         check('android: the saved file is named after the hike and is a whole GPX file', d.suggested_filename=='Nahal-Og-lower-canyon.gpx' and body.startswith('<?xml version="1.0" encoding="UTF-8"?>\n'+HEAD+'<metadata><name>Nahal Og, lower canyon</name></metadata>') and '<trk><name>Nahal Og, lower canyon</name><trkseg>' in body and body.rstrip().endswith('</trkseg></trk></gpx>') and body.count('<trkpt')==48, body[:260])
         import xml.dom.minidom as md
         try: doc=md.parseString(body.encode('utf-8')); ok=doc.documentElement.tagName=='gpx' and len(doc.getElementsByTagName('trkpt'))==48
@@ -157,7 +175,7 @@ async def main():
         check('android: a hike with no recording shows its start and end together on the map, from the points their map links carry, and says no route is recorded', two=={'tips':[['Start',31.5903,35.3921,True],['End',31.5975,35.4071,True]],'lines':0,'cap':'Nobody has added a recorded route yet. The map shows the start and the end only.'}, two)
         await pg.wait_for_timeout(300); await pg.screenshot(path=OUT+'hp_7_start_end_only.png')
         await pg.click('#hkMapCap [data-hmap]'); await pg.wait_for_selector('#hkMapFull'); tl=await pg.eval_on_selector_all('#hkMapFull .hkmf-tools button','els=>els.map(b=>b.textContent.trim())'); await pg.click('#hkMapFull [data-x]')
-        check('android: its open map offers "Start and end", not a route that is not there', tl==['Where am I','Start and end'], tl)
+        check('android: its open map offers "Start and end", not a route that is not there', tl==['Where am I','Start and end','Marked trails: on'], tl)
         check('android: closing the map puts the cursor back on the button that opened it', await pg.evaluate('()=>document.activeElement&&document.activeElement.hasAttribute("data-hmap")')); await pg.click('#closeS')
         # ---- only the end carries a point ----
         await pg.evaluate("()=>{ const h=S.demoHikes.find(x=>x.name==='Nahal Darga'); h.start_place='Metzoke Dragot car park'; h.end_place='Road 90 https://waze.com/ul?ll=31.5975,35.4071&navigate=yes'; }")
@@ -269,6 +287,13 @@ async def main():
         await pg.evaluate("()=>{ const h=S.demoHikes.find(x=>x.name==='Nahal Darga'); h.start_place='https://www.google.com/maps/@31.5903,35.3921,16z'; h.gpxFile=null; }")
         await open_hike(pg,'Nahal Darga'); await pg.wait_for_function('()=>!document.querySelector("#hkMap")')
         check('no map library: a hike with only a start point shows no map and no empty box', await pg.locator('#hkMapCap').count()==0); await b.close()
+        # ================= the marked-trails pictures do not come, on a narrow phone =================
+        b,pg=await start(p,'no_trails',ANDROID,320,640, opts=('no_trails',)); await open_hike(pg,'Nahal Og'); await pg.wait_for_selector('#hkMap .leaflet-container'); await pg.wait_for_timeout(600)
+        n1=await pg.evaluate('()=>[document.querySelector("#hkMap .hkm-note").hidden, [...document.querySelectorAll("#hkMap img.leaflet-tile[src*=openstreetmap]")].filter(i=>i.complete&&i.naturalWidth===256).length>0]')
+        await pg.click('#hkMapCap [data-hmap]'); await pg.wait_for_selector('#hkMapFull'); await pg.wait_for_timeout(400)
+        n2=await pg.evaluate('()=>{ const els=[...document.querySelectorAll("#hkMapFull .hkmf-tools > *")].map(e=>e.getBoundingClientRect()); return [document.querySelector("#hkMapFull .hkm-note").hidden, els.length, els.every(r=>r.left>=0&&r.right<=innerWidth&&r.bottom<=innerHeight&&r.height>=40), document.documentElement.scrollWidth<=innerWidth+1, document.querySelector("#hkMapFull .hkmf-map").getBoundingClientRect().height>200]; }')
+        check('no trail pictures: the map itself is unharmed and says nothing is wrong; at 320 wide the four buttons of the open map fit, and the map keeps its room', n1==[True,True] and n2==[True,4,True,True,True], [n1,n2])
+        await pg.screenshot(path=OUT+'hp_13_open_map_320.png'); await b.close()
         # ================= the library's style sheet alone fails: still no half-drawn map =================
         b,pg=await start(p,'no_css',ANDROID,411,812, opts=('no_css',)); await open_hike(pg,'Nahal Og'); await pg.wait_for_selector('#hkMap.plain svg polyline')
         check('no style sheet: a map library that came without its style sheet is not used: the line is drawn in the map\'s place and no map picture is asked for', await pg.locator('.leaflet-container').count()==0 and await pg.locator('#hkMapCap').count()==0 and not [u for u in TILES if 'no_css' in u], None); await b.close()
