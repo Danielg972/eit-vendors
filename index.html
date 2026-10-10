@@ -4371,7 +4371,7 @@ const HK_COLORS=[['red','Red','#c0392b'],['blue','Blue','#1d5fbf'],['green','Gre
 const HK_DIFF=[['easy','Easy'],['moderate','Moderate'],['hard','Hard']], HK_SHOES=[['needed','Needed'],['useful','Useful'],['not_needed','Not needed']],
   HK_ZONE=[['crosses','Crosses one'],['no','Does not'],['unsure','Not sure']], HK_WATER=[['yes','Yes'],['season','In season'],['no','No']], HK_YN=[['yes','Yes'],['no','No']],
   HK_BATH=[['start','At the start'],['end','At the end'],['none','None']];
-const HK_APPS=[['Israel Hiking Map','https://israelhiking.osm.org.il/'],['Amud Anan','https://amudanan.co.il/']];
+const HK_APPS=[['Mapeak','https://mapeak.com/'],['Amud Anan','https://amudanan.co.il/']];   // Mapeak was called Israel Hiking Map until 2025
 const HK_SAFETY='https://www.mokedteva.co.il/InfoCenter/InfoPages';
 const HK_DISCLAIM="Hike details are colleagues' reports and notes taken from websites. Eretz Israel Tours and the members take no responsibility for them. Check the route, the weather and any firing zone yourself before every trip.";
 const HK_GPX_MAX=1900000, HK_GPX_THIN=1200000, HK_YEARS=3;
@@ -4836,19 +4836,25 @@ async function hkOpenGpx(h){
   let canShare=false; try{ canShare=!hkAndroid()&&!!(file&&navigator.canShare&&navigator.canShare({files:[file]})); }catch(e){}
   const save=()=>{ try{ const url=URL.createObjectURL(new Blob([text],{type:'application/gpx+xml'})); const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),5000); return true; }catch(e){ toast('Could not save the file.'); return false; } };
   const apps=HK_APPS.map(a=>`<a class="hk-link" href="${a[1]}" target="_blank" rel="noopener">${a[0]}</a>`).join(' or ');
-  const steps=`<ol class="hkp-steps"><li>Choose <b>Save the file</b>. It goes to Downloads as <b>${esc(name)}</b>.</li><li>Open your hiking app and open the file from there. On a phone you can also tap the file in Downloads and choose the hiking app.</li><li>No hiking app yet? Nothing can open the file until one is installed: ${apps}.</li></ol>`;
+  // On Android the phone itself asks which app opens a saved route file; the page cannot ask for it, so it says where that question comes up.
+  const noApp=`<li>No hiking app yet? Nothing can open the file until one is installed: ${apps}. Mapeak is the new name of Israel Hiking Map.</li>`;
+  const steps=hkAndroid()
+    ? `<ol class="hkp-steps"><li>Tap <b>Save the file</b>. It goes to Downloads as <b>${esc(name)}</b>.</li><li>When the download is done, Chrome shows a message at the bottom of the screen. Tap <b>Open</b> on it. (Missed it? Tap the file in Downloads.)</li><li>Your phone asks which app to open it with. Choose <b>Mapeak</b> or <b>Amud Anan</b>.</li>${noApp}</ol>`
+    : `<ol class="hkp-steps"><li>Choose <b>Save the file</b>. It goes to Downloads as <b>${esc(name)}</b>.</li><li>Open your hiking app and open the file from there. On a phone you can also tap the file in Downloads and choose the hiking app.</li>${noApp}</ol>`;
   const old=document.getElementById('hkModal'); if(old) old.remove();
   const el=document.createElement('div'); el.className='modal'; el.id='hkModal';
   el.innerHTML=`<div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="hkMT"><h3 id="hkMT">Route file</h3>
     <p style="overflow-wrap:anywhere"><b>${esc(name)}</b><br><span class="hint">${esc(h.name)}</span></p>
     ${canShare?'<button class="btn primary" type="button" data-g="share">Open in a hiking app</button>':''}
     <button class="btn ${canShare?'soft':'primary'}" type="button" data-g="save">Save the file</button>
+    <p id="hkMS" role="status" hidden style="margin:8px 0 0;font-weight:600"></p>
     <div class="hint" id="hkMH" style="margin:4px 0 12px">${canShare?`Your phone shows its apps: choose your hiking app. It opens in any app that reads GPX files, such as ${apps}.`:steps}</div>
     <button class="btn soft" type="button" data-g="x">Close</button></div>`;
   document.body.appendChild(el);
   el.addEventListener('click',e=>{ if(e.target===el) el.remove(); });
   el.querySelector('[data-g="x"]').onclick=()=>el.remove();
-  el.querySelector('[data-g="save"]').onclick=()=>{ if(save()) toast('Saving '+name); };
+  el.querySelector('[data-g="save"]').onclick=()=>{ if(!save()) return; toast('Saving '+name);
+    const st=el.querySelector('#hkMS'); st.textContent=hkAndroid()?'Saved. Now tap Open on Chrome\'s message at the bottom of the screen, then choose Mapeak or Amud Anan.':'Saved to Downloads. Open it from your hiking app.'; st.hidden=false; };
   const sh=el.querySelector('[data-g="share"]'); if(sh) sh.onclick=async()=>{ try{ await navigator.share({files:[file], title:h.name}); el.remove(); }
     catch(e){ if(e&&e.name==='AbortError') return; sh.remove(); const sv=el.querySelector('[data-g="save"]'); sv.className='btn primary'; el.querySelector('#hkMH').innerHTML='This phone would not pass the file to another app. Do it this way:'+steps; } };
 }

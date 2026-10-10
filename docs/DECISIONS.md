@@ -10,6 +10,33 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-37 · The hike's map: marked trails drawn over it, a link to Mapeak; the route file box names the apps (live since 10 October 2026)
+
+**Decided by:** the owner (Eretz Israel Tours), 10 October 2026, evening.
+
+**In his words:** 20:17, "israel hiking map is now called mapeak. does that change anything? ... it even ha public hikes listed on it. can we use those and integrate mapeak into app?" 20:23, "lets try all of them and see whoich works best. i just sent the email.." 20:50, after trying the trial copy: "Open map showed the hike. Open in mapeak. Showed map but not hike. Yes 18202 how did you find that?" 20:55: "Marked trail layers are fine. The open map function is fine too. What if someone downloads the gpx can they get a pop up. Saying open in and chooses mapeak or amud Anan?"
+
+**What was found about Mapeak (its own pages, read 10 October):** the same licence under the new name ("Tiles © Mapeak under CC BY-NC-SA 3.0"), a paid Pro subscription, terms that give no permission to show its map or copy its content elsewhere, and public routes that come from OpenStreetMap's trail records and from partners (Nakeb, KKL) by their permission. So Mapeak's map and its public routes are not taken into the app without Mapeak's written yes. The owner sent the request to support@mapeak.com on 10 October; no answer yet.
+
+**What is live:**
+
+- **Marked trails over the map.** Waymarked Trails' picture of the marked trails OpenStreetMap holds, laid over the hike's map on the page and on the open map, with the Israeli colour marks. A button on the open map takes it off and puts it back. Its terms, read on its own site: use on other sites is allowed at a moderate rate, with OpenStreetMap and Waymarked Trails named; both are credited on the map. The app takes and keeps no trail data.
+- **"Open in Mapeak"** on the open map: a plain link to Mapeak's own map at the start of the hike. It shows the place, not the hike; nothing of the hike is handed to Mapeak.
+- **The route file box.** On Android the phone itself asks which app opens a saved route file, and only after the file is tapped; the page cannot raise that question. The box now says so step by step, names Mapeak and Amud Anan, says that Mapeak is the new name of Israel Hiking Map, and after saving says what to tap next. This last part answers his question of 20:55 and went live with the rest; it is his to send back.
+
+**Tried and not built:**
+
+- **Reading a walk's trail colour from OpenStreetMap.** Around his walk from Har Gamal the records hold green 18202, red 18201, black 18240 and others; 29 of 30 points of his recording lie within 35 m of green 18202, and he confirmed it ("Yes 18202"), so that mark is now on his hike. The public look-up service answered one time in three and took seven seconds: fit for a look-up when a route is added, not for every phone.
+- **Showing the hike itself in Mapeak.** Mapeak opens a route from a web address (`mapeak.com/url/` and the address of the file; seen to ask its own server for a sample file). That would need the hike's route to be fetchable for a short time by anyone holding the address, and hands the route to Mapeak: who sees what, the owner's. He asked about the saved file instead, which needs none of that.
+
+**Who sees what:** unchanged inside the app. New to the outside: a phone showing a hike's map now also asks `tile.waymarkedtrails.org` for pictures of that area. It joins the privacy line still to be written for OpenStreetMap (terms, the week's release).
+
+**Checked:** `hike_page_walk.py` 106 checks, `preview_walk.py` 200. On the trial copy in the owner's Chrome: the trails drew over his walk with their colour marks. On his phone, by his word: the open map showed the hike and Mapeak opened at the place.
+
+**Not checked:** the reworded route file box on a phone.
+
+---
+
 ## D-36 · Hikes open to every colleague; a box that says how to allow location (live since 8 October 2026)
 
 **Decided by:** the owner (Eretz Israel Tours), 8 October 2026, 23:45 Israel time.

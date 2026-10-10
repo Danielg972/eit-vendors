@@ -146,10 +146,12 @@ async def main():
         await pg.eval_on_selector('.hkp-top','e=>e.scrollIntoView({block:"start"})'); await pg.wait_for_timeout(300); await pg.screenshot(path=OUT+'hp_3_below_map.png')
         await pg.eval_on_selector('#hkRoute','e=>e.scrollIntoView({block:"start"})'); await pg.wait_for_timeout(300); await pg.screenshot(path=OUT+'hp_4_trail.png')
         await pg.click('[data-hgpx]'); await pg.wait_for_selector('#hkModal'); mt=await pg.inner_text('#hkModal')
-        check('android: the route file box does not offer what Android refuses; it says how to do it', await pg.locator('#hkModal [data-g="share"]').count()==0 and 'Save the file' in mt and 'open the file from there' in mt and 'Nothing can open the file until one is installed' in mt and 'Israel Hiking Map' in mt and 'Amud Anan' in mt, mt)
+        check('android: the route file box does not offer what Android refuses; it says how to do it', await pg.locator('#hkModal [data-g="share"]').count()==0 and 'Tap Save the file' in mt and 'Tap Open on it' in mt and 'Your phone asks which app to open it with. Choose Mapeak or Amud Anan.' in mt and 'Nothing can open the file until one is installed: Mapeak or Amud Anan' in mt and 'Mapeak is the new name of Israel Hiking Map' in mt and await pg.locator('#hkModal #hkMS').is_hidden() and [await pg.get_attribute('#hkModal .hkp-steps a >> nth=0','href'), await pg.get_attribute('#hkModal .hkp-steps a >> nth=1','href')]==['https://mapeak.com/','https://amudanan.co.il/'], mt)
         await pg.screenshot(path=OUT+'hp_5_route_file.png')
         async with pg.expect_download() as dl: await pg.click('#hkModal [data-g="save"]')
         d=await dl.value; body=open(await d.path(),encoding='utf-8').read()
+        sv=[await pg.locator('#hkModal #hkMS').is_visible(), await pg.inner_text('#hkModal #hkMS')]
+        check('android: once the file is saved the box says what to tap next, and it stays', sv==[True,"Saved. Now tap Open on Chrome's message at the bottom of the screen, then choose Mapeak or Amud Anan."], sv)
         check('android: the saved file is named after the hike and is a whole GPX file', d.suggested_filename=='Nahal-Og-lower-canyon.gpx' and body.startswith('<?xml version="1.0" encoding="UTF-8"?>\n'+HEAD+'<metadata><name>Nahal Og, lower canyon</name></metadata>') and '<trk><name>Nahal Og, lower canyon</name><trkseg>' in body and body.rstrip().endswith('</trkseg></trk></gpx>') and body.count('<trkpt')==48, body[:260])
         import xml.dom.minidom as md
         try: doc=md.parseString(body.encode('utf-8')); ok=doc.documentElement.tagName=='gpx' and len(doc.getElementsByTagName('trkpt'))==48

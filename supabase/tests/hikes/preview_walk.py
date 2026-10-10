@@ -63,7 +63,7 @@ async def run(p, w, h, tag):
     await pg.eval_on_selector('.sheet-body','e=>e.scrollTo(0,e.scrollHeight)'); await pg.wait_for_timeout(450); await pg.screenshot(path=OUT+tag+'_2b_hike_end.png')
     # route file
     await pg.click('[data-hgpx]'); await pg.wait_for_selector('#hkModal')
-    mt=await pg.inner_text('#hkModal'); check(tag+': route file box offers saving and names the two apps', 'Save the file' in mt and 'Israel Hiking Map' in mt and 'Amud Anan' in mt, mt)
+    mt=await pg.inner_text('#hkModal'); check(tag+': route file box offers saving and names the two apps', 'Save the file' in mt and 'Mapeak' in mt and 'Amud Anan' in mt, mt)
     await pg.wait_for_timeout(450); await pg.screenshot(path=OUT+tag+'_3_gpx.png')
     async with pg.expect_download() as dl: await pg.click('#hkModal [data-g="save"]')
     d=await dl.value; path=await d.path(); body=open(path).read()
