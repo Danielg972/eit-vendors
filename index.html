@@ -602,7 +602,9 @@ a.hk-link,.hk-src a{color:var(--tab-on)}
 .hkmf-map{position:relative;flex:1;min-height:0}
 .hkmf-map>div:first-child{position:absolute;inset:0}
 .hkmf-tools{display:flex;flex-wrap:wrap;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));background:var(--card);border-top:1px solid var(--line)}
-.hkmf-tools .hkp-go{flex:1;justify-content:center;white-space:nowrap}
+.hkmf-tools .hkp-go{flex:1 1 40%;justify-content:center;white-space:nowrap;min-width:0}
+.hkmf-tools a.hkp-go{text-decoration:none}
+.hkmf-tools .hkp-go svg{flex:none}
 .hkmf .hkm-note{left:62px;max-width:calc(100% - 72px)}
 .act .act-sub{display:block;font-size:10.5px;font-weight:400;color:var(--ink-2)}
 .hkp-prof{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 8px;margin-top:6px;font-size:11.5px;color:var(--ink-3);font-variant-numeric:tabular-nums}
@@ -4685,7 +4687,13 @@ function hkFiguresHtml(t){
 // A member's own position, when he asks for it, is drawn on his screen and goes nowhere else.
 const HK_LEAF='vendor/leaflet-1.9.4/', HK_LINE='#b5179e';
 const HK_TILES={url:'https://tile.openstreetmap.org/{z}/{x}/{y}.png', max:19, credit:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors'};
-var hkMapNow=null, hkFullNow=null, hkLeafP=null, hkLeafOk=false;
+// The marked trails, drawn over the map: Waymarked Trails' own picture of the trails OpenStreetMap holds (its terms,
+// read 10 Oct 2026: free to use on other sites at a moderate rate, with OpenStreetMap and Waymarked Trails named).
+// It only adds lines to the map; the app takes and keeps no trail data. A trial, at the owner's wish (10 Oct 2026).
+const HK_TRAILS={url:'https://tile.waymarkedtrails.org/hiking/{z}/{x}/{y}.png', max:17, credit:'marked trails: <a href="https://hiking.waymarkedtrails.org" target="_blank" rel="noopener noreferrer">Waymarked Trails</a>'};
+// Mapeak (until 2025 Israel Hiking Map): its own map opened at a point. A plain link; nothing of Mapeak's is shown here.
+const hkMapeak=ll=>'https://mapeak.com/map/15.00/'+ll[0].toFixed(4)+'/'+ll[1].toFixed(4);
+var hkMapNow=null, hkFullNow=null, hkLeafP=null, hkLeafOk=false, hkTrailsOn=true;
 // The map library is ready only when both its script and its style sheet have come; either one failing, or twelve
 // seconds passing, counts as no map, and the next hike tries again from the start.
 function hkLeaflet(){ if(hkLeafOk&&window.L&&window.L.map) return Promise.resolve(window.L);
@@ -4715,6 +4723,7 @@ function hkMapDraw(L, el, d, live){
   try{
   map.attributionControl.setPrefix(false);
   const tiles=L.tileLayer(HK_TILES.url,{maxZoom:HK_TILES.max, attribution:HK_TILES.credit}).addTo(map), pts=[];
+  const trails=L.tileLayer(HK_TRAILS.url,{maxZoom:HK_TILES.max, maxNativeZoom:HK_TRAILS.max, attribution:HK_TRAILS.credit, opacity:.9}); if(hkTrailsOn) trails.addTo(map);
   d.segs.forEach(s=>L.polyline(s,{color:'#fff',weight:8,opacity:.85,interactive:false}).addTo(map));
   d.segs.forEach(s=>{ L.polyline(s,{color:HK_LINE,weight:4,opacity:1,interactive:false}).addTo(map); s.forEach(q=>pts.push(q)); });
   // each point is a dot with its name; on the open map a wider, unseen ring around it takes the tap
@@ -4728,7 +4737,7 @@ function hkMapDraw(L, el, d, live){
   // the map's picture did not come: say so, the line and the points are still right
   const note=el.parentNode.querySelector('.hkm-note'); let got=0;
   tiles.on('tileload',()=>{ got++; if(note) note.hidden=true; }); tiles.on('tileerror',()=>{ if(!got&&note){ note.textContent='The map did not load. Check the connection.'; note.hidden=false; } });
-  return {map, ms, fit, bounds};
+  return {map, ms, fit, bounds, trails};
   }catch(e){ try{ map.remove(); }catch(e2){} throw e; } }
 function hkMapDrop(){ if(hkMapNow){ try{ hkMapNow.remove(); }catch(e){} hkMapNow=null; } }
 // The map at the head of the hike's page. It stays still, so the page scrolls under a finger; a tap opens it full screen.
@@ -4741,6 +4750,7 @@ async function hkMapInline(box, h, d){ let L; try{ L=await hkLeaflet(); }catch(e
   setTimeout(()=>{ if(hkMapNow===m.map){ m.map.invalidateSize(); m.fit(); } },320);   // after the page has slid up
   return true; }
 const hkWideIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>';
+const hkTrailIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19c3-1 4-4 6-6s4-2 5-5 3-3 5-4"/><circle cx="4" cy="19" r="1.4" fill="currentColor"/><circle cx="20" cy="4" r="1.4" fill="currentColor"/></svg>';
 const hkMeIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>';
 // The same map over the whole screen: it moves and zooms, start and end offer the way there, and "Where am I" shows
 // the member's own position against the route.
@@ -4748,7 +4758,8 @@ function hkMapFull(h, d, from){ hkMapFullClose(); const L=window.L; if(!hkLeafOk
   const el=document.createElement('div'); el.id='hkMapFull'; el.className='hkmf'; el.setAttribute('role','dialog'); el.setAttribute('aria-modal','true'); el.setAttribute('aria-label','Map: '+h.name);
   el.innerHTML=`<div class="hkmf-bar"><b>${esc(h.name)}</b><button class="btn soft" type="button" data-x>Close the map</button></div>
     <div class="hkmf-map"><div></div><div class="hkm-note" role="status" hidden></div></div>
-    <div class="hkmf-tools"><button class="hkp-go" type="button" data-me>${hkMeIcon}Where am I</button><button class="hkp-go" type="button" data-fit>${ic.maps}${d.rec?'Whole route':d.start&&d.end?'Start and end':d.start?'The start':'The end'}</button></div>`;
+    <div class="hkmf-tools"><button class="hkp-go" type="button" data-me>${hkMeIcon}Where am I</button><button class="hkp-go" type="button" data-fit>${ic.maps}${d.rec?'Whole route':d.start&&d.end?'Start and end':d.start?'The start':'The end'}</button>
+      <button class="hkp-go" type="button" data-trails aria-pressed="${hkTrailsOn}">${hkTrailIcon}<span>${hkTrailsOn?'Marked trails: on':'Marked trails: off'}</span></button><a class="hkp-go" data-mapeak href="${esc(hkMapeak(d.start||d.end))}" target="_blank" rel="noopener noreferrer">${hkWideIcon}Open in Mapeak</a></div>`;
   document.body.appendChild(el);
   let m; try{ m=hkMapDraw(L, el.querySelector('.hkmf-map>div'), d, true); }catch(e){ el.remove(); toast('The map could not open.'); return; }
   const map=m.map; hkFullNow={el, map, from};
@@ -4774,6 +4785,9 @@ function hkMapFull(h, d, from){ hkMapFullClose(); const L=window.L; if(!hkLeafOk
     if(asked) toast('Still looking for where you are. It can take a minute in a canyon.'); });
   el.querySelector('[data-me]').onclick=whereAmI;
   el.querySelector('[data-fit]').onclick=()=>m.fit();
+  // marked trails on or off; the choice holds for the next map opened, until the page is loaded again
+  const tb=el.querySelector('[data-trails]'); tb.onclick=()=>{ hkTrailsOn=!hkTrailsOn; if(hkTrailsOn) m.trails.addTo(map); else map.removeLayer(m.trails);
+    tb.setAttribute('aria-pressed',hkTrailsOn); tb.querySelector('span').textContent=hkTrailsOn?'Marked trails: on':'Marked trails: off'; };
   el.querySelector('[data-x]').onclick=()=>hkMapFullClose();
   el.querySelector('[data-x]').focus(); }
 // The phone or the browser refused to say where the member is. A box says, for his kind of phone, where to allow it,
