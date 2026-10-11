@@ -10,6 +10,16 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-40 · A Modiin region (live since 11 October 2026)
+
+On the owner's word (11 Oct, 08:59: "Add modiin as region for activities").
+
+- **What changed:** one name added to the page's list of regions, `Modiin`, between Tel Aviv & Center and Shfela. It is offered wherever a region is chosen (a supplier's form, a hike's form, a job, where a member is based) and shows as a region filter once something is filed under it.
+- **Implementation choices, his to change:** its place in the list; that the one shared list is used, so a hike can be filed under Modiin too, although he asked for it for activities.
+- **Nothing in the database changed shape:** a region is plain text there.
+- **Moved into it:** nothing. Two suppliers that are in Modiin are filed under Tel Aviv & Center, both still hidden and waiting for review; moving them is Eretz Israel Tours' to say.
+- **Checked:** in preview at phone and desktop size, the supplier's form offers Modiin with every other region still there, and a sample supplier saved under it gets a Modiin filter button that shows only that supplier (12 checks); the two hikes walks (204 and 106 checks) pass with the new list.
+
 ## D-39 · Hikes get a region of their own: Dead Sea (live since 11 October 2026)
 
 On the owner's word (11 Oct, 08:55: "Also create a dead sea region for hikes").

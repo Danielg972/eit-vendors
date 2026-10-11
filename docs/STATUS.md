@@ -21,6 +21,10 @@
 
 A Hikes tab: official marked trails with a route file (GPX), notes, distance and time, and a report members add after walking one. Built 8 October 2026; pull request #28 merged by the owner at 14:57 and **the database file `supabase/migrations/2026-10-08_hikes.sql` run on production at about 15:01, checked by fingerprints and the rolled-back probe.** It adds three tables (`hikes`, `hike_reports`, `hike_gpx`) and thirteen functions, and replaces `whoami` and `set_setting` (each gains only the hikes switch). It is open to Eretz Israel Tours only, until the owner changes the setting `hikes_for` in the Team tab ("Open Hikes to all colleagues"): his decision. No hikes are entered yet. No terms change in the branch. Nothing in it touches suppliers, prices, quotes or any field the Cockpit could read. Details: `docs/DECISIONS.md`, D-31.
 
+## A Modiin region (D-40): live since 11 October 2026, about 09:10
+
+On the owner's word ("Add modiin as region for activities"). The page's list of regions has `Modiin`, after Tel Aviv & Center. Nothing was moved into it: the two suppliers in Modiin are still under Tel Aviv & Center, hidden and waiting for review. No database change.
+
 ## Hikes have a Dead Sea region (D-39): live since 11 October 2026, about 09:00
 
 On the owner's word ("Also create a dead sea region for hikes"). For hikes only; suppliers keep Dead Sea & Judean Desert. Ten hikes on the Dead Sea shore were moved into it; Wadi Qelt, the two Nahal Og hikes and Nahal Tzafit were left for him to place. He was editing hikes in the app the same morning (he moved Nahal Peres to Negev & Arava himself), so his own changes stand.
