@@ -6,9 +6,13 @@
 # top of a page, the full-screen map, a step of the welcome tour; returns from another tab to Suppliers; with nothing open
 # says "Press Back again to leave" and stays; a second press leaves; waiting instead keeps the member in the app; a page
 # closed with its own × leaves nothing behind; the address never changes; Forward does not undo anything.
+# Then the same as an Android phone would have it (an Android user agent, so the page opens a CloseWatcher): a Back pressed
+# before anything was tapped gives the message and stays; a second press leaves; waiting keeps the member in; three presses
+# in a row close a map, a hike and the tab; a keyboard's Esc on a sheet closes only the sheet. There Back is the watcher's
+# own requestClose(), reached through ONE line added to the page as it is served to this browser (the file is not touched).
 # WHAT THIS CANNOT SHOW: Back is pressed here from script (history.back()). Chrome treats its own Back button differently
 # from that: it skips history entries a page added without a tap. Only a real phone or a real browser window shows that.
-import asyncio, sys
+import asyncio, os, sys
 from playwright.async_api import async_playwright
 BASE='http://localhost:8765/'; APP=BASE+'index.html'; OUT=BASE+'manifest.json'
 res=[]; errs=[]
@@ -85,9 +89,54 @@ async def run(p, w, h, tag, tour=False):
     except Exception: pass
     check(tag+': a second press leaves the app', pg.url==OUT, pg.url)
     await b.close()
+async def droid(p, tag):
+    PAGE=open(os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','..','..','index.html'),encoding='utf-8').read()
+    END='\n})();\n</script>'; assert PAGE.count(END)==1
+    HOOKED=PAGE.replace(END,'\nwindow.bkTest={alive:()=>!!bkW,back:()=>{ if(bkW){ bkW.requestClose(); return "watcher"; } history.back(); return "history"; }};'+END)
+    async def fresh():
+        b=await p.chromium.launch(); ctx=await b.new_context(viewport={'width':390,'height':844}, has_touch=True, is_mobile=True,
+            user_agent='Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36')
+        await ctx.add_init_script("try{localStorage.setItem('eitv_tour_seen','1')}catch(e){}")
+        async def serve(route): await route.fulfill(body=HOOKED, content_type='text/html; charset=utf-8')
+        await ctx.route('**/index.html', serve)
+        pg=await ctx.new_page()
+        pg.on('pageerror', lambda e: errs.append(tag+' pageerror: '+str(e)))
+        await pg.goto(OUT); await pg.goto(APP); await pg.wait_for_selector('#results .row'); await pg.wait_for_timeout(200)
+        return b,pg
+    async def back(pg): how=await pg.evaluate('bkTest.back()'); await pg.wait_for_timeout(250); return how
+    async def state(pg): return await pg.evaluate("""()=>({url:location.href, sheet:!!document.getElementById('sheetWrap'), map:!!document.getElementById('hkMapFull'),
+        tab:(document.querySelector('.tab[aria-current="page"]')||{dataset:{}}).dataset.tab||'', toast:document.getElementById('toast').hidden?'':document.getElementById('toast').textContent, alive:bkTest.alive()})""")
+    # nothing tapped at all: the first press is heard, the second leaves
+    b,pg=await fresh(); s=await state(pg); check(tag+': the page is listening before anything is tapped', s['alive'], s)
+    how=await back(pg); s=await state(pg)
+    check(tag+': Back before any tap gives the message and stays', how=='watcher' and s['toast']=='Press Back again to leave' and s['url']==APP and not s['alive'], (how,s))
+    await pg.evaluate('history.back()')
+    try: await pg.wait_for_url(OUT, timeout=4000)
+    except Exception: pass
+    check(tag+': a second press leaves the app', pg.url==OUT, pg.url); await b.close()
+    # nothing tapped, and waiting instead of pressing again
+    b,pg=await fresh(); await back(pg); await pg.wait_for_timeout(3000); s=await state(pg); how=await back(pg); s2=await state(pg)
+    check(tag+': after waiting, with still nothing tapped, Back is heard again', s['alive'] and how=='watcher' and s2['toast']=='Press Back again to leave' and s2['url']==APP, (s,how,s2))
+    await pg.wait_for_timeout(3000)
+    # a supplier's page
+    await pg.locator('#results .row').first.tap(); await pg.wait_for_selector('#edit'); how=await back(pg); s=await state(pg)
+    check(tag+": Back closes a supplier's page", how=='watcher' and not s['sheet'] and s['url']==APP and not s['toast'] and s['alive'], (how,s))
+    # hikes tab, a hike, its map: three presses in a row, nothing touched in between
+    await pg.locator('.tab[data-tab="hikes"]').tap(); await pg.wait_for_selector('#hkResults .row'); await pg.locator('#hkResults .row:has-text("Nahal Og")').tap(); await pg.wait_for_selector('.sheet .hk-rep')
+    await pg.wait_for_selector('#hkMapCap [data-hmap]', timeout=8000); await pg.locator('#hkMapCap [data-hmap]').tap(); await pg.wait_for_selector('#hkMapFull', timeout=8000)
+    h1=await back(pg); s1=await state(pg); h2=await back(pg); s2=await state(pg); h3=await back(pg); s3=await state(pg)
+    check(tag+': three presses in a row close the map, then the hike, then return to Suppliers',
+        (h1,h2,h3)==('watcher','watcher','watcher') and not s1['map'] and s1['sheet'] and not s2['sheet'] and s2['tab']=='hikes' and s3['tab']=='vendors' and not s3['toast'] and s3['url']==APP, (h1,h2,h3,s1,s2,s3))
+    h4=await back(pg); s4=await state(pg); check(tag+': the fourth gives the message', h4=='watcher' and s4['toast']=='Press Back again to leave' and s4['url']==APP, (h4,s4))
+    await pg.wait_for_timeout(3000)
+    # a keyboard's Esc on a sheet: only the sheet closes
+    await pg.locator('.tab[data-tab="quotes"]').tap(); await pg.wait_for_timeout(200); await pg.locator('.tab[data-tab="hikes"]').tap(); await pg.wait_for_selector('#hkResults .row')
+    await pg.locator('#hkResults .row:has-text("Nahal Og")').tap(); await pg.wait_for_selector('.sheet .hk-rep'); await pg.keyboard.press('Escape'); await pg.wait_for_timeout(400); s=await state(pg)
+    check(tag+": a keyboard's Esc closes the sheet and nothing more", not s['sheet'] and s['tab']=='hikes' and not s['toast'] and s['alive'], s)
+    await b.close()
 async def main():
     async with async_playwright() as p:
-        await run(p,390,844,'phone'); await run(p,1280,800,'desktop'); await run(p,390,844,'phone tour',tour=True)
+        await run(p,390,844,'phone'); await run(p,1280,800,'desktop'); await run(p,390,844,'phone tour',tour=True); await droid(p,'android')
     bad=[n for n,ok in res if not ok]
     for e in errs: print('ERR '+e)
     print(f'{len(res)} checks, {len(bad)} failed, {len(errs)} page errors'); sys.exit(1 if bad or errs else 0)

@@ -809,7 +809,7 @@ function toast(t){ const el=document.getElementById('toast'); el.textContent=t; 
 // ---------- data layer ----------
 // Everyone signs in with a personal link (?k=…). The key is kept on the device; the server only stores its hash.
 function readToken(){
-  let t=null; try{ const u=new URL(location.href); t=u.searchParams.get('k'); if(t){ localStorage.setItem(TOKEN_KEY,t); u.searchParams.delete('k'); history.replaceState(null,'',u.pathname+u.search+u.hash); } }catch(e){}
+  let t=null; try{ const u=new URL(location.href); t=u.searchParams.get('k'); if(t){ localStorage.setItem(TOKEN_KEY,t); u.searchParams.delete('k'); history.replaceState(history.state,'',u.pathname+u.search+u.hash); } }catch(e){}
   if(!t){ try{ t=localStorage.getItem(TOKEN_KEY); }catch(e){} }
   return t;
 }
@@ -1844,11 +1844,16 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ const lm=document
 // Back steps back inside the app instead of leaving it: it closes the box on top, then the full-screen map, then the open
 // sheet (the sheet's own Back, Cancel or Close if it has one, otherwise its ×), then a step back in the welcome tour, then
 // returns to the first tab. With nothing left to close it says "Press Back again to leave", and a second press leaves.
-// How: the page keeps spare entries of its own in the browser's history (same address, a counter in the entry's state), so
-// a Back press lands on one of them and the page hears it (popstate) instead of being left. They are added after a tap,
-// because Chrome skips entries a page adds without one. Nothing here reads or changes the address, a member's link or data.
+// Two ways of hearing a Back press, used together:
+// 1. On an Android phone, Chrome hands Back to a page's CloseWatcher before it touches history, and does so even when the
+//    member has not tapped anything yet. The page keeps one open, and opens the next one after each press it handled.
+// 2. Everywhere, the page keeps spare entries of its own in the browser's history (same address, a counter in the entry's
+//    state), so a Back press lands on one of them and the page hears it (popstate) instead of being left. Chrome skips
+//    entries a page added without a tap, so on its own this way misses a Back pressed before the first tap.
+// Nothing here reads or changes the address, a member's link or data.
 const bkAt=()=>{ try{ return (history.state&&history.state.eitvD)|0; }catch(e){ return 0; } };
-let bkWas=bkAt(), bkGoing=0, bkTimer=null;
+const bkDroid=/Android/i.test(navigator.userAgent||'');
+let bkWas=bkAt(), bkGoing=0, bkQuiet=0, bkTimer=null, bkW=null, bkEsc=0;
 function backDepth(){ const t=document.querySelectorAll('.tabs .tab');
   return document.querySelectorAll('body > .modal').length + (document.getElementById('hkMapFull')?1:0) + (document.getElementById('sheetWrap')?1:0)
     + (document.getElementById('tourWrap')?1:0) + (t.length&&t[0].getAttribute('aria-current')!=='page'?1:0); }
@@ -1865,18 +1870,28 @@ function backStep(){
   const t=document.querySelectorAll('.tabs .tab');
   if(t.length&&t[0].getAttribute('aria-current')!=='page'){ t[0].click(); return true; }
   return false; }
-function bkFill(){ if(Date.now()<bkGoing) return; const want=backDepth()+2; let at=bkAt(), n=0;
-  try{ while(at<want&&n++<8){ history.pushState({eitvD:at+1},''); at++; } }catch(e){} bkWas=at; }
+// One Back press, however it was heard. d is where the page now stands among its own history entries (0 = the first).
+function bkPressed(d){
+  if(backStep()){ if(d<1){ try{ history.pushState({eitvD:1},''); bkWas=1; }catch(x){} } return true; }
+  toast('Press Back again to leave'); clearTimeout(bkTimer); bkQuiet=Date.now()+2600;
+  if(bkW){ const w=bkW; bkW=null; try{ w.destroy(); }catch(x){} }                     // so the next press is not caught
+  if(d>0){ bkGoing=Date.now()+1500; try{ history.go(-d); }catch(x){ bkGoing=0; } }   // and really leaves
+  bkTimer=setTimeout(()=>{ bkQuiet=0; bkFill(); },2700); return false; }
+function bkWatch(){ if(bkW||!bkDroid||typeof CloseWatcher!=='function') return;
+  try{ const w=new CloseWatcher(); bkW=w;
+    w.onclose=()=>{ if(bkW===w) bkW=null; if(Date.now()-bkEsc<400){ bkWatch(); return; }   // a keyboard's Esc: the page's own Esc has dealt with it
+      if(bkPressed(bkAt())) bkWatch(); }; }catch(e){ bkW=null; } }
+function bkFill(){ if(Date.now()<bkGoing||Date.now()<bkQuiet) return; const want=backDepth()+2; let at=bkAt(), n=0;
+  try{ while(at<want&&n++<8){ history.pushState({eitvD:at+1},''); at++; } }catch(e){} bkWas=at; bkWatch(); }
 window.addEventListener('popstate',e=>{ let d=0; try{ d=(e.state&&e.state.eitvD)|0; }catch(x){}
   const fwd=d>bkWas; bkWas=d;
-  if(Date.now()<bkGoing){ bkGoing=0; return; }          // the page's own step down to its first entry, below
+  if(Date.now()<bkGoing){ bkGoing=0; return; }          // the page's own step down to its first entry, in bkPressed
   if(fwd) return;                                        // the Forward button: nothing to undo
-  if(backStep()){ if(d<1){ try{ history.pushState({eitvD:1},''); bkWas=1; }catch(x){} } return; }
-  toast('Press Back again to leave'); clearTimeout(bkTimer);
-  if(d>0){ bkGoing=Date.now()+1500; try{ history.go(-d); }catch(x){ bkGoing=0; } }   // so the next press really leaves
-  bkTimer=setTimeout(bkFill,2700); });
-document.addEventListener('click',()=>setTimeout(bkFill,0),true);
+  bkPressed(d); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') bkEsc=Date.now(); },true);
+document.addEventListener('click',()=>{ bkQuiet=0; setTimeout(bkFill,0); },true);
 new MutationObserver(()=>bkFill()).observe(document.body,{childList:true});
+bkFill();
 
 function vatLabel(x){ const f=VAT.find(p=>p[0]===x); return f&&x?f[1]:''; }
 const AUDIENCES=['Adult','Child','Israeli senior','Senior','Student','Soldier','Group','Private','Vehicle','Other'];
@@ -5338,7 +5353,7 @@ function openTour(replay){
 }
 
 // ---------- start ----------
-(async()=>{ try{ const hm=/[#&]job=([0-9a-z-]{3,40})/i.exec(location.hash||''); if(hm){ S.openJob=hm[1]; S.tab='jobs'; history.replaceState(null,'',location.pathname+location.search); } }catch(e){}
+(async()=>{ try{ const hm=/[#&]job=([0-9a-z-]{3,40})/i.exec(location.hash||''); if(hm){ S.openJob=hm[1]; S.tab='jobs'; history.replaceState(history.state,'',location.pathname+location.search); } }catch(e){}
   try{ await DB.init(); }catch(e){ app.innerHTML='<div class="gate"><div class="gate-card"><h1 class="mark">Can\'t connect</h1><p>'+esc(e.message)+'. Check your internet connection and reload.</p></div></div>'; return; } boot(); })();
 })();
 </script>
