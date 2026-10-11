@@ -10,6 +10,19 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-41 · The Back button steps back inside the app (built 11 October 2026; a trial copy is at /next/; NOT live)
+
+**Decided by:** the owner (Eretz Israel Tours), 11 October 2026, 09:01: "Change it so back button doesn't leave app".
+
+- **What it does:** the phone's or the browser's Back button closes what is open, one thing at a time: a box on top (with its own Cancel or Close), the full-screen map, the open sheet (the sheet's own Back, Cancel or Close if it has one, otherwise its ×), a step of the welcome tour. With nothing open on another tab it returns to Suppliers. With nothing open on Suppliers it says "Press Back again to leave", and a second press leaves; waiting a few seconds instead keeps the member in the app.
+- **Implementation choices, his to change:** that a second press leaves at all (the other way is that Back never leaves, and the app is closed some other way); the wording of the message; that Back from any tab goes to Suppliers and not to the tab before; that Back on a form does what its Cancel does, which drops what was typed, as Cancel does today.
+- **How:** the page keeps a few spare entries of its own in the browser's history (same address, a counter in each entry) and listens for Back landing on one. They are added after a tap, because Chrome skips entries a page adds without one. Front end only, `index.html`; no database change; it reads and changes no address, link or member data.
+- **Checked in preview:** `supabase/tests/back_button/back_walk.py`, 36 checks at phone and desktop size and through the welcome tour, 0 failed; the hikes walk 204 and the hike page walk 106, 0 failed.
+- **Checked on the trial copy at /next/, in the owner's Chrome on his computer, on the real list, with the browser's own Back:** Back closed a supplier's page; Back with nothing open gave the message; from an open hike on the Hikes tab, three presses with nothing touched in between closed the hike, returned to Suppliers and gave the message.
+- **Not checked:** a phone; the app installed on a phone's home screen; Safari and Firefox; the second press actually leaving, outside preview (the test tab had no page before the app to return to).
+- **Known edge:** after the page is reloaded with something open behind it in history, a Back press at the list can reload the page once instead of showing the message.
+- **Going live:** on the owner's word after he has tried /next/ on his phone (G1). In the same change /next/ goes back to sending on to the app.
+
 ## D-40 · A Modiin region (live since 11 October 2026)
 
 On the owner's word (11 Oct, 08:59: "Add modiin as region for activities").

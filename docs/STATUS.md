@@ -21,6 +21,10 @@
 
 A Hikes tab: official marked trails with a route file (GPX), notes, distance and time, and a report members add after walking one. Built 8 October 2026; pull request #28 merged by the owner at 14:57 and **the database file `supabase/migrations/2026-10-08_hikes.sql` run on production at about 15:01, checked by fingerprints and the rolled-back probe.** It adds three tables (`hikes`, `hike_reports`, `hike_gpx`) and thirteen functions, and replaces `whoami` and `set_setting` (each gains only the hikes switch). It is open to Eretz Israel Tours only, until the owner changes the setting `hikes_for` in the Team tab ("Open Hikes to all colleagues"): his decision. No hikes are entered yet. No terms change in the branch. Nothing in it touches suppliers, prices, quotes or any field the Cockpit could read. Details: `docs/DECISIONS.md`, D-31.
 
+## The Back button (D-41): built 11 October 2026, a trial copy at /next/, NOT live
+
+On the owner's word ("Change it so back button doesn't leave app"). Back closes what is open, then returns to Suppliers, then says "Press Back again to leave". Front end only, no database change. On this branch (`back-button`); the page members use does not have it yet. The trial copy at `/next/` was tried in the owner's Chrome on his computer; a phone has not been tried. It goes live on his word. Details: `docs/DECISIONS.md`, D-41.
+
 ## A Modiin region (D-40): live since 11 October 2026, about 09:10
 
 On the owner's word ("Add modiin as region for activities"). The page's list of regions has `Modiin`, after Tel Aviv & Center. Nothing was moved into it: the two suppliers in Modiin are still under Tel Aviv & Center, hidden and waiting for review. No database change.
