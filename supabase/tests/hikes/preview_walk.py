@@ -217,6 +217,14 @@ async def run(p, w, h, tag):
     check(tag+': the picker: None, the places in the hike\'s region, then the others by name', o1[0]=='None' and g1[0]==['In Negev & Arava',['Ein Avdat National Park']] and g1[1]==['Other places',['Ein Gedi Nature Reserve · Dead Sea','Ein Prat Nature Reserve · Binyamin & Shomron','Sataf · Jerusalem']], g1)
     await pg.select_option('#hkRegion','Jerusalem'); g2=await groups()
     check(tag+': another region puts its places first and keeps the choice', g2[0]==['In Jerusalem',['Sataf']] and await pg.input_value('#hkPark')==PARK, g2)
+    # D-38, D-39: the hike's form offers Jordan Valley, and Dead Sea as a region of its own just before Dead Sea & Judean Desert;
+    # a hike filed under Dead Sea still puts the places of Dead Sea & Judean Desert first.
+    ro=await pg.eval_on_selector_all('#hkRegion option','o=>o.map(x=>x.textContent)')
+    check(tag+': the hike form has Jordan Valley and, for hikes, Dead Sea', 'Jordan Valley' in ro and 'Dead Sea' in ro and ro.index('Dead Sea')+1==ro.index('Dead Sea & Judean Desert') and 'Countrywide' not in ro, ro)
+    await pg.evaluate("()=>{ const v=S.vendors.find(x=>x.name==='Ein Gedi Nature Reserve'); window.__r0=v.region; v.region='Dead Sea & Judean Desert'; }")
+    await pg.select_option('#hkRegion','Dead Sea'); g4=await groups()
+    check(tag+': a hike under Dead Sea is offered the places of Dead Sea & Judean Desert first', g4[0]==['In Dead Sea',['Ein Gedi Nature Reserve']], g4)
+    await pg.evaluate("()=>{ S.vendors.find(x=>x.name==='Ein Gedi Nature Reserve').region=window.__r0; }")
     await pg.select_option('#hkRegion','Negev & Arava')
     check(tag+': the form fits the screen', await off()==[] and not await over(), await off())
     await pg.wait_for_timeout(450); await quiet(); await pg.screenshot(path=shot('parks_3_add_hike_park_picker'))

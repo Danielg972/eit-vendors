@@ -10,6 +10,16 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-39 · Hikes get a region of their own: Dead Sea (live since 11 October 2026)
+
+On the owner's word (11 Oct, 08:55: "Also create a dead sea region for hikes").
+
+- **What changed:** hikes can be filed under `Dead Sea`. It sits just before Dead Sea & Judean Desert in the hike's form and in the order of the hikes list. Suppliers are untouched: their list of regions has no Dead Sea, and suppliers by the Dead Sea stay under Dead Sea & Judean Desert.
+- **The place picker still works:** a hike filed under Dead Sea is offered the places of Dead Sea & Judean Desert first (`hkVReg`).
+- **Nothing in the database changed shape:** a region is plain text there.
+- **Moved into it:** the ten hikes on the Dead Sea shore itself (Ein Gedi four, Masada two, Ein Bokek two, Nahal Perazim, Lower Nahal Darga). Left under Dead Sea & Judean Desert, for Eretz Israel Tours to place: Wadi Qelt, Lower Nahal Og, Upper Nahal Og, Middle Nahal Tzafit.
+- **Checked:** the hikes walk has two new checks at each screen size (204 in all), the hike page walk 106; none failed.
+
 ## D-38 · A Jordan Valley region (live since 11 October 2026)
 
 On the owner's word (11 Oct, 08:43: "Create a Jordan valley region"), after his walk at Nahal Firan had to be filed under Binyamin & Shomron for want of a better place.
