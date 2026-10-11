@@ -21,6 +21,10 @@
 
 A Hikes tab: official marked trails with a route file (GPX), notes, distance and time, and a report members add after walking one. Built 8 October 2026; pull request #28 merged by the owner at 14:57 and **the database file `supabase/migrations/2026-10-08_hikes.sql` run on production at about 15:01, checked by fingerprints and the rolled-back probe.** It adds three tables (`hikes`, `hike_reports`, `hike_gpx`) and thirteen functions, and replaces `whoami` and `set_setting` (each gains only the hikes switch). It is open to Eretz Israel Tours only, until the owner changes the setting `hikes_for` in the Team tab ("Open Hikes to all colleagues"): his decision. No hikes are entered yet. No terms change in the branch. Nothing in it touches suppliers, prices, quotes or any field the Cockpit could read. Details: `docs/DECISIONS.md`, D-31.
 
+## A Jordan Valley region (D-38): live since 11 October 2026, about 08:50
+
+On the owner's word ("Create a Jordan valley region"). The page's list of regions has `Jordan Valley`, after Binyamin & Shomron. The hike at Nahal Firan was moved into it; nothing else was moved. The same morning, on his word that he had walked them all, the five routes he had drawn on the hiking map went in as hikes with their routes (Nahal Peres, Shvil HaRatz at Masada, Makhtesh Ramon field school to the Minsara, Maarat HaEtzba, Upper Nahal Og). Members now see 86 hikes; 13 have a route.
+
 ## The hike's map: marked trails and Mapeak (D-37): live since 10 October 2026, about 21:00
 
 After Israel Hiking Map became Mapeak the owner asked what could be used, tried a trial copy, and said the marked trails and the open map are fine. Live: the marked trails drawn over the hike's map (Waymarked Trails, credited), "Open in Mapeak" on the open map (opens Mapeak at the place, not the hike), and a route file box that names Mapeak and Amud Anan and says what the phone will ask. His request to Mapeak for its own map and public routes was sent on 10 October; no answer yet. Open, his: showing the hike itself in Mapeak (needs a route reachable by address for a short time); the privacy line, which now covers Waymarked Trails too.

@@ -10,6 +10,15 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-38 · A Jordan Valley region (live since 11 October 2026)
+
+On the owner's word (11 Oct, 08:43: "Create a Jordan valley region"), after his walk at Nahal Firan had to be filed under Binyamin & Shomron for want of a better place.
+
+- **What changed:** one name added to the page's list of regions, `Jordan Valley`, between Binyamin & Shomron and Dead Sea & Judean Desert. It appears wherever a region is chosen: a supplier's form, a hike's form, a job, where a member is based; and in the region filters once something is filed under it.
+- **Nothing in the database changed shape:** the database keeps a region as plain text and has no list of its own.
+- **Moved into it:** the hike "Nahal Firan (Jordan Valley)" only. Suppliers and other hikes stay where they are until Eretz Israel Tours moves them.
+- **Checked:** the two hikes walks (200 and 106 checks) pass with the new list.
+
 ## D-37 · The hike's map: marked trails drawn over it, a link to Mapeak; the route file box names the apps (live since 10 October 2026)
 
 **Decided by:** the owner (Eretz Israel Tours), 10 October 2026, evening.
