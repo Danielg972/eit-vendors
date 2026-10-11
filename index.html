@@ -1840,6 +1840,44 @@ function sheet(title, body, foot){
 function closeSheet(){ S.openVendor=null; hkMapFullClose(); hkMapDrop(); const w=document.getElementById('sheetWrap'); if(w){ w.remove(); document.body.style.overflow=''; } }
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ const lm=document.getElementById('hkLocModal'); if(lm){ lm.remove(); return; } if(hkMapFullClose()) return; closeSheet(); } });
 
+// ---------- the phone's or the browser's Back button (D-41) ----------
+// Back steps back inside the app instead of leaving it: it closes the box on top, then the full-screen map, then the open
+// sheet (the sheet's own Back, Cancel or Close if it has one, otherwise its ×), then a step back in the welcome tour, then
+// returns to the first tab. With nothing left to close it says "Press Back again to leave", and a second press leaves.
+// How: the page keeps spare entries of its own in the browser's history (same address, a counter in the entry's state), so
+// a Back press lands on one of them and the page hears it (popstate) instead of being left. They are added after a tap,
+// because Chrome skips entries a page adds without one. Nothing here reads or changes the address, a member's link or data.
+const bkAt=()=>{ try{ return (history.state&&history.state.eitvD)|0; }catch(e){ return 0; } };
+let bkWas=bkAt(), bkGoing=0, bkTimer=null;
+function backDepth(){ const t=document.querySelectorAll('.tabs .tab');
+  return document.querySelectorAll('body > .modal').length + (document.getElementById('hkMapFull')?1:0) + (document.getElementById('sheetWrap')?1:0)
+    + (document.getElementById('tourWrap')?1:0) + (t.length&&t[0].getAttribute('aria-current')!=='page'?1:0); }
+function backStep(){
+  const ms=document.querySelectorAll('body > .modal');
+  if(ms.length){ const m=ms[ms.length-1], x=m.querySelector('[data-g="x"],[data-m="x"],[data-h=""],[data-a="later"]'); if(x) x.click(); else m.remove(); return true; }
+  if(hkMapFullClose()) return true;
+  const sw=document.getElementById('sheetWrap');
+  if(sw){ const named=(sel,re)=>[...sw.querySelectorAll(sel)].find(b=>!b.disabled&&re.test(b.textContent.trim()));
+    const b=named('.sheet button',/^Back$/)||named('.sheet-foot button.btn.soft',/^(Cancel|Close)$/)||sw.querySelector('#closeS');
+    if(b) b.click(); else closeSheet(); return true; }
+  const tw=document.getElementById('tourWrap');
+  if(tw){ const b=tw.querySelector('[data-t="back"]'); if(b){ b.click(); return true; } return false; }
+  const t=document.querySelectorAll('.tabs .tab');
+  if(t.length&&t[0].getAttribute('aria-current')!=='page'){ t[0].click(); return true; }
+  return false; }
+function bkFill(){ if(Date.now()<bkGoing) return; const want=backDepth()+2; let at=bkAt(), n=0;
+  try{ while(at<want&&n++<8){ history.pushState({eitvD:at+1},''); at++; } }catch(e){} bkWas=at; }
+window.addEventListener('popstate',e=>{ let d=0; try{ d=(e.state&&e.state.eitvD)|0; }catch(x){}
+  const fwd=d>bkWas; bkWas=d;
+  if(Date.now()<bkGoing){ bkGoing=0; return; }          // the page's own step down to its first entry, below
+  if(fwd) return;                                        // the Forward button: nothing to undo
+  if(backStep()){ if(d<1){ try{ history.pushState({eitvD:1},''); bkWas=1; }catch(x){} } return; }
+  toast('Press Back again to leave'); clearTimeout(bkTimer);
+  if(d>0){ bkGoing=Date.now()+1500; try{ history.go(-d); }catch(x){ bkGoing=0; } }   // so the next press really leaves
+  bkTimer=setTimeout(bkFill,2700); });
+document.addEventListener('click',()=>setTimeout(bkFill,0),true);
+new MutationObserver(()=>bkFill()).observe(document.body,{childList:true});
+
 function vatLabel(x){ const f=VAT.find(p=>p[0]===x); return f&&x?f[1]:''; }
 const AUDIENCES=['Adult','Child','Israeli senior','Senior','Student','Soldier','Group','Private','Vehicle','Other'];
 const DEAL_KINDS=['Credit card club','Coupon site','Coupon code','Group trick','Other'];
