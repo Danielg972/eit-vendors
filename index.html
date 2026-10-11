@@ -4483,7 +4483,11 @@ function hkRow(h){ const r=h.r||{};
   return `<button class="row" data-hk="${esc(h.id)}"><span class="row-name">${esc(h.name)}</span>
     <span class="row-price"><b>${esc(hkKm(h))}</b><span>${esc(hkTime(h))}</span></span>
     <span class="row-meta">${hkPill(h)}${r.difficulty?`<span>${esc(hkLab(HK_DIFF,r.difficulty))}</span>`:''}${r.cliffs==='yes'?'<span class="flag extra">Cliffs</span>':''}${r.water_shoes==='needed'?'<span class="flag info">Water shoes</span>':''}${r.firing_zone==='crosses'?'<span class="flag miss">Firing zone</span>':''}</span></button>`; }
-const hkRegions=list=>[...REGIONS.filter(r=>list.some(h=>h.region===r)), ...[...new Set(list.map(h=>h.region))].filter(r=>!REGIONS.includes(r)).sort()];
+// Hikes have one region of their own, Dead Sea (D-39). Suppliers there stay under Dead Sea & Judean Desert, so a hike
+// filed under Dead Sea still finds its places: hkVReg gives the suppliers' region for a hike's region.
+const HK_REGIONS=REGIONS.flatMap(r=>r==='Dead Sea & Judean Desert'?['Dead Sea',r]:[r]);
+const hkVReg=r=>r==='Dead Sea'?'Dead Sea & Judean Desert':r;
+const hkRegions=list=>[...HK_REGIONS.filter(r=>list.some(h=>h.region===r)), ...[...new Set(list.map(h=>h.region))].filter(r=>!HK_REGIONS.includes(r)).sort()];
 async function reloadHikes(){ S.hikes=await DB.loadHikes(); if(S.tab==='hikes'||S.tab==='review') render(); }
 async function viewHikes(){
   const view=document.getElementById('view');
@@ -4900,7 +4904,7 @@ function hkWireGpx(root, id, onFile){ const inp=root.querySelector('#'+id), nm=r
 function openHikeForm(h0){
   const h=h0||{}, edit=!!h.id; let gpx=null;
   const mks=(h.markers||[]).map(m=>({color:m.color||'',number:m.number||''})); if(!mks.length) mks.push({color:'',number:''});
-  const regs=REGIONS.filter(r=>r!=='Countrywide'); if(h.region&&!regs.includes(h.region)) regs.push(h.region);
+  const regs=HK_REGIONS.filter(r=>r!=='Countrywide'); if(h.region&&!regs.includes(h.region)) regs.push(h.region);
   // The parks and sites this member can see. The hike's own one stays on offer even if its category has changed since.
   const parks=hikesOn()?hkParkList():[], cur=hikesOn()?hkParkOf(h):null; if(cur&&!cur.hidden&&!parks.includes(cur)) parks.push(cur);
   const y=new Date().getFullYear();
@@ -4961,7 +4965,7 @@ function openHikeForm(h0){
   const drawPark=first=>{ if(!pSel) return; const keep=first?(cur&&!cur.hidden?cur.id:''):pSel.value, reg=$('#hkRegion').value, n=normN(pQ?pQ.value:'');
     const hit=parks.filter(v=>v.id===keep||!n||normN([v.name,v.region,v.location].join(' ')).includes(n));
     const opt=(v,where)=>`<option value="${esc(v.id)}"${v.id===keep?' selected':''}>${esc(v.name)}${where&&(v.region||v.location)?' · '+esc(v.region||v.location):''}</option>`;
-    const near=reg?hit.filter(v=>v.region===reg):[], rest=hit.filter(v=>!near.includes(v));
+    const near=reg?hit.filter(v=>v.region===hkVReg(reg)):[], rest=hit.filter(v=>!near.includes(v));
     pSel.innerHTML='<option value="">None</option>'+(near.length?`<optgroup label="${esc('In '+reg)}">${near.map(v=>opt(v,false)).join('')}</optgroup>${rest.length?`<optgroup label="Other places">${rest.map(v=>opt(v,true)).join('')}</optgroup>`:''}`:rest.map(v=>opt(v,true)).join(''));
     $('#hkParkNo').hidden=!(n&&!hit.some(v=>v.id!==keep)); };
   drawPark(true); if(pSel){ park0=pSel.value; $('#hkRegion').addEventListener('change',()=>drawPark()); if(pQ) pQ.addEventListener('input',()=>drawPark()); }
