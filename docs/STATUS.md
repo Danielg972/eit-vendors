@@ -21,9 +21,13 @@
 
 A Hikes tab: official marked trails with a route file (GPX), notes, distance and time, and a report members add after walking one. Built 8 October 2026; pull request #28 merged by the owner at 14:57 and **the database file `supabase/migrations/2026-10-08_hikes.sql` run on production at about 15:01, checked by fingerprints and the rolled-back probe.** It adds three tables (`hikes`, `hike_reports`, `hike_gpx`) and thirteen functions, and replaces `whoami` and `set_setting` (each gains only the hikes switch). It is open to Eretz Israel Tours only, until the owner changes the setting `hikes_for` in the Team tab ("Open Hikes to all colleagues"): his decision. No hikes are entered yet. No terms change in the branch. Nothing in it touches suppliers, prices, quotes or any field the Cockpit could read. Details: `docs/DECISIONS.md`, D-31.
 
+## The Back button never leaves the app (D-41): live since 11 October 2026, about 10:05
+
+On the owner's word ("Change it so back button doesn't leave app"; then, after trying it on his phone, "back should never leave the app"). Back closes what is open, then returns to Suppliers, then does nothing. Front end only, no database change. `/next/` sends on to the app again. Details: `docs/DECISIONS.md`, D-41.
+
 ## A Modiin region (D-40): live since 11 October 2026, about 09:10
 
-On the owner's word ("Add modiin as region for activities"). The page's list of regions has `Modiin`, after Tel Aviv & Center. Nothing was moved into it: the two suppliers in Modiin are still under Tel Aviv & Center, hidden and waiting for review. No database change.
+On the owner's word ("Add modiin as region for activities"). The page's list of regions has `Modiin`, after Tel Aviv & Center. On his word the same morning (09:53) the two suppliers in Modiin, HaSadna and Lin Bee Farm, were moved into it from Tel Aviv & Center; both are still hidden and waiting for review. No database change.
 
 ## Hikes have a Dead Sea region (D-39): live since 11 October 2026, about 09:00
 

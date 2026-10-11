@@ -10,6 +10,19 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-41 · The Back button never leaves the app (live since 11 October 2026)
+
+**Decided by:** the owner (Eretz Israel Tours), 11 October 2026. 09:01: "Change it so back button doesn't leave app". 09:53, after trying it: "back should never leave the app". 09:54: "hes it works on the trial 2".
+
+- **What it does:** the phone's or the browser's Back button closes what is open, one thing at a time: a box on top (with its own Cancel or Close), the full-screen map, the open sheet (the sheet's own Back, Cancel or Close if it has one, otherwise its ×), a step of the welcome tour. With nothing open on another tab it returns to Suppliers. With nothing open on Suppliers it does nothing. A member leaves with the phone's Home button or by closing the tab.
+- **Implementation choices, his to change:** that Back from any tab goes to Suppliers and not to the tab before; that Back on a form does what its Cancel does, which drops what was typed, as Cancel does today; that Back with nothing open shows no message.
+- **How, two ways used together:** (1) the page keeps a few spare entries of its own in the browser's history (same address, a counter in each entry) and listens for Back landing on one; Chrome skips entries a page added without a tap, so on its own this misses a Back pressed before the first tap. (2) On an Android phone the page also keeps a CloseWatcher open, which Chrome reaches before history, tap or no tap, and opens the next one after each press. Front end only, `index.html`; no database change; it reads and changes no address, link or member data. The two places that tidy the address (a personal link, a job link) keep the page's counter on the history entry.
+- **How it got here:** the first trial copy at /next/ had only way (1) and said "Press Back again to leave", a second press leaving. The owner, 09:43: "back nutton minimizes app now". Way (2) went into a second trial copy at about 09:50; he tried it on his phone and said it works. The message and the second press that left were then taken out on his word. That last form, where Back does nothing at the list, went live without a trial of its own: it is the trial he tried with the leaving removed.
+- **Checked in preview:** `supabase/tests/back_button/back_walk.py`, 41 checks at phone and desktop size, through the welcome tour and as an Android phone (Back before any tap, nine presses in a row with nothing tapped, three presses that close a map, a hike and the tab, a keyboard's Esc), 0 failed; the hikes walk 204 and the hike page walk 106, 0 failed. As an Android phone, Back is the watcher's own close request made from the test, not a real Back button.
+- **Checked on the trial copies in the owner's Chrome on his computer, on the real list, with the browser's own Back:** Back closed a supplier's page; from an open hike on the Hikes tab, presses with nothing touched in between closed the hike and returned to Suppliers.
+- **Not checked:** the never-leave form on a phone; the app installed on a phone's home screen; Safari and Firefox.
+- **Known edges:** on a computer, where only way (1) works, a Back pressed before the first tap, or about three in a row with nothing tapped in between, can still leave the page; that is Chrome's own rule. On a computer Back no longer returns to the website the member came from. After the page is reloaded, a Back press can reload it once.
+
 ## D-40 · A Modiin region (live since 11 October 2026)
 
 On the owner's word (11 Oct, 08:59: "Add modiin as region for activities").
@@ -17,7 +30,7 @@ On the owner's word (11 Oct, 08:59: "Add modiin as region for activities").
 - **What changed:** one name added to the page's list of regions, `Modiin`, between Tel Aviv & Center and Shfela. It is offered wherever a region is chosen (a supplier's form, a hike's form, a job, where a member is based) and shows as a region filter once something is filed under it.
 - **Implementation choices, his to change:** its place in the list; that the one shared list is used, so a hike can be filed under Modiin too, although he asked for it for activities.
 - **Nothing in the database changed shape:** a region is plain text there.
-- **Moved into it:** nothing. Two suppliers that are in Modiin are filed under Tel Aviv & Center, both still hidden and waiting for review; moving them is Eretz Israel Tours' to say.
+- **Moved into it:** nothing at first. At 09:53 the owner said to move the two suppliers that are in Modiin ("yes move those two HaSadna and Lin Bee Farm to modiin"); their region went from Tel Aviv & Center to Modiin on the live database. Both are still hidden and waiting for review.
 - **Checked:** in preview at phone and desktop size, the supplier's form offers Modiin with every other region still there, and a sample supplier saved under it gets a Modiin filter button that shows only that supplier (12 checks); the two hikes walks (204 and 106 checks) pass with the new list.
 
 ## D-39 · Hikes get a region of their own: Dead Sea (live since 11 October 2026)
