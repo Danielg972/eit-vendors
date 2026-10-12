@@ -3471,7 +3471,7 @@ function prPricesHtml(prices, cardsOf, plCard){
   const isMain=p=>p.audience==='Adult'||p.audience==='Child';
   const main=prices.filter(isMain), rest=prices.filter(p=>!isMain(p));
   // One clean list, as a ticketing app shows it: name, agent tag and price on each row; details and buttons open on a tap.
-  const row=p=>`<details class="prrow"><summary><span class="pr-n">${esc(prName(p))}${p.is_agent&&!p.org?' <span class="tag agent">Agent</span>':''}${p.private?' <span class="tag" style="background:var(--bad-wash);color:var(--bad)">Private</span>':''}</span><span class="mono pr-a">${p.price?esc(money(p.currency,p.price)):'—'}</span></summary><div class="pr-d">${plCard(p,false)}</div></details>`;
+  const row=p=>`<details class="prrow"><summary><span class="pr-n">${esc(prName(p))}${p.is_agent&&!p.org?' <span class="tag agent">Agent</span>':''}${/^verified/i.test(p.source||'')?' <span class="tag" style="background:var(--ok-wash);color:var(--ok)">✓ Verified</span>':''}${p.private?' <span class="tag" style="background:var(--bad-wash);color:var(--bad)">Private</span>':''}</span><span class="mono pr-a">${p.price?esc(money(p.currency,p.price)):'—'}</span></summary><div class="pr-d">${plCard(p,false)}</div></details>`;
   if(!rest.length || prices.length<=3) return `<div class="prlist">${prices.map(row).join('')}</div>`;
   if(!main.length) return `<div class="prlist">${rest.map(row).join('')}</div>`;
   return `<div class="prlist">${main.map(row).join('')}<details class="prmore"><summary>Show ${rest.length} more price${rest.length>1?'s':''} ›</summary>${rest.map(row).join('')}</details></div>`;
