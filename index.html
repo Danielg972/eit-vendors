@@ -188,6 +188,21 @@ textarea.out{width:100%;min-height:160px;font-family:var(--f-mono);font-size:12p
 .prgrp>summary::-webkit-details-marker{display:none}
 .prgrp>summary::after{content:'▾';margin-left:auto;color:var(--ink-3);font-size:18px}
 .prgrp[open]>summary::after{content:'▴'}
+.prlist{border:1px solid var(--line);border-radius:12px;background:var(--card);overflow:hidden;margin:0 0 10px}
+.prrow+.prrow,.prlist>.prmore,.prmore>.prrow{border-top:1px solid var(--line)}
+.prlist .prrow>summary{display:flex;align-items:center;gap:10px;padding:12px 14px;min-height:48px;box-sizing:border-box;cursor:pointer;list-style:none}
+.prrow>summary::-webkit-details-marker,.prmore>summary::-webkit-details-marker{display:none}
+.prrow .pr-n{flex:1;min-width:0;line-height:1.35}
+.prrow .pr-n .tag{margin-left:4px;vertical-align:1px}
+.prrow .pr-a{white-space:nowrap;font-weight:600}
+.prrow>summary::after{content:'›';color:var(--ink-3);font-size:20px;line-height:1;transition:transform .15s}
+.prrow[open]>summary::after{transform:rotate(90deg)}
+.pr-d{padding:0 10px 10px}
+.pr-d .pl{margin:0;box-shadow:none}
+.pr-d .who3,.pr-d .amt{display:none}
+.prlist .prmore>summary{display:flex;align-items:baseline;gap:8px;padding:12px 14px;min-height:48px;box-sizing:border-box;cursor:pointer;list-style:none;color:var(--olive);font-weight:600}
+.prmore>summary .hint{font-weight:400}
+.prmore[open]>summary{display:none}
 .prgrp>.prices{padding:0 8px 8px;margin:0}
 .prpick{margin:0 0 10px;max-width:320px}
 .prmore>summary{cursor:pointer;font-size:14px;color:var(--ink-2);padding:6px 0}.prmore[open]>summary{margin-bottom:8px}
@@ -2205,7 +2220,7 @@ async function drawExtras(v){
   const isTr=catsOf(v).includes('Transport');
   // A bus company's or driver's prices are shown in groups that open (D-29), not as one long list.
   const paint=()=>{
-    pb.innerHTML = privNote + (det.prices.length ? (isTr ? trPricesHtml(v,det.prices,cardsOf) : `<div class="prices">${cardsOf(det.prices)}</div>`)
+    pb.innerHTML = privNote + (det.prices.length ? (isTr ? trPricesHtml(v,det.prices,cardsOf) : prPricesHtml(det.prices,cardsOf,plCard))
       : (privNote?'':`<p class="hint" style="margin:0 0 10px">${lim()?'No prices yet. Add the rate you got: everyone on the list sees it, without your name.':(catsOf(v).includes('Transport')?'No prices yet. Add airport transfers, a day rate and an hourly rate, one line for each vehicle size.':'No price lines yet. Add adult, child, Israeli senior or group rates as separate lines.')}</p>`));
     pb.querySelectorAll('[data-pedit]').forEach(b=>b.onclick=()=>openPriceForm(v, det.prices.find(p=>p.id===b.dataset.pedit), null, det.prices_private));
     pb.querySelectorAll('[data-pdel]').forEach(b=>b.onclick=async()=>{
@@ -3444,6 +3459,20 @@ const TR_GROUPS=[['transfer','Airport transfers'],['day','Day rate'],['hour','Pe
 // Which vehicle size is chosen and which groups are open on the transport page being looked at. Kept while the app is open.
 const TR_VIEW={vid:'',veh:'',open:new Set()};
 function trView(vid){ if(TR_VIEW.vid!==vid){ TR_VIEW.vid=vid; TR_VIEW.veh=''; TR_VIEW.open=new Set(); } return TR_VIEW; }
+// Prices on any other supplier (D-44): adult and child lines show in full, agent rates included;
+// every other line (student, soldier, senior, group, extras) is one row with its name and price, and opens on a tap.
+function prName(p){ const l=(p.label||'').trim(), w=priceWho(p);
+  if(!l) return w; if(p.audience==='Other' && !(p.pax_min||p.pax_max)) return l;
+  return l.toLowerCase().includes(String(p.audience||'').toLowerCase()) ? l : `${l} · ${w}`; }
+function prPricesHtml(prices, cardsOf, plCard){
+  const isMain=p=>p.audience==='Adult'||p.audience==='Child';
+  const main=prices.filter(isMain), rest=prices.filter(p=>!isMain(p));
+  // One clean list, as a ticketing app shows it: name, agent tag and price on each row; details and buttons open on a tap.
+  const row=p=>`<details class="prrow"><summary><span class="pr-n">${esc(prName(p))}${p.is_agent&&!p.org?' <span class="tag agent">Agent</span>':''}${/^verified/i.test(p.source||'')?' <span class="tag" style="background:var(--ok-wash);color:var(--ok)">✓ Verified</span>':''}${p.private?' <span class="tag" style="background:var(--bad-wash);color:var(--bad)">Private</span>':''}</span><span class="mono pr-a">${p.price?esc(money(p.currency,p.price)):'—'}</span></summary><div class="pr-d">${plCard(p,false)}</div></details>`;
+  if(!rest.length || prices.length<=3) return `<div class="prlist">${prices.map(row).join('')}</div>`;
+  if(!main.length) return `<div class="prlist">${rest.map(row).join('')}</div>`;
+  return `<div class="prlist">${main.map(row).join('')}<details class="prmore"><summary>Show ${rest.length} more price${rest.length>1?'s':''} ›</summary>${rest.map(row).join('')}</details></div>`;
+}
 function trPricesHtml(v, prices, cardsOf){
   const st=trView(v.id), rows=prices.map(p=>({p,t:trParse(p.label)}));
   const sizes=VEHICLES.filter(x=>rows.some(r=>r.t.veh===x[0]));
