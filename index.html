@@ -188,6 +188,12 @@ textarea.out{width:100%;min-height:160px;font-family:var(--f-mono);font-size:12p
 .prgrp>summary::-webkit-details-marker{display:none}
 .prgrp>summary::after{content:'▾';margin-left:auto;color:var(--ink-3);font-size:18px}
 .prgrp[open]>summary::after{content:'▴'}
+.prone{margin:0 0 6px}
+.prone>summary{padding:9px 12px;min-height:44px}
+.prone .pr-n{flex:1;min-width:0}
+.prone .pr-a{margin-left:auto;white-space:nowrap}
+.prone>summary::after{margin-left:6px;font-size:15px}
+.prone>.prices{padding:0 8px 8px}
 .prgrp>.prices{padding:0 8px 8px;margin:0}
 .prpick{margin:0 0 10px;max-width:320px}
 .prmore>summary{cursor:pointer;font-size:14px;color:var(--ink-2);padding:6px 0}.prmore[open]>summary{margin-bottom:8px}
@@ -2205,7 +2211,7 @@ async function drawExtras(v){
   const isTr=catsOf(v).includes('Transport');
   // A bus company's or driver's prices are shown in groups that open (D-29), not as one long list.
   const paint=()=>{
-    pb.innerHTML = privNote + (det.prices.length ? (isTr ? trPricesHtml(v,det.prices,cardsOf) : `<div class="prices">${cardsOf(det.prices)}</div>`)
+    pb.innerHTML = privNote + (det.prices.length ? (isTr ? trPricesHtml(v,det.prices,cardsOf) : prPricesHtml(det.prices,cardsOf,plCard))
       : (privNote?'':`<p class="hint" style="margin:0 0 10px">${lim()?'No prices yet. Add the rate you got: everyone on the list sees it, without your name.':(catsOf(v).includes('Transport')?'No prices yet. Add airport transfers, a day rate and an hourly rate, one line for each vehicle size.':'No price lines yet. Add adult, child, Israeli senior or group rates as separate lines.')}</p>`));
     pb.querySelectorAll('[data-pedit]').forEach(b=>b.onclick=()=>openPriceForm(v, det.prices.find(p=>p.id===b.dataset.pedit), null, det.prices_private));
     pb.querySelectorAll('[data-pdel]').forEach(b=>b.onclick=async()=>{
@@ -3444,6 +3450,19 @@ const TR_GROUPS=[['transfer','Airport transfers'],['day','Day rate'],['hour','Pe
 // Which vehicle size is chosen and which groups are open on the transport page being looked at. Kept while the app is open.
 const TR_VIEW={vid:'',veh:'',open:new Set()};
 function trView(vid){ if(TR_VIEW.vid!==vid){ TR_VIEW.vid=vid; TR_VIEW.veh=''; TR_VIEW.open=new Set(); } return TR_VIEW; }
+// Prices on any other supplier (D-44): adult and child lines show in full, agent rates included;
+// every other line (student, soldier, senior, group, extras) is one row with its name and price, and opens on a tap.
+function prName(p){ const l=(p.label||'').trim(), w=priceWho(p);
+  if(!l) return w; if(p.audience==='Other' && !(p.pax_min||p.pax_max)) return l;
+  return l.toLowerCase().includes(String(p.audience||'').toLowerCase()) ? l : `${l} · ${w}`; }
+function prPricesHtml(prices, cardsOf, plCard){
+  const isMain=p=>p.audience==='Adult'||p.audience==='Child';
+  const main=prices.filter(isMain), rest=prices.filter(p=>!isMain(p));
+  if(!rest.length || prices.length<=3) return `<div class="prices">${cardsOf(prices)}</div>`;
+  return (main.length?`<div class="prices">${cardsOf(main)}</div>`:'')
+    + `<div class="favs-h" style="margin:${main.length?'12px':'0'} 2px 6px">${main.length?'More prices':'Prices'} · tap one to open</div>`
+    + rest.map(p=>`<details class="prgrp prone"><summary><span class="pr-n">${esc(prName(p))}</span><span class="mono pr-a">${p.price?esc(money(p.currency,p.price)):'—'}</span></summary><div class="prices">${plCard(p,false)}</div></details>`).join('');
+}
 function trPricesHtml(v, prices, cardsOf){
   const st=trView(v.id), rows=prices.map(p=>({p,t:trParse(p.label)}));
   const sizes=VEHICLES.filter(x=>rows.some(r=>r.t.veh===x[0]));
