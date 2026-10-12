@@ -10,7 +10,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
-## D-43 · Wineries under Restaurant and under Attraction / Site (database on production 12 October 2026; switched off for colleagues; page not live)
+## D-43 · Wineries under Restaurant and under Attraction / Site (live for Eretz Israel Tours since 12 October 2026; switched off for colleagues)
 
 **Decided by:** the owner (Eretz Israel Tours), 12 October 2026. 09:30: "move winery and put it under sites." 10:21, of the mock-up: "Looks good. But put wineries under restaurants and under sites".
 
@@ -21,9 +21,9 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 - **Implementation choices, his to change:** the Restaurant row also has Meat, Dairy and Mehadrin (from the approved mock-up; each shows only when a restaurant carries that type tag); the "All" button of the two rows reads "All restaurants" and "All sites"; the feature has its own switch, separate from rentals.
 - **Database:** `supabase/migrations/2026-10-12b_wineries_under_sites.sql` (adds `_wineries_on`; replaces `_can_see`, `set_setting`, `whoami`). Run on production through the connector on 12 October 2026.
 
-## D-42 · Eshkol / Midbari rentals, their own category (database on production 12 October 2026; switched off for colleagues; page not live)
+## D-42 · Eshkol / Midbari rentals, their own category (live for Eretz Israel Tours since 12 October 2026; switched off for colleagues)
 
-**Decided by:** the owner (Eretz Israel Tours), 12 October 2026. 09:15: "Add a category for eshkol/Midbari rental, with category of cost, milage, over mileage cost, year make Of car, location, passenger seats, other terms of rental, color of car with availability calender, notes for. Renter notes for review". Who marks the calendar: "Members only". 09:30: "put it as its own category". 10:21, of the mock-up (Claude artifact "Eshkol and Midbari Rentals", version 4): "Looks good."
+**Decided by:** the owner (Eretz Israel Tours), 12 October 2026. 09:15: "Add a category for eshkol/Midbari rental, with category of cost, milage, over mileage cost, year make Of car, location, passenger seats, other terms of rental, color of car with availability calender, notes for. Renter notes for review". Who marks the calendar: "Members only". 09:30: "put it as its own category". 10:21, of the mock-up (Claude artifact "Eshkol and Midbari Rentals", version 4): "Looks good." About 12:45, of the preview pictures: "Looks great" (G1); the page went live the same afternoon, for Eretz Israel Tours only.
 
 - **The category:** stored value `Vehicle Rental`, shown on buttons, in the form and on pages as **"Eshkol / Midbari rental"**. For organisations it belongs to Transportation (`_section_of('Vehicle Rental')` = `transport`). A rental company is one supplier in this category; a supplier that also offers Vehicle Rental counts too.
 - **Vehicles** (table `rental_vehicles`), one row each under the company: licence type (Eshkol, Midbari or both), make and model, year, colour, passenger seats, pick-up location, cost per day with currency and VAT, km included per day, cost per extra km, where the price is from and the date it was checked (rule E4: a price is refused without both), agent price or not, other terms, notes for the renter. Archived, never removed. Eretz Israel Tours changes any vehicle; a member changes the ones he added and may archive them; only Eretz Israel Tours brings one back.
