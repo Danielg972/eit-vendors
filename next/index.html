@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-<!-- TRIAL COPY of D-44 (collapsible price rows), 12 Oct 2026. Same database as the app. Goes away when the owner says go live or no. -->
+<!-- TRIAL COPY of D-44 (clean price list), 12 Oct 2026. Same database as the app. Goes away when the owner says go live or no. -->
 <base href="../">
 <meta name="robots" content="noindex">
 <meta charset="utf-8">
@@ -191,12 +191,21 @@ textarea.out{width:100%;min-height:160px;font-family:var(--f-mono);font-size:12p
 .prgrp>summary::-webkit-details-marker{display:none}
 .prgrp>summary::after{content:'▾';margin-left:auto;color:var(--ink-3);font-size:18px}
 .prgrp[open]>summary::after{content:'▴'}
-.prone{margin:0 0 6px}
-.prone>summary{padding:9px 12px;min-height:44px}
-.prone .pr-n{flex:1;min-width:0}
-.prone .pr-a{margin-left:auto;white-space:nowrap}
-.prone>summary::after{margin-left:6px;font-size:15px}
-.prone>.prices{padding:0 8px 8px}
+.prlist{border:1px solid var(--line);border-radius:12px;background:var(--card);overflow:hidden;margin:0 0 10px}
+.prrow+.prrow,.prlist>.prmore,.prmore>.prrow{border-top:1px solid var(--line)}
+.prlist .prrow>summary{display:flex;align-items:center;gap:10px;padding:12px 14px;min-height:48px;box-sizing:border-box;cursor:pointer;list-style:none}
+.prrow>summary::-webkit-details-marker,.prmore>summary::-webkit-details-marker{display:none}
+.prrow .pr-n{flex:1;min-width:0;line-height:1.35}
+.prrow .pr-n .tag{margin-left:4px;vertical-align:1px}
+.prrow .pr-a{white-space:nowrap;font-weight:600}
+.prrow>summary::after{content:'›';color:var(--ink-3);font-size:20px;line-height:1;transition:transform .15s}
+.prrow[open]>summary::after{transform:rotate(90deg)}
+.pr-d{padding:0 10px 10px}
+.pr-d .pl{margin:0;box-shadow:none}
+.pr-d .who3,.pr-d .amt{display:none}
+.prlist .prmore>summary{display:flex;align-items:baseline;gap:8px;padding:12px 14px;min-height:48px;box-sizing:border-box;cursor:pointer;list-style:none;color:var(--olive);font-weight:600}
+.prmore>summary .hint{font-weight:400}
+.prmore[open]>summary{display:none}
 .prgrp>.prices{padding:0 8px 8px;margin:0}
 .prpick{margin:0 0 10px;max-width:320px}
 .prmore>summary{cursor:pointer;font-size:14px;color:var(--ink-2);padding:6px 0}.prmore[open]>summary{margin-bottom:8px}
@@ -3461,10 +3470,11 @@ function prName(p){ const l=(p.label||'').trim(), w=priceWho(p);
 function prPricesHtml(prices, cardsOf, plCard){
   const isMain=p=>p.audience==='Adult'||p.audience==='Child';
   const main=prices.filter(isMain), rest=prices.filter(p=>!isMain(p));
-  if(!rest.length || prices.length<=3) return `<div class="prices">${cardsOf(prices)}</div>`;
-  return (main.length?`<div class="prices">${cardsOf(main)}</div>`:'')
-    + `<div class="favs-h" style="margin:${main.length?'12px':'0'} 2px 6px">${main.length?'More prices':'Prices'} · tap one to open</div>`
-    + rest.map(p=>`<details class="prgrp prone"><summary><span class="pr-n">${esc(prName(p))}</span><span class="mono pr-a">${p.price?esc(money(p.currency,p.price)):'—'}</span></summary><div class="prices">${plCard(p,false)}</div></details>`).join('');
+  // One clean list, as a ticketing app shows it: name, agent tag and price on each row; details and buttons open on a tap.
+  const row=p=>`<details class="prrow"><summary><span class="pr-n">${esc(prName(p))}${p.is_agent&&!p.org?' <span class="tag agent">Agent</span>':''}${p.private?' <span class="tag" style="background:var(--bad-wash);color:var(--bad)">Private</span>':''}</span><span class="mono pr-a">${p.price?esc(money(p.currency,p.price)):'—'}</span></summary><div class="pr-d">${plCard(p,false)}</div></details>`;
+  if(!rest.length || prices.length<=3) return `<div class="prlist">${prices.map(row).join('')}</div>`;
+  if(!main.length) return `<div class="prlist">${rest.map(row).join('')}</div>`;
+  return `<div class="prlist">${main.map(row).join('')}<details class="prmore"><summary>Show ${rest.length} more price${rest.length>1?'s':''} ›</summary>${rest.map(row).join('')}</details></div>`;
 }
 function trPricesHtml(v, prices, cardsOf){
   const st=trView(v.id), rows=prices.map(p=>({p,t:trParse(p.label)}));
