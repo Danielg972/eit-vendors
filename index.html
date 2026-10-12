@@ -502,6 +502,28 @@ button.bkcard{display:block;width:100%;text-align:left;font:inherit;color:inheri
   .bkplan-r b,.bkplan-r .t{margin-bottom:0}
 }
 .cal-k i{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-2px;margin-right:6px;border:1px solid var(--line)}
+/* Eshkol / Midbari rentals (D-42): vehicles on the list and on the supplier's page, and a vehicle's calendar */
+.pill.rt-eshkol{background:var(--ok-wash);color:var(--ok)}
+.pill.rt-midbari{background:var(--ochre-wash);color:var(--ochre)}
+.rt-rows{grid-column:1 / -1;display:flex;flex-direction:column;gap:4px;margin-top:4px;font-size:13.5px}
+.rt-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 12px;align-items:baseline}
+.rt-row .rt-car{grid-column:1 / -1;min-width:0;overflow-wrap:anywhere}
+.rt-st{font-size:12.5px;color:var(--ink-3)}
+.rt-st.free{color:var(--ok)}
+.rt-st.booked{color:var(--bad)}
+.rt-p{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-weight:500;text-align:right}
+.rt-cards{display:flex;flex-direction:column;gap:8px}
+.rt-card{display:flex;flex-direction:column;gap:4px;text-align:left;width:100%;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;font:inherit;color:inherit}
+.rt-card:hover{background:var(--wash)}
+.rt-c2{font-size:13px;color:var(--ink-2)}
+.rt-c3{display:flex;justify-content:space-between;gap:12px;align-items:baseline}
+.rt-h{margin:12px 0 4px;font-size:12px;letter-spacing:.5px;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+.rt-txt{margin:0;white-space:pre-line}
+.rt-cal{margin:0}
+.rt-cal .cal-g button.free{background:var(--ok-wash);border-color:transparent;color:var(--ok)}
+.rt-cal .cal-g button.booked{background:var(--bad-wash);border-color:transparent;color:var(--bad);text-decoration:line-through}
+.cal-k i.rt-free{background:var(--ok-wash);border-color:transparent}
+.cal-k i.rt-booked{background:var(--bad-wash);border-color:transparent}
 .mini[aria-pressed="true"]{background:var(--olive);border-color:var(--olive);color:var(--on-olive)}
 /* a member's own page, claims, and notes that are private or waiting */
 .ownbar{border:1px solid var(--ochre);background:var(--ochre-wash);border-radius:12px;padding:12px;margin:0 0 14px;display:flex;flex-direction:column;gap:6px;font-size:14px}
@@ -652,7 +674,7 @@ const LIVE = /(^|\.)github\.io$/.test(location.hostname) || /(^|\.)eretzisraelto
 
 // R5 field order (from itinerary_builder R5 saveVendor)
 const R5_FIELDS = ['name','category','active','contactPerson','phone','whatsapp','email','website','location','languages','kosher','maxCap','listedPrice','listedPriceVatTreatment','agentPrice','agentPriceVatTreatment','maxPax','priceBasis','currency','payTerms','cancelPolicy','cancelNoticeAmount','cancelNoticeUnit','cancelDayType','cancelPenalty','cancelPolicyVerifiedDate','npResLink','rateReliability','rateService','rateValue','strengths','weaknesses','notes'];
-const CATEGORIES = ['Hotel','Guide','Transport','Restaurant','Winery','Attraction / Site','Activity','Adventure','National Parks','Travel Agent','Itinerary Planner','Flight','Other'];
+const CATEGORIES = ['Hotel','Guide','Transport','Vehicle Rental','Restaurant','Winery','Attraction / Site','Activity','Adventure','National Parks','Travel Agent','Itinerary Planner','Flight','Other'];
 const EXTRA_FIELDS = ['region','tags','experience_years','also_categories','maps_link','hours','hours_last'];
 // Vehicle sizes, used everywhere in Transport: what a company offers (tags), what a quote is for, list filters.
 // Seat ranges follow how Israeli companies sell them: 6-8 seat vans (Vito / V-Class), 9-10, minibuses of 14-16 and 19-20
@@ -715,9 +737,16 @@ const tagHas=(tags,t)=>String(tags||'').split(',').map(x=>x.trim().toLowerCase()
 const SUBCATS = {
   Adventure:[['Jeeps',['Jeep']],['ATVs',['ATV / RZR','ATV','RZR']],['Water',['Kayak & rafting','Boat','Snorkelling']],['Rappelling',['Rappelling']],['Zipline',['Zipline']],['Bikes',['Bikes']],['Horses',['Horse riding']],['Camels',['Camels']],['Shooting',['Shooting']]],
   Activity:[['Workshops',['Workshop']],['Food & wine',['Food & wine']],['Farms',['Farm']],['Family',['Family']],['Volunteering',['Volunteering']],['Archaeology',['Archaeology']],['Shooting',['Shooting']]],
-  Other:[['Photographers',['Photographer']]]
+  Other:[['Photographers',['Photographer']]],
+  // D-43 (12 Oct 2026): Winery leaves the top row and sits under both Restaurant and Attraction / Site. The Wineries button
+  // is the suppliers whose category is Winery, not a type tag; Meat, Dairy and Mehadrin are as in the approved mock-up.
+  // Both rows show only once wineries are switched on for this member (winOn, below).
+  Restaurant:[['Meat',['Meat']],['Dairy',['Dairy']],['Mehadrin',['Mehadrin']],['Wineries',[]]],
+  'Attraction / Site':[['Wineries',[]]]
 };
-const subHit=(v,c,name)=>{ const g=(SUBCATS[c]||[]).find(x=>x[0]===name); return !!g && g[1].some(t=>tagHas(v.tags,t)); };
+const WINE_HOMES=['Restaurant','Attraction / Site'];
+const isWinery=v=>catsOf(v).includes('Winery');
+const subHit=(v,c,name)=>{ if(name==='Wineries') return WINE_HOMES.includes(c) && isWinery(v); const g=(SUBCATS[c]||[]).find(x=>x[0]===name); return !!g && g[1].some(t=>tagHas(v.tags,t)); };
 const eshkolListed=tags=>/eshkol (license|driver|guide)/i.test(String(tags||''));
 const guideSpecialty=v=>catsOf(v).includes('Guide') && tagHas(v.tags, GUIDE_SPECIALTY);
 const GUIDE_RULE='Only licensed tour guides are listed, except specialties such as shuk tours or graffiti tours.';
@@ -728,11 +757,11 @@ const tagsNoShab=v=>tagList(v).filter(t=>t.toLowerCase()!==SHABBAT_TAG.toLowerCa
 // "Adventure" is not a word guides and agents use for a supplier: show what the supplier does (Jeep, Rappelling, Kayak & rafting…), taken from its type tags.
 // Falls back to the category name when no type is set. Used wherever a supplier's category is printed; the stored category does not change.
 // The stored category is still 'Adventure'; guides and agents call it Extreme (owner, 3 Oct 2026, D-19). catDisp is the name shown on buttons and in the form.
-const catDisp=c=>c==='Adventure'?'Extreme':c;
+const catDisp=c=>c==='Adventure'?'Extreme':c==='Vehicle Rental'?'Eshkol / Midbari rental':c;   // D-42: the stored category is 'Vehicle Rental'
 const advTypes=v=>{ const have=tagList(v).map(t=>t.toLowerCase()); return TAG_SUGGEST.Adventure.filter(t=>have.includes(t.toLowerCase())); };
 // The same for Other (D-23): a photographer's page reads "Photographer", not "Other".
 const otherTypes=v=>{ const have=tagList(v).map(t=>t.toLowerCase()); return TAG_SUGGEST.Other.filter(t=>have.includes(t.toLowerCase())); };
-const catName=(c,v)=>{ if(c!=='Adventure'&&c!=='Other') return c; const t=c==='Other'?otherTypes(v):advTypes(v); return t.length ? t.slice(0,2).join(', ')+(t.length>2?'…':'') : catDisp(c); };
+const catName=(c,v)=>{ if(c!=='Adventure'&&c!=='Other') return catDisp(c); const t=c==='Other'?otherTypes(v):advTypes(v); return t.length ? t.slice(0,2).join(', ')+(t.length>2?'…':'') : catDisp(c); };
 const catMain=v=>catName(v.category, v);
 const catLabel=v=>catsOf(v).map(c=>catName(c,v)).join(' + ');
 const shabPill=v=>isShabbat(v)?'<span class="pill shab">Shomer Shabbat</span>':'';
@@ -754,7 +783,7 @@ const who = e => { const t=String(e||'').split(OWNER).join('Eretz Israel Tours')
 // Limited members (D-15): organisations that are not in tourism. Eretz Israel Tours chooses which sections each one sees.
 // The database enforces it (a limited member never receives an agent price); these helpers only shape the screen.
 const ORG_ROLE='Organisation, not in tourism';
-const SECTIONS=[['transport','Transportation','Bus companies, vans and drivers.',['Transport']],['guides','Guides','Profiles and contacts.',['Guide']],
+const SECTIONS=[['transport','Transportation','Bus companies, vans and drivers.',['Transport','Vehicle Rental']],['guides','Guides','Profiles and contacts.',['Guide']],
   ['hotels','Hotels','Contacts and listed prices. No agent rates.',['Hotel']],['sites','Sites and activities','Attractions, national parks, activities, extreme (jeeps, rappelling, kayaks).',['Attraction / Site','Activity','Adventure','National Parks']],
   ['food','Restaurants and wineries','Contacts, kosher details and opening hours.',['Restaurant','Winery']],['other','Agents and other','Travel agents, planners, flights, other.',['Travel Agent','Itinerary Planner','Flight','Other']]];
 const DEF_SECTIONS='transport,guides,hotels,sites,food';
@@ -762,7 +791,16 @@ const lim=()=>!!(S.me&&S.me.member_type==='limited'&&!S.admin);
 const mySections=()=>String(S.me&&S.me.sections||'').split(',').map(t=>t.trim()).filter(Boolean);
 const secOf=c=>(SECTIONS.find(x=>x[3].includes(c))||SECTIONS[5])[0];
 const secName=k=>(SECTIONS.find(x=>x[0]===k)||[0,k])[1];
-const myCats=()=>lim()?CATEGORIES.filter(c=>mySections().includes(secOf(c))):CATEGORIES;
+// Eshkol / Midbari rentals (D-42) and wineries under Restaurant and Attraction / Site (D-43) each open to Eretz Israel Tours first
+// and to colleagues when he switches them on in the Team tab (G2). The database enforces both; these only shape the screen.
+const rentalsOn=()=>!LIVE||!!(S.me&&S.me.rentals);
+const winOn=()=>!LIVE||!!(S.me&&S.me.wineries);
+// An organisation sees a winery with restaurants, and with sites too once wineries are under both (D-43).
+const secHas=(c,secs)=>secs.includes(secOf(c))||(c==='Winery'&&winOn()&&secs.includes('sites'));
+const secDesc=x=>x[0]==='transport'&&rentalsOn()?'Bus companies, vans, drivers and Eshkol / Midbari rentals.'
+  :x[0]==='sites'&&winOn()?'Attractions, national parks, activities, wineries, extreme (jeeps, rappelling, kayaks).'
+  :x[0]==='food'&&winOn()?'Restaurants and wineries: contacts, kosher details and opening hours.':x[2];
+const myCats=()=>CATEGORIES.filter(c=>(c!=='Vehicle Rental'||rentalsOn())&&(!lim()||secHas(c,mySections())));
 // Guides' and agents' reviews: transport has its own switch; everything else follows see_reviews.
 const reviewsOpen=v=>!lim()||(catsOf(v).includes('Transport')?!!S.me.see_transport_reviews:!!S.me.see_reviews);
 const normN = s => String(s||'').toLowerCase().replace(/\s+/g,' ').replace(/[.,;:!?]/g,'').trim();
@@ -795,6 +833,13 @@ function sample(){
     v({id:'vendor_x7wsh04',name:'Shiloh Pottery Workshop',category:'Activity',tags:'Workshop, Family',contactPerson:'Tamar',phone:'+972 50 555 0194',location:'Shilo',region:'Binyamin & Shomron',agentPrice:'90',agentPriceVatTreatment:'including_vat',priceBasis:'Per person'}),
     v({id:'vendor_n0a5h4l',name:'Noa Shalev',category:'Guide',tags:'Eshkol license, Owns an Eshkol vehicle',experience_years:'14',phone:'+972 52 555 0188',whatsapp:'+972 52 555 0188',location:'Jerusalem',region:'Jerusalem',languages:'English, Hebrew, Spanish',agentPrice:'1500',agentPriceVatTreatment:'plus_vat',priceBasis:'Per day',
       client_bio:'Noa grew up in the Jerusalem hills and has guided families and small groups for fourteen years. She trained as an archaeologist, dug at the City of David, and still cannot walk past an open trench without stopping.\n\nShe guides in English, Hebrew and Spanish, and is at her best with mixed ages: grandparents who want the history, children who want the tunnels.',retail_price:'$650 a day, up to 9 hours. Vehicle and entrance fees extra.'}),
+    // Preview only, for Eshkol / Midbari rentals (D-42) and wineries under two categories (D-43): every name and detail is made up.
+    v({id:'vendor_rt4x401',name:'Sample Hills 4x4 Rentals',category:'Vehicle Rental',contactPerson:'Sample owner',phone:'+972 52 555 0301',whatsapp:'+972 52 555 0301',location:'Sample town',region:'Gush Etzion & Judea',notes:'Sample details, made up for the preview.'}),
+    v({id:'vendor_rt4x402',name:'Sample Desert Wheels',category:'Vehicle Rental',contactPerson:'Sample office',phone:'+972 52 555 0302',location:'Sample desert town',region:'Negev & Arava',created_by:'rachel.ops@gmail.com',notes:'Sample details, made up for the preview.'}),
+    v({id:'vendor_wn00001',name:'Sample Hilltop Winery',category:'Winery',tags:'Tasting, Tour',kosher:'Rabbanut',location:'Sample village',region:'Binyamin & Shomron',listedPrice:'60',listedPriceVatTreatment:'including_vat',priceBasis:'Per person',notes:'Sample details, made up for the preview.'}),
+    v({id:'vendor_wn00002',name:'Sample Valley Cellars',category:'Winery',tags:'Tasting, Restaurant',kosher:'Rabbanut',location:'Sample valley',region:'Galilee',listedPrice:'75',listedPriceVatTreatment:'including_vat',priceBasis:'Per person',notes:'Sample details, made up for the preview.'}),
+    v({id:'vendor_rs00001',name:'Sample Grill House',category:'Restaurant',tags:'Meat, Group menus',kosher:'Rabbanut',location:'Jerusalem',region:'Jerusalem',agentPrice:'95',priceBasis:'Per person',notes:'Sample details, made up for the preview.'}),
+    v({id:'vendor_rs00002',name:'Sample Dairy Café',category:'Restaurant',tags:'Dairy, Mehadrin',kosher:'Rabbanut Mehadrin',location:'Tel Aviv',region:'Tel Aviv & Center',listedPrice:'70',priceBasis:'Per person',notes:'Sample details, made up for the preview.'}),
     v({id:'vendor_z2c8m1v',name:'Ronit Katz',category:'Guide',phone:'+972 50 777 2211',languages:'English, Hebrew, French',agentPrice:'1600',priceBasis:'Per day',active:'Inactive',notes:'On leave until spring'})
   ];
 }
@@ -916,9 +961,13 @@ const DB = {
         {id:'n1',vendor_id:'vendor_n0a5h4l',body:'Booked her for a bar mitzvah family in August. Brilliant with the kids. Ran 20 minutes over at the Kotel tunnels.',author:'rachel.ops@gmail.com',author_name:'Rachel Amar',private:false,status:'approved',created_at:d(12)}];
       S.claims=[{id:'c1',vendor_id:'vendor_z2c8m1v',vendor_name:'Ronit Katz',category:'Guide',member:'ronit.katz@example.com',member_name:'Ronit Katz',role:'Licensed tour guide',note:'This is me. The phone number on the page is mine.',match:true,created_at:d(0)}];
       S.demoClaims={'vendor_z2c8m1v|ronit.katz@example.com':true};
-      demoFlags(); await DB.loadPendingNotes();
+      S.demo['vendor_rt4x401']={prices:[],deals:[],requests:[],notes:[
+        {id:'rn1',vendor_id:'vendor_rt4x401',vehicle_id:'rt-v1',body:'Sample review: clean, ready on time, and the km count matched the contract.',rating:'5',author:'rachel.ops@gmail.com',author_name:'Rachel Amar',private:false,status:'approved',created_at:dd(20)},
+        {id:'rn2',vendor_id:'vendor_rt4x401',vehicle_id:'rt-v1',body:'Sample review: a good car. The deposit took a week to come back.',rating:'4',author:'noa.shalev@example.com',author_name:'Noa Shalev',private:false,status:'approved',created_at:dd(45)}]};
+      S.vendors.find(x=>x.id==='vendor_rt4x401')._notes=2;
+      demoFlags(); S.rentals=demoRtList(); await DB.loadPendingNotes();
       // Preview as a limited member: add ?as=limited to the address, or choose it under "View as".
-      if(/[?&]as=limited\b/.test(location.search)){ demoLimited(); S.demoAs='org'; return; }
+      if(/[?&]as=limited\b/.test(location.search)){ demoLimited(); S.demoAs='org'; S.rentals=demoRtList(); return; }
       try{ S.jobs=await DB.loadJobs(); }catch(e){} return; }
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {auth:{persistSession:false,autoRefreshToken:false}});
     S.token = readToken();
@@ -929,7 +978,7 @@ const DB = {
     if(error) throw new Error(error.message);
     S.me = data; S.user = data?{email:data.email}:null;
     S.contributor = !!(data && data.status==='approved'); S.admin = !!(data && data.is_admin && S.contributor);
-    if(S.contributor){ await DB.loadVendors(); if(jobsOn()){ try{ S.jobs=await DB.loadJobs(); }catch(e){ S.jobs=null; } } if(hikesOn()){ try{ S.hikes=await DB.loadHikes(); }catch(e){ S.hikes=null; } } try{ await DB.loadFeedback(); }catch(e){} if(S.admin){ await DB.loadTeam(); try{ await DB.loadRequests(); }catch(e){} try{ await DB.loadReports(); }catch(e){} try{ await DB.loadClaims(); await DB.loadPendingNotes(); }catch(e){} } }
+    if(S.contributor){ await DB.loadVendors(); if(rentalsOn()){ try{ S.rentals=await DB.loadRentals(); }catch(e){ S.rentals=[]; } } if(jobsOn()){ try{ S.jobs=await DB.loadJobs(); }catch(e){ S.jobs=null; } } if(hikesOn()){ try{ S.hikes=await DB.loadHikes(); }catch(e){ S.hikes=null; } } try{ await DB.loadFeedback(); }catch(e){} if(S.admin){ await DB.loadTeam(); try{ await DB.loadRequests(); }catch(e){} try{ await DB.loadReports(); }catch(e){} try{ await DB.loadClaims(); await DB.loadPendingNotes(); }catch(e){} } }
   },
   async loadVendors(){ if(!LIVE) return; try{ S.vendors = await rpc('vendors_list'); }catch(e){ toast('Could not load vendors: '+e.message); } try{ S.myTop = await rpc('my_top'); }catch(e){ S.myTop=[]; } try{ S.usage = await rpc('my_usage'); }catch(e){} },
   async loadTeam(){ if(!LIVE) return; S.members = await rpc('members_list'); },
@@ -1379,10 +1428,13 @@ function subOk(c,v){
   if(c==='Transport') return (!S.tat||(S.tat==='van')===isIndep(v)) && (!S.tveh||fleetOf(v).has(S.tveh));
   if(c==='Guide') return !(S.gat||[]).length || S.gat.every(a=>tagHas(v.tags,a));
   const subs=(S.subs||{})[c]||[]; return !subs.length || subs.some(n=>subHit(v,c,n)); }
-function catOk(v){ const on=catsOn(); if(!on.length) return true; const mine=catsOf(v); return on.some(c=>mine.includes(c) && subOk(c,v)); }
+// D-43: with wineries under Restaurant and Attraction / Site, either button alone includes the wineries; with its second row
+// narrowed, a winery shows when Wineries is one of the buttons picked. A winery is one supplier, so it is listed once.
+const wineHere=(c,v)=>winOn() && WINE_HOMES.includes(c) && isWinery(v) && subOk(c,v);
+function catOk(v){ const on=catsOn(); if(!on.length) return true; const mine=catsOf(v); return on.some(c=>(mine.includes(c) && subOk(c,v)) || wineHere(c,v)); }
 function filtered(){
   const q=normN(S.q);
-  return S.vendors.filter(v=>catOk(v) && (S.reg==='All'||(v.region||'')===S.reg) && (!q || normN([v.name,v.location,v.region,v.tags,v.contactPerson,v.category,catsOf(v).map(catDisp).join(' '),v.notes].join(' ')).includes(q)))
+  return S.vendors.filter(v=>catOk(v) && (S.reg==='All'||(v.region||'')===S.reg) && (!q || normN([v.name,v.location,v.region,v.tags,v.contactPerson,v.category,catsOf(v).map(catDisp).join(' '),v.notes,rtHay(v)].join(' ')).includes(q)))
     .sort(S.sort==='az' ? (a,b)=>a.name.localeCompare(b.name) : (a,b)=>mixKey(a)-mixKey(b));
 }
 // Mixed order: a shuffle that is different for each person and changes every day, so no supplier sits at the top
@@ -1434,11 +1486,12 @@ function suggestTerms(){
 }
 function viewVendors(){
   const view=document.getElementById('view');
-  const cats=['All',...byUse('category',CATEGORIES.filter(c=>S.vendors.some(v=>catsOf(v).includes(c))))];
+  const cats=['All',...byUse('category',CATEGORIES.filter(c=>!(c==='Winery'&&winOn())&&(c!=='Vehicle Rental'||rentalsOn())&&S.vendors.some(v=>catsOf(v).includes(c))))];
   S.cats=catsOn().filter(c=>cats.includes(c)); const sel=S.cats;   // a category nobody on this person's list has cannot stay switched on
-  const subRow=c=>{ const opts=(SUBCATS[c]||[]).filter(g=>S.vendors.some(v=>catsOf(v).includes(c)&&subHit(v,c,g[0]))); if(!opts.length) return '';
+  const subRow=c=>{ if(WINE_HOMES.includes(c)&&!winOn()) return '';
+    const opts=(SUBCATS[c]||[]).filter(g=>S.vendors.some(v=>(catsOf(v).includes(c)||g[0]==='Wineries')&&subHit(v,c,g[0]))); if(!opts.length) return '';
     const cur=((S.subs||{})[c]||[]).filter(n=>opts.some(g=>g[0]===n)); (S.subs=S.subs||{})[c]=cur;
-    return `<div class="chips" role="group" aria-label="${esc(catDisp(c))}: narrow by type" style="padding-top:2px"><button class="chip" data-sub="${esc(c)}" data-subv="" aria-pressed="${!cur.length}">All ${esc(catDisp(c).toLowerCase())}</button>${opts.map(g=>`<button class="chip" data-sub="${esc(c)}" data-subv="${esc(g[0])}" aria-pressed="${cur.includes(g[0])}">${cur.includes(g[0])?'✓ ':''}${esc(g[0])}</button>`).join('')}</div>`; };
+    return `<div class="chips" role="group" aria-label="${esc(catDisp(c))}: narrow by type" style="padding-top:2px"><button class="chip" data-sub="${esc(c)}" data-subv="" aria-pressed="${!cur.length}">${esc(({Restaurant:'All restaurants','Attraction / Site':'All sites'})[c]||'All '+catDisp(c).toLowerCase())}</button>${opts.map(g=>`<button class="chip" data-sub="${esc(c)}" data-subv="${esc(g[0])}" aria-pressed="${cur.includes(g[0])}">${cur.includes(g[0])?'✓ ':''}${esc(g[0])}</button>`).join('')}</div>`; };
   const keep=[...view.querySelectorAll('.chips')].map(e=>[e.getAttribute('aria-label'),e.scrollLeft]);   // a row scrolled sideways stays where it was after a tap
   view.innerHTML = `
     <div class="sug"><label class="search" for="q">${icons.search}<input id="q" type="search" placeholder="Search name, region, type, contact" value="${esc(S.q)}" autocomplete="off" role="combobox" aria-autocomplete="list" aria-controls="sugList" aria-expanded="false"></label>
@@ -1460,7 +1513,8 @@ function viewVendors(){
     fb.querySelectorAll('[data-fav]').forEach(b=>b.onclick=()=>openDetail(b.dataset.fav)); }
   const q=document.getElementById('q'), list=document.getElementById('sugList'); let hits=[], on=-1;
   const close=()=>{ list.hidden=true; q.setAttribute('aria-expanded','false'); on=-1; };
-  const pick=h=>{ if(h.kind==='Region'&&REGIONS.concat(S.vendors.map(v=>v.region)).includes(h.t)){ S.reg=h.t; S.q=''; viewVendors(); return; } if(h.kind==='Category'&&CATEGORIES.some(c=>catDisp(c)===h.t)){ S.cats=[CATEGORIES.find(c=>catDisp(c)===h.t)]; S.subs={}; S.q=''; viewVendors(); return; }
+  const pick=h=>{ if(h.kind==='Region'&&REGIONS.concat(S.vendors.map(v=>v.region)).includes(h.t)){ S.reg=h.t; S.q=''; viewVendors(); return; } if(h.kind==='Category'&&CATEGORIES.some(c=>catDisp(c)===h.t)){ const c=CATEGORIES.find(x=>catDisp(x)===h.t), home=c==='Winery'&&winOn()&&WINE_HOMES.find(x=>cats.includes(x));
+      if(home){ S.cats=[home]; S.subs={[home]:['Wineries']}; } else { S.cats=[c]; S.subs={}; } S.q=''; viewVendors(); return; }
     q.value=h.t; S.q=h.t; close(); drawList(); if(h.kind==='Supplier'){ const v=S.vendors.find(x=>x.name===h.t); if(v) openDetail(v.id); } };
   const show=()=>{
     const n=normN(q.value); if(!n){ close(); return; }
@@ -1504,7 +1558,7 @@ function drawList(){
     <button class="row" data-id="${esc(v.id)}">
       <span class="row-name">${esc(v.name)}</span>
       <span class="row-price">${priceLine(v)}</span>
-      <span class="row-meta"><span class="cat">${esc(catLabel(v))}</span>${v.region||v.location?`<span>${esc(v.region||v.location)}</span>`:''}${tagsNoShab(v)?`<span class="hint">${esc(tagsNoShab(v))}</span>`:''}${shabPill(v)}${v.category==='Guide'&&v.experience_years?`<span class="hint">${esc(v.experience_years)} yrs</span>`:''}${v.reservation==='required'?'<span class="clip">📅 Reserve ahead</span>':''}${statusPill(v)}${v._prices?`<span class="clip">${v._prices} price${v._prices>1?'s':''}</span>`:''}${v._deals?`<span class="clip">🏷 ${v._deals} deal${v._deals>1?'s':''}</span>`:''}${v._notes?`<span class="clip">💬 ${v._notes}</span>`:''}${v._files?`<span class="clip">📎 ${v._files}</span>`:''}</span>
+      <span class="row-meta"><span class="cat">${esc(catLabel(v))}</span>${v.region||v.location?`<span>${esc(v.region||v.location)}</span>`:''}${tagsNoShab(v)?`<span class="hint">${esc(tagsNoShab(v))}</span>`:''}${shabPill(v)}${v.category==='Guide'&&v.experience_years?`<span class="hint">${esc(v.experience_years)} yrs</span>`:''}${v.reservation==='required'?'<span class="clip">📅 Reserve ahead</span>':''}${statusPill(v)}${v._prices?`<span class="clip">${v._prices} price${v._prices>1?'s':''}</span>`:''}${v._deals?`<span class="clip">🏷 ${v._deals} deal${v._deals>1?'s':''}</span>`:''}${v._notes?`<span class="clip">💬 ${v._notes}</span>`:''}${v._files?`<span class="clip">📎 ${v._files}</span>`:''}</span>${rtRowHtml(v)}
     </button>`).join('')}</div>` : `<div class="list"><div class="empty"><h3>Nothing matches</h3>Try a shorter search or pick “All”.</div></div>`);
   box.querySelectorAll('.row').forEach(r=>r.onclick=()=>openDetail(r.dataset.id));
 }
@@ -1660,7 +1714,7 @@ function viewReview(){
   document.getElementById('exp').onclick=()=>exportR5(appr);
 }
 function exportR5(list){
-  const vendors = list.map(v=>{ const o={id:v.id}; R5_FIELDS.forEach(k=>o[k]=String(v[k]==null?'':v[k])); if(o.category==='National Parks') o.category='National Park'; if(o.category==='Winery') o.category='Restaurant'; if(o.category==='Adventure') o.category='Activity'; if(o.category==='Travel Agent'||o.category==='Itinerary Planner') o.category='Other'; return o; });
+  const vendors = list.map(v=>{ const o={id:v.id}; R5_FIELDS.forEach(k=>o[k]=String(v[k]==null?'':v[k])); if(o.category==='National Parks') o.category='National Park'; if(o.category==='Winery') o.category='Restaurant'; if(o.category==='Adventure') o.category='Activity'; if(o.category==='Travel Agent'||o.category==='Itinerary Planner'||o.category==='Vehicle Rental') o.category='Other'; return o; });
   const file = { _exportFormatVersion:3, _tripVendors:vendors, days:[] };
   const json = JSON.stringify(file,null,2);
   const name = `Israel_suppliers_${new Date().toISOString().slice(0,10)}.json`;
@@ -1698,6 +1752,14 @@ function viewTeam(){
       <p>Official marked trails with a route file, notes and what colleagues reported after walking them. <span id="hkAllNote">${S.me&&S.me.hikes_for==='all'?'Open to all colleagues.':'For now only you see the Hikes tab.'}</span></p>
       <label class="switch" for="hkAll"><input id="hkAll" type="checkbox" ${S.me&&S.me.hikes_for==='all'?'checked':''}><span><b>Open Hikes to all colleagues</b><br><span class="hint">Colleagues and organisations then see the Hikes tab, add hikes (each one waits for your approval) and add reports. You can switch it off again; hikes and reports already saved are kept.</span></span></label>
     </section>`:''}
+    ${!LIVE||(S.me&&S.me.rentals_for)?`<section class="panel"><h3>Eshkol / Midbari rentals</h3>
+      <p>Rental companies and their vehicles: day price, km, terms, notes for the renter and an availability calendar. <span id="rtAllNote">${S.me&&S.me.rentals_for==='all'?'Open to all colleagues.':'For now only you see them.'}</span></p>
+      <label class="switch" for="rtAll"><input id="rtAll" type="checkbox" ${S.me&&S.me.rentals_for==='all'?'checked':''}><span><b>Open Eshkol / Midbari rentals to all colleagues</b><br><span class="hint">Colleagues then see the category, add vehicles and mark the calendars; organisations see it with Transportation, never an agent day price. You can switch it off again; vehicles and calendars already saved are kept.</span></span></label>
+    </section>`:''}
+    ${!LIVE||(S.me&&S.me.wineries_for)?`<section class="panel"><h3>Wineries</h3>
+      <p>Wineries under Restaurant and under Attraction / Site, instead of their own button. <span id="wnAllNote">${S.me&&S.me.wineries_for==='all'?'On for all colleagues.':'For now only you see it this way.'}</span></p>
+      <label class="switch" for="wnAll"><input id="wnAll" type="checkbox" ${S.me&&S.me.wineries_for==='all'?'checked':''}><span><b>Put wineries under Restaurant and Attraction / Site for all colleagues</b><br><span class="hint">Colleagues then find wineries with the Wineries button under either one. An organisation that sees sites starts seeing wineries too; one that sees restaurants keeps them. No winery changes.</span></span></label>
+    </section>`:''}
     <section class="panel"><h3>Asking to join</h3>
       ${pend.length? pend.map(m=>`<div class="rev"><div class="who2"><b>${esc(m.name)}</b><span>${esc(m.role||'Role not given')}${m.org?' · '+esc(m.org):''}${m.license_no?` · license <span class="mono">${esc(m.license_no)}</span>`:''}<br>${esc(m.email)}${m.phone?' · '+esc(m.phone):''}${m.note?'<br>'+(/^No proof:/.test(m.note)?`<b style="color:var(--warn)">⚠ Asked to join without proof.</b> ${esc(m.note.replace(/^No proof:\s*/,''))}`:esc(m.note)):''}</span></div>
         ${m.credentials?`<div class="jnote" style="flex-basis:100%;margin:0"><b>Credentials, in their words</b><br>${esc(m.credentials)}</div>`:''}
@@ -1716,6 +1778,11 @@ function viewTeam(){
     try{ if(LIVE){ const { error } = await sb.rpc('set_setting',{p_token:S.token,p_key:'bcc_email',p_value:v}); if(error) throw new Error(error.message); } S.me.bcc_email=v.toLowerCase(); toast(v?'Email copies go to '+v:'Email copies turned off'); }catch(e){ toast(e.message); } };
   const bkAll=view.querySelector('#bkAll'); if(bkAll) bkAll.onchange=async e=>{ const on=e.target.checked;
     try{ if(LIVE){ const { error } = await sb.rpc('set_setting',{p_token:S.token,p_key:'bookings_for',p_value:on?'all':'admin'}); if(error) throw new Error(error.message); } S.me.bookings_for=on?'all':'admin'; toast(on?'Booking sheets are open to all colleagues':'Booking sheets are back to you only'); }catch(err){ e.target.checked=!on; toast(err.message); } };
+  // Rentals (D-42) and wineries under two categories (D-43): the same kind of switch as Hikes.
+  [['rtAll','rentals_for','rtAllNote',['Open to all colleagues.','For now only you see them.'],['Rentals are open to all colleagues','Rentals are back to you only']],
+   ['wnAll','wineries_for','wnAllNote',['On for all colleagues.','For now only you see it this way.'],['Wineries are under Restaurant and Attraction / Site for all colleagues','Wineries are back to their own button for colleagues']]].forEach(([id,key,nid,notes,toasts])=>{
+    const sw=view.querySelector('#'+id); if(sw) sw.onchange=async e=>{ const on=e.target.checked;
+      try{ if(LIVE){ const { error } = await sb.rpc('set_setting',{p_token:S.token,p_key:key,p_value:on?'all':'admin'}); if(error) throw new Error(error.message); } if(S.me) S.me[key]=on?'all':'admin'; const nt=view.querySelector('#'+nid); if(nt) nt.textContent=notes[on?0:1]; toast(toasts[on?0:1]); }catch(err){ e.target.checked=!on; toast(err.message); } }; });
   const hkAll=view.querySelector('#hkAll'); if(hkAll) hkAll.onchange=async e=>{ const on=e.target.checked;
     try{ if(LIVE){ const { error } = await sb.rpc('set_setting',{p_token:S.token,p_key:'hikes_for',p_value:on?'all':'admin'}); if(error) throw new Error(error.message); } S.me.hikes_for=on?'all':'admin'; const nt=view.querySelector('#hkAllNote'); if(nt) nt.textContent=on?'Open to all colleagues.':'For now only you see the Hikes tab.'; toast(on?'Hikes are open to all colleagues':'Hikes are back to you only'); }catch(err){ e.target.checked=!on; toast(err.message); } };
   const jf=view.querySelector('#jobsFor'); if(jf) jf.onchange=async()=>{ const v=jf.value, was=(S.me&&S.me.jobs_for)||'admin';
@@ -1763,7 +1830,7 @@ function openAccess(m, approving){
     </div></fieldset>
     <p class="hint" id="acFull" style="margin:0 0 14px">Sees every section, agent prices, reviews and the Quotes tab, like any colleague.</p>
     <div id="acLim">
-      <fieldset><legend>Sections they can see</legend><div class="list">${SECTIONS.map(x=>row(`<input type="checkbox" data-sec="${x[0]}" ${have.has(x[0])?'checked':''}><span class="pn"><b>${esc(x[1])}</b><span>${esc(x[2])}</span></span>`)).join('')}</div></fieldset>
+      <fieldset><legend>Sections they can see</legend><div class="list">${SECTIONS.map(x=>row(`<input type="checkbox" data-sec="${x[0]}" ${have.has(x[0])?'checked':''}><span class="pn"><b>${esc(x[1])}</b><span>${esc(secDesc(x))}</span></span>`)).join('')}</div></fieldset>
       <fieldset><legend>Prices and reviews</legend><div class="list">
         ${row(`<input type="checkbox" id="acQ" ${on('see_quotes',true)?'checked':''}><span class="pn"><b>Bus and van quotes</b><span>The Quotes tab and booking sheets.</span></span>`,'acQw')}
         ${row(`<input type="checkbox" id="acG" ${on('see_guide_rates',false)?'checked':''}><span class="pn"><b>Guide rates</b><span>Off by default. Without it they see guide profiles and contacts only.</span></span>`,'acGw')}
@@ -2048,6 +2115,7 @@ function openDetail(id, opt){
       ${v.hours_last?`<span class="hint brk">Last entry and other times</span><b>${esc(v.hours_last)}</b>`:''}
       ${hoursCheck(v)}</div>
     <div id="broBox"></div>
+    ${rentalsOn()&&isRental(v)?'<div id="rentBox"></div>':''}
     ${isTr?`<fieldset><legend>Vehicles</legend>${(fl=>fl.length?`<div class="flags" style="margin:0 0 4px">${fl.map(x=>`<span class="flag info" style="font-size:13.5px;padding:5px 10px">${esc(x[1])}</span>`).join('')}</div>`:`<p class="hint" style="margin:0">Not marked yet. Tap Edit and choose which vehicles ${indep?'he has':'they have'}: buses, vans by size, cars.</p>`)(VEHICLES.filter(x=>fleetOf(v).has(x[0])))}</fieldset>`:''}
     <div id="parentBox"></div>
     ${contactBar(v)}
@@ -2103,6 +2171,7 @@ function openDetail(id, opt){
   drawExtras(v);
   drawFood(v);
   drawHikesHere(v);
+  drawRentals(v);
   w.querySelector('#addPrice').onclick=async()=>{ let pp=false; try{ pp=(await DB.detail(v.id)).prices_private; }catch(e){} openPriceForm(v,null,null,pp); };
   const ppt=w.querySelector('#ppToggle'); if(ppt) ppt.onchange=async()=>{ try{ await DB.setPricesPrivate(v.id, ppt.checked); toast(ppt.checked?'Prices are now private to you':'Prices are visible to colleagues'); }catch(e){ ppt.checked=!ppt.checked; toast(e.message); } };
   w.querySelector('#addQuote').onclick=()=>openQuoteForm(v,null);
@@ -2167,7 +2236,7 @@ function drawExtrasRest(v,det){
   if(nb){
     nb.innerHTML = det.notes.length ? det.notes.map(n=>{ const nby=(det.note_by||{})[n.id];
         return `<div class="note"><span class="meta">${n.rating?`<span class="st" role="img" aria-label="${esc(n.rating)} out of 5">${starsTxt(+n.rating)}</span> · `:''}<b>${esc(n.author_name||n.author)}</b>${n.org?` · ${esc(nby&&nby.role||'Organisation')} <span class="tag">Organisation</span>`:''} · ${fmtDate(n.created_at)}${S.admin||n.mine||n.author===me?` · <button class="mini" style="padding:1px 8px" data-ndel="${esc(n.id)}" type="button">Delete</button>`:''}</span>
-        ${noteTags(n)?`<div>${noteTags(n)}</div>`:''}<p>${esc(n.body)}</p>
+        ${noteTags(n)?`<div>${noteTags(n)}</div>`:''}${rtNoteAbout(n)}<p>${esc(n.body)}</p>
         ${S.admin&&n.status==='pending'?`<div class="btn-row" style="margin:0 0 6px"><button class="mini" data-nno="${esc(n.id)}" type="button">Turn down</button><button class="mini" data-nyes="${esc(n.id)}" type="button">Approve</button></div>`:''}</div>`; }).join('')
       : `<p class="hint" style="margin:0">${lim()?'No reviews yet. Yours would be the first.':'No notes yet.'}</p>`;
     nb.querySelectorAll('[data-ndel]').forEach(b=>b.onclick=async()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again'; return; } try{ await DB.deleteNote(v.id,b.dataset.ndel); drawExtras(v); }catch(e){ toast(e.message); } });
@@ -3921,7 +3990,7 @@ function demoLimited(k){
   const two=k==='org2', em=two?'dina@sample-school.org':'avi@sample-yeshiva.org';   // org2 has no sites section, so no park reaches it (D-32)
   S.admin=false; S.user={email:em};
   S.me={name:two?'Dina Bar':'Avi Stern',email:em,status:'approved',is_admin:false,role:ORG_ROLE,org:two?'Sample School':'Sample Yeshiva',member_type:'limited',sections:two?'transport,hotels':DEF_SECTIONS,see_quotes:true,see_guide_rates:false,see_transport_reviews:true,see_reviews:false,bookings:true,jobs:false,jobs_post:false};
-  S.vendors=S.vendors.filter(v=>v.review_status==='approved'&&catsOf(v).some(c=>mySections().includes(secOf(c)))).map(v=>{ const o=Object.assign({},v,{agentPrice:'',agentPriceVatTreatment:'',agent_link:'',agent_howto:''});
+  S.vendors=S.vendors.filter(v=>v.review_status==='approved'&&catsOf(v).some(c=>secHas(c,mySections()))).map(v=>{ const o=Object.assign({},v,{agentPrice:'',agentPriceVatTreatment:'',agent_link:'',agent_howto:''});
   if(v.category==='Guide') Object.assign(o,{listedPrice:'',maxPax:'',retail_price:''}); if(!catsOf(v).includes('Transport')) Object.assign(o,{rateReliability:'',rateService:'',rateValue:'',strengths:'',weaknesses:'',notes:''}); return o; });
   Object.keys(S.demo).forEach(k=>{ const dd2=S.demo[k]; if(dd2&&dd2.prices){ dd2.prices=dd2.prices.filter(p=>!p.is_agent); dd2.notes=[]; const vv=S.vendors.find(x=>x.id===k); if(vv){ vv._prices=dd2.prices.length; vv._notes=0; } } });
   Object.keys(S.demoQuotes).forEach(k=>{ const vv=S.vendors.find(x=>x.id===k); S.demoQuotes[k]=vv&&vv.category==='Transport'?S.demoQuotes[k].filter(q=>q.shared&&!q.mine).map(q=>Object.assign({},q,{owner:'',owner_name:'',owner_role:'',title:'',ref:'',private_note:'',can_edit:false,files:0})):[]; });
@@ -3933,10 +4002,10 @@ function demoAs(k){
   const KEEP=['vendors','demo','demoQuotes','demoBookings','requests','demoRequests','members','myTop','feedback','jobs','claims','noteQueue','reports'];
   if(S._demoSnap){ Object.assign(S, JSON.parse(S._demoSnap)); S._demoSnap=null; }   // leaving the organisation: the full sample data comes back
   if(k==='org'||k==='org2'){ S._demoSnap=JSON.stringify(Object.fromEntries(KEEP.map(x=>[x,S[x]===undefined?null:S[x]]))); demoLimited(k); S.demoAs=k; S.contributor=true;
-    if(S.tab!=='vendors'&&S.tab!=='quotes'&&S.tab!=='hikes') S.tab='vendors'; S.hikes=null; demoFlags(); closeSheet(); render(); return; }
+    if(S.tab!=='vendors'&&S.tab!=='quotes'&&S.tab!=='hikes') S.tab='vendors'; S.hikes=null; demoFlags(); S.rentals=demoRtList(); closeSheet(); render(); return; }
   const p=DEMO_PEOPLE[k]||DEMO_PEOPLE.admin; S.demoAs=k; S.user={email:p.email};
   S.me={name:p.name,email:p.email,status:'approved',is_admin:p.is_admin,role:p.role,member_type:'full'}; S.admin=p.is_admin; S.contributor=true;
-  if(!S.admin && (S.tab==='review'||S.tab==='team')) S.tab='vendors'; S.hikes=null; demoFlags(); if(S.admin) DB.loadPendingNotes(); closeSheet(); render(); }
+  if(!S.admin && (S.tab==='review'||S.tab==='team')) S.tab='vendors'; S.hikes=null; demoFlags(); S.rentals=demoRtList(); if(S.admin) DB.loadPendingNotes(); closeSheet(); render(); }
 function demoNoteSeen(n){ return S.admin || n.author===S.user.email || (!n.private && n.status!=='pending' && n.status!=='rejected'); }
 
 // ---------- a guide's page: the part written for clients (bio, up to four pictures, retail price) ----------
@@ -4408,6 +4477,202 @@ Object.assign(DB, {
     if(LIVE) return await rpc('my_days_prefs',{p_prefs:p});
     const m=demoJobsInit().me; if('weekly' in p) m.weekly=p.weekly; if('shared' in p) m.shared=p.shared!=='false'; if('kinds' in p) m.kinds=csv(p.kinds).includes('none')?'none':p.kinds; if('tags' in p) m.tags=p.tags; if('langs' in p) m.langs=p.langs;
     if('weekly' in p||p.confirm==='true') m.updated_at=new Date().toISOString(); return JSON.parse(JSON.stringify(m)); }
+});
+
+// ---------- Eshkol / Midbari rentals (12 Oct 2026, D-42) ----------
+// A rental company is a supplier in the category Vehicle Rental, shown as "Eshkol / Midbari rental". Each of its vehicles has
+// a day price (a dated reference with its source, rule E4), km included, the price of an extra km, terms, notes for the renter
+// and a calendar any member marks: a day is free, booked or not known. The page shows who changed the calendar last, by name
+// (never an email). No client names, trips or notes go on a day. Reviews are the supplier's reviews, and can name the vehicle.
+// An organisation never receives an agent day price, and a private-price supplier sends no vehicle price: the database leaves
+// them out and says so with price_hidden.
+const RT_LIC=[['eshkol','Eshkol'],['midbari','Midbari'],['both','Both']];
+const isRental=v=>catsOf(v).includes('Vehicle Rental');
+const rtOf=vid=>(S.rentals||[]).filter(r=>r.vendor_id===vid&&(!r.archived||S.admin));
+const rtPills=r=>(r.licence_type==='both'?['eshkol','midbari']:[r.licence_type]).map(k=>`<span class="pill rt-${k}">${k==='eshkol'?'Eshkol':'Midbari'}</span>`).join(' ');
+const rtCar=r=>[r.make_model, r.year].filter(x=>x!=null&&x!=='').join(' ');
+const rtNum=n=>Number(n).toLocaleString('en-US',{maximumFractionDigits:2,minimumFractionDigits:Number(n)%1?2:0});
+const rtMoney=(r,n)=>n==null||n===''?'':(CUR_SIGN[r.currency]||'')+rtNum(n);
+const rtDayPrice=r=>r.cost_per_day!=null?rtMoney(r,r.cost_per_day)+'/day':r.price_hidden?(lim()?'Ask for rate':'Price kept private'):'';
+const rtTomorrow=r=>r.tomorrow==='free'?'Free tomorrow':r.tomorrow==='booked'?'Booked tomorrow':r.kept?'Tomorrow not marked':'Calendar not kept';
+const rtHay=v=>isRental(v)?rtOf(v.id).map(r=>[r.make_model,r.year,r.colour,r.licence_type,r.pickup_location].join(' ')).join(' '):'';
+const rtIso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const rtToday=()=>{ const d=new Date(); d.setHours(12,0,0,0); return d; };
+// On the supplier list: each vehicle of a rental company, with tomorrow's state and its day price (the approved mock-up, screen 1).
+function rtRowHtml(v){
+  if(!rentalsOn()||!isRental(v)||!S.rentals) return '';
+  const list=rtOf(v.id).filter(r=>!r.archived); if(!list.length) return '<span class="rt-rows"><span class="hint">No vehicles added yet</span></span>';
+  return `<span class="rt-rows">${list.map(r=>`<span class="rt-row"><span class="rt-car">${rtPills(r)} ${esc(rtCar(r))}${r.passenger_seats?` · ${esc(r.passenger_seats)} seats`:''}</span>
+    <span class="rt-st ${esc(r.tomorrow||'unknown')}">${esc(rtTomorrow(r))}</span><span class="rt-p">${esc(rtDayPrice(r))}</span></span>`).join('')}</span>`;
+}
+// A review that names a vehicle says so on the supplier's page.
+function rtNoteAbout(n){ if(!n.vehicle_id) return ''; const r=(S.rentals||[]).find(x=>x.id===n.vehicle_id); return r?`<div class="hint" style="margin:2px 0 0">About the ${esc(rtCar(r))}</div>`:''; }
+// On a rental company's page: its vehicles, and "Add a vehicle".
+function drawRentals(v){
+  const box=document.getElementById('rentBox'); if(!box) return;
+  const list=rtOf(v.id), open=S.admin||(!v.hidden&&v.review_status==='approved');
+  box.innerHTML=`<fieldset><div class="sec-head"><legend>Vehicles for rent</legend>${open?'<button class="mini" id="rtAdd" type="button">+ Add a vehicle</button>':''}</div>
+    ${list.length?`<div class="rt-cards">${list.map(r=>`<button class="rt-card" type="button" data-rt="${esc(r.id)}"><span class="rt-c1">${rtPills(r)} <b>${esc(rtCar(r))}</b>${r.archived?' <span class="pill inactive">Archived</span>':''}</span>
+        <span class="rt-c2">${[r.colour, r.passenger_seats?r.passenger_seats+' seats':'', r.pickup_location].filter(Boolean).map(esc).join(' · ')}</span>
+        <span class="rt-c3"><span class="rt-st ${esc(r.tomorrow||'unknown')}">${esc(rtTomorrow(r))}</span><span class="rt-p">${esc(rtDayPrice(r))}</span></span></button>`).join('')}</div>`
+      :`<p class="hint" style="margin:0">${open?'No vehicles yet. Add each vehicle the company rents out, with its price per day, km included and terms. Its calendar starts as "not known".':'Vehicles show once Eretz Israel Tours has approved this supplier.'}</p>`}</fieldset>`;
+  box.querySelectorAll('[data-rt]').forEach(b=>b.onclick=()=>openRental(b.dataset.rt));
+  const add=box.querySelector('#rtAdd'); if(add) add.onclick=()=>openRentalForm(v,null);
+}
+// A vehicle's page (the approved mock-up, screen 2): the car, the cost, the terms, the calendar, notes for the renter, reviews.
+async function openRental(id, keepMonth){
+  let d; try{ d=await DB.rentalVehicle(id); }catch(e){ toast(e.message); return; }
+  const r=d.vehicle, v=S.vendors.find(x=>x.id===r.vendor_id)||{id:r.vendor_id,name:''};
+  const days=new Map((d.days||[]).map(x=>[x.day,x.status])); let last=d.last;
+  const t0=rtToday(); let mo=keepMonth||new Date(t0.getFullYear(),t0.getMonth(),1,12);
+  const minMo=new Date(t0.getFullYear(),t0.getMonth()-1,1,12), maxMo=new Date(t0.getFullYear(),t0.getMonth()+23,1,12);
+  const fact=(k,val)=>val?`<dt>${k}</dt><dd>${val}</dd>`:'';
+  const price=r.cost_per_day!=null?`<span class="mono">${esc(rtMoney(r,r.cost_per_day))}</span>${vatLabel(r.vat)?` <span class="hint">${esc(vatLabel(r.vat))}</span>`:''}${r.is_agent?' <span class="pill high">Agent rate</span>':''}`
+    :r.price_hidden?`<span class="hint">${lim()?'Ask for rate':'Eretz Israel Tours keeps this supplier\'s prices private.'}</span>`:'<span class="hint">Not added</span>';
+  const src=r.price_source||r.price_checked_on?`<p class="hint" style="margin:6px 0 0">From ${esc(r.price_source)}${r.price_checked_on?`, checked ${esc(ilDate(r.price_checked_on))}`:''}${r.by?` · Added by ${esc(r.by)}`:''}</p>`:'';
+  const body=`<div class="keep" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px"><span class="cat">Eshkol / Midbari rental</span>${rtPills(r)}${r.archived?'<span class="pill inactive">Archived</span>':''}</div>
+    <fieldset><legend>${esc(v.name||'The car')}</legend><dl class="dl">${fact('Car',esc([r.make_model, r.year, r.colour?String(r.colour).toLowerCase():''].filter(x=>x!=null&&x!=='').join(', ')))}${fact('Passenger seats',r.passenger_seats?`<span class="mono">${esc(r.passenger_seats)}</span>`:'')}${fact('Pick-up',esc(r.pickup_location))}${fact('Licence',esc((RT_LIC.find(x=>x[0]===r.licence_type)||['',''])[1]))}</dl></fieldset>
+    <fieldset><legend>Cost</legend><dl class="dl">${fact('Per day',price)}${fact('Km included',r.km_included_per_day!=null?`<span class="mono">${esc(r.km_included_per_day)} km/day</span>`:'')}${fact('Over that',r.cost_per_extra_km!=null?`<span class="mono">${esc(rtMoney(r,r.cost_per_extra_km))}/km</span>`:'')}</dl>${src}
+      ${r.other_terms?`<h4 class="rt-h">Other terms</h4><p class="rt-txt" dir="auto">${esc(r.other_terms)}</p>`:''}</fieldset>
+    <fieldset><legend>Availability</legend><div class="cal rt-cal" id="rtCal"></div></fieldset>
+    ${r.renter_notes?`<fieldset><legend>Notes for the renter</legend><p class="rt-txt" dir="auto">${esc(r.renter_notes)}</p></fieldset>`:''}
+    <fieldset><legend>Reviews from members who rented</legend><div id="rtRevs"><p class="hint">Loading…</p></div>
+      ${v._own||r.archived?'':`<div id="rtRevForm" hidden><div class="stars" id="rtStars" role="group" aria-label="Your rating, 1 to 5" style="margin:8px 0">${[1,2,3,4,5].map(n=>`<button type="button" data-n="${n}" aria-pressed="false" aria-label="${n} out of 5">${n}</button>`).join('')}<span class="hint" style="align-self:center;margin-left:4px">Rating, optional</span></div>
+        <div class="f wide"><textarea id="rtRevText" rows="3" placeholder="How was the car? Clean, on time, did the km count match the contract…"></textarea></div>
+        <label class="check" for="rtRevPriv" style="margin:6px 0 8px"><input id="rtRevPriv" type="checkbox"><span>Only me and Eretz Israel Tours see this review</span></label>
+        <p class="hint" style="margin:0 0 8px">Keep it to what happened. No client names. A malicious post is removed, and the member who posted it is banned.</p>
+        <div class="btn-row"><button class="btn primary" id="rtRevAdd" type="button">Add review</button></div></div>
+        <button class="btn soft" id="rtRevOpen" type="button" style="width:100%;margin-top:8px">Write a review</button>`}</fieldset>
+    <p class="stamp">Added by ${esc(r.by||'')} on ${fmtDate(r.created_at)}. Last changed by ${esc(r.updated_by||'')} on ${fmtDate(r.updated_at)}.</p>`;
+  const foot=`<button class="btn soft" id="rtBack" type="button">Back</button><span style="flex:1"></span>${r.can_edit&&!r.archived?'<button class="btn soft" id="rtArch" type="button">Archive</button><button class="btn primary" id="rtEdit" type="button">Edit</button>':''}${S.admin&&r.archived?'<button class="btn primary" id="rtUnarch" type="button">Bring back</button>':''}`;
+  const w=sheet(rtCar(r)||'Vehicle', body, foot);
+  w.querySelector('#rtBack').onclick=()=>openDetail(r.vendor_id);
+  const ed=w.querySelector('#rtEdit'); if(ed) ed.onclick=()=>openRentalForm(v,r);
+  const ar=w.querySelector('#rtArch'); if(ar) ar.onclick=async()=>{ if(ar.dataset.c!=='1'){ ar.dataset.c='1'; ar.textContent='Tap again to archive'; return; }
+    try{ await DB.archiveRental(r.id,true); S.rentals=await DB.loadRentals(); toast('Archived. Colleagues no longer see it.'); openDetail(r.vendor_id); }catch(e){ toast(e.message); } };
+  const ua=w.querySelector('#rtUnarch'); if(ua) ua.onclick=async()=>{ try{ await DB.archiveRental(r.id,false); S.rentals=await DB.loadRentals(); toast('Back on the list'); openRental(r.id); }catch(e){ toast(e.message); } };
+  // the calendar: tap a day to cycle it free, booked, not known
+  const cal=w.querySelector('#rtCal'), todayIso=rtIso(t0);
+  const lastTxt=()=>last&&last.by?`Last changed by ${esc(last.by)}, ${fmtDate(last.at)} ${new Date(last.at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}`:'Nobody has marked this calendar yet.';
+  const drawCal=()=>{ const y=mo.getFullYear(), m=mo.getMonth(), n=new Date(y,m+1,0).getDate(), lead=new Date(y,m,1).getDay();
+    const cells=Array.from({length:lead},()=>'<span></span>').concat(Array.from({length:n},(_,i)=>{ const iso=rtIso(new Date(y,m,i+1,12)), st=days.get(iso)||'unknown', past=iso<todayIso;
+      const lab=`${i+1} ${mo.toLocaleDateString('en-GB',{month:'long'})}: ${st==='booked'?'booked':st==='free'?'free':'not known'}`;
+      return `<button type="button" class="${st}${iso===todayIso?' tod':''}" data-d="${iso}" ${past||r.archived?'disabled':''} aria-label="${esc(lab)}">${i+1}</button>`; }));
+    cal.innerHTML=`<div class="cal-h"><button type="button" id="rtPrev" aria-label="Previous month" ${mo<=minMo?'disabled':''}>‹</button><b>${esc(mo.toLocaleDateString('en-GB',{month:'long',year:'numeric'}))}</b><button type="button" id="rtNext" aria-label="Next month" ${mo>=maxMo?'disabled':''}>›</button></div>
+      <div class="cal-g">${WEEKDAYS.map(x=>`<span class="dn">${x==='Shabbat'?'Sat':x}</span>`).join('')}${cells.join('')}</div>
+      <div class="cal-k"><span><i class="rt-free"></i>Free</span><span><i class="rt-booked"></i>Booked</span><span><i></i>Not known</span></div>
+      <p class="hint" id="rtLast" style="margin:8px 0 0">${lastTxt()}</p>
+      <p class="hint" style="margin:4px 0 0">${r.archived?'This vehicle is archived.':'Tap a day to mark it free, then booked, then not known. Every member sees who changed it. No client names.'}</p>`;
+    cal.querySelector('#rtPrev').onclick=()=>{ mo=new Date(y,m-1,1,12); drawCal(); };
+    cal.querySelector('#rtNext').onclick=()=>{ mo=new Date(y,m+1,1,12); drawCal(); };
+    cal.querySelectorAll('[data-d]').forEach(b=>b.onclick=async()=>{ const iso=b.dataset.d, was=days.get(iso)||'unknown', st=was==='unknown'?'free':was==='free'?'booked':'unknown';
+      if(st==='unknown') days.delete(iso); else days.set(iso,st); drawCal();
+      try{ const res=await DB.rentalDay(r.id, iso, st); last=res.last; const lt=cal.querySelector('#rtLast'); if(lt) lt.innerHTML=lastTxt();
+        const x=(S.rentals||[]).find(y=>y.id===r.id); if(x){ if(iso===rtIso(new Date(t0.getTime()+86400000))) x.tomorrow=st; if(st!=='unknown'&&iso>=todayIso) x.kept=true; } }
+      catch(e){ if(was==='unknown') days.delete(iso); else days.set(iso,was); drawCal(); toast(e.message); } }); };
+  drawCal();
+  // reviews that name this vehicle, read with the supplier's other reviews (so the review rules in force apply)
+  const drawRevs=async()=>{ const rb=w.querySelector('#rtRevs'); let det; try{ det=await DB.detail(r.vendor_id); }catch(e){ if(rb) rb.innerHTML=`<p class="hint">Couldn't load reviews: ${esc(e.message)}</p>`; return; }
+    if(!rb||!document.body.contains(rb)) return;
+    const mine=(det.notes||[]).filter(n=>n.vehicle_id===r.id);
+    rb.innerHTML=mine.length?mine.map(n=>`<div class="note"><span class="meta">${n.rating?`<span class="st" role="img" aria-label="${esc(n.rating)} out of 5">${starsTxt(+n.rating)}</span> · `:''}<b>${esc(n.author_name||n.author)}</b> · ${fmtDate(n.created_at)}</span>${noteTags(n)?`<div>${noteTags(n)}</div>`:''}<p>${esc(n.body)}</p></div>`).join('')
+      :`<p class="hint" style="margin:0">${det.notes&&!reviewsOpen(v)?'You see reviews written by organisations. ':''}No reviews of this vehicle yet.</p>`; };
+  drawRevs();
+  let rating=''; const stars=w.querySelector('#rtStars');
+  if(stars) stars.querySelectorAll('button').forEach(b=>b.onclick=()=>{ rating=rating===b.dataset.n?'':b.dataset.n; stars.querySelectorAll('button').forEach(o=>o.setAttribute('aria-pressed',o.dataset.n===rating)); });
+  const ro=w.querySelector('#rtRevOpen'); if(ro) ro.onclick=()=>{ w.querySelector('#rtRevForm').hidden=false; ro.hidden=true; w.querySelector('#rtRevText').focus(); };
+  const ra=w.querySelector('#rtRevAdd'); if(ra) ra.onclick=async()=>{ const t=w.querySelector('#rtRevText'), pv=w.querySelector('#rtRevPriv'); const txt=t.value.trim(); if(!txt){ t.focus(); return; }
+    ra.disabled=true; try{ const res=await DB.rentalReview(r, txt, rating, pv.checked)||{}; t.value=''; pv.checked=false; rating='';
+      toast(res.private?'Saved. Only you and Eretz Israel Tours see it.':res.status==='pending'?'Sent to Eretz Israel Tours. Colleagues see it once it is approved.':'Review added. Thank you.'); drawRevs();
+      w.querySelector('#rtRevForm').hidden=true; ro.hidden=false; }catch(e){ toast(e.message); } ra.disabled=false; };
+}
+// Add a vehicle, or change one (the approved mock-up, screen 3).
+function openRentalForm(v, r){
+  const isNew=!r; r=r||{licence_type:'eshkol',currency:'ILS',vat:'',price_checked_on:rtIso(rtToday())};
+  const val=k=>r[k]==null?'':String(r[k]);
+  const opt=(arr,cur)=>arr.map(([k,t])=>`<option value="${esc(k)}"${String(cur)===k?' selected':''}>${esc(t)}</option>`).join('');
+  const body=`<form id="rtF" novalidate><p class="hint" style="margin:0 0 12px">A vehicle of <b>${esc(v.name)}</b>. Every member sees it, with your name.</p>
+    <div class="f wide"><span class="lab">Licence type <em>*</em></span><div class="chips" id="rtLic" style="padding:0">${RT_LIC.map(([k,t])=>`<button type="button" class="chip" data-lic="${k}" aria-pressed="${r.licence_type===k}">${esc(t)}</button>`).join('')}</div></div>
+    <div class="grid">
+      <div class="f"><label for="rt_mk">Make and model <em>*</em></label><input id="rt_mk" value="${esc(val('make_model'))}" maxlength="80" placeholder="Toyota Land Cruiser"></div>
+      <div class="f"><label for="rt_yr">Year</label><input id="rt_yr" inputmode="numeric" maxlength="4" value="${esc(val('year'))}" placeholder="2022"></div>
+      <div class="f"><label for="rt_col">Colour</label><input id="rt_col" maxlength="40" value="${esc(val('colour'))}" placeholder="White"></div>
+      <div class="f"><label for="rt_seats">Passenger seats</label><input id="rt_seats" inputmode="numeric" maxlength="2" value="${esc(val('passenger_seats'))}" placeholder="7"></div>
+      <div class="f wide"><label for="rt_loc">Pick-up location</label><input id="rt_loc" maxlength="200" value="${esc(val('pickup_location'))}" placeholder="Where the renter collects the car"></div>
+      <div class="f"><label for="rt_cost">Cost per day</label><input id="rt_cost" inputmode="decimal" value="${esc(val('cost_per_day'))}" placeholder="850"></div>
+      <div class="f"><label for="rt_cur">Currency</label><select id="rt_cur">${opt([['ILS','₪ ILS'],['USD','$ USD'],['EUR','€ EUR']],r.currency||'ILS')}</select></div>
+      <div class="f"><label for="rt_vat">VAT</label><select id="rt_vat">${opt(VAT,r.vat||'')}</select></div>
+      <div class="f"><label for="rt_km">Km included per day</label><input id="rt_km" inputmode="numeric" value="${esc(val('km_included_per_day'))}" placeholder="200"></div>
+      <div class="f"><label for="rt_xkm">Cost per extra km</label><input id="rt_xkm" inputmode="decimal" value="${esc(val('cost_per_extra_km'))}" placeholder="1.80"></div>
+      <div class="f"><label for="rt_src">Where the price is from</label><input id="rt_src" maxlength="200" value="${esc(val('price_source'))}" placeholder="Their price list"></div>
+      <div class="f"><label for="rt_chk">Checked on</label><input id="rt_chk" type="date" value="${esc(val('price_checked_on'))}"></div>
+    </div>
+    ${lim()?'':`<label class="switch" for="rt_ag" style="margin-top:10px"><input id="rt_ag" type="checkbox" ${r.is_agent?'checked':''}><span><b>This is an agent price</b><br><span class="hint">Guides and agents see it; organisations never do.</span></span></label>`}
+    <div class="f wide" style="margin-top:10px"><label for="rt_terms">Other terms of rental</label><textarea id="rt_terms" rows="3" maxlength="2000" placeholder="Licence and D1 needed, deposit, fuel, cancellation…">${esc(val('other_terms'))}</textarea></div>
+    <div class="f wide" style="margin-top:10px"><label for="rt_notes">Notes for the renter</label><textarea id="rt_notes" rows="3" maxlength="2000" placeholder="Pick-up times, who meets you with the keys, what is in the car…">${esc(val('renter_notes'))}</textarea></div>
+    <p class="hint" style="margin:10px 0 0">A price needs where it is from and the date it was checked. ${isNew?'The calendar starts as "not known". Members mark days on the vehicle\'s page.':''} No client names in any field.</p>
+    <div id="rtErr"></div></form>`;
+  const w=sheet(isNew?'Add a vehicle':'Edit vehicle', body, `<button class="btn soft" id="rtC" type="button">Cancel</button><button class="btn primary" id="rtS" type="button">Save vehicle</button>`);
+  let lic=r.licence_type||'eshkol';
+  w.querySelectorAll('[data-lic]').forEach(b=>b.onclick=()=>{ lic=b.dataset.lic; w.querySelectorAll('[data-lic]').forEach(o=>o.setAttribute('aria-pressed',o===b)); });
+  w.querySelector('#rtC').onclick=()=>isNew?openDetail(v.id):openRental(r.id);
+  w.querySelector('#rtS').onclick=async()=>{ const g=id=>w.querySelector('#'+id), b=g('rtS'), ag=g('rt_ag');
+    const d={vendor_id:v.id,licence_type:lic,make_model:g('rt_mk').value.trim(),year:g('rt_yr').value.trim(),colour:g('rt_col').value.trim(),passenger_seats:g('rt_seats').value.trim(),
+      pickup_location:g('rt_loc').value.trim(),cost_per_day:g('rt_cost').value.trim(),currency:g('rt_cur').value,vat:g('rt_vat').value,km_included_per_day:g('rt_km').value.trim(),
+      cost_per_extra_km:g('rt_xkm').value.trim(),price_source:g('rt_src').value.trim(),price_checked_on:g('rt_chk').value,is_agent:!!(ag&&ag.checked),other_terms:g('rt_terms').value.trim(),renter_notes:g('rt_notes').value.trim()};
+    if(!isNew) d.id=r.id;
+    b.disabled=true; g('rtErr').innerHTML='';
+    try{ const saved=await DB.saveRental(d); S.rentals=await DB.loadRentals(); toast(isNew?'Vehicle added':'Saved'); openRental(saved.id); }
+    catch(e){ g('rtErr').innerHTML=`<div class="msg err" style="margin-top:10px">${esc(e.message)}</div>`; b.disabled=false; } };
+}
+// Preview only: sample vehicles and calendars. Every name and detail here is made up.
+function demoRtInit(){ if(S.demoRt) return S.demoRt;
+  const at=n=>new Date(Date.now()-n*86400000).toISOString(), day=n=>rtIso(new Date(rtToday().getTime()+n*86400000));
+  const base={currency:'ILS',archived:false,created_at:at(9),updated_at:at(3),price_source:'their price list (sample)',price_checked_on:'2026-10-09'};
+  const vs=[Object.assign({},base,{id:'rt-v1',vendor_id:'vendor_rt4x401',licence_type:'eshkol',make_model:'Toyota Land Cruiser',year:2022,colour:'White',passenger_seats:7,pickup_location:'Sample industrial zone',cost_per_day:850,vat:'plus_vat',km_included_per_day:200,cost_per_extra_km:1.8,is_agent:false,
+      other_terms:'Sample terms: the driver needs an Eshkol licence and D1. Deposit by card. Return with a full tank. Free cancellation up to 72 hours before.',renter_notes:'Sample notes: pick-up from 7:00. The owner meets you with the keys; call the evening before.',created_by:OWNER,updated_by:OWNER}),
+    Object.assign({},base,{id:'rt-v2',vendor_id:'vendor_rt4x401',licence_type:'midbari',make_model:'Jeep Wrangler',year:2019,colour:'Sand',passenger_seats:4,pickup_location:'Sample industrial zone',cost_per_day:600,vat:'plus_vat',km_included_per_day:150,cost_per_extra_km:2,is_agent:true,other_terms:'',renter_notes:'',created_by:OWNER,updated_by:OWNER}),
+    Object.assign({},base,{id:'rt-v3',vendor_id:'vendor_rt4x402',licence_type:'both',make_model:'Land Rover Defender',year:2021,colour:'Green',passenger_seats:6,pickup_location:'Sample desert town',cost_per_day:950,vat:'including_vat',km_included_per_day:250,cost_per_extra_km:1.5,is_agent:false,price_source:'WhatsApp from the owner (sample)',other_terms:'',renter_notes:'',created_by:'rachel.ops@gmail.com',updated_by:'rachel.ops@gmail.com'})];
+  const days={'rt-v1':{[day(1)]:'free',[day(2)]:'booked',[day(3)]:'booked',[day(5)]:'free',[day(6)]:'free',[day(9)]:'booked'},'rt-v2':{[day(1)]:'booked',[day(2)]:'free'},'rt-v3':{}};
+  const last={'rt-v1':{by:OWNER,at:at(1)},'rt-v2':{by:'rachel.ops@gmail.com',at:at(2)}};
+  S.demoRt={vehicles:vs,days,last}; return S.demoRt; }
+const demoRtName=e=>e===OWNER?'Eretz Israel Tours':((S.members||[]).find(m=>m.email===e)||{}).name||'A colleague';
+function demoRtView(x){ const v=S.vendors.find(y=>y.id===x.vendor_id), mine=x.created_by===S.user.email, pv=S.admin||mine||!((v&&v.prices_private)||(x.is_agent&&lim()));
+  const D=demoRtInit(), dd=D.days[x.id]||{}, tom=rtIso(new Date(rtToday().getTime()+86400000)), o=Object.assign({},x);
+  delete o.created_by; delete o.updated_by;
+  return Object.assign(o,{cost_per_day:pv?x.cost_per_day:null,cost_per_extra_km:pv?x.cost_per_extra_km:null,vat:pv?x.vat:'',price_source:pv?x.price_source:'',price_checked_on:pv?x.price_checked_on:null,is_agent:pv&&x.is_agent,
+    price_hidden:!pv&&(x.cost_per_day!=null||x.cost_per_extra_km!=null),by:demoRtName(x.created_by),updated_by:demoRtName(x.updated_by),mine,can_edit:S.admin||mine,
+    tomorrow:dd[tom]||'unknown',kept:Object.entries(dd).some(([k,s])=>k>=rtIso(rtToday())&&s!=='unknown')}); }
+function demoRtSeen(x){ const v=S.vendors.find(y=>y.id===x.vendor_id); return !!v&&isRental(v)&&(S.admin||(!v.hidden&&v.review_status==='approved'&&!x.archived)); }
+function demoRtList(){ return demoRtInit().vehicles.filter(demoRtSeen).map(demoRtView); }
+function demoRtFind(id){ const x=demoRtInit().vehicles.find(y=>y.id===id); if(!x||!demoRtSeen(x)) throw new Error('That vehicle is not available.'); return x; }
+Object.assign(DB, {
+  async loadRentals(){ if(LIVE) return await rpc('rentals_list',{}); return demoRtList(); },
+  async rentalVehicle(id){ if(LIVE) return await rpc('rental_vehicle',{p_id:id});
+    const x=demoRtFind(id), D=demoRtInit(), l=D.last[id];
+    return {vehicle:demoRtView(x),days:Object.entries(D.days[id]||{}).filter(([,s])=>s!=='unknown').map(([day,status])=>({day,status})),last:l?{by:demoRtName(l.by),at:l.at}:null}; },
+  async saveRental(d){ if(LIVE) return await rpc('rental_vehicle_save',{p_vehicle:d});
+    const D=demoRtInit(), now=new Date().toISOString(); let x=d.id&&demoRtFind(d.id);
+    if(x&&!(S.admin||x.created_by===S.user.email)) throw new Error('Only the member who added this vehicle, or Eretz Israel Tours, can change it.');
+    if(!RT_LIC.some(k=>k[0]===d.licence_type)) throw new Error('Choose Eshkol, Midbari or both.');
+    if(String(d.make_model||'').trim().length<2) throw new Error('Write the make and model of the car.');
+    if(d.year&&!/^\d{4}$/.test(d.year)) throw new Error('Write the year the car was made, for example 2022.');
+    if(d.passenger_seats&&!(/^\d{1,2}$/.test(d.passenger_seats)&&+d.passenger_seats>=1&&+d.passenger_seats<=60)) throw new Error('Passenger seats: a number from 1 to 60.');
+    const num=s=>s===''?null:Number(String(s).replace(/,/g,''));
+    if((d.cost_per_day||d.cost_per_extra_km)&&!d.price_source) throw new Error('Write where the price is from, for example "their price list".');
+    if((d.cost_per_day||d.cost_per_extra_km)&&!d.price_checked_on) throw new Error('Write the date the price was checked.');
+    if(!x){ x={id:'rt-'+Date.now(),vendor_id:d.vendor_id,archived:false,created_by:S.user.email,created_at:now}; D.vehicles.push(x); }
+    Object.assign(x,{licence_type:d.licence_type,make_model:d.make_model,year:d.year?+d.year:null,colour:d.colour,passenger_seats:d.passenger_seats?+d.passenger_seats:null,pickup_location:d.pickup_location,
+      cost_per_day:num(d.cost_per_day),currency:d.currency||'ILS',vat:d.vat||'',km_included_per_day:num(d.km_included_per_day),cost_per_extra_km:num(d.cost_per_extra_km),
+      price_source:d.price_source,price_checked_on:d.price_checked_on||null,is_agent:!!d.is_agent&&!lim(),other_terms:d.other_terms,renter_notes:d.renter_notes,updated_by:S.user.email,updated_at:now});
+    return demoRtView(x); },
+  async archiveRental(id,on){ if(LIVE) return await rpc('rental_vehicle_archive',{p_id:id,p_archived:!!on});
+    const x=demoRtFind(id); if(!(S.admin||(x.created_by===S.user.email&&on))) throw new Error('Only the member who added this vehicle, or Eretz Israel Tours, can archive it.'); x.archived=!!on; return demoRtView(x); },
+  async rentalDay(id,day,st){ if(LIVE) return await rpc('rental_day_set',{p_vehicle:id,p_day:day,p_status:st});
+    const D=demoRtInit(); demoRtFind(id); (D.days[id]=D.days[id]||{})[day]=st; D.last[id]={by:S.user.email,at:new Date().toISOString()}; return {day,status:st,last:{by:S.me.name,at:D.last[id].at}}; },
+  async rentalReview(r,body,rating,priv){
+    if(LIVE){ const res=await rpc('rental_review_post',{p_vehicle:r.id,p_body:body,p_rating:rating||'',p_private:!!priv}); await DB.refreshVendor(r.vendor_id); return res; }
+    await DB.detail(r.vendor_id); const res=await DB.addNote(r.vendor_id, body, rating, priv); const n=(S.demo[r.vendor_id].notes||[])[0]; if(n) n.vehicle_id=r.id; return res; }
 });
 
 // ---------- Hikes (8 Oct 2026, D-31) ----------

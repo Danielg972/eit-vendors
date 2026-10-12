@@ -1,0 +1,15 @@
+-- The category Vehicle Rental (12 Oct 2026). See docs/DECISIONS.md D-42. One statement: the list of categories a supplier
+-- may have gains 'Vehicle Rental', shown in the app as "Eshkol / Midbari rental". supabase/schema.sql already includes
+-- it; this file is the step-by-step change.
+--
+-- THE OWNER RUNS THIS FILE HIMSELF, in the Supabase SQL editor for project wjuqtjlrtcywjaspjpwu. Project rule G5: a
+-- statement that removes something is never sent through the connector, and this one takes the old list of categories
+-- off before it puts the new one in its place (both in the one statement, so there is no moment without a list).
+--
+-- Until it has run, the database refuses a supplier in the new category; everything else of D-42
+-- (2026-10-12_rentals.sql) works without it. It can be run before or after that file and before or after
+-- 2026-10-12b_wineries_under_sites.sql.
+--
+-- Safe to run twice: the second run takes the list off and puts the same list back. Every supplier keeps its category;
+-- the new list holds every category of the old one.
+alter table public.vendors drop constraint vendors_category_check, add constraint vendors_category_check check (category = any (array['Hotel'::text, 'Guide'::text, 'Transport'::text, 'Vehicle Rental'::text, 'Restaurant'::text, 'Winery'::text, 'Attraction / Site'::text, 'Activity'::text, 'Adventure'::text, 'National Parks'::text, 'Travel Agent'::text, 'Itinerary Planner'::text, 'Flight'::text, 'Other'::text]));
