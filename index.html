@@ -2781,6 +2781,10 @@ function openQuoteForm(v, q0, back){
   const drawTabs=()=>{ g('optTabs').innerHTML=q.options.map((o,i)=>`<button class="otab" type="button" data-i="${i}" aria-selected="${i===cur}">${esc(o.name||'Option '+(i+1))}<span class="ot">${esc(fmtMoney(g('q_cur').value,lineCalc(o.lines).total))}</span></button>`).join('');
     g('optTabs').querySelectorAll('.otab').forEach(t=>t.onclick=()=>{ readOpt(); cur=+t.dataset.i; drawTabs(); drawOpt(); }); };
   const numClean=x=>String(x||'').replace(/[,₪$€\s]/g,'');
+  // How many a line's price is multiplied by, from its unit: per person takes the head count, per room the rooms, everything else (per group, flat, per vehicle…) one.
+  const defQty=unit=>/^per person/.test(unit)?(parseInt(g('q_pax').value)||1):unit==='per room per night'?(parseInt(g('q_units').value)||1):1;
+  // A new option starts with one price line ready to fill, in the supplier's own price basis.
+  const starterUnit=()=>{ if(isH) return 'per room per night'; if(isT) return 'per vehicle per day'; return {'Per person':'per person','Per group':'per group','Per vehicle':'per vehicle per day','Per day':'per day','Per hour':'per hour','Flat rate':'flat'}[v.priceBasis]||'per person'; };
   const feeGroup=o=>o.service?svcGroup(o.service):({Transport:'vehicle',Guide:'guide',Hotel:'stay',Activity:'activity',Adventure:'activity'}[v.category]||'other');
   const readOpt=()=>{ const o=q.options[cur]; if(!o) return; const ed=g('optEd'); o.name=ed.querySelector('#o_name').value; o.note=ed.querySelector('#o_note').value;
     o.service=ed.querySelector('#o_svc').value; o.seats=ed.querySelector('#o_seats').value.trim(); o.hours_incl=numClean(ed.querySelector('#o_hours').value); o.km_incl=numClean(ed.querySelector('#o_km').value);
@@ -2794,6 +2798,7 @@ function openQuoteForm(v, q0, back){
       <input data-f="note" value="${esc(l.note||'')}" placeholder="Note (optional)"></div>`;
   const recalc=()=>{ readOpt(); const o=q.options[cur]; const c=lineCalc(o.lines); g('optEd').querySelectorAll('.lineed').forEach((r,i)=>{ r.querySelector('.lt').textContent=fmtMoney(g('q_cur').value,c.rows[i].amt); }); g('optTotal').textContent=fmtMoney(g('q_cur').value,c.total); drawTabs(); };
   const drawOpt=()=>{ const o=q.options[cur]; const ed=g('optEd');
+    if(!o.lines.length){ syncDates(); const u=starterUnit(); o.lines.push({label:'',kind:'Base',price:'',unit:u,qty:String(defQty(u)),times:String(defTimes(u,q)),note:''}); }
     ed.innerHTML=`<div class="grid"><div class="f"><label for="o_name">Option name</label><input id="o_name" value="${esc(o.name)}" placeholder="${isT?'50-seat bus, 19-seat van':'Sea view rooms'}"></div><div class="f"><label for="o_note">Option note</label><input id="o_note" value="${esc(o.note)}" placeholder="More luggage room"></div>
         <div class="f"><label for="o_svc">What is it? <em>*</em></label><select id="o_svc">${opt([['','Choose…'],...SERVICES.map(x=>[x[0],x[1]])],o.service||'')}</select></div>
         <div class="f" data-show="seats"><label for="o_seats">Seats</label><input id="o_seats" inputmode="numeric" value="${esc(o.seats||'')}" placeholder="50"></div>
@@ -2814,15 +2819,18 @@ function openQuoteForm(v, q0, back){
     ed.querySelector('#o_seats').onblur=()=>{ readOpt(); const k=vehicleBySeats(o.seats); if(k&&(!o.service||VEH[o.service])&&o.service!==k){ o.service=k; ed.querySelector('#o_svc').value=k; drawFees(); } };
     ed.querySelector('#o_name').onblur=()=>{ readOpt(); let ch=false; if(!o.service){ const gs=guessService(o.name,v); if(gs){ o.service=gs; ed.querySelector('#o_svc').value=gs; ch=true; } } if(!o.seats){ const st=seatsOf(o.name); if(st&&(!o.service||svcGroup(o.service)==='vehicle')){ o.seats=st; ed.querySelector('#o_seats').value=st; if(!o.service||VEH[o.service]){ o.service=vehicleBySeats(st)||o.service; ed.querySelector('#o_svc').value=o.service; ch=true; } } } if(ch) drawFees(); };
     const wire=()=>{ ed.querySelectorAll('.lineed').forEach(r=>{ r.querySelectorAll('input,select').forEach(i=>i.oninput=recalc);
-        r.querySelector('[data-f=unit]').onchange=e=>{ syncDates(); r.querySelector('[data-f=times]').value=defTimes(e.target.value,q); recalc(); };
+        r.querySelector('[data-f=unit]').onchange=e=>{ syncDates(); r.querySelector('[data-f=times]').value=defTimes(e.target.value,q); r.querySelector('[data-f=qty]').value=defQty(e.target.value); recalc(); };
         r.querySelector('[data-rm]').onclick=()=>{ r.remove(); recalc(); }; }); };
-    ed.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{ syncDates(); const p=presets[+b.dataset.p]||['','Base','per person']; const l={label:p[0],kind:p[1],price:'',unit:p[2],qty:p[2]==='per room per night'?(parseInt(g('q_units').value)||1):(p[2]==='per person'||p[2]==='per person per night'?(g('q_pax').value||1):1),times:defTimes(p[2],q),note:''};
+    ed.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{ syncDates(); const p=presets[+b.dataset.p]||['','Base','per person']; const l={label:p[0],kind:p[1],price:'',unit:p[2],qty:defQty(p[2]),times:defTimes(p[2],q),note:''};
       ed.querySelector('#lines').insertAdjacentHTML('beforeend',lineRow(l)); wire(); recalc(); const last=[...ed.querySelectorAll('.lineed')].pop(); (p[0]?last.querySelector('[data-f=price]'):last.querySelector('[data-f=label]')).focus(); });
     ed.querySelector('#o_name').oninput=()=>{ q.options[cur].name=ed.querySelector('#o_name').value; drawTabs(); };
     const rm=ed.querySelector('#rmOpt'); if(rm) rm.onclick=()=>{ if(rm.dataset.c!=='1'){ rm.dataset.c='1'; rm.textContent='Tap again to remove'; return; } q.options.splice(cur,1); cur=0; drawTabs(); drawOpt(); };
     wire(); recalc(); };
   g('addOpt').onclick=()=>{ readOpt(); const copy=q.options[cur]?JSON.parse(JSON.stringify(q.options[cur])):{lines:[],fees:{}}; copy.name='Option '+String.fromCharCode(65+q.options.length); copy.note=''; q.options.push(copy); cur=q.options.length-1; drawTabs(); drawOpt(); toast('Copied the current option. Change what differs.'); };
   g('q_cur').onchange=recalc;
+  const follow=(id,test)=>{ let was=g(id).value; g(id).oninput=()=>{ readOpt(); const now=String(parseInt(g(id).value)||1), old=String(parseInt(was)||1); was=g(id).value;
+    q.options.forEach(o=>o.lines.forEach(l=>{ if(test(l.unit)&&String(l.qty)===old) l.qty=now; })); drawOpt(); }; };
+  follow('q_pax',u=>/^per person/.test(u)); follow('q_units',u=>u==='per room per night');
   drawTabs(); drawOpt();
   g('qc').onclick=()=>{ if(back==='quotes') closeSheet(); else openDetail(v.id); };
   g('qs').onclick=async()=>{ readOpt(); const err=g('qErr');
