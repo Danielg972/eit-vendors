@@ -2601,10 +2601,11 @@ function optFlags(q,o,v){
 function flagsHtml(q,o,v){ const fl=optFlags(q,o,v); return fl.length?`<div class="flags">${fl.map(([c,t])=>`<span class="flag ${c}">${esc(t)}</span>`).join('')}</div>`:''; }
 const unitNorm=u=>u==='per vehicle per day'?'per day':u;
 function optRates(o){ return (o.lines||[]).filter(l=>l.kind==='Base'&&l.price!==''&&l.unit!=='% of subtotal'&&isFinite(+l.price)).map(l=>({label:l.label,unit:unitNorm(l.unit),price:+l.price})); }
+// The Quotes tab is for buses, vans and cars only (D-46). Quotes for guides, hotels and activities stay on the supplier's own page.
 function trackerRows(quotes){
   const rows=[], cutoff=new Date(Date.now()-730*86400000).toISOString().slice(0,10);
   (quotes||[]).forEach(q=>{ const v=S.vendors.find(x=>x.id===q.vendor_id); if(!v) return; const season=seasonOf(q), ref=q.date_from||q.received_on||String(q.created_at||'').slice(0,10);
-    (q.options||[]).forEach(o=>{ const svc=o.service||guessService(o.name,v)||'other'; rows.push({q,o,v,svc,season,ref,recent:!ref||ref>=cutoff,rates:optRates(o)}); }); });
+    (q.options||[]).forEach(o=>{ const svc=o.service||guessService(o.name,v)||'other'; if(svcGroup(svc)!=='vehicle') return; rows.push({q,o,v,svc,season,ref,recent:!ref||ref>=cutoff,rates:optRates(o)}); }); });
   return rows;
 }
 // Averages use quotes from the last two years with a real price. Requested (unanswered) quotes don't count.
@@ -2652,15 +2653,13 @@ async function viewQuotes(){
     try{ const got=await DB.loadTracker(); S.quotes=got||[]; }catch(e){ if(S.tab==='quotes') view.innerHTML=`<div class="msg err">Couldn't load quotes: ${esc(e.message)}</div>`; return; }
     if(S.tab!=='quotes'||!document.getElementById('view')) return; }
   const t=S.qt, all=trackerRows(S.quotes);
-  const groups=SVC_GROUPS.filter(([gp])=>all.some(r=>svcGroup(r.svc)===gp));
-  if(t.grp!=='All'&&!groups.some(x=>x[0]===t.grp)){ t.grp='All'; t.svc='All'; }
+  t.grp='vehicle';   // one group only now (D-46): go straight to the kinds of vehicle
   const svcs=t.grp==='All'?[]:SERVICES.filter(x=>x[2]===t.grp&&all.some(r=>r.svc===x[0]));
   if(t.svc!=='All'&&!svcs.some(x=>x[0]===t.svc)) t.svc='All';
   const chip=(attr,val,label,on)=>`<button class="chip" data-${attr}="${esc(val)}" aria-pressed="${on}">${esc(label)}</button>`;
   document.getElementById('view').innerHTML=`${qviewSwitch()}
-    <div class="qt-intro"><h2>Quote tracker</h2><p>What suppliers actually quoted: by the day, by the hour, in and out of season, with every extra they added. Shared by colleagues without names.</p></div>
+    <div class="qt-intro"><h2>Quote tracker</h2><p>What bus, van and car companies actually quoted: by the day, by the hour, in and out of season, with every extra they added. Shared by colleagues without names. Quotes for guides, hotels and activities are on each supplier's own page.</p></div>
     <label class="search" for="qtq">${icons.search}<input id="qtq" type="search" placeholder="Search a supplier, vehicle or region" value="${esc(t.q)}" autocomplete="off"></label>
-    ${groups.length?`<div class="chips" role="group" aria-label="Filter by type">${chip('grp','All','All',t.grp==='All')}${groups.map(([k,l])=>chip('grp',k,l,t.grp===k)).join('')}</div>`:''}
     ${svcs.length>1?`<div class="chips" role="group" aria-label="Filter by kind" style="padding-top:2px">${chip('svc','All','All '+(SVC_GROUPS.find(x=>x[0]===t.grp)||['',''])[1].toLowerCase(),t.svc==='All')}${svcs.map(x=>chip('svc',x[0],x[1],t.svc===x[0])).join('')}</div>`:''}
     ${all.length?`<div class="chips" role="group" aria-label="Filter by season" style="padding-top:2px">${chip('sea','All','All dates',t.season==='All')}${chip('sea','High','High season',t.season==='High')}${chip('sea','Regular','Regular season',t.season==='Regular')}</div>`:''}
     <div id="qtBody"></div>`;
@@ -2692,14 +2691,14 @@ function drawTracker(){
   box.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>openDetail(b.dataset.open));
 }
 function openQuotePicker(){
-  const w=sheet('Add a quote', `<p style="margin:0 0 10px">Which supplier gave you the quote?</p>
+  const w=sheet('Add a quote', `<p style="margin:0 0 10px">Which bus, van or car company gave you the quote?</p>
     <label class="search" for="qpq">${icons.search}<input id="qpq" type="search" placeholder="Search supplier" autocomplete="off"></label>
     <div id="qpList" style="margin-top:10px"></div>
-    <p class="hint" style="margin-top:12px">Not on the list? Add the supplier first, in the Suppliers tab.</p>`, `<button class="btn soft" id="qpc" type="button">Cancel</button>`);
+    <p class="hint" style="margin-top:12px">Not on the list? Add the company first, in the Suppliers tab. A quote from a guide, hotel or activity goes on that supplier's own page.</p>`, `<button class="btn soft" id="qpc" type="button">Cancel</button>`);
   const inp=w.querySelector('#qpq'), list=w.querySelector('#qpList');
   const draw=()=>{ const n=normN(inp.value);
-    const hits=S.vendors.filter(v=>!n||normN([v.name,v.category,v.also_categories,v.tags,v.region].join(' ')).includes(n)).sort((a,b)=>a.name.localeCompare(b.name)).slice(0,40);
-    list.innerHTML=hits.length?hits.map(v=>`<button class="pick" type="button" data-v="${esc(v.id)}"><b>${esc(v.name)}</b><span>${esc(catMain(v))}</span></button>`).join(''):'<p class="hint">No supplier with that name.</p>';
+    const hits=S.vendors.filter(v=>catsOf(v).includes('Transport')).filter(v=>!n||normN([v.name,v.category,v.also_categories,v.tags,v.region].join(' ')).includes(n)).sort((a,b)=>a.name.localeCompare(b.name)).slice(0,40);
+    list.innerHTML=hits.length?hits.map(v=>`<button class="pick" type="button" data-v="${esc(v.id)}"><b>${esc(v.name)}</b><span>${esc(catMain(v))}</span></button>`).join(''):'<p class="hint">No transport company with that name.</p>';
     list.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{ const v=S.vendors.find(x=>x.id===b.dataset.v); if(v) openQuoteForm(v,null,'quotes'); }); };
   inp.addEventListener('input',draw); w.querySelector('#qpc').onclick=closeSheet; draw(); setTimeout(()=>inp.focus(),50);
 }
@@ -2707,7 +2706,7 @@ function openQuotePicker(){
 async function drawQuotes(v){
   const box=document.getElementById('quotesBox'); if(!box) return;
   let qs=[]; try{ qs=await DB.loadQuotes(v.id); }catch(e){ box.innerHTML=`<div class="msg err">Couldn't load quotes: ${esc(e.message)}</div>`; return; }
-  if(!qs.length){ box.innerHTML='<p class="hint" style="margin:0 0 10px">No quotes yet. Add a quote you received: the daily or hourly rate, what was included and what cost extra. It is shared with colleagues without your name, and feeds the averages in the Quotes tab.</p>'; return; }
+  if(!qs.length){ box.innerHTML='<p class="hint" style="margin:0 0 10px">No quotes yet. Add a quote you received: the daily or hourly rate, what was included and what cost extra. It is shared with colleagues without your name'+(catsOf(v).includes('Transport')?', and feeds the averages in the Quotes tab':'')+'.</p>'; return; }
   const me=(S.user.email||'').toLowerCase();
   box.innerHTML = qs.map((q,qi)=>{
     const old = ['Expired','Declined'].includes(q.status) || (q.valid_until && q.valid_until<today() && q.status!=='Booked');
@@ -2837,7 +2836,7 @@ function openQuoteForm(v, q0, back){
     const out={id:q0?q0.id:undefined,title:g('q_title').value.trim(),date_from:g('q_from').value,date_to:g('q_to').value,pax:g('q_pax').value.trim(),units:g('q_units').value.trim(),received_on:g('q_rec').value,valid_until:g('q_valid').value,ref:g('q_ref').value.trim(),status:g('q_status').value,currency:g('q_cur').value,vat:g('q_vat').value,conditions:g('q_cond').value.trim(),private_note:g('q_note').value.trim(),shared:g('q_shared').checked&&!v.prices_private,
       options:q.options.map(o=>({name:o.name||(o.service?svcLabel(o.service):''),note:o.note,service:o.service||'',seats:o.seats||'',hours_incl:o.hours_incl||'',km_incl:o.km_incl||'',fees:o.fees||{},lines:o.lines.filter(l=>l.label||l.price)}))};
     const noSvc=out.options.find(o=>o.lines.length&&!o.service);
-    if(noSvc){ err.innerHTML=`<div class="msg err">Choose what "${esc(noSvc.name||'this option')}" is (bus, van size, guide, room…), so it lands in the right group in the Quotes tab.</div>`; return; }
+    if(noSvc){ err.innerHTML=`<div class="msg err">Choose what "${esc(noSvc.name||'this option')}" is (bus, van size, guide, room…), so colleagues can find it.</div>`; return; }
     const badO=out.options.find(o=>(o.seats&&!/^\d{1,3}$/.test(o.seats))||(o.hours_incl&&!/^\d{1,2}(\.\d)?$/.test(o.hours_incl))||(o.km_incl&&!/^\d{1,4}$/.test(o.km_incl))||Object.values(o.fees).some(x=>x.amt&&!/^\d{1,7}(\.\d{1,2})?$/.test(x.amt)));
     if(badO){ err.innerHTML=`<div class="msg err">Check the numbers on "${esc(badO.name||'an option')}": seats, hours, km and extra amounts must be plain numbers.</div>`; return; }
     const bad=out.options.flatMap(o=>o.lines).find(l=>(l.price&&!/^\d+(\.\d+)?$/.test(l.price))||!/^\d+(\.\d+)?$/.test(l.qty)||!/^\d+(\.\d+)?$/.test(l.times));
@@ -5570,7 +5569,7 @@ function tourSteps(replay){
         <div class="qsub" style="margin-top:6px">18/08/2026 · 45 people · plus VAT <span class="pill high">High season</span></div>
         <div class="flags"><span class="flag extra">⚠ Kvish 6: extra</span><span class="flag incl">✓ Parking included</span><span class="flag miss">? Overtime not stated</span></div></div>`, SAMPLE)+`
     <h2>See what others were quoted</h2>
-    <p><b>The Quotes tab.</b> ${lim()?'What bus and van companies quoted per day and per hour, in and out of high season, and what other organisations were quoted.':'Day and hour rates for buses, vans, guides, hotels and activities, in and out of high season.'} An average shows once there are three quotes.</p>
+    <p><b>The Quotes tab.</b> ${lim()?'What bus and van companies quoted per day and per hour, in and out of high season, and what other organisations were quoted.':'Day and hour rates for buses, vans and cars, in and out of high season. Quotes for guides, hotels and activities are on each supplier\'s own page.'} An average shows once there are three quotes.</p>
     <p><b style="color:var(--bad)">Red</b> is charged extra, <b style="color:var(--ok)">green</b> is included, <b style="color:var(--warn)">amber</b> was never stated. Ask before you book.</p>
     <p><b>Add your own.</b> Your quotes are shared without your name. You can switch sharing off on any quote.</p>` },
   { html:`<div class="tour-sheet" aria-hidden="true" style="margin-top:6px"><div class="hd"><b lang="he" dir="rtl">דף הזמנת רכב</b><span class="hint">Vehicle booking sheet</span></div>
