@@ -1496,7 +1496,7 @@ function render(){
 function suggestTerms(){
   const seen=new Map();
   const add=(t,kind)=>{ t=String(t||'').trim(); if(t.length<2) return; const k=t.toLowerCase(); if(!seen.has(k)) seen.set(k,{t,kind}); };
-  S.vendors.forEach(v=>{ add(v.name,'Supplier'); add(v.region,'Region'); add(v.location,'Area'); add(v.contactPerson,'Contact'); add(catDisp(v.category),'Category'); String(v.tags||'').split(',').forEach(t=>add(t,'Type')); });
+  S.vendors.forEach(v=>{ add(v.name,'Supplier'); add(v.region,'Region'); add(v.location,'Area'); add(v.contactPerson,'Contact'); add(catDisp(v.category),'Category'); String(v.tags||'').split(',').forEach(t=>add(t,t.trim().toLowerCase()===SHABBAT_TAG.toLowerCase()?'Shabbat':'Type')); });
   return [...seen.values()];
 }
 function viewVendors(){
@@ -2119,7 +2119,7 @@ function openDetail(id, opt){
   const notice=v.cancelNoticeAmount?`${esc(v.cancelNoticeAmount)} ${esc((v.cancelNoticeUnit||'').toLowerCase())}${v.cancelDayType?' ('+esc(v.cancelDayType.toLowerCase())+')':''}`:'';
   const rating=['rateReliability','rateService','rateValue'].map((k,i)=>v[k]?`${['Reliability','Service','Value'][i]} <b class="mono">${esc(v[k])}/5</b>`:'').filter(Boolean).join(' · ');
   const sections=[
-    ['Contact',rows([['Contact',esc(v.contactPerson)],['Phone',v.phone?`<span class="mono">${esc(v.phone)}</span>`:''],['WhatsApp',v.whatsapp?`<span class="mono">${esc(v.whatsapp)}</span>`:''],['Email',esc(v.email)],['Website',esc(v.website)],['Region',esc(v.region)],[v.category==='Guide'?'Guide details':'Type',esc(v.tags)],['Years guiding',v.category==='Guide'&&v.experience_years?esc(v.experience_years)+' years':''],['Area',esc(v.location)],['Map pin',v.maps_link?`<a data-track="maps" data-v="${esc(v.id)}" href="${esc(v.maps_link)}" target="_blank" rel="noopener">Open map pin</a>`:''],['Languages',esc(v.languages)],['Kosher',(v.kosher||rel('kosher',v))?(v.kosher?esc(v.kosher):'<span class="hint">Not added</span>')+`<span id="kcert"></span>`:''],['Max capacity',v.maxCap?esc(v.maxCap)+' people':''],['Park booking',v.npResLink?`<a data-track="booking" data-v="${esc(v.id)}" href="${esc(v.npResLink)}" target="_blank" rel="noopener">Reservation page</a>`:'']])],
+    ['Contact',rows([['Contact',esc(v.contactPerson)],['Phone',v.phone?`<span class="mono">${esc(v.phone)}</span>`:''],['WhatsApp',v.whatsapp?`<span class="mono">${esc(v.whatsapp)}</span>`:''],['Email',esc(v.email)],['Website',esc(v.website)],['Region',esc(v.region)],[v.category==='Guide'?'Guide details':'Type',esc(tagsNoShab(v))],['Years guiding',v.category==='Guide'&&v.experience_years?esc(v.experience_years)+' years':''],['Area',esc(v.location)],['Map pin',v.maps_link?`<a data-track="maps" data-v="${esc(v.id)}" href="${esc(v.maps_link)}" target="_blank" rel="noopener">Open map pin</a>`:''],['Languages',esc(v.languages)],['Kosher',(v.kosher||rel('kosher',v))?(v.kosher?esc(v.kosher):'<span class="hint">Not added</span>')+`<span id="kcert"></span>`:''],['Max capacity',v.maxCap?esc(v.maxCap)+' people':''],['Park booking',v.npResLink?`<a data-track="booking" data-v="${esc(v.id)}" href="${esc(v.npResLink)}" target="_blank" rel="noopener">Reservation page</a>`:'']])],
     [S.admin?(v.prices_private?'Main price (goes to R5) · private':'Main price (goes to R5)'):'Main price',rows([['Agent price',price(v.agentPrice,v.agentPriceVatTreatment)],['Listed price',price(v.listedPrice,v.listedPriceVatTreatment)],['Basis',esc(v.priceBasis)],['Max people',esc(v.maxPax)],['Payment terms',esc(v.payTerms)]])],
     ['Cancellation',rows([['Policy',esc(v.cancelPolicy)],['Notice',notice],['Penalty',esc(v.cancelPenalty)],['Checked',esc(ilDate(v.cancelPolicyVerifiedDate))]])],
     ['Experience',rows([['Ratings',rating],['Strengths',esc(v.strengths)],['Weaknesses',esc(v.weaknesses)],['Summary',esc(v.notes)]])]
@@ -3779,7 +3779,7 @@ function openForm(v, preset){
       ${sel('category','Main category',[['','Choose…'],...byUse('category',myCats()).map(c=>[c,catDisp(c)])],false,true)}
       <div class="f wide"><label>Also offers <span class="hint">(optional, e.g. a guide who also drives jeep tours)</span></label><input type="hidden" id="f_also_categories" value="${esc(x.also_categories||'')}"><div class="presets" id="alsoSug" style="margin:6px 0 0"></div></div>
       <div class="f wide" id="fleetWrap" hidden><label>Vehicles they offer</label><div class="tgs" id="fleetPick" role="group" aria-label="Vehicles they offer" style="margin:0">${VEHICLES.map(x=>`<button class="tg" type="button" data-veh="${x[0]}" aria-pressed="false">${esc(x[1])}</button>`).join('')}</div><span class="hint">Tap every size they have. Vans go by seats.</span></div>
-      <div class="f wide"><label for="f_tags">Type (separate with commas)</label><input id="f_tags" value="${esc(x.tags)}" placeholder="Jeep, ATV / RZR"><div class="presets" id="tagSug" style="margin:6px 0 0"></div><span class="hint" id="d1Hint" hidden>${D1_RULE} Add the tag "D1 license" to confirm it.</span></div>
+      <div class="f wide"><label for="f_tags">Type (separate with commas)</label><input id="f_tags" value="${esc(tagsNoShab(x))}" placeholder="Jeep, ATV / RZR"><div class="presets" id="tagSug" style="margin:6px 0 0"></div><span class="hint" id="d1Hint" hidden>${D1_RULE} Add the tag "D1 license" to confirm it.</span></div>
       <div class="f wide" id="licWrap" hidden><span class="lab">Is this guide licensed? <em style="color:var(--bad);font-style:normal">*</em></span>
         <div class="tgs" role="group" aria-label="Is this guide licensed?"><button class="tg" type="button" id="licYes" aria-pressed="false">Licensed tour guide</button><button class="tg" type="button" id="licSpec" aria-pressed="false">Specialty guide, not licensed</button></div>
         <span class="hint">${GUIDE_RULE} ${S.admin?'A specialty guide is your exception to make.':'A specialty guide is an exception that Eretz Israel Tours approves.'}</span></div>
@@ -3838,9 +3838,9 @@ function openForm(v, preset){
   const licDraw=()=>{ licYes.setAttribute('aria-pressed', tagHas(tagsIn.value, GUIDE_LICENSED)); licSpec.setAttribute('aria-pressed', tagHas(tagsIn.value, GUIDE_SPECIALTY)); };
   const licSet=(on,off)=>{ const had=tagHas(tagsIn.value,on); const cur=tagsIn.value.split(',').map(t=>t.trim()).filter(t=>t && ![on,off].some(z=>z.toLowerCase()===t.toLowerCase())); if(!had) cur.unshift(on); tagsIn.value=cur.join(', '); tagsIn.dispatchEvent(new Event('input',{bubbles:true})); };
   licYes.onclick=()=>licSet(GUIDE_LICENSED, GUIDE_SPECIALTY); licSpec.onclick=()=>licSet(GUIDE_SPECIALTY, GUIDE_LICENSED);
-  const shabTg=f.querySelector('#shabTg'), shabDraw=()=>shabTg.setAttribute('aria-pressed', isShabbat({tags:tagsIn.value}));
-  shabTg.onclick=()=>{ const on=isShabbat({tags:tagsIn.value}); const cur=tagList({tags:tagsIn.value}).filter(t=>t.toLowerCase()!==SHABBAT_TAG.toLowerCase()); if(!on) cur.push(SHABBAT_TAG); tagsIn.value=cur.join(', '); shabDraw(); };
-  tagsIn.addEventListener('input',shabDraw); shabDraw();
+  // Shomer Shabbat is kept with the supplier's tags (no database change) but is not a type: it has its own box under the hours (D-47).
+  let shabOn=isShabbat(x); const shabTg=f.querySelector('#shabTg'), shabDraw=()=>shabTg.setAttribute('aria-pressed', shabOn);
+  shabTg.onclick=()=>{ shabOn=!shabOn; shabDraw(); }; shabDraw();
   const fleetDraw=()=>{ const have=fleetOf({tags:tagsIn.value}); f.querySelectorAll('[data-veh]').forEach(b=>b.setAttribute('aria-pressed', have.has(b.dataset.veh))); };
   f.querySelectorAll('[data-veh]').forEach(b=>b.onclick=()=>{ const k=b.dataset.veh, on=b.getAttribute('aria-pressed')==='true';
     let cur=tagsIn.value.split(',').map(t=>t.trim()).filter(Boolean);
@@ -3898,6 +3898,7 @@ function openForm(v, preset){
   f.querySelector('#f_name').addEventListener('input',dupCheck); dupCheck();
   w.querySelector('#saveBtn').onclick=async()=>{
     syncReg(); const data = v?{id:v.id}:{}; R5_FIELDS.concat(EXTRA_FIELDS).forEach(k=>{ const el=f.querySelector('#f_'+k); data[k]= el?el.value:(x[k]||''); });
+    { const typed={tags:data.tags}; const on=shabOn||isShabbat(typed); data.tags=tagList({tags:tagsNoShab(typed)}).concat(on?[SHABBAT_TAG]:[]).join(', '); }
     if(data.category!=='National Parks') data.npResLink = x.npResLink||data.npResLink||'';
     data.maps_link=String(data.maps_link||'').trim(); if(data.maps_link && !/^https?:\/\//i.test(data.maps_link)) data.maps_link='https://'+data.maps_link;
     data.experience_years=String(data.experience_years||'').replace(/\D/g,'').slice(0,2); if(!catsOf(data).includes('Guide') && !x.experience_years) data.experience_years='';
