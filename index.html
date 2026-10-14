@@ -1970,6 +1970,44 @@ document.addEventListener('click',()=>setTimeout(bkFill,0),true);
 new MutationObserver(()=>bkFill()).observe(document.body,{childList:true});
 bkFill();
 
+// ---------- the app keeps itself up to date (D-48) ----------
+// A phone's Chrome can keep showing an old copy of this page for days (the owner, 14 Oct 2026: on his phone the app had
+// no Eshkol / Midbari rentals, two days after they went live). Each time the app is opened, and when it is brought back to
+// the screen (at most every 20 minutes), it fetches its own page fresh and compares it with the copy that is running. If
+// they differ it reloads from a fresh address: straight away if the member has not tapped anything yet, otherwise the next
+// time the app is out of sight or brought back with nothing open (no open supplier, box, map or tour, and no field being
+// typed in), so nothing a member is in the middle of is lost. Nothing is shown to the member. The reload adds ?v=… to the
+// address, which is taken off again once the fresh page starts; a member's link, data and settings are not touched.
+// It reloads at most once a minute, so a page that cannot be fetched fresh never loops.
+const upHash=t=>{ let h=2166136261; for(let i=0;i<t.length;i++){ h^=t.charCodeAt(i); h=Math.imul(h,16777619); } return (h>>>0).toString(36)+'.'+t.length; };
+const UP_SELF=upHash((document.currentScript&&document.currentScript.textContent)||'');
+let upTapped=false, upPending=false, upLast=0, upBusyCheck=false;
+try{ const u=new URL(location.href); if(u.searchParams.has('v')){ u.searchParams.delete('v'); history.replaceState(history.state,'',u.pathname+u.search+u.hash); } }catch(e){}
+document.addEventListener('pointerdown',()=>{ upTapped=true; },true);
+document.addEventListener('keydown',()=>{ upTapped=true; },true);
+function upBusy(){ const a=document.activeElement;
+  return !!(document.querySelector('body > .modal')||document.getElementById('sheetWrap')||document.getElementById('tourWrap')||document.getElementById('hkMapFull')
+    ||(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))); }
+function upReload(){
+  try{ const t=+sessionStorage.getItem('eitvUp')||0; if(Date.now()-t<60000) return; sessionStorage.setItem('eitvUp',String(Date.now())); }catch(e){ return; }
+  try{ const u=new URL(location.href); u.searchParams.set('v',Date.now().toString(36)); location.replace(u.pathname+u.search+u.hash); }catch(e){ location.reload(); } }
+async function upCheck(){
+  if(upBusyCheck||(typeof navigator!=='undefined'&&navigator.onLine===false)) return;
+  upBusyCheck=true; upLast=Date.now();
+  try{ const r=await fetch(location.pathname+'?fresh='+Date.now().toString(36),{cache:'no-store',credentials:'omit'});
+    if(!r.ok) return;
+    const doc=new DOMParser().parseFromString(await r.text(),'text/html');
+    const sc=[...doc.querySelectorAll('script')].find(x=>!x.src&&/const UP_SELF=/.test(x.textContent));
+    if(!sc||upHash(sc.textContent)===UP_SELF) return;   // same copy, or a page without this check (never step back to it)
+    upPending=true;
+    if(!upTapped) upReload();                           // nothing tapped yet, so nothing to lose (the welcome tour starts again)
+  }catch(e){}finally{ upBusyCheck=false; } }
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='hidden'){ if(upPending&&!upBusy()) upReload(); return; }
+  if(upPending){ if(!upBusy()) upReload(); return; }
+  if(Date.now()-upLast>20*60000) upCheck(); });
+setTimeout(upCheck,1500);
+
 function vatLabel(x){ const f=VAT.find(p=>p[0]===x); return f&&x?f[1]:''; }
 const AUDIENCES=['Adult','Child','Israeli senior','Senior','Student','Soldier','Group','Private','Vehicle','Other'];
 const DEAL_KINDS=['Credit card club','Coupon site','Coupon code','Group trick','Other'];
