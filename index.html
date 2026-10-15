@@ -337,6 +337,12 @@ a.mini{display:inline-block;text-decoration:none;color:var(--ink)}
 .check{display:flex;gap:10px;align-items:flex-start;margin:6px 0 14px;font-size:14px}
 .check input{width:20px;height:20px;flex:none;margin-top:1px}
 .linkbtn{border:0;background:none;padding:0;color:var(--olive-2);text-decoration:underline;font:inherit;cursor:pointer}
+.feed-day{margin:14px 0 4px;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-2,inherit);opacity:.75}
+.feed-s{border-top:1px solid var(--line);padding:10px 0}
+.feed-s .fh{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.feed-s ul{margin:6px 0 0;padding-left:18px}
+.feed-s li{margin:3px 0;overflow-wrap:anywhere}
+.feed-s .fq{display:block;margin-top:2px;font-style:italic}
 .resbar{border:1px solid var(--ochre);background:var(--ochre-wash);border-radius:12px;padding:12px 14px;margin:0 0 16px}
 .resbar b{display:block;margin-bottom:2px}
 .resbar .meta{font-size:13px;color:var(--ink-2)}
@@ -1741,11 +1747,72 @@ function exportR5(list){
   document.getElementById('cp').onclick=()=>{ const t=document.getElementById('expText'); navigator.clipboard.writeText(json).then(()=>toast('Copied')).catch(()=>{t.focus();t.select();toast('Selected. Copy it from here.');}); };
 }
 
+// ---------- Recent activity, for Eretz Israel Tours only (D-49, 15 Oct 2026) ----------
+// The owner, 15 Oct: "can we make a recent activity history view for me?". One list, newest first, from the database
+// function activity_feed (admin only). A person's actions less than 30 minutes apart are one visit. Opening suppliers and
+// filtering are summed up in one line; everything a colleague adds, changes, writes or asks for gets its own line.
+// The app keeps only a member's last visit, so earlier visits with no taps cannot be shown.
+const feedHM=d=>String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+function feedDayLabel(d){ const t=new Date(); t.setHours(0,0,0,0); const x=new Date(d); x.setHours(0,0,0,0); const n=Math.round((t-x)/864e5);
+  return n===0?'Today':n===1?'Yesterday':['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][x.getDay()]+' '+String(x.getDate()).padStart(2,'0')+'/'+String(x.getMonth()+1).padStart(2,'0'); }
+function feedDemo(){ const ago=m=>new Date(Date.now()-m*60000).toISOString();
+  return [
+    {at:ago(5),who:'rachel.ops@gmail.com',who_name:'Sample colleague A',kind:'seen',what:'last opened the app',detail:''},
+    {at:ago(6),who:'rachel.ops@gmail.com',who_name:'Sample colleague A',kind:'note',what:'wrote a note on',vendor_id:'',vendor_name:'Sample Hills 4x4 Rentals',detail:'Good driver, on time, clean jeep.'},
+    {at:ago(8),who:'rachel.ops@gmail.com',who_name:'Sample colleague A',kind:'tap',what:'tapped WhatsApp on',vendor_id:'',vendor_name:'Sample Desert Wheels',detail:''},
+    {at:ago(9),who:'rachel.ops@gmail.com',who_name:'Sample colleague A',kind:'tap',what:'opened',vendor_id:'',vendor_name:'Sample Desert Wheels',detail:''},
+    {at:ago(10),who:'rachel.ops@gmail.com',who_name:'Sample colleague A',kind:'filter',what:'filtered by category',detail:'Transport'},
+    {at:ago(70),who:'sample.b@gmail.com',who_name:'Sample colleague B',kind:'joined',what:'asked to join',detail:'Licensed tour guide'},
+    {at:ago(1500),who:'sample.c@gmail.com',who_name:'Sample colleague C',kind:'add',what:'added the supplier',vendor_id:'',vendor_name:'Sample Winery',detail:'Winery · waiting for your review'},
+    {at:ago(1502),who:'sample.c@gmail.com',who_name:'Sample colleague C',kind:'add',what:'added a price on',vendor_id:'',vendor_name:'Sample Winery',detail:'Tasting · 90 ILS'},
+    {at:ago(1504),who:'sample.c@gmail.com',who_name:'Sample colleague C',kind:'tap',what:'opened',vendor_id:'',vendor_name:'Sample Winery',detail:''}]; }
+function feedSessions(rows){ // rows newest first -> visits, newest first, each with its events oldest first
+  const byWho={}, out=[];
+  [...rows].reverse().forEach(r=>{ const t=new Date(r.at).getTime(); let s=byWho[r.who];
+    if(!s||t-s.end>30*60000){ s={who:r.who,name:r.who_name||r.who,start:t,end:t,ev:[]}; byWho[r.who]=s; out.push(s); }
+    s.end=t; s.ev.push(r); });
+  return out.sort((a,b)=>b.end-a.end); }
+function feedVendor(r){ return r.vendor_name?(r.vendor_id?`<button class="linkbtn" type="button" data-fopen="${esc(r.vendor_id)}">${esc(r.vendor_name)}</button>`:`<b>${esc(r.vendor_name)}</b>`):''; }
+function feedSessionHtml(s){
+  const st=new Date(s.start), en=new Date(s.end), opens=[], filters=[], lines=[];
+  s.ev.forEach(r=>{
+    if(r.kind==='tap'&&r.what==='opened'){ if(r.vendor_name&&!opens.some(o=>o.vendor_name===r.vendor_name)) opens.push(r); return; }
+    if(r.kind==='filter'){ if(r.detail&&!filters.includes(r.detail)) filters.push(r.detail); return; }
+    if(r.kind==='seen') return;
+    const q=r.kind==='note'&&r.detail?`<span class="fq">“${esc(r.detail)}”</span>`:'';
+    lines.push(`<li><span class="hint">${feedHM(new Date(r.at))}</span> ${esc(r.what)}${r.vendor_name?' '+feedVendor(r):''}${r.kind!=='note'&&r.detail?` <span class="hint">· ${esc(r.detail)}</span>`:''}${q}</li>`); });
+  if(opens.length) lines.push(`<li>looked at ${opens.slice(0,12).map(feedVendor).join(', ')}${opens.length>12?` and ${opens.length-12} more`:''}</li>`);
+  if(filters.length) lines.push(`<li><span class="hint">filtered by ${filters.map(esc).join(', ')}</span></li>`);
+  if(!lines.length) lines.push('<li><span class="hint">opened the app, tapped nothing</span></li>');
+  const span=s.end-s.start>=60000?`${feedHM(st)}–${feedHM(en)}`:feedHM(en);
+  return `<div class="feed-s"><div class="fh"><b>${esc(s.name)}</b><span class="hint">${span}</span></div><ul>${lines.join('')}</ul></div>`; }
+async function drawFeed(view){
+  const box=view.querySelector('#feedBox'); if(!box||!S.admin) return;
+  let days=1; try{ days=+localStorage.getItem('eitvFeedDays')||1; }catch(e){}
+  view.querySelectorAll('[data-fd]').forEach(b=>{ b.setAttribute('aria-selected', String(+b.dataset.fd===days));
+    b.onclick=()=>{ try{ localStorage.setItem('eitvFeedDays',b.dataset.fd); }catch(e){} drawFeed(view); }; });
+  box.innerHTML='<p class="hint">Loading…</p>';
+  let rows; try{ rows = LIVE ? await rpc('activity_feed',{p_days:days===1?2:days}) : feedDemo(); }catch(e){ box.innerHTML=`<div class="msg err">${esc(e.message)}</div>`; return; }
+  rows=rows||[];
+  if(days===1){ const t0=new Date(); t0.setHours(0,0,0,0); rows=rows.filter(r=>new Date(r.at)>=t0); }
+  const ses=feedSessions(rows);
+  if(!ses.length){ box.innerHTML=`<p class="hint" style="margin:0">Nobody else has been in ${days===1?'today':'in the last '+days+' days'}.</p>`; return; }
+  const people=new Set(ses.map(x=>x.who)).size;
+  let html=`<p class="hint" style="margin:0 0 4px">${people} ${people===1?'person':'people'}, ${ses.length} visit${ses.length===1?'':'s'}.</p>`, day='';
+  ses.forEach(x=>{ const d=feedDayLabel(new Date(x.end)); if(d!==day){ day=d; html+=`<div class="feed-day">${esc(d)}</div>`; } html+=feedSessionHtml(x); });
+  box.innerHTML=html;
+  box.querySelectorAll('[data-fopen]').forEach(b=>b.onclick=()=>openDetail(b.dataset.fopen)); }
+
 function viewTeam(){
   const view=document.getElementById('view');
   const pend=S.members.filter(m=>m.status==='pending'), active=S.members.filter(m=>m.status==='approved'), gone=S.members.filter(m=>m.status==='revoked');
   const ago=iso=>iso?fmtDate(iso):'never';
   view.innerHTML = `
+    <section class="panel" id="feedPanel"><h3>Recent activity</h3>
+      <p class="hint" style="margin:0 0 4px">What colleagues did in the app, newest first. Only you see this. Your own actions and imports are left out.</p>
+      <div class="otabs" role="tablist" id="feedDays"><button class="otab" type="button" role="tab" data-fd="1">Today</button><button class="otab" type="button" role="tab" data-fd="7">7 days</button><button class="otab" type="button" role="tab" data-fd="30">30 days</button></div>
+      <div id="feedBox"><p class="hint">Loading…</p></div>
+    </section>
     <section class="panel"><h3>Invite colleagues</h3>
       <p>Share this link in your WhatsApp groups. People who open it ask to join, and you approve them here.</p>
       ${linkBox('joinLink', APP_URL)}
@@ -1802,6 +1869,7 @@ function viewTeam(){
     try{ if(LIVE){ const { error } = await sb.rpc('set_setting',{p_token:S.token,p_key:'hikes_for',p_value:on?'all':'admin'}); if(error) throw new Error(error.message); } S.me.hikes_for=on?'all':'admin'; const nt=view.querySelector('#hkAllNote'); if(nt) nt.textContent=on?'Open to all colleagues.':'For now only you see the Hikes tab.'; toast(on?'Hikes are open to all colleagues':'Hikes are back to you only'); }catch(err){ e.target.checked=!on; toast(err.message); } };
   const jf=view.querySelector('#jobsFor'); if(jf) jf.onchange=async()=>{ const v=jf.value, was=(S.me&&S.me.jobs_for)||'admin';
     try{ if(LIVE){ const { error } = await sb.rpc('set_setting',{p_token:S.token,p_key:'jobs_for',p_value:v}); if(error) throw new Error(error.message); } S.me.jobs_for=v; toast(v==='all'?'Every colleague can now see and post jobs':v==='receive'?'Colleagues now see the Jobs tab. Only you post.':'Jobs are back to you only'); }catch(err){ jf.value=was; toast(err.message); } };
+  drawFeed(view);
   (async()=>{ const box=view.querySelector('#actAll'); if(!box) return;
     let a; try{ a = LIVE ? await rpc('activity',{p_vendor:''}) : {recent:[],top:[],by_person:[]}; }catch(e){ box.innerHTML=`<div class="msg err">${esc(e.message)}</div>`; return; }
     if(!a.recent.length){ box.innerHTML='<p class="hint" style="margin:0">Nothing yet. It fills in as colleagues use the contact buttons.</p>'; return; }
