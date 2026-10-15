@@ -1597,7 +1597,8 @@ function agentBox(v){
   const link=v.agent_link? `<a class="btn primary" data-track="agent" data-v="${esc(v.id)}" href="${esc(v.agent_link)}" target="_blank" rel="noopener">Agent sign-up</a>`:'';
   return `<div class="agentbox"><div class="ah">🔑 <b>Agent prices</b></div>
     ${v.agent_link||v.agent_howto ? `${v.agent_howto?`<p>${esc(v.agent_howto)}</p>`:''}` : `<p class="hint">No agent sign-up info yet. Ask the supplier how to get listed as an agent, then add the link or instructions here for everyone.</p>`}
-    <div class="btn-row">${link}<button class="btn soft" id="agentAsk" type="button">Ask for agent prices</button><button class="mini" id="agentEdit" type="button">${v.agent_link||v.agent_howto?'Edit':'+ Add link or how-to'}</button></div></div>`;
+    <div class="btn-row">${link}<button class="btn soft" id="agentAsk" type="button">Ask for agent prices</button><button class="mini" id="agentEdit" type="button">${v.agent_link||v.agent_howto?'Edit':'+ Add link or how-to'}</button></div>
+    <div id="agentFiles"></div></div>`;
 }
 function agentMsg(lang){
   const nm=(S.me&&S.me.name)||''; const role=(S.me&&S.me.role)||'';
@@ -1670,7 +1671,7 @@ function openReport(v){
 function reportsPanel(){
   const list=S.reports||[]; const open=list.filter(r=>r.status==='New');
   return `<section class="panel"><h3>Supplier updates${open.length?` <span class="badge">${open.length}</span>`:''}</h3>
-    <p>Colleagues' reports from the red <b>Update this supplier</b> button: closed, moved, changed or wrong details. Fix the supplier, then mark the report done.</p>
+    <p>Colleagues' reports from the red <b>Tap here to report a change</b> button: closed, moved, changed or wrong details. Fix the supplier, then mark the report done.</p>
     ${list.length? list.map(r=>`<div class="rev" style="display:block;${r.status==='New'?'':'opacity:.6'}"><div class="who2"><b>${r.by_owner?'Dispute from the page\'s owner':esc((REPORT_KINDS.find(k=>k[0]===r.kind)||[0,r.kind])[1])}: ${esc(r.vendor_name)}</b><span>${r.anonymous?'Anonymous colleague':esc(r.author_name||who(r.author))} · ${fmtDate(r.created_at)}${r.status!=='New'?' · '+esc(r.status):''}</span></div>
       ${r.message?`<p style="margin:4px 0 8px;font-size:14px">${esc(r.message)}</p>`:''}
       <div class="btn-row"><button class="btn soft" data-open="${esc(r.vendor_id)}">Open supplier</button>${r.status==='New'?`<button class="btn soft" data-rp="${esc(r.id)}" data-st="Dismissed">Dismiss</button><button class="btn primary" data-rp="${esc(r.id)}" data-st="Fixed">Done</button>`:''}</div></div>`).join('') : '<div class="empty" style="padding:16px">No updates waiting.</div>'}
@@ -2240,7 +2241,7 @@ function openDetail(id, opt){
     ${isTr?`<fieldset><legend>Vehicles</legend>${(fl=>fl.length?`<div class="flags" style="margin:0 0 4px">${fl.map(x=>`<span class="flag info" style="font-size:13.5px;padding:5px 10px">${esc(x[1])}</span>`).join('')}</div>`:`<p class="hint" style="margin:0">Not marked yet. Tap Edit and choose which vehicles ${indep?'he has':'they have'}: buses, vans by size, cars.</p>`)(VEHICLES.filter(x=>fleetOf(v).has(x[0])))}</fieldset>`:''}
     <div id="parentBox"></div>
     ${contactBar(v)}
-    <button class="btn red upd" id="upd" type="button">⚠ Update this supplier <span>closed, moved, wrong details</span></button>
+    <button class="btn red upd" id="upd" type="button">Tap here to report a change <span>if this supplier closed, moved, or a detail is wrong</span></button>
     <div id="resBox"></div>
     ${lim()?'':agentBox(v)}
     <div id="reqBox"></div>
@@ -2270,7 +2271,7 @@ function openDetail(id, opt){
     ${S.admin?`<fieldset><legend>Private note · only you see this</legend><div class="f wide"><textarea id="adminNote" rows="5" placeholder="Clients, trips, commissions, anything colleagues shouldn't see"></textarea></div><div class="btn-row" style="margin-top:8px"><button class="mini" id="adminNoteSave" type="button">Save private note</button></div></fieldset>`:''}
     ${sections.map(([h,dl])=>`<fieldset><legend>${h}</legend><dl class="dl">${dl}</dl></fieldset>`).join('')}
     <div id="claimBox"></div>
-    <div class="disclaim"><b>Shared by colleagues.</b> This list is crowdsourced. Eretz Israel Tours takes no responsibility for mistakes. Always confirm details with the supplier before booking, and take care when you add or change information. See a mistake? Tap the red <b>Update this supplier</b> button at the top, or use Feedback.</div>
+    <div class="disclaim"><b>Shared by colleagues.</b> This list is crowdsourced. Eretz Israel Tours takes no responsibility for mistakes. Always confirm details with the supplier before booking, and take care when you add or change information. See a mistake? Tap the red <b>Tap here to report a change</b> button at the top, or use Feedback.</div>
     <p class="stamp">Added by ${esc(who(v.created_by))} on ${fmtDate(v.created_at)}. Last changed by ${esc(who(v.updated_by))} on ${fmtDate(v.updated_at)}. <span class="idtag">${esc(v.id)}</span></p>`;
   let foot=`<button class="btn primary" id="edit">${S.admin?'Edit':'Edit or suggest a change'}</button>`;
   if(S.admin){
@@ -3774,6 +3775,13 @@ async function drawFiles(v, qid, boxId, canAdd){
   if(!qid){ const kc=document.getElementById('kcert'), cert=files.find(f=>f.kind==='Kosher certificate');
     if(kc){ kc.innerHTML = cert&&cert.url ? ` <a href="${esc(cert.url)}" target="_blank" rel="noopener">📄 See certificate</a>` : (canAdd?`<br><button type="button" class="btn soft" id="kcAdd" style="margin-top:6px">📷 Add kosher certificate</button>`:'');
       const ka=document.getElementById('kcAdd'); if(ka) ka.onclick=()=>{ const sel=document.getElementById(sid+'_kind'); if(sel) sel.value='Kosher certificate'; const inp=document.getElementById(sid+'_file'); if(inp) inp.click(); }; } }
+  // Price lists in the agent box (D-50, the owner 15 Oct: "under the red update this supplier box is an agents price box. i want pdf upload").
+  // The agent box is not shown to organisations, and a Price list file is not sent to them either (files function, OPEN_KINDS).
+  if(!qid){ const af=document.getElementById('agentFiles');
+    if(af){ const pls=files.filter(f=>f.kind==='Price list');
+      af.innerHTML = (pls.length?`<div class="bro-row" style="margin-top:8px">${pls.map(f=>`<a class="mini" href="${esc(f.url||'#')}" target="_blank" rel="noopener" style="text-decoration:none">📄 ${esc(f.file_name)}${f.private?' · 🔒':''}</a>`).join('')}</div>`:'')
+        + (canAdd?`<div class="btn-row" style="margin-top:8px"><button class="mini" type="button" id="plAdd">📄 ${pls.length?'Add another price list':'Add price list (PDF or photo)'}</button></div>`:'');
+      const pa=document.getElementById('plAdd'); if(pa) pa.onclick=()=>{ const sel=document.getElementById(sid+'_kind'); if(sel) sel.value='Price list'; const inp=document.getElementById(sid+'_file'); if(inp) inp.click(); }; } }
   // Brochures (D-32) show near the top of the supplier's page, as the kosher certificate does. A park or site with none offers to add one.
   if(!qid){ const bb=document.getElementById('broBox');
     if(bb){ const bros=broOf(files), add=canAdd&&!bros.length&&hkIsParkCat(v);
@@ -5661,7 +5669,7 @@ function tourSteps(replay){
       <div style="margin-top:2px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="cat">Jeep</span><span class="hint">Golan</span><span class="pill shab">Shomer Shabbat</span></div>
       <div class="hrs"><span class="hint">Opening hours</span><b>Sun–Thu 8:00–17:00, Fri 8:00–13:00</b><span class="hv brk"><span class="pill pending">Unverified</span><span class="hint">From their website</span><span class="mini">☐ I verified these hours</span></span></div>
       <div class="actions"><span class="act">${ic.call}Call</span><span class="act">${bmark('whatsapp',ic.wa)}WhatsApp</span><span class="act">${ic.mail}Email</span><span class="act">${bmark('waze',ic.nav)}Waze</span><span class="act">${bmark('google-maps',ic.maps)}Google Maps</span></div>
-      <div class="btn red upd" style="box-sizing:border-box;text-align:center">⚠ Update this supplier</div>
+      <div class="btn red upd" style="box-sizing:border-box;text-align:center">Tap here to report a change</div>
       <div class="favs-h" style="margin:10px 0 6px">Standard prices</div>
       <div class="pl"><span class="who3">Adult ${lim()?'<span class="tag">Public price</span>':'<span class="tag agent">Agent</span>'}</span><span class="amt">₪360</span><span class="meta">Per person · plus VAT · checked 14/08/2026</span></div>`, SAMPLE)+`
     <h2>One page per supplier</h2>
