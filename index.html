@@ -18,7 +18,7 @@
   --ink:#16261e; --ink-2:#4a5a50; --ink-3:#7c8a80;
   --ground:#f3f5f1; --card:#ffffff; --line:#dde3db; --wash:#e8ede5;
   --olive:#1f3a2e; --olive-2:#2c5140; --ochre:#b8742a; --ochre-wash:#f6ead9;
-  --ok:#2f7a4a; --ok-wash:#e3f1e7; --warn:#a66a12; --warn-wash:#fbefd9; --bad:#a63b2e; --bad-wash:#f8e3df;
+  --agent:#2a5d9f; --agent-wash:#e2ecf8; --ok:#2f7a4a; --ok-wash:#e3f1e7; --warn:#a66a12; --warn-wash:#fbefd9; --bad:#a63b2e; --bad-wash:#f8e3df;
   --on-olive:#f3f5f1; --tab-on:#2c5140; --mark:#1f3a2e;
   --f-display:"Secular One","Rubik",system-ui,sans-serif;
   --f-body:"Rubik",system-ui,-apple-system,"Segoe UI",sans-serif;
@@ -29,13 +29,13 @@
   --ink:#e6ebe4; --ink-2:#b0bcb2; --ink-3:#86938a;
   --ground:#121a15; --card:#1a241e; --line:#2c3a31; --wash:#223029;
   --olive:#2c5140; --olive-2:#3b6a54; --ochre:#e0a15a; --ochre-wash:#3a2c1a;
-  --ok:#6cc58c; --ok-wash:#1d3325; --warn:#e7b35d; --warn-wash:#3a2e17; --bad:#ef8a7b; --bad-wash:#3b211d;
+  --agent:#8db8ee; --agent-wash:#1c2a3d; --ok:#6cc58c; --ok-wash:#1d3325; --warn:#e7b35d; --warn-wash:#3a2e17; --bad:#ef8a7b; --bad-wash:#3b211d;
   --on-olive:#f3f5f1; --tab-on:#e0a15a; --mark:#e6ebe4; color-scheme:dark}}
 :root[data-theme="dark"]{
   --ink:#e6ebe4; --ink-2:#b0bcb2; --ink-3:#86938a;
   --ground:#121a15; --card:#1a241e; --line:#2c3a31; --wash:#223029;
   --olive:#2c5140; --olive-2:#3b6a54; --ochre:#e0a15a; --ochre-wash:#3a2c1a;
-  --ok:#6cc58c; --ok-wash:#1d3325; --warn:#e7b35d; --warn-wash:#3a2e17; --bad:#ef8a7b; --bad-wash:#3b211d;
+  --agent:#8db8ee; --agent-wash:#1c2a3d; --ok:#6cc58c; --ok-wash:#1d3325; --warn:#e7b35d; --warn-wash:#3a2e17; --bad:#ef8a7b; --bad-wash:#3b211d;
   --on-olive:#f3f5f1; --tab-on:#e0a15a; --mark:#e6ebe4; color-scheme:dark}
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -213,7 +213,12 @@ textarea.out{width:100%;min-height:160px;font-family:var(--f-mono);font-size:12p
 .pl .ctl{grid-column:1 / -1;display:flex;gap:6px;margin-top:4px}
 .mini{border:1px solid var(--line);background:var(--ground);border-radius:8px;padding:5px 10px;font-size:13px}
 .tag{display:inline-block;font-size:10px;letter-spacing:.6px;text-transform:uppercase;font-weight:600;border-radius:4px;padding:1px 6px;background:var(--wash);color:var(--ink-2);margin-right:4px}
-.tag.agent{background:var(--ok-wash);color:var(--ok)}
+.tag.agent{background:var(--agent-wash);color:var(--agent)}
+.tag.reg{background:var(--ok-wash);color:var(--ok)}
+.prrow.pr-ag>summary{padding-left:28px;background:var(--agent-wash)}
+.prrow.pr-ag .pr-a{color:var(--agent)}
+.prrow.pr-rg .pr-a{color:var(--ok)}
+.prlist .prrow.pr-ag{border-top:1px dashed var(--line)}
 .deal{background:var(--ochre-wash);border-radius:10px;padding:10px 12px;margin-bottom:8px}
 .deal b{display:block}
 .deal .meta{font-size:12px;color:var(--ink-2)}
@@ -907,6 +912,8 @@ const DB = {
         prices:[
           {id:'p1',label:'2-hour jeep tour',audience:'Adult',price:'360',currency:'ILS',vat:'plus_vat',basis:'Per person',is_agent:true,pax_min:'',pax_max:'',season:'',source:'Quote from Moshe, WhatsApp',checked_on:'2026-08-14',note:''},
           {id:'p2',label:'2-hour jeep tour',audience:'Child',age_from:'4',age_to:'12',price:'250',currency:'ILS',vat:'plus_vat',basis:'Per person',is_agent:true,season:'',source:'Quote from Moshe, WhatsApp',checked_on:'2026-08-14',note:''},
+          {id:'p1r',label:'2-hour jeep tour',audience:'Adult',price:'420',currency:'ILS',vat:'plus_vat',basis:'Per person',is_agent:false,pax_min:'',pax_max:'',season:'',source:'Sample: their public price',checked_on:'',note:''},
+          {id:'p2r',label:'2-hour jeep tour',audience:'Child',age_from:'4',age_to:'12',price:'290',currency:'ILS',vat:'plus_vat',basis:'Per person',is_agent:false,season:'',source:'Sample: their public price',checked_on:'',note:''},
           {id:'p3',label:'2-hour jeep tour',audience:'Israeli senior',price:'300',currency:'ILS',vat:'including_vat',basis:'Per person',is_agent:false,source:'Website price list',checked_on:'2026-07-02',note:'Show Teudat Ezrach Vatik'},
           {id:'p4',label:'Private jeep, whole vehicle',audience:'Group',pax_min:'1',pax_max:'7',price:'2100',currency:'ILS',vat:'plus_vat',basis:'Per vehicle',is_agent:true,season:'Sukkot and Pesach +15%',source:'Quote email',checked_on:'2026-08-14',note:''}],
         deals:[{id:'d1',kind:'Credit card club',provider:'Cal',title:'15% off weekday tours',details:'Pay with a Cal card, book by phone and mention the Cal benefit.',code:'',link:'',valid_to:'2026-12-31',reported_by:'rachel.ops@gmail.com',created_at:dd(4)},
@@ -3578,11 +3585,25 @@ function trView(vid){ if(TR_VIEW.vid!==vid){ TR_VIEW.vid=vid; TR_VIEW.veh=''; TR
 function prName(p){ const l=(p.label||'').trim(), w=priceWho(p);
   if(!l) return w; if(p.audience==='Other' && !(p.pax_min||p.pax_max)) return l;
   return l.toLowerCase().includes(String(p.audience||'').toLowerCase()) ? l : `${l} · ${w}`; }
+// D-51 (the owner, 15 Oct: "where there is the same price regular and agent make them regular with agent directly
+// underneath - regular green like now agent blue"): a regular line and an agent line for the same thing (same name once
+// words like "direct" or "agent" are taken off, same audience, group size and basis) show as a pair, the agent line right
+// under the regular one. Regular is green, agent is blue. Lines without a partner show as before.
+const prKey=p=>[String(p.label||'').toLowerCase().replace(/\((?:direct|public|direct\/public|agent)\)|,?\s*(?:direct|agent)(?: price| rate)?\b|\bdirect\b/g,'').replace(/[^a-z0-9\u0590-\u05ff+]+/g,' ').trim(),
+  p.audience||'',p.pax_min||'',p.pax_max||'',p.basis||'',p.currency||''].join('|');
+function prPair(list){
+  const out=[], used=new Set();
+  list.forEach(p=>{ if(used.has(p)) return;
+    if(!p.org && !p.owner){ const twin=list.find(q=>q!==p&&!used.has(q)&&!q.org&&!q.owner&&!!q.is_agent!==!!p.is_agent&&prKey(q)===prKey(p));
+      if(twin){ const reg=p.is_agent?twin:p, ag=p.is_agent?p:twin; used.add(reg); used.add(ag); out.push(Object.assign({},reg,{_pr:'rg'}),Object.assign({},ag,{_pr:'ag'})); return; } }
+    used.add(p); out.push(p); });
+  return out; }
 function prPricesHtml(prices, cardsOf, plCard){
   const isMain=p=>p.audience==='Adult'||p.audience==='Child';
+  prices=prPair(prices);
   const main=prices.filter(isMain), rest=prices.filter(p=>!isMain(p));
   // One clean list, as a ticketing app shows it: name, agent tag and price on each row; details and buttons open on a tap.
-  const row=p=>`<details class="prrow"><summary><span class="pr-n">${esc(prName(p))}${p.is_agent&&!p.org?' <span class="tag agent">Agent</span>':''}${/^verified/i.test(p.source||'')?' <span class="tag" style="background:var(--ok-wash);color:var(--ok)">✓ Verified</span>':''}${p.private?' <span class="tag" style="background:var(--bad-wash);color:var(--bad)">Private</span>':''}</span><span class="mono pr-a">${p.price?esc(money(p.currency,p.price)):'—'}</span></summary><div class="pr-d">${plCard(p,false)}</div></details>`;
+  const row=p=>`<details class="prrow${p._pr?' pr-'+p._pr:''}"><summary><span class="pr-n">${p._pr==='ag'?'':esc(prName(p._pr==='rg'?Object.assign({},p,{label:String(p.label||'').replace(/\s*\((?:direct|public|direct\/public)\)|,?\s*\bdirect(?: price)?\b/gi,'')}):p))}${p.is_agent&&!p.org?' <span class="tag agent">Agent</span>':(p._pr==='rg'?' <span class="tag reg">Regular</span>':'')}${/^verified/i.test(p.source||'')?' <span class="tag" style="background:var(--ok-wash);color:var(--ok)">✓ Verified</span>':''}${p.private?' <span class="tag" style="background:var(--bad-wash);color:var(--bad)">Private</span>':''}</span><span class="mono pr-a">${p.price?esc(money(p.currency,p.price)):'—'}</span></summary><div class="pr-d">${plCard(p,false)}</div></details>`;
   if(!rest.length || prices.length<=3) return `<div class="prlist">${prices.map(row).join('')}</div>`;
   if(!main.length) return `<div class="prlist">${rest.map(row).join('')}</div>`;
   return `<div class="prlist">${main.map(row).join('')}<details class="prmore"><summary>Show ${rest.length} more price${rest.length>1?'s':''} ›</summary>${rest.map(row).join('')}</details></div>`;
