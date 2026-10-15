@@ -1372,7 +1372,18 @@ function addShare(w, kind, id, name, again, note){
   const b=document.createElement('button'); b.type='button'; b.className='shr'; b.setAttribute('aria-label','Share a link to this page');
   b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M12 3v12"/><path d="M7.5 7.5 12 3l4.5 4.5"/></svg>Share';
   head.insertBefore(b, head.querySelector('#closeS'));
-  b.onclick=()=>openShare(kind,id,name,again,note); }
+  b.onclick=()=>shareWarn(()=>openShare(kind,id,name,again,note), again); }
+// Before sharing: the list is for tourism professionals only. Can be switched off on this device.
+const SHARE_WARN_KEY='eitv_share_warned';
+function shareWarn(go, back){
+  let off=false; try{ off=localStorage.getItem(SHARE_WARN_KEY)==='1'; }catch(e){} if(off) return go();
+  const w=sheet('Before you share', `<div class="msg warn" style="margin:0 0 14px"><b>For tourism professionals only.</b></div>
+    <p style="margin:0 0 10px">The Inner Circle is for licensed tour guides, travel agents and tour operators. Whoever you send this to has to ask to join and be approved by Eretz Israel Tours before they see anything.</p>
+    <p style="margin:0 0 14px">Please don't send it to clients or to suppliers. The list is never shown to suppliers.</p>
+    <label class="check" for="swOff"><input id="swOff" type="checkbox"><span>Don't show this again on this phone</span></label>`,
+    `<button class="btn soft" id="swBack" type="button">Back</button><button class="btn primary" id="swGo" type="button">I understand, share</button>`);
+  w.querySelector('#swBack').onclick=()=>back();
+  w.querySelector('#swGo').onclick=()=>{ if(w.querySelector('#swOff').checked){ try{ localStorage.setItem(SHARE_WARN_KEY,'1'); }catch(e){} } go(); }; }
 function openShare(kind,id,name,again,note){
   const link=shareLink(kind,id), msg=shareMsg(kind,name,link);
   const w=sheet('Share '+name, `${note?`<div class="msg warn" style="margin:0 0 14px">${note}</div>`:''}
