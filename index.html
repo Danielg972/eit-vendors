@@ -114,6 +114,10 @@ main{max-width:760px;margin:0 auto;padding:16px 16px 110px}
 .sheet-head{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
 .sheet-head h2{font-family:var(--f-display);font-weight:400;font-size:20px;margin:0;flex:1;min-width:0;overflow-wrap:anywhere}
 .x{border:0;background:var(--wash);border-radius:999px;width:34px;height:34px;font-size:18px;line-height:1}
+.shr{border:0;background:var(--wash);color:var(--ink);border-radius:999px;height:34px;padding:0 12px 0 10px;font-size:14px;display:inline-flex;align-items:center;gap:6px;flex:none;cursor:pointer}
+.shr svg{width:16px;height:16px}
+.shared-in{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--ochre);border-radius:10px;padding:12px 14px;margin:0 0 16px}
+.shared-in b{overflow-wrap:anywhere}
 .sheet-body{flex:1;overflow-y:auto;padding:16px 16px 24px}
 .sheet-foot{padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);background:var(--card);display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
 
@@ -164,6 +168,7 @@ textarea.out{width:100%;min-height:160px;font-family:var(--f-mono);font-size:12p
 .msg{margin-top:14px;font-size:14px;border-radius:8px;padding:10px 12px}
 .msg.ok{background:var(--ok-wash);color:var(--ok)}
 .msg.err{background:var(--bad-wash);color:var(--bad)}
+.msg.warn{background:var(--ochre-wash);color:var(--ink)}
 .files{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px;margin-bottom:12px}
 .file{position:relative;display:flex;flex-direction:column;gap:4px;min-width:0}
 .file a.thumb{display:flex;align-items:center;justify-content:center;aspect-ratio:1;max-width:100%;border:1px solid var(--line);border-radius:8px;background:var(--wash);overflow:hidden;text-decoration:none;color:var(--ink-2)}
@@ -1325,6 +1330,7 @@ function boot(){
   if(LIVE && !S.me.is_admin && S.me.terms_version!==TERMS_VERSION) return renderTermsGate();
   render();
   if(!tourSeen()) openTour();
+  else if(S.shared) openShared();
 }
 
 function copyText(text, el){
@@ -1334,6 +1340,53 @@ function linkBox(id, url){
   return `<div class="addrow" style="margin:8px 0"><input id="${id}" type="text" readonly value="${esc(url)}" class="mono" style="font-size:13px"><button class="btn soft" type="button" data-copy="${id}">Copy</button><a class="btn primary" style="text-decoration:none" href="https://wa.me/?text=${encodeURIComponent(url)}" target="_blank" rel="noopener">WhatsApp</a></div>`;
 }
 function wireCopy(root){ root.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>{ const i=root.querySelector('#'+b.dataset.copy); copyText(i.value,i); }); }
+
+// D-52. Share links: every supplier, hike and rental vehicle has a link. A member who opens it lands on that page.
+// Someone without a member link lands on the join form, told that a colleague shared a supplier (or a hike) with them;
+// nothing from the list is shown to them, and the database is not asked. The link carries only the entry's id.
+// What a member may see is still decided by the database: a link opens nothing a member could not already open.
+const SHARE_KEY='eitv_shared', SHARE_KINDS={s:'supplier',h:'hike',r:'vehicle'};
+function shareLink(kind,id){ return APP_URL+'#'+kind+'='+encodeURIComponent(id); }
+function shareMsg(kind,name,link){
+  const he={s:'ספק',h:'מסלול',r:'רכב'}[kind], en={s:'',h:'Hike: ',r:''}[kind];
+  return `${he}: ${name} — במעגל הפנימי, רשימת הספקים שמורי דרך מנהלים יחד: ${link}\n\n${en}${name} on The Inner Circle, the supplier list guides keep for each other: ${link}`; }
+// Read a share link from the address once, at start. Kept on the device for 14 days, so it still opens after joining.
+function readShared(){
+  let got=null;
+  try{ const m=/(?:^#|&)([shr])=([A-Za-z0-9_.:-]{1,80})(?:&n=([^&]*))?/.exec(location.hash||'');
+    if(m){ let n=''; try{ n=decodeURIComponent(m[3]||'').slice(0,80); }catch(e){}
+      got={k:m[1],id:decodeURIComponent(m[2]),n,t:Date.now()}; history.replaceState(history.state,'',location.pathname+location.search);
+      try{ localStorage.setItem(SHARE_KEY,JSON.stringify(got)); }catch(e){} } }catch(e){}
+  if(!got){ try{ const o=JSON.parse(localStorage.getItem(SHARE_KEY)||'null'); if(o&&o.k&&o.id&&Date.now()-(o.t||0)<14*864e5) got=o; }catch(e){} }
+  return got; }
+function sharedDone(){ S.shared=null; try{ localStorage.removeItem(SHARE_KEY); }catch(e){} }
+// For a member: open what was shared, once the app has drawn.
+function openShared(){
+  const x=S.shared; if(!x) return; sharedDone();
+  if(x.k==='s'){ if(S.vendors.some(v=>v.id===x.id)) openDetail(x.id); else toast((x.n?'"'+x.n+'"':'That supplier')+' is not open to you, or it is no longer on the list.'); }
+  else if(x.k==='h') openHike(x.id);
+  else if(x.k==='r') openRental(x.id); }
+// The share button in a page's header.
+function addShare(w, kind, id, name, again, note){
+  const head=w.querySelector('.sheet-head'); if(!head||!id) return;
+  const b=document.createElement('button'); b.type='button'; b.className='shr'; b.setAttribute('aria-label','Share a link to this page');
+  b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M12 3v12"/><path d="M7.5 7.5 12 3l4.5 4.5"/></svg>Share';
+  head.insertBefore(b, head.querySelector('#closeS'));
+  b.onclick=()=>openShare(kind,id,name,again,note); }
+function openShare(kind,id,name,again,note){
+  const link=shareLink(kind,id), msg=shareMsg(kind,name,link);
+  const w=sheet('Share '+name, `${note?`<div class="msg warn" style="margin:0 0 14px">${note}</div>`:''}
+    <p style="margin:0 0 8px">Members open straight onto this page. Anyone else gets the join form, and sees nothing from the list until they are approved.</p>
+    <div class="f"><label for="shTxt">The message</label><textarea id="shTxt" rows="6" dir="auto">${esc(msg)}</textarea></div>
+    <div class="f"><label for="shLink">Just the link</label><div class="addrow"><input id="shLink" type="text" readonly value="${esc(link)}" class="mono" style="font-size:13px"><button class="btn soft" type="button" id="shLinkCopy">Copy</button></div></div>
+    <p class="hint">Prices, reviews and contacts never travel in the message. Each person sees only what their own membership allows.</p>`,
+    `<button class="btn soft" id="shBack" type="button">Back</button>${navigator.share?'<button class="btn soft" id="shMore" type="button">More…</button>':''}<button class="btn soft" id="shCopy" type="button">Copy message</button><a class="btn primary" id="shWa" style="text-decoration:none" target="_blank" rel="noopener" href="#">WhatsApp</a>`);
+  const t=w.querySelector('#shTxt'), wa=w.querySelector('#shWa'), set=()=>{ wa.href='https://wa.me/?text='+encodeURIComponent(t.value); };
+  t.addEventListener('input',set); set();
+  w.querySelector('#shCopy').onclick=()=>copyText(t.value,t);
+  w.querySelector('#shLinkCopy').onclick=()=>{ const i=w.querySelector('#shLink'); copyText(i.value,i); };
+  const mo=w.querySelector('#shMore'); if(mo) mo.onclick=()=>navigator.share({text:t.value}).catch(()=>{});
+  w.querySelector('#shBack').onclick=()=>again(); }
 
 const ROLES=['Licensed tour guide','Travel agent','Tour operator',ORG_ROLE,'Other'];
 const TERMS_VERSION='2026-10-03d';
@@ -1371,6 +1424,7 @@ function renderGate(msg){
   app.innerHTML = `<div class="gate"><form class="gate-card" id="gateForm" novalidate>
     <h1 class="mark">The Inner Circle</h1>
     <div class="cat" style="margin:0 0 12px;font-size:13px">Israel Guide</div>
+    ${S.shared?`<div class="shared-in" role="note">A colleague shared ${S.shared.n?`<b>${esc(S.shared.n)}</b>`:'a '+SHARE_KINDS[S.shared.k]} with you.<br><span class="hint">It is on The Inner Circle. Ask to join below; once you are approved, this link opens it.</span></div>`:''}
     <p>A vendor list kept by colleagues, for colleagues. Guides and travel professionals share the hotels, drivers, sites and suppliers they trust, and warn each other about the ones they don't, so all of us work a little easier.</p><p>To keep it among professionals, joining needs proof that you work in tourism, like your license. Once approved, you get your own link. No password needed.</p>
     <p class="hint" style="font-size:13.5px;margin-top:-10px">Not in tourism, but you book busses, guides or hotels for a school, a yeshiva or another organisation? Choose <b>${ORG_ROLE}</b> below.</p>
     <div class="f"><label for="gName">Your name <em>*</em></label><input id="gName" type="text" autocomplete="name" placeholder="Yossi Cohen" required></div>
@@ -2286,6 +2340,7 @@ function openDetail(id, opt){
       + (v.review_status!=='approved'?'<button class="btn soft" id="rej">Reject</button><button class="btn accent" id="appr">Approve</button>':'') + foot;
   }
   const w=sheet(v.name, body, foot);
+  addShare(w,'s',v.id,v.name,()=>openDetail(v.id,opt), v.review_status&&v.review_status!=='approved'?'This supplier is still waiting for review, so colleagues cannot open it yet. Approve it first.':'');
   S.openVendor=v.name; track(v.id,'open'); if(!S.myTop.includes(v.id)) S.myTop=[...S.myTop,v.id];
   w.querySelector('#edit').onclick=()=>openForm(v);
   w.querySelector('#upd').onclick=()=>openReport(v);
@@ -4718,6 +4773,7 @@ async function openRental(id, keepMonth){
     <p class="stamp">Added by ${esc(r.by||'')} on ${fmtDate(r.created_at)}. Last changed by ${esc(r.updated_by||'')} on ${fmtDate(r.updated_at)}.</p>`;
   const foot=`<button class="btn soft" id="rtBack" type="button">Back</button><span style="flex:1"></span>${r.can_edit&&!r.archived?'<button class="btn soft" id="rtArch" type="button">Archive</button><button class="btn primary" id="rtEdit" type="button">Edit</button>':''}${S.admin&&r.archived?'<button class="btn primary" id="rtUnarch" type="button">Bring back</button>':''}`;
   const w=sheet(rtCar(r)||'Vehicle', body, foot);
+  addShare(w,'r',id,[rtCar(r)||'Vehicle',v.name].filter(Boolean).join(', '),()=>openRental(id,mo));
   w.querySelector('#rtBack').onclick=()=>openDetail(r.vendor_id);
   const ed=w.querySelector('#rtEdit'); if(ed) ed.onclick=()=>openRentalForm(v,r);
   const ar=w.querySelector('#rtArch'); if(ar) ar.onclick=async()=>{ if(ar.dataset.c!=='1'){ ar.dataset.c='1'; ar.textContent='Tap again to archive'; return; }
@@ -5079,6 +5135,7 @@ async function openHike(id){
     ${S.admin&&h.review_status!=='pending'?`<p style="margin:0"><button class="linkbtn" type="button" data-hdec="${h.review_status==='approved'?'no':'yes'}">${h.review_status==='approved'?'Take this hike off the list':'Put this hike back on the list'}</button></p>`:''}`;
   const foot=`${h.can_edit?'<button class="btn soft" type="button" data-hedit>Change details</button>':'<button class="btn soft" type="button" data-hsug>Suggest a change</button>'}${S.admin&&h.review_status==='pending'?'<button class="btn soft" type="button" data-hdec="no">Turn down</button><button class="btn primary" type="button" data-hdec="yes">Approve</button>':''}`;
   const w=sheet(h.name, body, foot);
+  addShare(w,'h',id,h.name,()=>openHike(id));
   if(park){ w.querySelector('[data-hpark]').onclick=()=>openDetail(park.id);   // opening the supplier's page closes this one
     DB.listFiles(park.id).then(files=>{ const box=w.querySelector('#hkParkBtns'), bros=broOf(files); if(!box||!document.body.contains(box)||!bros.length) return;
       box.insertAdjacentHTML('beforeend', broBtnHtml(bros,'btn soft')); box.hidden=false; broWire(box, bros, park.name); }).catch(()=>{}); }
@@ -5770,7 +5827,7 @@ function openTour(replay){
   const steps=tourSteps(replay), last=steps.length-1; let i=0;
   const w=document.createElement('div'); w.id='tourWrap'; w.className='tour'; w.setAttribute('role','dialog'); w.setAttribute('aria-modal','true'); w.setAttribute('aria-label','Welcome tour');
   document.body.appendChild(w);
-  const end=()=>{ tourDone(); w.remove(); };
+  const end=()=>{ tourDone(); w.remove(); if(S.shared) openShared(); };
   const draw=()=>{
     w.innerHTML=`<div class="tour-in">${i?`<div class="tour-top"><span class="tour-n">${i} of ${last}</span><div class="tour-bar" aria-hidden="true">${steps.slice(1).map((x,k)=>`<i${k<i?' class="on"':''}></i>`).join('')}</div>${i<last?'<button class="tour-skip" type="button" data-t="skip">Skip</button>':'<span style="width:12px"></span>'}</div>`:''}
       <div class="tour-body">${steps[i].html}</div>
@@ -5785,6 +5842,7 @@ function openTour(replay){
 }
 
 // ---------- start ----------
+S.shared=readShared();
 (async()=>{ try{ const hm=/[#&]job=([0-9a-z-]{3,40})/i.exec(location.hash||''); if(hm){ S.openJob=hm[1]; S.tab='jobs'; history.replaceState(history.state,'',location.pathname+location.search); } }catch(e){}
   try{ await DB.init(); }catch(e){ app.innerHTML='<div class="gate"><div class="gate-card"><h1 class="mark">Can\'t connect</h1><p>'+esc(e.message)+'. Check your internet connection and reload.</p></div></div>'; return; } boot(); })();
 })();
