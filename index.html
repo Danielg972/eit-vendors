@@ -100,6 +100,24 @@ main{max-width:760px;margin:0 auto;padding:16px 16px 110px}
 .presets .mini.on{background:var(--ink,#1f3a2e);color:#fff}
 .food{border:1px solid var(--line,#ddd);border-radius:12px;padding:10px 12px;margin:0 0 16px}.food summary{cursor:pointer;font-weight:600}.food[open] summary{margin-bottom:8px}
 .food a.mini{text-decoration:none}.foodadd{display:grid;gap:6px;margin-top:10px}.foodadd input,.foodadd select{width:100%}
+/* D-55: food courts, problem reports and map pins */
+.foodadd{border-top:1px dashed var(--line);padding-top:10px}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{flex:1;border:0;background:var(--card);color:var(--ink-2);padding:8px;font:inherit;font-size:14px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--olive-2);color:var(--on-olive);font-weight:600}
+.note.court{border-left-color:var(--ochre)}
+.fc-tag{display:inline-block;font-size:11px;letter-spacing:.04em;text-transform:uppercase;background:var(--ochre-wash);color:var(--ochre);border-radius:6px;padding:1px 6px;margin-left:4px;vertical-align:1px}
+.fc-places{list-style:none;margin:6px 0;padding:0;display:grid;gap:4px}
+.fc-places li{display:flex;flex-wrap:wrap;gap:6px;align-items:baseline;font-size:14px;padding:6px 8px;background:var(--wash);border-radius:8px}
+.fc-places .n{font-weight:500}.fc-places .k{font-size:12px;border-radius:6px;padding:1px 6px;background:var(--ok-wash);color:var(--ok)}
+.fc-places .d{flex-basis:100%;font-size:13px;color:var(--ink-3)}.fc-places .mini{margin-left:auto}
+.fc-rows{display:grid;gap:6px}
+.fc-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:8px;background:var(--wash);border-radius:10px}
+.fc-row input,.fc-row select{width:100%;min-width:0}.fc-row .wide{grid-column:1/-1}
+.pin-card{max-width:560px}
+.pin-map{height:min(55vh,380px);border-radius:10px;overflow:hidden;background:var(--wash);border:1px solid var(--line)}
+.pin-map .leaflet-container{font:inherit;font-size:12px}
+.pin-ico{font-size:30px;line-height:32px;text-align:center;background:none;border:0;filter:drop-shadow(0 1px 2px rgba(0,0,0,.4))}
 .quickfill{border:1px dashed var(--line,#ccc);border-radius:12px;padding:10px 12px;margin:0 0 14px}
 .kcrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}
 .agentbox a.btn{text-decoration:none}.agentbox{border:1px solid var(--line, #ddd);border-radius:12px;padding:10px 12px;margin:10px 0}.agentbox .ah{margin-bottom:4px}.agentbox p{margin:4px 0 8px;font-size:14px;white-space:pre-wrap}
@@ -800,7 +818,7 @@ const TAG_SUGGEST = {Adventure:['Jeep','ATV / RZR','Rappelling','Kayak & rafting
   Activity:['Workshop','Food & wine','Volunteering','Archaeology','Family','Shooting','Farm'],
   Hotel:['Kosher','Shabbat-friendly','Kibbutz','Boutique','Pool'],
   Transport:['Independent van driver','Eshkol driver','D1 license','Armoured bus','Airport transfers'],
-  Restaurant:['Meat','Dairy','Mehadrin','Group menus','Winery'],
+  Restaurant:['Meat','Dairy','Mehadrin','Group menus','Winery','Food court'],
   Guide:['Eshkol license','D1 license','Owns an Eshkol vehicle','Midbari 4x4 vehicle','Carries a gun','Driver-guide','Shuk tours','Graffiti tours','English','French','Spanish','Russian'],
   'Travel Agent':['Hotel bookings','Flights','Packages','Groups','Commission'],
   'Itinerary Planner':['Full trip planning','Day trips','Groups','Families','Bar/bat mitzvah'],
@@ -821,7 +839,7 @@ const SUBCATS = {
   // D-43 (12 Oct 2026): Winery leaves the top row and sits under both Restaurant and Attraction / Site. The Wineries button
   // is the suppliers whose category is Winery, not a type tag; Meat, Dairy and Mehadrin are as in the approved mock-up.
   // Both rows show only once wineries are switched on for this member (winOn, below).
-  Restaurant:[['Meat',['Meat']],['Dairy',['Dairy']],['Mehadrin',['Mehadrin']],['Wineries',[]]],
+  Restaurant:[['Meat',['Meat']],['Dairy',['Dairy']],['Mehadrin',['Mehadrin']],['Food courts',['Food court']],['Wineries',[]]],
   'Attraction / Site':[['Wineries',[]]]
 };
 const WINE_HOMES=['Restaurant','Attraction / Site'];
@@ -852,7 +870,7 @@ const kosherNeedsOk=d=>catsOf(d).includes('Restaurant') && noCert(d.kosher);
 const LAST_PRESETS=['Last entry 1 hr before closing','Last entry:','Last tour starts:','Kitchen closes:'];
 const HOURS_HOW={spoke:'spoke to them',visited:'was there'};
 const HOURS_PRESETS=['Sun–Thu 9:00–17:00','Fri 9:00–13:00','Closed Shabbat','Open Shabbat','Open 24 hours','By appointment'];
-const KOSHER_OPTS = ['Rabbanut','Rabbanut Mehadrin','Badatz Eda Haredit','Badatz Beit Yosef','Badatz Rubin','Rav Landau','Kosher, no certificate','Kosher-style (not certified)','Not kosher','Not relevant'];
+const KOSHER_OPTS = ['Rabbanut','Rabbanut Mehadrin','Badatz Eda Haredit','Badatz Beit Yosef','Badatz Rubin','Rav Landau','Kosher, certificate not checked','Kosher, no certificate','Kosher-style (not certified)','Not kosher','Not relevant'];
 const LANG_OPTS = ['English','Hebrew','French','Spanish','Russian','German','Portuguese','Italian','Yiddish','Arabic','Dutch'];
 const TOWNS = ['Jerusalem','Tel Aviv','Haifa','Eilat','Tiberias','Safed (Tzfat)','Netanya','Herzliya','Caesarea','Akko','Nazareth','Rosh Pina','Katzrin','Metula','Mitzpe Ramon','Arad','Beer Sheva','Ein Gedi','Masada','Ein Bokek','Dead Sea','Modiin','Beit Shemesh','Efrat','Gush Etzion','Ariel','Shilo','Kfar Adumim','Mishor Adumim','Zichron Yaakov','Rehovot','Ashkelon','Ashdod','Jaffa','Bethlehem','Even Yehuda','Ra\'anana','Kfar Saba','Hod Hasharon','Ben Gurion Airport'];
 const BASIS = ['Per person','Per group','Per vehicle','Per guide','Per hour','Per day','Flat rate','Custom'];
@@ -1070,7 +1088,7 @@ const DB = {
     S.contributor = !!(data && data.status==='approved'); S.admin = !!(data && data.is_admin && S.contributor);
     if(S.contributor){ await DB.loadVendors(); if(rentalsOn()){ try{ S.rentals=await DB.loadRentals(); }catch(e){ S.rentals=[]; } } if(jobsOn()){ try{ S.jobs=await DB.loadJobs(); }catch(e){ S.jobs=null; } } if(hikesOn()){ try{ S.hikes=await DB.loadHikes(); }catch(e){ S.hikes=null; } } try{ await DB.loadFeedback(); }catch(e){} if(S.admin){ await DB.loadTeam(); try{ await DB.loadRequests(); }catch(e){} try{ await DB.loadReports(); }catch(e){} try{ await DB.loadClaims(); await DB.loadPendingNotes(); }catch(e){} } }
   },
-  async loadVendors(){ if(!LIVE) return; try{ S.vendors = await rpc('vendors_list'); }catch(e){ toast('Could not load vendors: '+e.message); } try{ S.myTop = await rpc('my_top'); }catch(e){ S.myTop=[]; } try{ S.usage = await rpc('my_usage'); }catch(e){} },
+  async loadVendors(){ if(!LIVE) return; try{ S.vendors = await rpc('vendors_list'); }catch(e){ toast('Could not load vendors: '+e.message); } try{ S.myTop = await rpc('my_top'); }catch(e){ S.myTop=[]; } try{ S.usage = await rpc('my_usage'); }catch(e){} showAlerts(); },
   async loadTeam(){ if(!LIVE) return; S.members = await rpc('members_list'); },
   async detail(vid){
     if(!LIVE){ const d=S.demo[vid] || (S.demo[vid]={prices:[],deals:[],notes:[],requests:[],sites:S.vendors.filter(x=>x.parent_id===vid).map(x=>({id:x.id,name:x.name,location:x.location,reservation:x.reservation})),parent:(()=>{const v=S.vendors.find(x=>x.id===vid); const pv=v&&v.parent_id&&S.vendors.find(x=>x.id===v.parent_id); return pv?{id:pv.id,name:pv.name}:null;})(),res_reports:[],res_answered:false});
@@ -1237,10 +1255,22 @@ const DB = {
     if(!LIVE){ const d=await DB.detail(vid); (d.res_reports=d.res_reports||[]).unshift({checked,visit_date:visit||'',note:note||'',member_name:S.me.name,created_at:new Date().toISOString(),mine:true}); d.res_answered=true; return; }
     await rpc('reservation_report',{p_vendor:vid,p_checked:checked,p_visit:visit||'',p_note:note||''});
   },
-  async foodList(vid){ if(!LIVE) return (S.demo.food=S.demo.food||{})[vid]||[]; return await rpc('food_list',{p_vendor:vid}); },
+  async foodList(vid){ if(!LIVE) return ((S.demo.food=S.demo.food||{})[vid]||[]).map(f=>f.court_id?Object.assign({},f,{places:((S.demo.places||{})[f.court_id]||[]).slice()}):f); return await rpc('food_list',{p_vendor:vid}); },
   async foodAdd(vid,name,kosher,note){ if(!LIVE){ ((S.demo.food=S.demo.food||{})[vid]=S.demo.food[vid]||[]).unshift({id:'fd'+Date.now(),name,kosher,note,mine:true,by:{name:S.me.name,role:S.me.role,admin:S.admin},created_at:new Date().toISOString()}); return; }
     await rpc('food_add',{p_vendor:vid,p_name:name,p_kosher:kosher,p_note:note}); },
   async foodDelete(vid,id){ if(!LIVE){ S.demo.food[vid]=S.demo.food[vid].filter(f=>f.id!==id); return; } await rpc('food_delete',{p_id:id}); },
+  // D-55: a tip with a pin and a food court; the places inside a food court; "Problem?"; a member's own alerts.
+  async foodAdd2(vid,name,kosher,note,ll,court){ if(!LIVE){ const id='fd'+Date.now(); ((S.demo.food=S.demo.food||{})[vid]=S.demo.food[vid]||[]).unshift({id,name,kosher,note,ll:ll||'',court_id:court||null,places:court?((S.demo.places||{})[court]||[]):null,mine:true,by:{name:S.me.name,role:S.me.role,admin:S.admin},created_at:new Date().toISOString()}); return id; }
+    return await rpc('food_add2',{p_vendor:vid,p_name:name,p_kosher:kosher,p_note:note,p_ll:ll||'',p_court:court||null}); },
+  async foodSetLL(vid,id,ll){ if(!LIVE){ const f=((S.demo.food||{})[vid]||[]).find(x=>x.id===id); if(f) f.ll=ll; return; } await rpc('food_set_ll',{p_id:id,p_ll:ll}); },
+  async placesList(vid){ if(!LIVE) return ((S.demo.places=S.demo.places||{})[vid]||[]); return await rpc('places_list',{p_vendor:vid}); },
+  async placeAdd(vid,name,kosher,note){ if(!LIVE){ const l=((S.demo.places=S.demo.places||{})[vid]=S.demo.places[vid]||[]); if(l.some(p=>normN(p.name)===normN(name))) throw new Error('That place is already listed here.'); l.push({id:'pl'+Date.now()+l.length,name,kosher,note,mine:true,by:{name:S.me.name,role:S.me.role,admin:S.admin},created_at:new Date().toISOString()}); return; }
+    await rpc('place_add',{p_vendor:vid,p_name:name,p_kosher:kosher,p_note:note}); },
+  async placeDelete(vid,id){ if(!LIVE){ S.demo.places[vid]=(S.demo.places[vid]||[]).filter(p=>p.id!==id); return; } await rpc('place_delete',{p_id:id}); },
+  async flagProblem(vid,foodId,kind,msg){ if(!LIVE){ const v=S.vendors.find(x=>x.id===vid); (S.reports=S.reports||[]).unshift({id:'r'+Date.now(),vendor_id:vid,vendor_name:v?v.name:'',kind:'Other',message:(foodId?'Food tip: ':'')+kind+(msg?'. '+msg:''),anonymous:false,author_name:S.me.name,status:'New',food_id:foodId||null,created_at:new Date().toISOString()}); return; }
+    await rpc('flag_problem',{p_vendor:vid,p_food:foodId||null,p_kind:kind,p_message:msg||''}); },
+  async myAlerts(){ if(!LIVE) return S.demoAlerts||[]; return await rpc('my_alerts'); },
+  async alertsRead(){ if(!LIVE){ S.demoAlerts=[]; return; } await rpc('alerts_read'); },
   async verifyHours(vid, how){
     if(!LIVE){ Object.assign(S.vendors.find(v=>v.id===vid), how?{hours_verified_how:how,hours_verified_by:(S.me&&S.me.name)||'You',hours_verified_at:new Date().toISOString()}:{hours_verified_how:'',hours_verified_by:'',hours_verified_at:null}); return; }
     const r=await rpc('hours_verify',{p_vendor:vid,p_how:how}); const i=S.vendors.findIndex(v=>v.id===vid); if(i>=0) S.vendors[i]=Object.assign(S.vendors[i],r); return r;
@@ -1644,8 +1674,9 @@ function viewVendors(){
   const view=document.getElementById('view');
   const cats=['All',...byUse('category',CATEGORIES.filter(c=>!(c==='Winery'&&winOn())&&(c!=='Vehicle Rental'||rentalsOn())&&S.vendors.some(v=>catsOf(v).includes(c))))];
   S.cats=catsOn().filter(c=>cats.includes(c)); const sel=S.cats;   // a category nobody on this person's list has cannot stay switched on
-  const subRow=c=>{ if(WINE_HOMES.includes(c)&&!winOn()) return '';
-    const opts=(SUBCATS[c]||[]).filter(g=>S.vendors.some(v=>(catsOf(v).includes(c)||g[0]==='Wineries')&&subHit(v,c,g[0]))); if(!opts.length) return '';
+  // D-55: while wineries are off for a member, the Restaurant row offers only Food courts (the rest of the row waits for wineries, D-43).
+  const subRow=c=>{ if(WINE_HOMES.includes(c)&&!winOn()&&c!=='Restaurant') return '';
+    const opts=(SUBCATS[c]||[]).filter(g=>(winOn()||!WINE_HOMES.includes(c)||g[0]==='Food courts')&&S.vendors.some(v=>(catsOf(v).includes(c)||g[0]==='Wineries')&&subHit(v,c,g[0]))); if(!opts.length) return '';
     const cur=((S.subs||{})[c]||[]).filter(n=>opts.some(g=>g[0]===n)); (S.subs=S.subs||{})[c]=cur;
     return `<div class="chips" role="group" aria-label="${esc(catDisp(c))}: narrow by type" style="padding-top:2px"><button class="chip" data-sub="${esc(c)}" data-subv="" aria-pressed="${!cur.length}">${esc(({Restaurant:'All restaurants','Attraction / Site':'All sites'})[c]||'All '+catDisp(c).toLowerCase())}</button>${opts.map(g=>`<button class="chip" data-sub="${esc(c)}" data-subv="${esc(g[0])}" aria-pressed="${cur.includes(g[0])}">${cur.includes(g[0])?'✓ ':''}${esc(g[0])}</button>`).join('')}</div>`; };
   const keep=[...view.querySelectorAll('.chips')].map(e=>[e.getAttribute('aria-label'),e.scrollLeft]);   // a row scrolled sideways stays where it was after a tap
@@ -1772,21 +1803,171 @@ function openAgentForm(v){
     catch(e){ b.disabled=false; w.querySelector('#agErr').innerHTML=`<div class="msg err">${esc(e.message)}</div>`; } };
 }
 // Food nearby: short tips from colleagues, folded away until opened.
+// D-55 (16 Oct 2026): a tip can carry a pin (Google Maps and Waze then go to that spot), can be a food court, which is
+// also its own entry under Restaurant with the places inside it, and has "Problem?", which reaches Eretz Israel Tours
+// and the person who added the tip. "Kosher, certificate not checked" is a choice anyone can make.
+const FOOD_KOS_OPTS=()=>KOSHER_OPTS.filter(k=>!notKosher(k)&&k!=='Not relevant'&&(S.admin||!noCert(k)));
+const isCourt=v=>!!v&&tagHas(v.tags,'Food court');
+// An organisation adds a food court only when restaurants are among its sections (the database checks it again).
+const courtAddOk=()=>!lim()||secHas('Restaurant',mySections());
 async function drawFood(v){
   const box=document.getElementById('foodBox'), cnt=document.getElementById('foodCount'); if(!box) return;
   let list=[]; try{ list=await DB.foodList(v.id); }catch(e){ box.innerHTML=`<div class="msg err">${esc(e.message)}</div>`; return; }
   if(cnt) cnt.textContent=list.length?`(${list.length})`:'';
   const near=encodeURIComponent(' '+(v.location||v.region||''));
-  box.innerHTML=(list.length?list.map(f=>{ const onList=S.vendors.find(o=>normN(o.name)===normN(f.name)); const q=encodeURIComponent(f.name)+near;
-    return `<div class="note"><span class="meta"><b style="color:var(--ink)">${esc(f.name)}</b>${f.kosher?' · '+esc(f.kosher):''}</span>${f.note?`<p>${esc(f.note)}</p>`:''}
-      <div class="btn-row" style="margin-top:6px">${onList?`<button class="mini" data-fopen="${esc(onList.id)}" type="button">Open on list</button>`:''}<a class="mini" data-track="maps" data-v="${esc(v.id)}" href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener">Google Maps</a><a class="mini" data-track="waze" data-v="${esc(v.id)}" href="https://waze.com/ul?q=${q}&navigate=yes" target="_blank" rel="noopener">Waze</a>${f.mine||S.admin?`<button class="mini" data-fdel="${esc(f.id)}" type="button">Remove</button>`:''}</div>
-      ${fromBadge(f.by,f.created_at,'Tip from')}</div>`; }).join(''):'<p class="hint">No food tips yet. Where do you eat or take groups near here? Kosher places only.</p>')
-    +`<div class="foodadd"><input id="fdName" placeholder="Place name, e.g. Shawarma Hashuk" maxlength="120"><select id="fdKos" aria-label="Kosher"><option value="">Kosher?</option>${KOSHER_OPTS.filter(k=>!notKosher(k)&&k!=='Not relevant'&&(S.admin||!noCert(k))).map(k=>`<option>${esc(k)}</option>`).join('')}</select>
-      <input id="fdNote" placeholder="Why it's good, price, good for groups?" maxlength="500"><button class="btn primary" id="fdAdd" type="button">Add tip</button></div>`;
+  const mode=courtAddOk()?(drawFood.mode||'one'):'one';
+  box.innerHTML=(list.length?list.map(f=>{ const onList=f.court_id?S.vendors.find(o=>o.id===f.court_id):S.vendors.find(o=>normN(o.name)===normN(f.name)); const q=encodeURIComponent(f.name)+near;
+    const gm=f.ll?pinMaps(f.ll):`https://www.google.com/maps/search/?api=1&query=${q}`, wz=f.ll?pinWaze(f.ll):`https://waze.com/ul?q=${q}&navigate=yes`;
+    const places=Array.isArray(f.places)?f.places:null;
+    return `<div class="note${places?' court':''}"><span class="meta"><b style="color:var(--ink)">${esc(f.name)}</b>${places?` <span class="fc-tag">Food court · ${places.length} place${places.length===1?'':'s'}</span>`:''}${f.kosher?' · '+esc(f.kosher):''}</span>${f.note?`<p>${esc(f.note)}</p>`:''}
+      ${places&&places.length?`<ul class="fc-places">${places.map(p=>`<li><span class="n">${esc(p.name)}</span>${p.kosher?`<span class="k">${esc(p.kosher)}</span>`:''}${p.note?`<span class="d">${esc(p.note)}</span>`:''}</li>`).join('')}</ul>`:''}
+      <div class="btn-row" style="margin-top:6px">${onList?`<button class="mini" data-fopen="${esc(onList.id)}" type="button">Open on list</button>`:''}<a class="mini" data-track="maps" data-v="${esc(v.id)}" href="${esc(gm)}" target="_blank" rel="noopener">Google Maps</a><a class="mini" data-track="waze" data-v="${esc(v.id)}" href="${esc(wz)}" target="_blank" rel="noopener">Waze</a>${f.mine||S.admin?`<button class="mini" data-fpin="${esc(f.id)}" data-ll="${esc(f.ll||'')}" type="button">${f.ll?'Move pin':'📍 Add pin'}</button>`:''}<button class="mini" data-fflag="${esc(f.id)}" data-fname="${esc(f.name)}" type="button">⚑ Problem?</button>${f.mine||S.admin?`<button class="mini" data-fdel="${esc(f.id)}" type="button">Remove</button>`:''}</div>
+      ${fromBadge(f.by,f.created_at,'Tip from')}${f.ll?'<span class="hint" style="display:block;font-size:12px">📍 Exact spot set</span>':''}</div>`; }).join(''):'<p class="hint">No food tips yet. Where do you eat or take groups near here? Kosher places only.</p>')
+    +`<div class="foodadd">${courtAddOk()?`<div class="seg" role="group" aria-label="What are you adding"><button type="button" data-fmode="one" aria-pressed="${mode==='one'}">One place</button><button type="button" data-fmode="court" aria-pressed="${mode==='court'}">Food court</button></div>`:''}
+      <input id="fdName" placeholder="${mode==='court'?'Food court name, e.g. Sample Mall food court':'Place name, e.g. Shawarma Hashuk'}" maxlength="120">
+      ${mode==='one'?`<select id="fdKos" aria-label="Kosher"><option value="">Kosher?</option>${FOOD_KOS_OPTS().map(k=>`<option>${esc(k)}</option>`).join('')}</select>`:''}
+      <input id="fdNote" placeholder="${mode==='court'?'Seating, parking, good for groups?':"Why it's good, price, good for groups?"}" maxlength="500">
+      ${pinRowHtml('fd')}
+      ${mode==='court'?`<p class="hint" style="margin:2px 0 0">Places inside. Each one has its own kosher level. The food court also goes on the list under Restaurant, with its own page.</p><div id="fdRows" class="fc-rows"></div><button class="btn soft" id="fdRow" type="button">+ Add another place</button>`:''}
+      <button class="btn primary" id="fdAdd" type="button">${mode==='court'?'Add food court':'Add tip'}</button></div>`;
+  const pin=pinRowWire(box,'fd',coordsOf(v.maps_link));
+  box.querySelectorAll('[data-fmode]').forEach(b=>b.onclick=()=>{ drawFood.mode=b.dataset.fmode; drawFood(v); });
   box.querySelectorAll('[data-fopen]').forEach(b=>b.onclick=()=>openDetail(b.dataset.fopen));
   box.querySelectorAll('[data-fdel]').forEach(b=>b.onclick=async()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again'; return; } try{ await DB.foodDelete(v.id,b.dataset.fdel); drawFood(v); }catch(e){ toast(e.message); } });
-  box.querySelector('#fdAdd').onclick=async()=>{ const n=box.querySelector('#fdName').value.trim(); if(n.length<2){ box.querySelector('#fdName').focus(); return; }
-    try{ await DB.foodAdd(v.id,n,box.querySelector('#fdKos').value,box.querySelector('#fdNote').value.trim()); toast('Food tip added'); drawFood(v); }catch(e){ toast(e.message); } };
+  box.querySelectorAll('[data-fpin]').forEach(b=>b.onclick=()=>openPinPicker(b.dataset.ll||coordsOf(v.maps_link),'Set the exact spot',async ll=>{ try{ await DB.foodSetLL(v.id,b.dataset.fpin,ll); toast('Pin saved'); drawFood(v); }catch(e){ toast(e.message); } },!!b.dataset.ll));
+  box.querySelectorAll('[data-fflag]').forEach(b=>b.onclick=()=>openFlag(v,b.dataset.fflag,b.dataset.fname));
+  const rows=box.querySelector('#fdRows'); let nr=0;
+  const addRow=()=>{ if(!rows) return; nr++; const d=document.createElement('div'); d.className='fc-row';
+    d.innerHTML=`<input data-pn placeholder="Place ${nr}" maxlength="120" aria-label="Place ${nr}"><select data-pk aria-label="Kosher for place ${nr}"><option value="">Kosher?</option>${FOOD_KOS_OPTS().map(k=>`<option>${esc(k)}</option>`).join('')}</select><input data-pd class="wide" placeholder="Note (optional), e.g. dairy, good for kids" maxlength="200">`; rows.appendChild(d); };
+  if(rows){ addRow(); addRow(); box.querySelector('#fdRow').onclick=addRow; }
+  box.querySelector('#fdAdd').onclick=async()=>{ const btn=box.querySelector('#fdAdd'), n=box.querySelector('#fdName').value.trim(), note=box.querySelector('#fdNote').value.trim(); if(n.length<2){ box.querySelector('#fdName').focus(); return; }
+    btn.disabled=true;
+    try{
+      if(mode==='one'){ await DB.foodAdd2(v.id,n,box.querySelector('#fdKos').value,note,pin.get(),null); toast('Food tip added'); }
+      else{
+        const places=[...rows.querySelectorAll('.fc-row')].map(r=>({name:r.querySelector('[data-pn]').value.trim(),kosher:r.querySelector('[data-pk]').value,note:r.querySelector('[data-pd]').value.trim()})).filter(p=>p.name.length>=2);
+        const court=await courtFor(n, v, pin.get());
+        await DB.foodAdd2(v.id,n,'',note,pin.get(),court.id);
+        let bad=0; for(const p of places){ try{ await DB.placeAdd(court.id,p.name,p.kosher,p.note); }catch(e){ bad++; } }
+        toast(bad?`Food court added. ${bad} place${bad>1?'s were':' was'} not added (already there?)`:'Food court added');
+        drawFood.mode='one';
+      }
+      drawFood(v);
+    }catch(e){ btn.disabled=false; toast(e.message); } };
+}
+// A food court on the list with this name, or a new one under Restaurant in the same area as the supplier it is near.
+async function courtFor(name, near, ll){
+  const have=S.vendors.find(o=>isCourt(o)&&normN(o.name)===normN(name)); if(have) return have;
+  return await DB.save({name, category:'Restaurant', tags:'Food court', active:'Active', currency:'ILS', priceBasis:'Per person',
+    region:near.region||'', location:near.location||'', maps_link:ll?pinMaps(ll):''}); }
+// The places inside a food court, on its own page.
+async function drawPlaces(v){
+  const box=document.getElementById('placesBox'); if(!box) return;
+  let list=[]; try{ list=await DB.placesList(v.id); }catch(e){ box.innerHTML=`<div class="msg err">${esc(e.message)}</div>`; return; }
+  const c=document.getElementById('placesCount'); if(c) c.textContent=`(${list.length})`;
+  box.innerHTML=(list.length?`<ul class="fc-places">${list.map(p=>`<li><span class="n">${esc(p.name)}</span>${p.kosher?`<span class="k">${esc(p.kosher)}</span>`:''}${p.note?`<span class="d">${esc(p.note)}</span>`:''}${p.mine||S.admin?`<button class="mini" data-pdel="${esc(p.id)}" type="button">Remove</button>`:''}</li>`).join('')}</ul>`:'<p class="hint">No places listed yet. Add the ones you know.</p>')
+    +`<div class="fc-row" style="margin-top:8px"><input id="fpName" placeholder="Add a place" maxlength="120" aria-label="Place name"><select id="fpKos" aria-label="Kosher"><option value="">Kosher?</option>${FOOD_KOS_OPTS().map(k=>`<option>${esc(k)}</option>`).join('')}</select><input id="fpNote" class="wide" placeholder="Note (optional)" maxlength="200"></div>
+      <div class="btn-row" style="margin-top:6px"><button class="btn soft" id="fpAdd" type="button">+ Add place</button><button class="mini" id="fpFlag" type="button">⚑ Problem?</button></div>
+      <p class="hint" style="margin:6px 0 0">Kosher places only. Anyone can add a place; it shows straight away.</p>`;
+  box.querySelectorAll('[data-pdel]').forEach(b=>b.onclick=async()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again'; return; } try{ await DB.placeDelete(v.id,b.dataset.pdel); drawPlaces(v); }catch(e){ toast(e.message); } });
+  box.querySelector('#fpFlag').onclick=()=>openFlag(v,null,v.name);
+  box.querySelector('#fpAdd').onclick=async()=>{ const n=box.querySelector('#fpName').value.trim(); if(n.length<2){ box.querySelector('#fpName').focus(); return; }
+    try{ await DB.placeAdd(v.id,n,box.querySelector('#fpKos').value,box.querySelector('#fpNote').value.trim()); toast('Place added'); drawPlaces(v); }catch(e){ toast(e.message); } };
+}
+// "Problem?" on a food tip (foodId) or on a food court's page (foodId null).
+function openFlag(v, foodId, name){
+  const m=document.createElement('div'); m.className='modal';
+  m.innerHTML=`<div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="flT"><h3 id="flT">Something wrong?</h3>
+    <p style="margin:0 0 10px">${foodId?'Food tip':'Food court'}: <b>${esc(name)}</b></p>
+    <div class="chips" role="radiogroup" aria-label="What is wrong" style="padding:0;flex-wrap:wrap">${['Not kosher','Closed','Wrong place','Other'].map((k,i)=>`<button type="button" class="chip" data-fk="${k}" aria-pressed="${i===0}">${k}</button>`).join('')}</div>
+    <div class="f wide" style="margin-top:10px"><label for="flMsg">Details (optional)</label><textarea id="flMsg" rows="3" maxlength="1500"></textarea></div>
+    <p class="hint" style="margin:8px 0 12px">Goes to Eretz Israel Tours and to the person who added it, who sees "a colleague", not your name. It stays up until it's fixed or removed.</p>
+    <div class="btn-row"><button class="btn soft" id="flC" type="button">Cancel</button><button class="btn red" id="flS" type="button">Send</button></div></div>`;
+  document.body.appendChild(m); let kind='Not kosher';
+  m.querySelectorAll('[data-fk]').forEach(b=>b.onclick=()=>{ kind=b.dataset.fk; m.querySelectorAll('[data-fk]').forEach(o=>o.setAttribute('aria-pressed',o===b)); });
+  m.querySelector('#flC').onclick=()=>m.remove();
+  m.querySelector('#flS').onclick=async()=>{ const b=m.querySelector('#flS'); b.disabled=true;
+    try{ await DB.flagProblem(v.id,foodId,kind,m.querySelector('#flMsg').value.trim()); m.remove(); toast('Sent. Thank you.'); }catch(e){ b.disabled=false; toast(e.message); } };
+}
+// Alerts for this member (D-55: someone flagged a tip or food court he added). Shown once each time the app opens.
+async function showAlerts(){ if(showAlerts.done) return; showAlerts.done=true;
+  let list=[]; try{ list=await DB.myAlerts(); }catch(e){ return; } if(!list||!list.length) return;
+  const m=document.createElement('div'); m.className='modal';
+  m.innerHTML=`<div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="alT"><h3 id="alT">⚑ For you</h3>
+    ${list.map(a=>`<div class="note" style="margin-bottom:10px"><p style="margin:0">${esc(a.message)}</p><span class="hint" style="font-size:12px">${fmtDate(a.created_at)}</span>${a.vendor_id&&S.vendors.some(o=>o.id===a.vendor_id)?`<div class="btn-row" style="margin-top:4px"><button class="mini" data-aopen="${esc(a.vendor_id)}" type="button">Open</button></div>`:''}</div>`).join('')}
+    <p class="hint" style="margin:0 0 12px">Eretz Israel Tours has the report too. Fix the tip if it's wrong, or leave it if it's right.</p>
+    <div class="btn-row"><button class="btn primary" id="alOk" type="button">OK</button></div></div>`;
+  document.body.appendChild(m);
+  const done=()=>{ m.remove(); DB.alertsRead().catch(()=>{}); };
+  m.querySelector('#alOk').onclick=done;
+  m.querySelectorAll('[data-aopen]').forEach(b=>b.onclick=()=>{ done(); openDetail(b.dataset.aopen); });
+}
+// ---- Map pins (D-55) ----
+// A pin is "lat,lng". It is set on our own map (the hikes' map: Leaflet and OpenStreetMap), from where the phone is,
+// or read from a link copied from Google Maps or Waze. Google Maps and Waze cannot hand a pin back to the app.
+const pinMaps=ll=>'https://www.google.com/maps/search/?api=1&query='+ll;
+const pinWaze=ll=>'https://waze.com/ul?ll='+ll+'&navigate=yes';
+const pinGood=(a,b)=>isFinite(a)&&isFinite(b)&&Math.abs(a)<=90&&Math.abs(b)<=180&&(a||b);
+const pinFmt=(a,b)=>(+a).toFixed(6)+','+(+b).toFixed(6);
+// Waze's share links carry the spot as a geohash: waze.com/ul/h<hash>.
+function geoDecode(h){ const B='0123456789bcdefghjkmnpqrstuvwxyz'; let even=true, lat=[-90,90], lon=[-180,180];
+  for(const ch of String(h).toLowerCase()){ const d=B.indexOf(ch); if(d<0) return null;
+    for(let m=16;m>=1;m>>=1){ const r=even?lon:lat, mid=(r[0]+r[1])/2; if(d&m) r[0]=mid; else r[1]=mid; even=!even; } }
+  return [(lat[0]+lat[1])/2,(lon[0]+lon[1])/2]; }
+function pinFromText(t){ t=String(t||'').trim(); if(!t) return '';
+  let m=/!3d(-?\d{1,2}\.\d+)!4d(-?\d{1,3}\.\d+)/.exec(t); if(m&&pinGood(+m[1],+m[2])) return pinFmt(m[1],m[2]);
+  m=/waze\.com\/ul\/h([0-9a-z]{5,12})/i.exec(t); if(m){ const g=geoDecode(m[1]); if(g&&pinGood(g[0],g[1])) return pinFmt(g[0],g[1]); }
+  const c=coordsOf(t); if(c){ const [a,b]=c.split(',').map(Number); if(pinGood(a,b)) return pinFmt(a,b); }
+  m=/^\s*(-?\d{1,2}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)\s*$/.exec(t); if(m&&pinGood(+m[1],+m[2])) return pinFmt(m[1],m[2]);
+  return ''; }
+// The three buttons, and a line that says whether a pin is set. get() gives the pin or ''.
+function pinRowHtml(p){ return `<div class="btn-row pin-row" style="margin:0"><button class="mini" type="button" id="${p}PinMap">🗺 Set on map</button><button class="mini" type="button" id="${p}PinHere">📍 I'm here</button><button class="mini" type="button" id="${p}PinPaste">🔗 Paste a Maps or Waze link</button></div><span class="hint" id="${p}PinNow" style="font-size:12px"></span>`; }
+function pinRowWire(root, p, near, onSet){ let ll='';
+  const now=root.querySelector('#'+p+'PinNow');
+  const set=v=>{ ll=v||''; if(now) now.innerHTML=ll?`📍 Exact spot set <button class="linkbtn" type="button" id="${p}PinClr">clear</button>`:''; const c=root.querySelector('#'+p+'PinClr'); if(c) c.onclick=()=>set(''); if(onSet) onSet(ll); };
+  const mp=root.querySelector('#'+p+'PinMap'); if(mp) mp.onclick=()=>openPinPicker(ll||near,'Set the exact spot',set,!!ll);
+  const hp=root.querySelector('#'+p+'PinHere'); if(hp) hp.onclick=()=>pinHere(hp,set);
+  const pp=root.querySelector('#'+p+'PinPaste'); if(pp) pp.onclick=()=>openPinPaste(set,()=>openPinPicker(ll||near,'Set the exact spot',set,!!ll));
+  return { get:()=>ll, set }; }
+function pinHere(btn, cb){ if(!navigator.geolocation){ toast('Location is not available on this device'); return; }
+  const t=btn.textContent; btn.disabled=true; btn.textContent='Finding…';
+  navigator.geolocation.getCurrentPosition(p=>{ btn.disabled=false; btn.textContent=t; cb(pinFmt(p.coords.latitude,p.coords.longitude)); toast('Pin set to where you are'); },
+    ()=>{ btn.disabled=false; btn.textContent=t; toast('Could not get your location. Allow location for this site, or set it on the map.'); }, {enableHighAccuracy:true,timeout:15000}); }
+function openPinPaste(cb, toMap){
+  const m=document.createElement('div'); m.className='modal';
+  m.innerHTML=`<div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="ppT"><h3 id="ppT">Paste a link</h3>
+    <p style="margin:0 0 8px">In Google Maps or Waze, drop a pin on the place, tap <b>Share</b>, then <b>Copy link</b>, and paste it here.</p>
+    <div class="f wide"><label for="ppIn">Link</label><input id="ppIn" type="url" inputmode="url" placeholder="https://maps.google.com/… or https://waze.com/ul…"></div>
+    <div id="ppErr"></div>
+    <div class="btn-row" style="margin-top:12px"><button class="btn soft" id="ppC" type="button">Cancel</button><button class="btn primary" id="ppS" type="button">Use this spot</button></div></div>`;
+  document.body.appendChild(m); const inp=m.querySelector('#ppIn'); setTimeout(()=>inp.focus(),50);
+  m.querySelector('#ppC').onclick=()=>m.remove();
+  m.querySelector('#ppS').onclick=()=>{ const ll=pinFromText(inp.value);
+    if(ll){ m.remove(); cb(ll); toast('Pin set from the link'); return; }
+    const short=/goo\.gl|maps\.app/i.test(inp.value);
+    m.querySelector('#ppErr').innerHTML=`<div class="msg err" style="margin-top:8px">${short?"This short Google link doesn't hold the spot itself. Set it on the map instead.":"Couldn't find a spot in that link."} <button class="linkbtn" type="button" id="ppMap">Set on map</button></div>`;
+    m.querySelector('#ppMap').onclick=()=>{ m.remove(); toMap(); }; };
+}
+function openPinPicker(start, title, cb, isPin){
+  const m=document.createElement('div'); m.className='modal';
+  m.innerHTML=`<div class="modal-card pin-card" role="dialog" aria-modal="true" aria-labelledby="pkT"><h3 id="pkT">${esc(title)}</h3>
+    <p class="hint" style="margin:0 0 8px">Tap the map or drag the pin to the exact spot, then save. Google Maps and Waze will go straight to it.</p>
+    <div class="pin-map" id="pkMap"><p class="hint" style="padding:12px">Loading the map…</p></div>
+    <div class="btn-row" style="margin-top:10px"><button class="mini" id="pkHere" type="button">📍 Where am I</button><span style="flex:1"></span><button class="btn soft" id="pkC" type="button">Cancel</button><button class="btn primary" id="pkS" type="button" disabled>Save pin</button></div></div>`;
+  document.body.appendChild(m); let map=null, mk=null, at=null;
+  const close=()=>{ try{ if(map) map.remove(); }catch(e){} m.remove(); };
+  m.querySelector('#pkC').onclick=close;
+  const put=ll=>{ at=ll; m.querySelector('#pkS').disabled=false; if(!map) return; if(mk) mk.setLatLng(ll); else { mk=L.marker(ll,{draggable:true,icon:L.divIcon({className:'pin-ico',html:'📍',iconSize:[32,32],iconAnchor:[16,30]})}).addTo(map); mk.on('dragend',()=>{ const p=mk.getLatLng(); at=[p.lat,p.lng]; }); } };
+  m.querySelector('#pkHere').onclick=()=>pinHere(m.querySelector('#pkHere'),ll=>{ const a=ll.split(',').map(Number); put(a); if(map) map.setView(a,17); });
+  m.querySelector('#pkS').onclick=()=>{ if(!at) return; close(); cb(pinFmt(at[0],at[1])); };
+  const s0=start?String(start).split(',').map(Number):null, has=s0&&pinGood(s0[0],s0[1]);
+  hkLeaflet().then(L=>{ const el=m.querySelector('#pkMap'); if(!el) return; el.innerHTML='';
+    map=L.map(el,{zoomControl:true}).setView(has?s0:[31.6,34.95], has?16:8);
+    L.tileLayer(HK_TILES.url,{maxZoom:HK_TILES.max, attribution:HK_TILES.credit}).addTo(map);
+    if(has&&isPin) put(s0);
+    map.on('click',e=>put([e.latlng.lat,e.latlng.lng]));
+    setTimeout(()=>map.invalidateSize(),60); })
+  .catch(()=>{ const el=m.querySelector('#pkMap'); if(el) el.innerHTML='<p class="msg err" style="margin:8px">The map didn\'t load. Use "Where am I", or paste a link from Google Maps or Waze.</p>'; });
 }
 function openReport(v){
   const body=`<p style="margin:0 0 12px;color:var(--ink-2)">Tell Eretz Israel Tours what changed at <b>${esc(v.name)}</b>. It's checked before the list is updated.</p>
@@ -2318,7 +2499,7 @@ function contactBar(v){
   if(em) a.push(`<a class="act" ${t('email')} data-mail="${esc(em)}" data-vname="${esc(v.name)}" href="${esc(mailHref(em))}">${ic.mail}Email</a>`);
   if(v.website) a.push(`<a class="act" ${t('website')} href="${esc(/^https?:/.test(v.website)?v.website:'https://'+v.website)}" target="_blank" rel="noopener">${ic.web}Website</a>`);
   const where=encodeURIComponent((v.name.replace(/\s*\(.*?\)\s*/g,' ')+' '+(v.location||'')).trim());
-  const ll=coordsOf(v.maps_link);
+  const ll=pinFromText(v.maps_link);   // D-55: also a Waze share link's spot, and a Google place's own point
   const waze = ll ? `https://waze.com/ul?ll=${ll}&navigate=yes` : `https://waze.com/ul?q=${where}&navigate=yes`;
   const gmap = v.maps_link || `https://www.google.com/maps/search/?api=1&query=${where}`;
   if(v.location||v.name||v.maps_link){ a.push(`<a class="act" ${t('waze')} href="${esc(waze)}" target="_blank" rel="noopener" title="Navigate with Waze" aria-label="Navigate with Waze">${bmark('waze',ic.nav)}Waze</a>`);
@@ -2399,6 +2580,7 @@ function openDetail(id, opt){
       <p class="hint" style="margin:0 0 8px">Keep it to what happened. A malicious post is removed, and the member who posted it is banned.</p>
       ${guideOnGuide(v)?'<p class="hint" style="margin:0 0 8px">You are a guide writing about another guide. Eretz Israel Tours reads your note before colleagues see it, unless you keep it private.</p>':''}
       <div id="notesBox"></div></fieldset>`}
+    ${isCourt(v)?'<fieldset id="placesWrap"><legend>Places here <span class="hint" id="placesCount"></span></legend><div id="placesBox"><p class="hint">Loading…</p></div></fieldset>':''}
     ${foodOk(v)?'':'<!--'}<details class="food" id="foodWrap"><summary>🍽 Food nearby <span class="hint" id="foodCount"></span></summary><div id="foodBox"><p class="hint">Loading…</p></div></details>${foodOk(v)?'':'-->'}
     <fieldset><legend>Photos, receipts and PDFs</legend><div id="filesBox"><p class="hint">Loading files…</p></div></fieldset>
     ${S.admin?'<div id="actBox"></div>':''}
@@ -2428,6 +2610,7 @@ function openDetail(id, opt){
   drawFiles(v);
   drawExtras(v);
   drawFood(v);
+  if(isCourt(v)) drawPlaces(v);
   drawHikesHere(v);
   drawRentals(v);
   w.querySelector('#addPrice').onclick=async()=>{ let pp=false; try{ pp=(await DB.detail(v.id)).prices_private; }catch(e){} openPriceForm(v,null,null,pp); };
@@ -4257,6 +4440,9 @@ function wireQuickFill(f){
   const cb=f.querySelector('#qfContacts'); if(cb) cb.onclick=async()=>{ try{ const r=await navigator.contacts.select(['name','tel','email','address'],{multiple:false}); if(!r||!r[0]) return; const c=r[0];
       const adr=(c.address&&c.address[0])?[c.address[0].addressLine&&c.address[0].addressLine.join(' '),c.address[0].city].filter(Boolean).join(', '):'';
       done(applyQuickFill(f,{name:(c.name||[])[0]||'',org:'',phones:c.tel||[],emails:c.email||[],urls:[],maps:'',address:adr})); }catch(e){ msg.textContent='Could not open contacts: '+e.message; } };
+  // D-55: drop the supplier's pin on our own map; it is saved as a Google Maps link, which Waze reads too.
+  const mpb=f.querySelector('#mapPinBtn'); if(mpb) mpb.onclick=()=>{ const inp=f.querySelector('#f_maps_link'), cur=pinFromText(inp.value);
+    openPinPicker(cur, 'Set the exact spot', ll=>{ inp.value='https://www.google.com/maps?q='+ll; toast('Map pin set'); }, !!cur); };
   const hb=f.querySelector('#hereBtn'); if(hb) hb.onclick=()=>{ if(!navigator.geolocation){ toast('Location is not available on this device'); return; } hb.disabled=true; hb.textContent='Finding…';
     navigator.geolocation.getCurrentPosition(p=>{ const ll=p.coords.latitude.toFixed(6)+','+p.coords.longitude.toFixed(6); f.querySelector('#f_maps_link').value='https://www.google.com/maps?q='+ll; hb.disabled=false; hb.textContent="📍 I'm here"; toast('Map pin set to where you are'); },
       e=>{ hb.disabled=false; hb.textContent="📍 I'm here"; toast('Could not get your location: '+e.message); },{enableHighAccuracy:true,timeout:15000}); };
@@ -4299,7 +4485,7 @@ function openForm(v, preset){
       <div class="f"><label for="f_regionSel">Region</label><select id="f_regionSel"><option value="">Choose…</option>${byUse('region',REGIONS).map(r=>`<option${x.region===r?' selected':''}>${esc(r)}</option>`).join('')}<option value="__other"${x.region&&!REGIONS.includes(x.region)?' selected':''}>Other…</option></select>
         <input id="f_regionOther" placeholder="Type the region" value="${esc(x.region&&!REGIONS.includes(x.region)?x.region:'')}" ${x.region&&!REGIONS.includes(x.region)?'':'hidden'} style="margin-top:6px"><input type="hidden" id="f_region" value="${esc(x.region)}"></div>
       ${inp('location','Town or address','text','Start typing: Jerusalem, Mitzpe Ramon…')}
-      <div class="f wide"><label for="f_maps_link">Map pin (Google Maps or Waze link)</label><div style="display:flex;gap:6px"><input id="f_maps_link" type="url" inputmode="url" value="${esc(x.maps_link||'')}" placeholder="Paste a Google Maps or Waze link"><button type="button" class="mini" id="hereBtn" title="Use where I am now">📍 I'm here</button></div><span class="hint">In Google Maps: open the place, tap Share, Copy link, and paste it here. Or tap "I'm here" when you're standing at the place.</span></div>
+      <div class="f wide"><label for="f_maps_link">Map pin (Google Maps or Waze link)</label><div style="display:flex;gap:6px;flex-wrap:wrap"><input id="f_maps_link" type="url" inputmode="url" value="${esc(x.maps_link||'')}" placeholder="Paste a Google Maps or Waze link" style="flex:1 1 220px;min-width:0"><button type="button" class="mini" id="mapPinBtn" title="Drop a pin on the map">🗺 Set on map</button><button type="button" class="mini" id="hereBtn" title="Use where I am now">📍 I'm here</button></div><span class="hint">Tap "Set on map" and drop the pin, or tap "I'm here" when you're standing at the place. Or in Google Maps or Waze: drop a pin, tap Share, Copy link, and paste it here.</span></div>
       <datalist id="dl_location">${[...new Set(TOWNS.concat(S.vendors.map(o=>o.location).filter(Boolean)))].sort().map(t=>`<option value="${esc(t)}">`).join('')}</datalist>
       <div class="f wide" id="langWrap"><label for="f_languages">Languages</label><input id="f_languages" name="languages" value="${esc(x.languages)}" placeholder="Tap below or type"><div class="presets" id="langSug" style="margin:6px 0 0"></div></div>
       <div class="f wide" id="kosWrap"><label for="f_kosher">Kosher</label><input id="f_kosher" name="kosher" list="dl_kosher" value="${esc(x.kosher)}" placeholder="Tap below or type"><datalist id="dl_kosher">${KOSHER_OPTS.map(k=>`<option value="${esc(k)}">`).join('')}</datalist><div class="presets" id="kosSug" style="margin:6px 0 0">${KOSHER_OPTS.map(k=>`<button type="button" class="mini" data-kos="${esc(k)}">${esc(k)}</button>`).join('')}</div><div class="dup" id="kosNote" hidden></div>${v?`<div class="kcrow"><button type="button" class="btn soft" id="kcFormBtn">📷 Add kosher certificate photo</button><input id="kcFormFile" type="file" accept="image/*,application/pdf" hidden><span class="hint" id="kcFormMsg">Take a photo of the certificate or pick one from your phone. Saves straight away.</span></div>`:'<span class="hint">After you save the supplier, you can add a photo of the kosher certificate here or on the supplier page.</span>'}</div>${inp('maxCap','Max capacity (people)','number')}
