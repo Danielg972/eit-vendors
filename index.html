@@ -5272,7 +5272,8 @@ function hkOpenMapeak(h, ll){ const place=ll?hkMapeak(ll):'https://mapeak.com/';
   if(win){ try{ win.opener=null; win.document.title='Mapeak'; win.document.body.style.font='16px system-ui,sans-serif'; win.document.body.textContent='Opening Mapeak…'; }catch(e){} }
   const go=u=>{ if(win&&!win.closed){ try{ win.location.replace(u); return; }catch(e){} }
     let w2=null; try{ w2=window.open(u,'_blank','noopener'); }catch(e){} if(!w2) toast('The browser stopped Mapeak from opening. Allow pop-ups for this site and try again.'); };
-  return DB.hikeRouteLink(h.id).then(code=>{
+  const slow=new Promise((ok,no)=>setTimeout(()=>no(new Error('slow')),12000));   // the blank window never waits for ever
+  return Promise.race([DB.hikeRouteLink(h.id), slow]).then(code=>{
       if(!code){ toast('Sample hike: in the app this opens its route in Mapeak. Here Mapeak opens at the place.'); go(place); return; }
       go(hkMapeakRoute(code)); })
     .catch(()=>{ toast('Mapeak could not get the route just now, so it opens at the place.'); go(place); }); }
@@ -5730,7 +5731,7 @@ Object.assign(DB, {
     for(const h of demoHikesInit()){ const x=h.reports.find(y=>y.id===id&&!y.hidden); if(x){ if(!(S.admin||x.author===S.user.email)) break; x.hidden=true; return; } }
     throw new Error('Only the person who wrote this report, or Eretz Israel Tours, can take it off.'); },
   // D-53: the code of a hike's route file for Mapeak. Sample mode has no public address: null, and the page says so.
-  async hikeRouteLink(id){ if(LIVE) return await rpc('hike_route_link',{p_id:id}); const h=demoHkFind(id); if(!h.gpxFile||h.gpxFile.removed) throw new Error('This hike has no route file yet.'); return null; },
+  async hikeRouteLink(id){ if(LIVE) return await rpc('hike_route_link',{p_id:id}); const h=demoHkFind(id); if(!h||!h.gpxFile||h.gpxFile.removed) throw new Error('This hike has no route file yet.'); return null; },
   async hikeGpx(id){ if(LIVE) return await rpc('hike_gpx',{p_id:id}); const h=demoHkFind(id); if(!h.gpxFile||h.gpxFile.removed) throw new Error('This hike has no route file yet.'); return {name:h.gpxFile.name,body:h.gpxFile.body}; }
 });
 

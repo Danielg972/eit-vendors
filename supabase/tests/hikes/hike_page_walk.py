@@ -379,6 +379,11 @@ async def main():
         await pg.evaluate("()=>{ DB.hikeRouteLink=async()=>{ throw new Error('Failed to fetch'); }; }")
         u3=await tap('#hkRouteBox [data-hmapeak]'); t3=await pg.inner_text('#toast')
         check('mapeak: when the code cannot be had, the window goes to Mapeak at the place as before, and the page says so', u3 is not None and u3.startswith('https://mapeak.com/map/15.00/') and t3=='Mapeak could not get the route just now, so it opens at the place.', [u3, t3])
+        # the database does not answer: after 12 seconds Mapeak opens at the place
+        await pg.evaluate("()=>{ DB.hikeRouteLink=()=>new Promise(()=>{}); }")
+        await pg.evaluate("()=>{ window.__st=window.setTimeout; window.setTimeout=(f,ms,...a)=>window.__st(f, ms===12000?300:ms, ...a); }")
+        u5=await tap('#hkRouteBox [data-hmapeak]'); t5=await pg.inner_text('#toast'); await pg.evaluate("()=>{ window.setTimeout=window.__st; }")
+        check('mapeak: when the database does not answer, the window is not left blank: Mapeak opens at the place, with the message', u5 is not None and u5.startswith('https://mapeak.com/map/15.00/') and t5=='Mapeak could not get the route just now, so it opens at the place.', [u5, t5])
         # the browser refuses the window
         await pg.evaluate("c=>{ DB.hikeRouteLink=async()=>c; window.__open=window.open; window.open=()=>null; }", CODE)
         await pg.click('#hkRouteBox [data-hmapeak]'); await pg.wait_for_timeout(300); t4=await pg.inner_text('#toast')
