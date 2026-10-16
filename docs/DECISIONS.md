@@ -10,6 +10,23 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-54 · Transport prices with their details, and the Quotes tab fed from them (built 16 October 2026; trial at /next-transport/; not live)
+
+**Owner, 16 Oct 2026, 09:27:** "Pricing for transportation needs a more detailed input area and it should copy to a more detailed quotes page. Options should be vehicle size - transfer to and from airport to and from city options. Luggage? Vehicle size? Time of day/night. What was paid. Vat? Anything I'm forgetting? And then that should automatically write to quote page. I'm thinking quote page should have same layout. Also layout of quote page should be like landing page with vehicle size, transfer, full day, and anything else that may be relevant. The transportation page ex Manny Weiss should have clearer pricing input areas and data fields. Start now."
+
+**Built (pull request #70, branch `transport-prices`):**
+- The price form on a Transport supplier asks: what the price is for (airport pickup Ben Gurion → city, drop-off city → Ben Gurion, either way at one price, a transfer between two places, a full day, a half day, by the hour, something else); the city or from–to; vehicle size (or "not stated"); passengers; luggage (with luggage / hand luggage only / none, and suitcases); time of day (daytime, night, Shabbat or holiday, any time) and a night or Shabbat extra; the date of the job; price, currency, VAT, agent or public; quoted, what was paid, or price list; for a day: hours and km included, each extra hour and km; for a transfer: free waiting time; Kvish 6 included or extra; the driver's tip; source, date and note.
+- The supplier page and the Quotes tab show one board: a tab per kind of job (airport transfers, other transfers, full day, half day, by the hour, other) with its count and lowest price, vehicle sizes as chips, a city picker, lowest / average / highest of what is shown, and one row per price that opens on a tap. In the Quotes tab ("Prices & quotes") every transport price line shows at once, beside the vehicle quotes from the quote tracker.
+- Database, on production 16 Oct (add only): `vendor_prices.transport` (jsonb), `_transport_clean`, `transport_prices(p_token)`; `_price_clean`, `_price_write` and `vendor_detail` carry the column. A save from an older copy of the page keeps a line's details. Same visibility as the supplier's page: an organisation never receives an agent line (C3), no colleague's name is sent.
+
+**Implementation choices (labelled, not owner rules):** the details live beside the line, and the line's label is still written the D-29 way so older lines and older copies of the page keep working; quotes stay in their own table and show on the board as "Quote" rows, not copied into prices; the lowest / average / highest leave out organisation rates for guides and agents.
+
+**Data, same day (owner: "I put pricing in notes for Manny. Redo page and quotes with that data"):** three agent price lines on Manny Weiss from his last quote of 7 Oct 2026 — Ben Gurion → Jerusalem, 12 passengers with luggage, 800 ILS; Ben Gurion → Jerusalem, 3 passengers with luggage, 400 ILS; Jerusalem → Ben Gurion, 15 passengers with luggage, 1,000 ILS. Marked quoted; VAT and vehicle size not stated in the quote, so left unknown. The note text on his page is left as it was.
+
+**Numbering:** taken as D-53 at first; D-53 had gone to the Mapeak route link (pull request #68) earlier the same morning, so renumbered D-54 before anything was recorded.
+
+---
+
 ## D-43 · Wineries under Restaurant and under Attraction / Site (live for Eretz Israel Tours since 12 October 2026; switched off for colleagues)
 
 **Decided by:** the owner (Eretz Israel Tours), 12 October 2026. 09:30: "move winery and put it under sites." 10:21, of the mock-up: "Looks good. But put wineries under restaurants and under sites".
