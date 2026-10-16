@@ -340,7 +340,7 @@ async def main():
         check('no place given (a real refusal by the browser): the box that says how to allow it comes up', 'Allow location' in await pg.inner_text('#hkLocModal'), await pg.inner_text('#hkLocModal')); await b.close()
         # ================= "Open in Mapeak" opens the hike's route (D-53), on a phone 380 wide =================
         FN='https://wjuqtjlrtcywjaspjpwu.supabase.co/functions/v1/route/'; CODE='Sample0Code0Not0Real0abcdefgh-_'
-        CODE=(CODE+'x'*32)[:32]; ROUTE_URL='https://mapeak.com/url/'+quote(FN+CODE+'.gpx', safe="-_.!~*'()")
+        CODE=(CODE+'x'*32)[:32]; ROUTE_URL='https://mapeak.com/url/'+(FN+CODE+'.gpx').replace('/','%2F')
         b,pg=await start(p,'mapeak',ANDROID,380,800); MP=[]
         async def mapeak(route): MP.append(route.request.url); await route.fulfill(body='<!doctype html><title>stand-in for Mapeak</title>', content_type='text/html')
         await pg.context.route('https://mapeak.com/**', mapeak)
