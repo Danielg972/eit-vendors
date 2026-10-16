@@ -4,7 +4,7 @@
 
 *Short, factual status for the Cockpit Steward and other EIT projects. Updated by the Vendor Master session after any change that matters to them. The commit that last changed this file is its version.*
 
-**As of:** 12 October 2026
+**As of:** 16 October 2026
 
 ## Identity
 
@@ -16,6 +16,10 @@
 | Schema record | `supabase/schema.sql` (tables, functions, grants), plus `supabase/functions/files/index.ts` (edge function v11) |
 | Terms version | `2026-10-03c` live (adds 2c, organisations as limited members; `2026-10-03a` added 6d, jobs). `2026-10-03d` on the branch `guide-for-clients`: 3a malicious posts, 3c licensed guides and D1, 6e a guide's page for clients, 6f your own page and reviews. All draft, not yet reviewed by a lawyer |
 | Decisions | `docs/DECISIONS.md` (D-1 Cockpit boundary; D-2 quote tracker; D-3 driver reviews; D-4 transport by vehicle size; D-5 booking sheets; D-6 welcome tour, name, use-and-add rule; D-7 Shomer Shabbat badge, kosher restaurants only; D-8 opening hours, no-certificate needs approval; D-9 verified hours, last entry, hours from websites; D-10 official buttons; D-11 jobs between colleagues and My days, live for Eretz Israel Tours only; D-15 limited members: organisations that are not in tourism; D-13 food nearby only on places; D-12 a guide's page for clients; D-14 claimed pages, disputes, reviews; D-16 licensed guides only, D1 for Eshkol, malicious posts) |
+
+## Transport prices with their details (D-54): built 16 October 2026; trial at /next-transport/; not live
+
+A detailed price form for bus, van and car suppliers (job, route, vehicle, passengers, luggage, time, quoted or paid, VAT, what a day includes, extras) and one board for showing them, on the supplier's page and in the Quotes tab across all transport suppliers. Pull request #70 waits for the owner. **On production already** (add only, invisible to the live page): `supabase/migrations/2026-10-16_transport_details.sql` — column `vendor_prices.transport`, functions `_transport_clean`, `transport_prices`; `_price_clean`, `_price_write`, `vendor_detail` replaced. Probe `supabase/tests/transport_prices/production_probe.sql` passes; preview walk 46/46. Manny Weiss's three 7 Oct agent prices entered with their details.
 
 ## Eshkol / Midbari rentals (D-42) and wineries under Restaurant and Attraction / Site (D-43): live for Eretz Israel Tours since 12 October 2026; off for colleagues
 
