@@ -10,6 +10,29 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-55 · Mapeak's map, with the hike's route, on each hike's page (trial, not live: a copy at /next/, 16 October 2026)
+
+**Asked for:** Mapeak (Zeev), 16 October 2026: "Please also use that link for the embedded map <iframe src='https://mapeak.com/url/...' width='800' height='500' frameborder='5' scrolling='no'/>. I believe that for this to work, the URLs must be visible to our server." The owner (Eretz Israel Tours) passed the message on, asking for it to be built. Who can see a route is already settled by D-53 (15 Oct 2026: "Honestly I don't care if people on mapeak can see routes").
+
+**What changes from D-53 and D-37:** D-37 and D-53 said nothing of Mapeak's is shown in the app. Mapeak now asks for its map to be shown, so this opens that: Mapeak's own page, in a frame, on the hike's page. No Mapeak route is taken and nothing of Mapeak's is stored.
+
+**Built (trial):**
+- On the hike's page, for an approved hike with a route file (the same hikes that get the D-53 route button), a "Mapeak map" section directly under the route file box: Mapeak's page in a frame at the same address the button opens (`mapeak.com/url/` + our public route address, every "/" written as %2F). Full width, about 420 high on a phone (60% of the screen, at most 460), no border, loaded lazily, no referrer sent, titled "Route on Mapeak". Under it: "Map © Mapeak · Opens the route from this hike's file." and "Open full screen in Mapeak ↗" (new tab, same address).
+- The code is asked for (`hike_route_link`, unchanged) only when the section comes near the screen, so a member who never scrolls there makes no code and loads none of Mapeak; then kept per hike until the page is loaded again. While it comes: "Loading the Mapeak map…". If it cannot be had: "The Mapeak map could not load. Try again later." with Try again. The frame's address is only ever `hkMapeakRoute(code)`, and only for a code of 20 to 64 letters, digits, "-" or "_".
+- Sample mode shows a dashed sample box ("Sample hike. In the app, Mapeak's map with this hike's route shows here.") and asks nothing of anyone.
+- The open map's "Open in Mapeak" already opens the route for an approved hike with a route file (D-53, live since 16 Oct); kept, and checked again. Others keep the place link.
+- The Leaflet map, marked trails, "Where am I" and the route file box are unchanged. No database or edge function change.
+
+**Implementation choices (labelled, not owner rules):** no sandbox on the frame (Mapeak is a full app and was not tried with one) and no allow list (so Mapeak's "where am I" inside the frame is not offered); the link carries `noopener noreferrer`, like the app's other outside links; the frame starts loading when the section is about 300 pixels from the screen.
+
+**What Mapeak's side shows:** Mapeak's own source (github.com/IsraelHikingMap/Site) has a deliberate frame mode (`RunningContextService.isIFrame`: a plain toolbar with the Mapeak mark, no start-up dialogs, links open in a new tab). No X-Frame-Options or frame-ancestors setting was found in that source; the headers mapeak.com actually sends could not be read (the sandbox cannot reach mapeak.com, and the fetch tool does not show headers and is refused on `/url/` by Mapeak's robots rules). Mapeak's server, asked through `mapeak.com/api/files?url=` for one existing route address on 16 Oct, answered with the route parsed (one route, four parts, 111 points).
+
+**Checked:** `hike_page_walk.py` 133 checks (118 before, 15 new for D-55, on a 380 wide phone with a stand-in for Mapeak); `supabase/tests/hikes/preview_walk.py` 204.
+
+**Not checked:** Mapeak's real page inside the frame (on a real phone or any browser); whether a finger on the frame scrolls the page or moves the map on a real phone; Safari and Firefox.
+
+**Live:** not yet. The owner's word is needed (G1).
+
 ## D-54 · Transport prices with their details, and the Quotes tab fed from them (live since 16 October 2026, 10:38)
 
 **Owner, 16 Oct 2026, 09:27:** "Pricing for transportation needs a more detailed input area and it should copy to a more detailed quotes page. Options should be vehicle size - transfer to and from airport to and from city options. Luggage? Vehicle size? Time of day/night. What was paid. Vat? Anything I'm forgetting? And then that should automatically write to quote page. I'm thinking quote page should have same layout. Also layout of quote page should be like landing page with vehicle size, transfer, full day, and anything else that may be relevant. The transportation page ex Manny Weiss should have clearer pricing input areas and data fields. Start now."

@@ -12,7 +12,7 @@ OUT=(sys.argv[1] if len(sys.argv)>1 else '/tmp/hike_page').rstrip('/')+'/'; os.m
 res=[]; errs=[]
 PAGE=open(os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','..','..','index.html'),encoding='utf-8').read()
 END='\n})();\n</script>'; assert PAGE.count(END)==1
-HOOKED=PAGE.replace(END,'\nObject.assign(window,{S,DB,hkTrack,hkSketchHtml,hkFiguresHtml,hkProfileHtml,hkMapData,hkPlaceLL,hkGpxFileText,hkPlaceRow,hkLinkProps,hkWaze,hkGmaps,hkLoadGpx,demoHikesInit,HK_GPX_HEAD,__inl:()=>hkMapNow,__full:()=>hkFullNow});'+END)
+HOOKED=PAGE.replace(END,'\nObject.assign(window,{S,DB,hkTrack,hkSketchHtml,hkFiguresHtml,hkProfileHtml,hkMapData,hkPlaceLL,hkGpxFileText,hkPlaceRow,hkLinkProps,hkWaze,hkGmaps,hkLoadGpx,demoHikesInit,HK_GPX_HEAD,hkCodes,hkMapeakRoute,__inl:()=>hkMapNow,__full:()=>hkFullNow});'+END)
 ROOT=os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','..','..')
 def tile_png():   # a stand-in for a map picture: pale ground, a grid, the words "test tile"
     im=Image.new('RGB',(256,256),(236,232,220)); d=ImageDraw.Draw(im); d.rectangle([0,0,255,255],outline=(205,198,180)); d.line([0,128,255,128],fill=(222,216,200)); d.line([128,0,128,255],fill=(222,216,200)); d.text((8,8),'test tile',fill=(170,160,140))
@@ -20,7 +20,7 @@ def tile_png():   # a stand-in for a map picture: pale ground, a grid, the words
 def trail_png():   # a stand-in for the marked-trails picture: see-through, with one green line across it
     im=Image.new('RGBA',(256,256),(0,0,0,0)); d=ImageDraw.Draw(im); d.line([0,40,255,200],fill=(46,139,61,255),width=4)
     b=io.BytesIO(); im.save(b,'PNG'); return b.getvalue()
-TILE=tile_png(); TRAIL=trail_png(); TILES=[]; TRAILS=[]; OTHER=[]
+TILE=tile_png(); TRAIL=trail_png(); TILES=[]; TRAILS=[]; OTHER=[]; FRAMES=[]
 def check(n,c,d=''):
     res.append((n,bool(c))); print(("PASS " if c else "FAIL ")+n+((" :: "+str(d)[:3000]) if not c else ''))
 ANDROID='Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Mobile Safari/537.36'
@@ -55,6 +55,7 @@ async def start(p, tag, ua, w, h, init='', opts=(), geo=None):
     await ctx.route('https://tile.waymarkedtrails.org/**', trail)
     if geo: await ctx.grant_permissions(['geolocation']); await ctx.set_geolocation({'latitude':geo[0],'longitude':geo[1],'accuracy':12})
     pg=await ctx.new_page(); pg.on('pageerror', lambda e: errs.append(tag+' pageerror: '+str(e)))
+    pg.on('request', lambda r: FRAMES.append(r.url) if r.resource_type=='document' and r.frame!=pg.main_frame else None)   # a page inside a frame (D-55)
     pg.on('request', lambda r: OTHER.append(r.url) if not r.url.startswith(('http://localhost:8765/','https://tile.openstreetmap.org/','https://tile.waymarkedtrails.org/','https://fonts.','https://cdn.jsdelivr.net/','data:','blob:')) else None)
     await pg.goto('http://localhost:8765/index.html'); await pg.wait_for_selector('[data-tab="hikes"]')
     await pg.add_style_tag(content='#demoAs,.demo-bar{display:none!important}')   # the preview's own "View as" bar is wider than a small phone
@@ -353,6 +354,10 @@ async def main():
                 u=pop.url; await pop.close(); return u
             except Exception: return None
         await open_hike(pg,'Nahal Og'); await pg.wait_for_selector('#hkRouteBox [data-hmapeak]')
+        # D-55: in sample mode the Mapeak map is a sample box, with no frame and nothing asked of anyone
+        await pg.eval_on_selector('#hkMpk','e=>e.scrollIntoView({block:"center"})'); await pg.wait_for_selector('#hkMpk .hk-mpk-box.sample')
+        sm=await pg.evaluate("()=>{ const s=document.querySelector('#hkMpk'); return [s.previousElementSibling&&s.previousElementSibling.id, s.querySelector('.hk-mpk-k').textContent, s.querySelector('.hk-mpk-box').textContent.trim(), s.querySelectorAll('iframe').length]; }")
+        check('mapeak map, sample mode: directly under the route file box a "Mapeak map" section shows a sample box, with no frame', sm==['hkRouteBox','Mapeak map','Sample hike. In the app, Mapeak\u2019s map with this hike\u2019s route shows here.',0], sm)
         rb=await pg.evaluate("""()=>{ const box=document.querySelector('#hkRouteBox'), bs=[...box.querySelectorAll('.hkp-btns > *')], h=box.querySelector('.hkp-mphint');
             return [bs.map(b=>b.textContent.trim()), h.textContent, bs.every(b=>{ const r=b.getBoundingClientRect(); return r.left>=0&&r.right<=innerWidth&&r.height>=40; }), document.querySelectorAll('#sheetWrap [data-hmapeak]').length]; }""")
         check('mapeak: beside the route file on the hike\'s page, one "Open in Mapeak", with the line on who can see the route under it, both inside a 380 wide phone',
@@ -390,21 +395,77 @@ async def main():
         check('mapeak: a browser that stops the window gets a message, and the page stays where it is', t4.startswith('The browser stopped Mapeak from opening') and await pg.locator('#sheetWrap .hkp-card').count()>0, t4)
         await pg.evaluate("()=>{ window.open=window.__open; }")
         check('mapeak: the app page itself never asked Mapeak for anything (only the new windows went there)', all(not x.startswith('https://mapeak.com') for x in OTHER), [x for x in OTHER if 'mapeak' in x])
+        check('mapeak map: in sample mode no frame was loaded at all', FRAMES==[], FRAMES)
         await pg.click('#closeS')
         # a hike that is not approved: no route button; the open map keeps the place link
         await pg.evaluate("()=>{ S.demoHikes.find(x=>x.name==='Nahal Og, lower canyon').review_status='pending'; }")
         await open_hike(pg,'Nahal Og'); await pg.wait_for_selector('#hkRouteBox [data-hgpx2]'); await pg.wait_for_selector('#hkMap .leaflet-container')
-        np=[await pg.locator('#sheetWrap [data-hmapeak]').count(), await pg.locator('#sheetWrap .hkp-mphint').count()]
+        np=[await pg.locator('#sheetWrap [data-hmapeak]').count(), await pg.locator('#sheetWrap .hkp-mphint').count(), await pg.locator('#sheetWrap #hkMpk').count()]
         await pg.click('#hkMapCap [data-hmap]'); await pg.wait_for_selector('#hkMapFull [data-mapeak]')
         lk=await pg.evaluate("()=>{ const a=document.querySelector('#hkMapFull [data-mapeak]'); return [a.tagName, (a.getAttribute('href')||'').slice(0,29), a.target, document.querySelectorAll('#hkMapFull .hkmf-hint').length]; }")
-        check('mapeak: a hike that waits for approval has no route button and no line; its open map keeps the place link of before', np==[0,0] and lk==['A','https://mapeak.com/map/15.00/','_blank',0], [np, lk])
+        check('mapeak: a hike that waits for approval has no route button, no line and no Mapeak map section; its open map keeps the place link of before', np==[0,0,0] and lk==['A','https://mapeak.com/map/15.00/','_blank',0], [np, lk])
         await pg.click('#hkMapFull [data-x]'); await pg.click('#closeS')
         # a hike with no route file: the place link only
         await pg.evaluate("()=>{ const h=S.demoHikes.find(x=>x.name==='Nahal Darga'); h.start_place='https://www.google.com/maps/@31.5903,35.3921,16z'; h.gpxFile=null; }")
         await open_hike(pg,'Nahal Darga'); await pg.wait_for_selector('#hkMapCap [data-hmap]')
-        n0=await pg.locator('#sheetWrap [data-hmapeak]').count(); await pg.click('#hkMapCap [data-hmap]'); await pg.wait_for_selector('#hkMapFull [data-mapeak]')
+        n0=await pg.locator('#sheetWrap [data-hmapeak], #sheetWrap #hkMpk').count(); await pg.click('#hkMapCap [data-hmap]'); await pg.wait_for_selector('#hkMapFull [data-mapeak]')
         lk2=await pg.evaluate("()=>{ const a=document.querySelector('#hkMapFull [data-mapeak]'); return [a.tagName, a.getAttribute('href'), document.querySelectorAll('#hkMapFull .hkmf-hint').length]; }")
-        check('mapeak: a hike with no route file keeps "Open in Mapeak" as the link to Mapeak at the start, and has no route button', n0==0 and lk2==['A','https://mapeak.com/map/15.00/31.5903/35.3921',0], [n0, lk2])
+        check('mapeak: a hike with no route file keeps "Open in Mapeak" as the link to Mapeak at the start, and has no route button and no Mapeak map section', n0==0 and lk2==['A','https://mapeak.com/map/15.00/31.5903/35.3921',0], [n0, lk2])
+        await b.close()
+        # ================= D-55: the Mapeak map on the hike's page, as in the app (the database gives a code), 380 wide =================
+        b,pg=await start(p,'mpk',ANDROID,380,800); OTHER.clear(); FRAMES.clear(); MF=[]
+        async def mapeak2(route): MF.append(route.request.url); await route.fulfill(body='<!doctype html><title>stand-in for Mapeak</title><body style="margin:0;background:#cde">stand-in for Mapeak</body>', content_type='text/html')
+        await pg.context.route('https://mapeak.com/**', mapeak2)
+        await pg.evaluate("c=>{ window.__asked=[]; window.__give=c; DB.hikeRouteLink=async id=>{ window.__asked.push(id); await new Promise(r=>setTimeout(r,200)); if(window.__give==='ERR') throw new Error('Failed to fetch'); return window.__give; }; }", CODE)
+        await open_hike(pg,'Nahal Og'); await pg.wait_for_selector('#hkRouteBox [data-hmapeak]'); await pg.wait_for_timeout(400)
+        hid=await pg.evaluate("()=>demoHikesInit().find(x=>x.name==='Nahal Og, lower canyon').id")
+        far=await pg.evaluate("()=>document.querySelector('#hkMpk').getBoundingClientRect().top>innerHeight+300"); a0=await pg.evaluate('()=>window.__asked.length')
+        check('mapeak map: the section is below the screen when the page opens, and no code is asked for until it comes near', far and a0==0, [far, a0])
+        await pg.eval_on_selector('#hkMpk','e=>e.scrollIntoView({block:"start"})'); await pg.wait_for_selector('#hkMpk iframe')
+        fr=await pg.evaluate('''()=>{ const s=document.querySelector('#hkMpk'), f=s.querySelector('iframe'), a=s.querySelector('.hk-mpk-cap a'), r=f.getBoundingClientRect(), R=s.getBoundingClientRect();
+            return {src:f.getAttribute('src'), title:f.title, loading:f.getAttribute('loading'), ref:f.getAttribute('referrerpolicy'), sandbox:f.hasAttribute('sandbox'), allow:f.hasAttribute('allow'), border:getComputedStyle(f).borderTopWidth,
+              w:Math.round(r.width)===Math.round(R.width), h:Math.round(r.height), cap:s.querySelector('.hk-mpk-cap').textContent, href:a.getAttribute('href'), target:a.target, rel:a.rel, prev:s.previousElementSibling.id,
+              mine:hkMapeakRoute(window.__give)}; }''')
+        check('mapeak map: the frame\'s address is exactly hkMapeakRoute(code), the same address the button opens', fr['src']==ROUTE_URL==fr['mine'] and fr['prev']=='hkRouteBox', fr)
+        check('mapeak map: the frame is titled "Route on Mapeak", loads lazily, sends no referrer, has no border, no sandbox and no allow list, and fills the width', fr['title']=='Route on Mapeak' and fr['loading']=='lazy' and fr['ref']=='no-referrer' and not fr['sandbox'] and not fr['allow'] and fr['border']=='0px' and fr['w'], fr)
+        check('mapeak map: on a phone the frame is about 420 high (60% of the screen, at most 460)', 400<=fr['h']<=460, fr['h'])
+        check('mapeak map: under it, "Map © Mapeak · Opens the route from this hike\'s file." and "Open full screen in Mapeak ↗" to the same address in a new tab', fr['cap']=='Map © Mapeak · Opens the route from this hike’s file. Open full screen in Mapeak ↗' and fr['href']==ROUTE_URL and fr['target']=='_blank' and 'noopener' in fr['rel'].split(), fr)
+        await pg.wait_for_timeout(500)
+        check('mapeak map: the frame asked Mapeak for the route address and nothing else; the app page itself asked Mapeak for nothing else', FRAMES==[ROUTE_URL] and MF==[ROUTE_URL] and all(x==ROUTE_URL for x in OTHER if 'mapeak' in x), [FRAMES, MF])
+        check('mapeak map: at 380 wide, with the frame, nothing runs off the side of the hike\'s page', not await over(pg) and await inside(pg)==[], await inside(pg))
+        await pg.screenshot(path=OUT+'hp_15_mapeak_map.png')
+        # the open map's "Open in Mapeak" opens the route (D-53, kept)
+        await pg.eval_on_selector('#hkMapCap','e=>e.scrollIntoView({block:"center"})'); await pg.click('#hkMapCap [data-hmap]'); await pg.wait_for_selector('#hkMapFull button[data-mapeak]')
+        try:
+            async with pg.context.expect_page(timeout=4000) as pi: await pg.click('#hkMapFull [data-mapeak]')
+            pop=await pi.value; await pop.wait_for_url('https://mapeak.com/**', timeout=4000); u6=pop.url; await pop.close()
+        except Exception as e: u6=str(e)
+        check('mapeak map: "Open in Mapeak" on the open map of the same hike opens the route address', u6==ROUTE_URL, u6); await pg.click('#hkMapFull [data-x]')
+        # the code is kept per hike: closing and opening the hike again does not ask for the map
+        n1=await pg.evaluate('()=>window.__asked.length')
+        await pg.click('#closeS'); await open_hike(pg,'Nahal Og'); await pg.eval_on_selector('#hkMpk','e=>e.scrollIntoView({block:"start"})'); await pg.wait_for_selector('#hkMpk iframe')
+        n2=await pg.evaluate('()=>window.__asked.length')
+        check('mapeak map: the code is kept for the hike: opened again, the map comes without asking the database again', n2==n1 and await pg.evaluate('id=>hkCodes.get(id)', hid)==CODE and await pg.get_attribute('#hkMpk iframe','src')==ROUTE_URL, [n1, n2])
+        # failure, and Try again
+        await pg.click('#closeS'); await pg.evaluate("()=>{ hkCodes.clear(); window.__give='ERR'; }")
+        await open_hike(pg,'Nahal Og'); await pg.eval_on_selector('#hkMpk','e=>e.scrollIntoView({block:"start"})'); await pg.wait_for_selector('#hkMpk [data-mpk-retry]')
+        fl=await pg.evaluate("()=>[document.querySelector('#hkMpk .hk-mpk-box p').textContent, document.querySelector('#hkMpk [data-mpk-retry]').textContent, document.querySelectorAll('#hkMpk iframe').length]")
+        check('mapeak map: when the code cannot be had, the section says "The Mapeak map could not load. Try again later." with a Try again button, and no frame', fl==['The Mapeak map could not load. Try again later.','Try again',0], fl)
+        check('mapeak map: the failure line fits a 380 wide phone', not await over(pg) and await inside(pg)==[], await inside(pg))
+        await pg.screenshot(path=OUT+'hp_16_mapeak_map_failed.png')
+        await pg.evaluate("c=>{ window.__give=c; }", CODE); await pg.click('#hkMpk [data-mpk-retry]'); await pg.wait_for_selector('#hkMpk iframe')
+        check('mapeak map: Try again, once the code comes, shows the map at the route address', await pg.get_attribute('#hkMpk iframe','src')==ROUTE_URL)
+        # a code that does not look like one is never put in the frame
+        bad_codes=['short','x'*70,'abc/def/ghi/jkl/mno/pqr/stu','"><script>x</script>aaaaaaaaaaaa','a%2Fb'*6, 12345678901234567890123, None]
+        seen=[]
+        for c in bad_codes:
+            await pg.click('#closeS'); await pg.evaluate("c=>{ hkCodes.clear(); window.__give=c; }", c)
+            await open_hike(pg,'Nahal Og'); await pg.eval_on_selector('#hkMpk','e=>e.scrollIntoView({block:"start"})')
+            try: await pg.wait_for_selector('#hkMpk [data-mpk-retry], #hkMpk .sample', timeout=5000)
+            except Exception: pass
+            seen.append([await pg.locator('#hkMpk iframe').count(), await pg.locator('#hkMpk [data-mpk-retry]').count()])
+        # None in sample mode is the sample box (no retry); every other bad code is the failure line
+        check('mapeak map: a code that is not 20 to 64 letters, digits, - or _ is refused: no frame, the failure line instead', seen[:-1]==[[0,1]]*(len(bad_codes)-1) and seen[-1][0]==0, seen)
         await b.close()
     bad=[n for n,c in res if not c]
     for e in errs: print('ERR',e)
