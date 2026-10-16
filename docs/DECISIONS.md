@@ -10,7 +10,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
-## D-56 · Mapeak's map, with the hike's route, on each hike's page (trial, not live: a copy at /next/, 16 October 2026)
+## D-56 · Mapeak's map, with the hike's route, on each hike's page (live since 16 October 2026)
 
 **Asked for:** Mapeak (Zeev), 16 October 2026: "Please also use that link for the embedded map <iframe src='https://mapeak.com/url/...' width='800' height='500' frameborder='5' scrolling='no'/>. I believe that for this to work, the URLs must be visible to our server." The owner (Eretz Israel Tours) passed the message on, asking for it to be built. Who can see a route is already settled by D-53 (15 Oct 2026: "Honestly I don't care if people on mapeak can see routes").
 
