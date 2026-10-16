@@ -706,6 +706,15 @@ a.hk-link,.hk-src a{color:var(--tab-on)}
 .hkmf-tools a.hkp-go{text-decoration:none}
 .hkmf-hint{flex:1 1 100%;margin:-2px 0 0;font-size:12.5px;color:var(--ink-2);text-align:center}
 .hkp-mphint{margin:6px 0 0}
+/* D-56 (trial): Mapeak's own map with the hike's route, under the route file box */
+.hk-mpk{margin-top:14px}
+.hk-mpk-k{font-size:13px;color:var(--ink-3);margin:0 0 6px}
+.hk-mpk-box{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:8px;min-height:72px;box-sizing:border-box;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--wash);font-size:14px;color:var(--ink-2)}
+.hk-mpk-box p{margin:0}
+.hk-mpk-box.on{display:block;padding:0;border:0;background:transparent}
+.hk-mpk-box.sample{border-style:dashed}
+.hk-mpk-frame{display:block;width:100%;height:min(60vh,460px);border:0;border-radius:10px;background:var(--wash)}
+.hk-mpk-cap{margin:6px 0 0!important;font-size:12.5px;line-height:1.45;color:var(--ink-2)}
 .hkmf-tools .hkp-go svg{flex:none}
 .hkmf .hkm-note{left:62px;max-width:calc(100% - 72px)}
 .act .act-sub{display:block;font-size:10.5px;font-weight:400;color:var(--ink-2)}
@@ -5430,7 +5439,7 @@ async function openHike(id){
     <h3 class="hkp-h">The trail</h3>
     <div class="hkp-card">
       ${mk.length?`<div class="hkp-row"><span class="hkp-k">Markers</span><div class="hkp-v"><span style="display:flex;flex-direction:column;gap:6px">${mk.map(m=>`<span class="hk-mrow">${hkMark(m.color)}<span>${esc(hkMarkTxt(m))}</span></span>`).join('')}${mk.length>1?'<span class="hint">In walking order</span>':''}</span></div></div>`:''}
-      <div class="hkp-row" id="hkRoute"><span class="hkp-k">Route</span><div class="hkp-v">${h.gpx?`A recorded route is on file.<div class="hint">From ${esc(h.gpx.by)}, ${esc(fmtDate(h.gpx.at))}</div>`:'<span class="hint">No recorded route yet. Add one with your report and it is drawn on the map.</span>'}</div>${h.gpx?'<div id="hkRouteBox" class="hkp-wide"><p class="hint" style="margin:0">Loading the route…</p></div>':''}</div>
+      <div class="hkp-row" id="hkRoute"><span class="hkp-k">Route</span><div class="hkp-v">${h.gpx?`A recorded route is on file.<div class="hint">From ${esc(h.gpx.by)}, ${esc(fmtDate(h.gpx.at))}</div>`:'<span class="hint">No recorded route yet. Add one with your report and it is drawn on the map.</span>'}</div>${h.gpx?'<div id="hkRouteBox" class="hkp-wide"><p class="hint" style="margin:0">Loading the route…</p></div>':''}${hkRouteOk(h)?HK_MPK_HTML:''}</div>
     </div>
     ${parkBox?`<h3 class="hkp-h">The place</h3>${parkBox}`:''}
     ${h.notes?`<h3 class="hkp-h">Important notes</h3><div class="hkp-card"><p class="hkp-notes">${esc(h.notes)}</p></div>`:''}
@@ -5475,6 +5484,7 @@ async function openHike(id){
     const d0=t?hkMapData(h,t):null; box.innerHTML=t?hkFiguresHtml(t):''; fileBtn(box, d0&&(d0.start||d0.end));
   }).catch(()=>{ showMap(null, true); const box=w.querySelector('#hkRouteBox'); if(box&&!box.querySelector('[data-hgpx2]')){ box.innerHTML='<p class="hint" style="margin:0">The route did not load just now.</p>'; fileBtn(box); } });
   else showMap(null, false);
+  hkMpkWire(w.querySelector('#hkMpk'), h);
   const ed=w.querySelector('[data-hedit]'); if(ed) ed.onclick=()=>openHikeForm(h);
   const sg=w.querySelector('[data-hsug]'); if(sg) sg.onclick=()=>openHikeSuggest(h);
   w.querySelectorAll('[data-hdec]').forEach(b=>b.onclick=async()=>{ const yes=b.dataset.hdec==='yes'; b.disabled=true;
@@ -5577,6 +5587,31 @@ function hkOpenMapeak(h, ll){ const place=ll?hkMapeak(ll):'https://mapeak.com/';
       if(!code){ toast('Sample hike: in the app this opens its route in Mapeak. Here Mapeak opens at the place.'); go(place); return; }
       go(hkMapeakRoute(code)); })
     .catch(()=>{ toast('Mapeak could not get the route just now, so it opens at the place.'); go(place); }); }
+// D-56 (trial at /next/): Mapeak's own map, showing the hike's route, under the route file box (Mapeak asked for it,
+// 16 Oct 2026). The map is Mapeak's page in a frame, at the same mapeak.com/url/ address the button opens; Mapeak's
+// server fetches the route from our public address, as for the button. The code is asked for only when the section
+// comes near the screen (a member who never scrolls there makes no code and loads none of Mapeak), and is kept per hike
+// until the page is loaded again. The frame's address is only ever hkMapeakRoute(code), and only for a code that looks
+// like one. Sample mode shows a sample box and asks nothing of anyone.
+const HK_CODE_OK=/^[A-Za-z0-9_-]{20,64}$/, hkCodes=new Map();
+const HK_MPK_HTML='<div id="hkMpk" class="hkp-wide hk-mpk"><div class="hk-mpk-k">Mapeak map</div><div class="hk-mpk-box" data-mpk role="status"><p class="hint">The Mapeak map loads here.</p></div></div>';
+function hkMpkWire(sec, h){ if(!sec) return; const box=sec.querySelector('[data-mpk]'); let busy=false;
+  const set=(cls, html)=>{ box.className='hk-mpk-box'+(cls?' '+cls:''); box.innerHTML=html; };
+  const fail=()=>{ set('', '<p>The Mapeak map could not load. Try again later.</p><button class="hkp-go" type="button" data-mpk-retry>Try again</button>'); box.querySelector('[data-mpk-retry]').onclick=load; };
+  const show=code=>{ const u=hkMapeakRoute(code); set('on','');
+    const f=document.createElement('iframe'); f.className='hk-mpk-frame'; f.title='Route on Mapeak'; f.setAttribute('loading','lazy'); f.referrerPolicy='no-referrer'; f.setAttribute('referrerpolicy','no-referrer'); f.src=u;
+    const cap=document.createElement('p'); cap.className='hk-mpk-cap'; cap.append('Map © Mapeak · Opens the route from this hike’s file. ');
+    const a=document.createElement('a'); a.className='hk-link'; a.href=u; a.target='_blank'; a.rel='noopener noreferrer'; a.textContent='Open full screen in Mapeak ↗'; cap.append(a);
+    box.removeAttribute('role'); box.append(f, cap); };
+  function load(){ if(busy) return; busy=true; set('', '<p class="hint">Loading the Mapeak map…</p>'); box.setAttribute('role','status');
+    const had=hkCodes.get(h.id), slow=new Promise((ok,no)=>setTimeout(()=>no(new Error('slow')),12000));
+    (had?Promise.resolve(had):Promise.race([DB.hikeRouteLink(h.id), slow])).then(code=>{ busy=false; if(!document.body.contains(box)) return;
+        if(code==null&&!LIVE){ set('sample','<p><b>Sample hike.</b> In the app, Mapeak’s map with this hike’s route shows here.</p>'); return; }
+        if(typeof code!=='string'||!HK_CODE_OK.test(code)){ fail(); return; }
+        hkCodes.set(h.id, code); show(code); })
+      .catch(()=>{ busy=false; if(document.body.contains(box)) fail(); }); }
+  if(typeof IntersectionObserver==='function'){ const io=new IntersectionObserver(es=>{ if(!es.some(e=>e.isIntersecting)) return; io.disconnect(); load(); },{rootMargin:'300px 0px'}); io.observe(sec); }
+  else load(); }
 var hkMapNow=null, hkFullNow=null, hkLeafP=null, hkLeafOk=false, hkTrailsOn=true;
 // The map library is ready only when both its script and its style sheet have come; either one failing, or twelve
 // seconds passing, counts as no map, and the next hike tries again from the start.
