@@ -5562,7 +5562,7 @@ const hkMapeak=ll=>'https://mapeak.com/map/15.00/'+ll[0].toFixed(4)+'/'+ll[1].to
 // else, only while the route file is on the hike and the hike is approved. Anyone holding the address can fetch the
 // route: the owner's choice (15 and 16 Oct 2026). Nothing of Mapeak's is shown here and no Mapeak route is taken.
 const HK_ROUTE_FN=SUPABASE_URL+'/functions/v1/route/';
-const hkMapeakRoute=code=>'https://mapeak.com/url/'+encodeURIComponent(HK_ROUTE_FN+code+'.gpx');
+const hkMapeakRoute=code=>'https://mapeak.com/url/'+(HK_ROUTE_FN+code+'.gpx').replace(/\//g,'%2F');   // Mapeak's own instruction (16 Oct 2026): replace every "/" with %2F
 const hkRouteOk=h=>!!(h&&h.gpx&&h.review_status==='approved');
 const HK_MAPEAK_HINT='Opens the route in Mapeak. Anyone with that link can see the route.';
 // The tap opens a blank window at once (a phone lets a window open only on the tap itself), then sends it to Mapeak
