@@ -10,6 +10,32 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-53 · "Open in Mapeak" opens the hike's own route (production database and edge function live; the page is a trial copy at /next/, 16 October 2026)
+
+**Decided by:** the owner (Eretz Israel Tours). 15 October 2026, 23:31: "Honestly I don't care if people on mapeak can see routes". 16 October 2026, 09:13, offered "Make 'Open in Mapeak' open the actual hike": "Do first now".
+
+**What D-37 had left open:** Mapeak opens a route from a web address, but the route file would have to be fetchable by anyone holding that address. The owner has now said that is fine.
+
+**How Mapeak does it (read in its source, github.com/IsraelHikingMap/Site, 16 Oct 2026):** the address `https://mapeak.com/url/<file address>` is read by Mapeak's router as one part (`RouteStrings.URL`, `hash.service.ts`), so the file address must be encoded as one part (`encodeURIComponent`). The page then asks Mapeak's own server, `GET /api/files?url=<file address>` (`file.service.ts` `openFromUrl`, `FilesController.GetRemoteFile`), and that server fetches the file itself (`RemoteFileFetcherGateway`), with no headers of ours, and takes the format from the file name in `Content-Disposition` or from the end of the address. So the file must be reachable by anyone with no key or link, and it ends in `.gpx`. The address must not hold `&` (Mapeak does not encode it again); ours holds none.
+
+**What is built:**
+
+- **A code per route file.** `hike_gpx.link_code`: 32 random characters (24 random bytes, about 192 bits), letters of a web address only. Kept on the route file's row, not on the hike, because the link is to that file and the row's own "removed" mark is what turns it off. Made the first time a member asks, the same for everyone after.
+- **`hike_route_link(token, hike)`**: the same checks as `hike_gpx` (the link is good, Hikes are open to him, he can see the hike), and the hike must be approved and have a route file that is not removed. Gives the code.
+- **The edge function `route`** (no key needed): `https://wjuqtjlrtcywjaspjpwu.supabase.co/functions/v1/route/<code>.gpx`. It asks the database (`_hike_route_public`, callable with the service key only) for the GPX of that code, only while the file is not removed and the hike is approved, and sends that GPX and nothing else; anything else is "Not found". The stored GPX holds points, heights and the names of marked spots only (`hkCleanGpx`, `_hike_gpx_put`); the function cuts out anything personal a GPX file can hold, as a second guard.
+- **Replaced, removed:** a replaced route file keeps its code (its row is updated in place), so a link handed out earlier shows the new route. A removed route file, or a hike taken off the list, stops the link at once; put back, the same code works again.
+- **The page.** "Open in Mapeak" on the open map, and beside "Open or save the route file" on the hike's page, with the line "Opens the route in Mapeak. Anyone with that link can see the route." The tap opens a blank window at once (a phone allows a new window only on the tap), then sends it to Mapeak with the route. If the code cannot be had, Mapeak opens at the place as before, with a message. A hike with no route file, or one that waits for approval, keeps the old place link. Sample mode opens Mapeak at the place and says that a sample hike has no route address.
+
+**Not done, on purpose:** Mapeak's map is not shown in the app and no Mapeak route is taken (no permission for that; D-37).
+
+**Who sees what, new to the outside:** anyone holding a hike's Mapeak address can fetch that hike's route (points and heights; no names of members, no hike name, no notes). Mapeak's server fetches it, and Mapeak may keep or show it: the owner's stated choice. The privacy line still to be written (D-36, D-37) should name this too.
+
+**Checked:** `supabase/tests/route_link/run.sh` 49 checks (local Postgres 16; the schema record and the migration build the same database); `supabase/tests/route_link/production_probe.sql` on production, rolled back, every value as expected; on production the function line equals the tested build (170 functions). Over the internet, from the database server, with no headers: a code on one of the owner's approved hikes gave its GPX (`application/gpx+xml`, `Content-Disposition: inline; filename="route.gpx"`, `Access-Control-Allow-Origin: *`), byte for byte the stored route after the XML opening line; a wrong code and a short one gave 404. Mapeak's own server, asked through `mapeak.com/api/files?url=` with that address, answered with the route as one route of four parts. `hike_page_walk.py` 117, `preview_walk.py` 204.
+
+**Not checked:** a real phone tapping the button and Mapeak drawing the route on its map (the sandbox cannot open mapeak.com in a browser); Safari and Firefox.
+
+---
+
 ## D-43 · Wineries under Restaurant and under Attraction / Site (live for Eretz Israel Tours since 12 October 2026; switched off for colleagues)
 
 **Decided by:** the owner (Eretz Israel Tours), 12 October 2026. 09:30: "move winery and put it under sites." 10:21, of the mock-up: "Looks good. But put wineries under restaurants and under sites".

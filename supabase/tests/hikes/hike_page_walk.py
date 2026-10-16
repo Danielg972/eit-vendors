@@ -121,9 +121,9 @@ async def main():
         check('android: on the open map, start and end each offer Waze and the Google Maps app, at the first and the last point of the recording', ends==[['Where the recording starts',['Waze',intent('https://waze.com/ul?ll='+s_ll+'&navigate=yes',WAZE),'',''],['Google Maps',intent(G+s_ll,MAPS),'','']],['Where the recording ends',['Waze',intent('https://waze.com/ul?ll='+e_ll+'&navigate=yes',WAZE),'',''],['Google Maps',intent(G+e_ll,MAPS),'','']]], ends)
         await pg.click('#hkMapCap [data-hmap]'); await pg.wait_for_selector('#hkMapFull .leaflet-container')
         F=await pg.evaluate('''()=>{ const f=__full(), el=f.el, r=el.getBoundingClientRect(), mid=document.elementFromPoint(innerWidth/2, innerHeight/2); return {covers:r.top===0&&r.left===0&&Math.round(r.width)===innerWidth&&Math.round(r.height)===innerHeight, onTop:el.contains(mid), moves:[f.map.dragging.enabled(), f.map.touchZoom.enabled()], bar:el.querySelector('.hkmf-bar').textContent.trim().replace(/\\s+/g,' '), tools:[...el.querySelectorAll('.hkmf-tools button')].map(b=>[b.textContent.trim(), Math.round(b.getBoundingClientRect().height)>=40]), att:el.querySelector('.leaflet-control-attribution').textContent.trim(), over:document.documentElement.scrollWidth>innerWidth+1}; }''')
-        check('android: a tap on the map opens it over the whole screen, where it moves and zooms, with its credit', F=={'covers':True,'onTop':True,'moves':[True,True],'bar':'Nahal Og, lower canyonClose the map','tools':[['Where am I',True],['Whole route',True],['Marked trails: on',True]],'att':'© OpenStreetMap contributors, marked trails: Waymarked Trails','over':False}, F)
-        mk=await pg.evaluate('''()=>{ const a=document.querySelector('#hkMapFull [data-mapeak]'), r=a.getBoundingClientRect(); return [a.textContent.trim(), a.getAttribute('href'), a.target, a.rel, Math.round(r.height)>=40, r.right<=innerWidth&&r.bottom<=innerHeight]; }''')
-        check('android: the open map offers "Open in Mapeak", an ordinary link to Mapeak\'s own map at the start of the walk', mk==['Open in Mapeak','https://mapeak.com/map/15.00/%.4f/%.4f'%(pts[0][0],pts[0][1]),'_blank','noopener noreferrer',True,True], mk)
+        check('android: a tap on the map opens it over the whole screen, where it moves and zooms, with its credit', F=={'covers':True,'onTop':True,'moves':[True,True],'bar':'Nahal Og, lower canyonClose the map','tools':[['Where am I',True],['Whole route',True],['Marked trails: on',True],['Open in Mapeak',True]],'att':'© OpenStreetMap contributors, marked trails: Waymarked Trails','over':False}, F)
+        mk=await pg.evaluate('''()=>{ const a=document.querySelector('#hkMapFull [data-mapeak]'), r=a.getBoundingClientRect(), t=document.querySelector('#hkMapFull .hkmf-hint'), q=t.getBoundingClientRect(); return [a.textContent.trim(), a.tagName, a.getAttribute('href'), Math.round(r.height)>=40, r.right<=innerWidth&&r.bottom<=innerHeight, t.textContent, q.left>=0&&q.right<=innerWidth&&q.bottom<=innerHeight]; }''')
+        check('android: the open map of a hike with an approved route offers "Open in Mapeak" as a button that opens the route (D-53), with the line on who can see it', mk==['Open in Mapeak','BUTTON',None,True,True,'Opens the route in Mapeak. Anyone with that link can see the route.',True], mk)
         tr=[await pg.evaluate('()=>document.querySelectorAll("#hkMapFull img.leaflet-tile[src*=waymarkedtrails]").length')]
         await pg.click('#hkMapFull [data-trails]'); await pg.wait_for_timeout(200)
         tr+=[await pg.evaluate('()=>document.querySelectorAll("#hkMapFull img.leaflet-tile[src*=waymarkedtrails]").length'), await pg.inner_text('#hkMapFull [data-trails]'), await pg.get_attribute('#hkMapFull [data-trails]','aria-pressed'), await pg.inner_text('#hkMapFull .leaflet-control-attribution')]
@@ -291,7 +291,7 @@ async def main():
         b,pg=await start(p,'no_trails',ANDROID,320,640, opts=('no_trails',)); await open_hike(pg,'Nahal Og'); await pg.wait_for_selector('#hkMap .leaflet-container'); await pg.wait_for_timeout(600)
         n1=await pg.evaluate('()=>[document.querySelector("#hkMap .hkm-note").hidden, [...document.querySelectorAll("#hkMap img.leaflet-tile[src*=openstreetmap]")].filter(i=>i.complete&&i.naturalWidth===256).length>0]')
         await pg.click('#hkMapCap [data-hmap]'); await pg.wait_for_selector('#hkMapFull'); await pg.wait_for_timeout(400)
-        n2=await pg.evaluate('()=>{ const els=[...document.querySelectorAll("#hkMapFull .hkmf-tools > *")].map(e=>e.getBoundingClientRect()); return [document.querySelector("#hkMapFull .hkm-note").hidden, els.length, els.every(r=>r.left>=0&&r.right<=innerWidth&&r.bottom<=innerHeight&&r.height>=40), document.documentElement.scrollWidth<=innerWidth+1, document.querySelector("#hkMapFull .hkmf-map").getBoundingClientRect().height>200]; }')
+        n2=await pg.evaluate('()=>{ const els=[...document.querySelectorAll("#hkMapFull .hkmf-tools > .hkp-go")].map(e=>e.getBoundingClientRect()), hint=document.querySelector("#hkMapFull .hkmf-hint").getBoundingClientRect(); if(hint.left<0||hint.right>innerWidth||hint.bottom>innerHeight) return ["hint outside"]; return [document.querySelector("#hkMapFull .hkm-note").hidden, els.length, els.every(r=>r.left>=0&&r.right<=innerWidth&&r.bottom<=innerHeight&&r.height>=40), document.documentElement.scrollWidth<=innerWidth+1, document.querySelector("#hkMapFull .hkmf-map").getBoundingClientRect().height>200]; }')
         check('no trail pictures: the map itself is unharmed and says nothing is wrong; at 320 wide the four buttons of the open map fit, and the map keeps its room', n1==[True,True] and n2==[True,4,True,True,True], [n1,n2])
         await pg.screenshot(path=OUT+'hp_13_open_map_320.png'); await b.close()
         # ================= the library's style sheet alone fails: still no half-drawn map =================
@@ -338,6 +338,69 @@ async def main():
         check('far away: "Whole route" brings the map back to the hike', await pg.evaluate('()=>__full().map.getZoom()>=13'), await pg.evaluate('()=>__full().map.getZoom()')); await b.close()
         b,pg=await start(p,'no_place',ANDROID,411,812); await open_hike(pg,'Nahal Og'); await pg.wait_for_selector('#hkMap .leaflet-container'); await pg.click('#hkMapCap [data-hmap]'); await pg.wait_for_selector('#hkMapFull'); await pg.click('#hkMapFull [data-me]'); await pg.wait_for_selector('#hkLocModal')
         check('no place given (a real refusal by the browser): the box that says how to allow it comes up', 'Allow location' in await pg.inner_text('#hkLocModal'), await pg.inner_text('#hkLocModal')); await b.close()
+        # ================= "Open in Mapeak" opens the hike's route (D-53), on a phone 380 wide =================
+        FN='https://wjuqtjlrtcywjaspjpwu.supabase.co/functions/v1/route/'; CODE='Sample0Code0Not0Real0abcdefgh-_'
+        CODE=(CODE+'x'*32)[:32]; ROUTE_URL='https://mapeak.com/url/'+quote(FN+CODE+'.gpx', safe="-_.!~*'()")
+        b,pg=await start(p,'mapeak',ANDROID,380,800); MP=[]
+        async def mapeak(route): MP.append(route.request.url); await route.fulfill(body='<!doctype html><title>stand-in for Mapeak</title>', content_type='text/html')
+        await pg.context.route('https://mapeak.com/**', mapeak)
+        async def tap(sel):   # tap, and give the address the new window ends up at (None: no window opened)
+            try:
+                async with pg.context.expect_page(timeout=4000) as pi: await pg.click(sel)
+                pop=await pi.value
+                try: await pop.wait_for_url('https://mapeak.com/**', timeout=4000)
+                except Exception: pass
+                u=pop.url; await pop.close(); return u
+            except Exception: return None
+        await open_hike(pg,'Nahal Og'); await pg.wait_for_selector('#hkRouteBox [data-hmapeak]')
+        rb=await pg.evaluate("""()=>{ const box=document.querySelector('#hkRouteBox'), bs=[...box.querySelectorAll('.hkp-btns > *')], h=box.querySelector('.hkp-mphint');
+            return [bs.map(b=>b.textContent.trim()), h.textContent, bs.every(b=>{ const r=b.getBoundingClientRect(); return r.left>=0&&r.right<=innerWidth&&r.height>=40; }), document.querySelectorAll('#sheetWrap [data-hmapeak]').length]; }""")
+        check('mapeak: beside the route file on the hike\'s page, one "Open in Mapeak", with the line on who can see the route under it, both inside a 380 wide phone',
+            rb==[['Open or save the route file','Open in Mapeak'],'Opens the route in Mapeak. Anyone with that link can see the route.',True,1], rb)
+        check('mapeak: at 380 wide nothing runs off the side of the hike\'s page', not await over(pg) and await inside(pg)==[], await inside(pg))
+        await pg.eval_on_selector('#hkRouteBox','e=>e.scrollIntoView({block:"center"})'); await pg.wait_for_timeout(200); await pg.screenshot(path=OUT+'hp_13_mapeak_button.png')
+        # sample mode: no server is asked; Mapeak opens at the place and the page says why
+        u=await tap('#hkRouteBox [data-hmapeak]'); t=await pg.inner_text('#toast')
+        check('mapeak, sample mode: the tap opens a window at once, which goes to Mapeak at the start of the route, and the page says a sample hike has no route address', u is not None and u.startswith('https://mapeak.com/map/15.00/') and 'Sample hike' in t, [u, t])
+        # as in the app: the database gives a code
+        await pg.evaluate("c=>{ window.__asked=[]; DB.hikeRouteLink=async id=>{ window.__asked.push(id); await new Promise(r=>setTimeout(r,300)); return c; }; }", CODE)
+        u=await tap('#hkRouteBox [data-hmapeak]'); asked=await pg.evaluate('()=>window.__asked')
+        hid=await pg.evaluate("()=>S.demoHikes.find(x=>x.name==='Nahal Og, lower canyon').id")
+        check('mapeak, as in the app: after the code comes, the window goes to mapeak.com/url/ with the route\'s public address as one encoded part, and nothing else', u==ROUTE_URL and asked==[hid] and '/' not in u[len('https://mapeak.com/url/'):], [u, ROUTE_URL, asked])
+        from urllib.parse import unquote
+        check('mapeak: the address Mapeak is given is the "route" function with the code and .gpx, and carries no member link or key', unquote(u[len('https://mapeak.com/url/'):])==FN+CODE+'.gpx' and 'k=' not in u and 'apikey' not in u and 'token' not in u.lower(), u)
+        # on the open map
+        await pg.wait_for_selector('#hkMap .leaflet-container'); await pg.click('#hkMapCap [data-hmap]'); await pg.wait_for_selector('#hkMapFull button[data-mapeak]')
+        u2=await tap('#hkMapFull [data-mapeak]')
+        fit=await pg.evaluate('()=>[document.documentElement.scrollWidth<=innerWidth+1, [...document.querySelectorAll("#hkMapFull .hkmf-tools > *")].every(e=>{ const r=e.getBoundingClientRect(); return r.left>=0&&r.right<=innerWidth&&r.bottom<=innerHeight; })]')
+        check('mapeak: "Open in Mapeak" on the open map opens the same route address; at 380 wide the open map\'s buttons and the line fit', u2==ROUTE_URL and fit==[True,True], [u2, fit])
+        await pg.screenshot(path=OUT+'hp_14_mapeak_open_map.png'); await pg.click('#hkMapFull [data-x]')
+        # the database refuses or cannot be reached: Mapeak opens at the place, with a message
+        await pg.evaluate("()=>{ DB.hikeRouteLink=async()=>{ throw new Error('Failed to fetch'); }; }")
+        u3=await tap('#hkRouteBox [data-hmapeak]'); t3=await pg.inner_text('#toast')
+        check('mapeak: when the code cannot be had, the window goes to Mapeak at the place as before, and the page says so', u3 is not None and u3.startswith('https://mapeak.com/map/15.00/') and t3=='Mapeak could not get the route just now, so it opens at the place.', [u3, t3])
+        # the browser refuses the window
+        await pg.evaluate("c=>{ DB.hikeRouteLink=async()=>c; window.__open=window.open; window.open=()=>null; }", CODE)
+        await pg.click('#hkRouteBox [data-hmapeak]'); await pg.wait_for_timeout(300); t4=await pg.inner_text('#toast')
+        check('mapeak: a browser that stops the window gets a message, and the page stays where it is', t4.startswith('The browser stopped Mapeak from opening') and await pg.locator('#sheetWrap .hkp-card').count()>0, t4)
+        await pg.evaluate("()=>{ window.open=window.__open; }")
+        check('mapeak: the app page itself never asked Mapeak for anything (only the new windows went there)', all(not x.startswith('https://mapeak.com') for x in OTHER), [x for x in OTHER if 'mapeak' in x])
+        await pg.click('#closeS')
+        # a hike that is not approved: no route button; the open map keeps the place link
+        await pg.evaluate("()=>{ S.demoHikes.find(x=>x.name==='Nahal Og, lower canyon').review_status='pending'; }")
+        await open_hike(pg,'Nahal Og'); await pg.wait_for_selector('#hkRouteBox [data-hgpx2]'); await pg.wait_for_selector('#hkMap .leaflet-container')
+        np=[await pg.locator('#sheetWrap [data-hmapeak]').count(), await pg.locator('#sheetWrap .hkp-mphint').count()]
+        await pg.click('#hkMapCap [data-hmap]'); await pg.wait_for_selector('#hkMapFull [data-mapeak]')
+        lk=await pg.evaluate("()=>{ const a=document.querySelector('#hkMapFull [data-mapeak]'); return [a.tagName, (a.getAttribute('href')||'').slice(0,29), a.target, document.querySelectorAll('#hkMapFull .hkmf-hint').length]; }")
+        check('mapeak: a hike that waits for approval has no route button and no line; its open map keeps the place link of before', np==[0,0] and lk==['A','https://mapeak.com/map/15.00/','_blank',0], [np, lk])
+        await pg.click('#hkMapFull [data-x]'); await pg.click('#closeS')
+        # a hike with no route file: the place link only
+        await pg.evaluate("()=>{ const h=S.demoHikes.find(x=>x.name==='Nahal Darga'); h.start_place='https://www.google.com/maps/@31.5903,35.3921,16z'; h.gpxFile=null; }")
+        await open_hike(pg,'Nahal Darga'); await pg.wait_for_selector('#hkMapCap [data-hmap]')
+        n0=await pg.locator('#sheetWrap [data-hmapeak]').count(); await pg.click('#hkMapCap [data-hmap]'); await pg.wait_for_selector('#hkMapFull [data-mapeak]')
+        lk2=await pg.evaluate("()=>{ const a=document.querySelector('#hkMapFull [data-mapeak]'); return [a.tagName, a.getAttribute('href'), document.querySelectorAll('#hkMapFull .hkmf-hint').length]; }")
+        check('mapeak: a hike with no route file keeps "Open in Mapeak" as the link to Mapeak at the start, and has no route button', n0==0 and lk2==['A','https://mapeak.com/map/15.00/31.5903/35.3921',0], [n0, lk2])
+        await b.close()
     bad=[n for n,c in res if not c]
     for e in errs: print('ERR',e)
     print(f'\n{len(res)} checks, {len(bad)} failed, {len(errs)} page errors'); sys.exit(1 if bad or errs else 0)

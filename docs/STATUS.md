@@ -4,7 +4,7 @@
 
 *Short, factual status for the Cockpit Steward and other EIT projects. Updated by the Vendor Master session after any change that matters to them. The commit that last changed this file is its version.*
 
-**As of:** 12 October 2026
+**As of:** 16 October 2026
 
 ## Identity
 
@@ -13,9 +13,13 @@
 | App | https://vendors.eretzisraeltours.com (and `/b/?k=…`, the one-booking page a bus or van company sees) |
 | Repo | `Danielg972/eit-vendors`, branch `main` (cite by commit SHA) |
 | Database | Supabase project `wjuqtjlrtcywjaspjpwu` (org "EIT Vendors", Frankfurt) |
-| Schema record | `supabase/schema.sql` (tables, functions, grants), plus `supabase/functions/files/index.ts` (edge function v11) |
+| Schema record | `supabase/schema.sql` (tables, functions, grants), plus `supabase/functions/files/index.ts` (edge function v12) and `supabase/functions/route/index.ts` (edge function `route` v1, D-53) |
 | Terms version | `2026-10-03c` live (adds 2c, organisations as limited members; `2026-10-03a` added 6d, jobs). `2026-10-03d` on the branch `guide-for-clients`: 3a malicious posts, 3c licensed guides and D1, 6e a guide's page for clients, 6f your own page and reviews. All draft, not yet reviewed by a lawyer |
 | Decisions | `docs/DECISIONS.md` (D-1 Cockpit boundary; D-2 quote tracker; D-3 driver reviews; D-4 transport by vehicle size; D-5 booking sheets; D-6 welcome tour, name, use-and-add rule; D-7 Shomer Shabbat badge, kosher restaurants only; D-8 opening hours, no-certificate needs approval; D-9 verified hours, last entry, hours from websites; D-10 official buttons; D-11 jobs between colleagues and My days, live for Eretz Israel Tours only; D-15 limited members: organisations that are not in tourism; D-13 food nearby only on places; D-12 a guide's page for clients; D-14 claimed pages, disputes, reviews; D-16 licensed guides only, D1 for Eshkol, malicious posts) |
+
+## "Open in Mapeak" opens the hike's route (D-53): database and edge function on production since 16 October 2026; the page is a trial copy at /next/
+
+On the owner's word (15 Oct 23:31, 16 Oct 09:13 "Do first now"). **On production:** `supabase/migrations/2026-10-16_hike_route_link.sql` (adds only: `hike_gpx.link_code` with its check and unique index; `hike_route_link`, callable by the app; `_hike_route_public`, callable with the service key only) and the edge function `route` v1 (no key needed; `…/functions/v1/route/<code>.gpx` gives one approved hike's GPX, anything else 404). 32 tables, 170 functions (activity_feed of D-49 included; it is now in the schema record too), 0 table grants, 0 policies; the fingerprints equal the tested build. One code exists, on one of the owner's own approved hikes, made to prove the address end to end. Nothing in the live app calls either yet. **Waiting for the owner:** to try `/next/` on his phone (tap "Open in Mapeak" on a hike with a route; Mapeak should show the route) and say go live. New to the outside: anyone holding a hike's Mapeak address can fetch its route (points and heights only), his stated choice; the privacy line still to be written should name it. Details: `docs/DECISIONS.md`, D-53.
 
 ## Eshkol / Midbari rentals (D-42) and wineries under Restaurant and Attraction / Site (D-43): live for Eretz Israel Tours since 12 October 2026; off for colleagues
 
