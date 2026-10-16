@@ -307,11 +307,11 @@ Researched by web lookups per supplier (the supplier's own site first, a third-p
 - **Page.** `hkOpenMapeak`, `hkMapeakRoute`, `hkRouteOk`, `HK_ROUTE_FN`, `HK_MAPEAK_HINT`; `DB.hikeRouteLink`. The button on the open map, and beside "Open or save the route file" on the hike's page, with the line "Opens the route in Mapeak. Anyone with that link can see the route." A blank window is opened on the tap, then sent on; on failure Mapeak opens at the place with a message. No route, or not approved: the old place link (`hkMapeak`). Sample mode opens at the place and says so.
 - **Checks:** `supabase/tests/route_link/run.sh` (49; give it `git show d9ef8c0:supabase/schema.sql`), `production_probe.sql` (rolled back), `hike_page_walk.py` (118, of which 12 for D-53).
 
-## Mapeak's map on the hike's page (16 Oct 2026, decision D-55)
+## Mapeak's map on the hike's page (16 Oct 2026, decision D-56)
 **Status: trial at `/next/`; not live.**
 - **What.** `HK_MPK_HTML` (put under `#hkRouteBox` when `hkRouteOk(h)`), `hkMpkWire(sec, h)`, `HK_CODE_OK`, `hkCodes` (code per hike id, for the life of the page). An IntersectionObserver (300px margin) asks `DB.hikeRouteLink` when the section comes near; the frame's `src` is `hkMapeakRoute(code)` and nothing else, only for a code matching `HK_CODE_OK`. No sandbox, no allow list, `loading="lazy"`, `referrerpolicy="no-referrer"`. Failure: a line and "Try again". Sample mode (`DB.hikeRouteLink` gives null): a sample box, no frame.
 - **Mapeak side.** Mapeak has a frame mode of its own (`running-context.service.ts` `isIFrame`). Its real headers were not read (mapeak.com is out of reach of the sandbox).
-- **Checks:** `hike_page_walk.py` (133, of which 15 for D-55).
+- **Checks:** `hike_page_walk.py` (133, of which 15 for D-56).
 
 ## The hike's page (8 Oct 2026, decision D-34)
 **Status: live since 8 Oct 2026 (pull request #31, together with D-35). Front end only.**

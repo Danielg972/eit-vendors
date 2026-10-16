@@ -55,7 +55,7 @@ async def start(p, tag, ua, w, h, init='', opts=(), geo=None):
     await ctx.route('https://tile.waymarkedtrails.org/**', trail)
     if geo: await ctx.grant_permissions(['geolocation']); await ctx.set_geolocation({'latitude':geo[0],'longitude':geo[1],'accuracy':12})
     pg=await ctx.new_page(); pg.on('pageerror', lambda e: errs.append(tag+' pageerror: '+str(e)))
-    pg.on('request', lambda r: FRAMES.append(r.url) if r.resource_type=='document' and r.frame!=pg.main_frame else None)   # a page inside a frame (D-55)
+    pg.on('request', lambda r: FRAMES.append(r.url) if r.resource_type=='document' and r.frame!=pg.main_frame else None)   # a page inside a frame (D-56)
     pg.on('request', lambda r: OTHER.append(r.url) if not r.url.startswith(('http://localhost:8765/','https://tile.openstreetmap.org/','https://tile.waymarkedtrails.org/','https://fonts.','https://cdn.jsdelivr.net/','data:','blob:')) else None)
     await pg.goto('http://localhost:8765/index.html'); await pg.wait_for_selector('[data-tab="hikes"]')
     await pg.add_style_tag(content='#demoAs,.demo-bar{display:none!important}')   # the preview's own "View as" bar is wider than a small phone
@@ -354,7 +354,7 @@ async def main():
                 u=pop.url; await pop.close(); return u
             except Exception: return None
         await open_hike(pg,'Nahal Og'); await pg.wait_for_selector('#hkRouteBox [data-hmapeak]')
-        # D-55: in sample mode the Mapeak map is a sample box, with no frame and nothing asked of anyone
+        # D-56: in sample mode the Mapeak map is a sample box, with no frame and nothing asked of anyone
         await pg.eval_on_selector('#hkMpk','e=>e.scrollIntoView({block:"center"})'); await pg.wait_for_selector('#hkMpk .hk-mpk-box.sample')
         sm=await pg.evaluate("()=>{ const s=document.querySelector('#hkMpk'); return [s.previousElementSibling&&s.previousElementSibling.id, s.querySelector('.hk-mpk-k').textContent, s.querySelector('.hk-mpk-box').textContent.trim(), s.querySelectorAll('iframe').length]; }")
         check('mapeak map, sample mode: directly under the route file box a "Mapeak map" section shows a sample box, with no frame', sm==['hkRouteBox','Mapeak map','Sample hike. In the app, Mapeak\u2019s map with this hike\u2019s route shows here.',0], sm)
@@ -412,7 +412,7 @@ async def main():
         lk2=await pg.evaluate("()=>{ const a=document.querySelector('#hkMapFull [data-mapeak]'); return [a.tagName, a.getAttribute('href'), document.querySelectorAll('#hkMapFull .hkmf-hint').length]; }")
         check('mapeak: a hike with no route file keeps "Open in Mapeak" as the link to Mapeak at the start, and has no route button and no Mapeak map section', n0==0 and lk2==['A','https://mapeak.com/map/15.00/31.5903/35.3921',0], [n0, lk2])
         await b.close()
-        # ================= D-55: the Mapeak map on the hike's page, as in the app (the database gives a code), 380 wide =================
+        # ================= D-56: the Mapeak map on the hike's page, as in the app (the database gives a code), 380 wide =================
         b,pg=await start(p,'mpk',ANDROID,380,800); OTHER.clear(); FRAMES.clear(); MF=[]
         async def mapeak2(route): MF.append(route.request.url); await route.fulfill(body='<!doctype html><title>stand-in for Mapeak</title><body style="margin:0;background:#cde">stand-in for Mapeak</body>', content_type='text/html')
         await pg.context.route('https://mapeak.com/**', mapeak2)

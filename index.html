@@ -706,7 +706,7 @@ a.hk-link,.hk-src a{color:var(--tab-on)}
 .hkmf-tools a.hkp-go{text-decoration:none}
 .hkmf-hint{flex:1 1 100%;margin:-2px 0 0;font-size:12.5px;color:var(--ink-2);text-align:center}
 .hkp-mphint{margin:6px 0 0}
-/* D-55 (trial): Mapeak's own map with the hike's route, under the route file box */
+/* D-56 (trial): Mapeak's own map with the hike's route, under the route file box */
 .hk-mpk{margin-top:14px}
 .hk-mpk-k{font-size:13px;color:var(--ink-3);margin:0 0 6px}
 .hk-mpk-box{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:8px;min-height:72px;box-sizing:border-box;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--wash);font-size:14px;color:var(--ink-2)}
@@ -5587,7 +5587,7 @@ function hkOpenMapeak(h, ll){ const place=ll?hkMapeak(ll):'https://mapeak.com/';
       if(!code){ toast('Sample hike: in the app this opens its route in Mapeak. Here Mapeak opens at the place.'); go(place); return; }
       go(hkMapeakRoute(code)); })
     .catch(()=>{ toast('Mapeak could not get the route just now, so it opens at the place.'); go(place); }); }
-// D-55 (trial at /next/): Mapeak's own map, showing the hike's route, under the route file box (Mapeak asked for it,
+// D-56 (trial at /next/): Mapeak's own map, showing the hike's route, under the route file box (Mapeak asked for it,
 // 16 Oct 2026). The map is Mapeak's page in a frame, at the same mapeak.com/url/ address the button opens; Mapeak's
 // server fetches the route from our public address, as for the button. The code is asked for only when the section
 // comes near the screen (a member who never scrolls there makes no code and loads none of Mapeak), and is kept per hike
