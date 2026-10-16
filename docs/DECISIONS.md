@@ -10,7 +10,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
-## D-54 · Transport prices with their details, and the Quotes tab fed from them (built 16 October 2026; trial at /next-transport/; not live)
+## D-54 · Transport prices with their details, and the Quotes tab fed from them (live since 16 October 2026, 10:38)
 
 **Owner, 16 Oct 2026, 09:27:** "Pricing for transportation needs a more detailed input area and it should copy to a more detailed quotes page. Options should be vehicle size - transfer to and from airport to and from city options. Luggage? Vehicle size? Time of day/night. What was paid. Vat? Anything I'm forgetting? And then that should automatically write to quote page. I'm thinking quote page should have same layout. Also layout of quote page should be like landing page with vehicle size, transfer, full day, and anything else that may be relevant. The transportation page ex Manny Weiss should have clearer pricing input areas and data fields. Start now."
 
@@ -22,6 +22,8 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 **Implementation choices (labelled, not owner rules):** the details live beside the line, and the line's label is still written the D-29 way so older lines and older copies of the page keep working; quotes stay in their own table and show on the board as "Quote" rows, not copied into prices; the lowest / average / highest leave out organisation rates for guides and agents.
 
 **Data, same day (owner: "I put pricing in notes for Manny. Redo page and quotes with that data"):** three agent price lines on Manny Weiss from his last quote of 7 Oct 2026 — Ben Gurion → Jerusalem, 12 passengers with luggage, 800 ILS; Ben Gurion → Jerusalem, 3 passengers with luggage, 400 ILS; Jerusalem → Ben Gurion, 15 passengers with luggage, 1,000 ILS. Marked quoted; VAT and vehicle size not stated in the quote, so left unknown. The note text on his page is left as it was.
+
+**Live:** the owner, 10:36: "Go live". Pull request #70 merged (main at 08ddbd0), deployed at 10:38; /next-transport/ now sends on to the app.
 
 **Numbering:** taken as D-53 at first; D-53 had gone to the Mapeak route link (pull request #68) earlier the same morning, so renumbered D-54 before anything was recorded.
 
