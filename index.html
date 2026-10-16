@@ -252,7 +252,7 @@ textarea.out{width:100%;min-height:160px;font-family:var(--f-mono);font-size:12p
 .trf fieldset{border:1px solid var(--line);border-radius:12px;padding:6px 12px 10px;margin:0 0 10px;min-width:0}
 .trf legend{font-weight:600;font-size:14px;padding:0 6px;color:var(--ink-2)}
 .trf .flab{display:block;font-size:13px;font-weight:500;color:var(--ink-2);margin-bottom:6px}
-.tg{display:flex;flex-wrap:wrap;gap:6px}
+.trtg{display:flex;flex-wrap:wrap;gap:6px}
 .chip.sm{padding:7px 12px;font-size:14px;min-height:38px}
 .trshow{display:flex;flex-direction:column;gap:2px;background:var(--wash);border-radius:10px;padding:10px 12px;margin:0 0 8px}
 .trshow[hidden]{display:none}
@@ -3872,7 +3872,7 @@ function openTrPriceForm(v, p, pre, pp){
   if(!p && !(pre&&(pre.label||pre.transport&&pre.transport.kind))){ t.kind=isIndep(v)?'from':'day'; const fl=[...fleetOf(v)]; if(fl.length===1) t.veh=fl[0]; }
   const opt=(arr,val)=>arr.map(o=>{const [k,l]=Array.isArray(o)?o:[o,o];return `<option value="${esc(k)}"${String(val)===k?' selected':''}>${esc(l)}</option>`}).join('');
   const cityOpts=val=>opt([['','Choose…'],...TR_CITIES.map(c=>[c,c]),['__other','Another place…']],TR_CITIES.includes(val)?val:(val?'__other':''));
-  const tg=(name,arr,val,lab)=>`<div class="f wide"><span class="flab">${esc(lab)}</span><div class="tg" role="group" aria-label="${esc(lab)}">${arr.map(([k,l])=>`<button type="button" class="chip sm" data-tg="${name}" data-val="${k}" aria-pressed="${val===k}">${esc(l)}</button>`).join('')}</div></div>`;
+  const tg=(name,arr,val,lab)=>`<div class="f wide"><span class="flab">${esc(lab)}</span><div class="trtg" role="group" aria-label="${esc(lab)}">${arr.map(([k,l])=>`<button type="button" class="chip sm" data-tg="${name}" data-val="${k}" aria-pressed="${val===k}">${esc(l)}</button>`).join('')}</div></div>`;
   const who = S.admin?'':orgLine?`<div class="lockbar">The rate you got from this supplier. ${pp?'This supplier\'s prices are kept private, so only you and Eretz Israel Tours see it.':'Everyone on the list sees it, without your name. Eretz Israel Tours sees who added it.'} It saves straight away.</div>`:(ownOnly?`<div class="lockbar">This price is just for you. Only you and Eretz Israel Tours see it. It saves straight away.</div>`:
       (canChoose?`<div class="chips" role="radiogroup" aria-label="Who sees it" style="padding-top:0;margin-bottom:10px"><button type="button" class="chip" data-who="me" aria-pressed="true">Just for me</button><button type="button" class="chip" data-who="all" aria-pressed="false">Suggest for everyone</button></div>
         <div class="lockbar" id="whoNote">Only you and Eretz Israel Tours see it. It saves straight away.</div>`:`<div class="lockbar">🔒 Shared prices are checked by Eretz Israel Tours before they appear. Your suggestion is sent with your reason.</div>`));
