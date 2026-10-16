@@ -737,6 +737,7 @@ create table public.vendor_prices (
   private boolean default false not null,
   owner text default ''::text not null,
   org boolean default false not null,
+  transport jsonb default '{}'::jsonb not null,
   constraint vendor_prices_pkey PRIMARY KEY (id),
   constraint vendor_prices_audience_check CHECK ((audience = ANY (ARRAY['Adult'::text, 'Child'::text, 'Israeli senior'::text, 'Senior'::text, 'Student'::text, 'Soldier'::text, 'Group'::text, 'Private'::text, 'Vehicle'::text, 'Other'::text]))),
   constraint vendor_prices_basis_check CHECK ((basis = ANY (ARRAY['Per person'::text, 'Per group'::text, 'Per vehicle'::text, 'Per guide'::text, 'Per hour'::text, 'Per day'::text, 'Flat rate'::text, 'Custom'::text]))),
@@ -1174,6 +1175,39 @@ CREATE OR REPLACE FUNCTION public._new_token()
 AS $function$ select encode(extensions.gen_random_bytes(24),'hex') $function$
 ;
 
+-- D-54: the details of a transport price, kept beside the line (what it is for, the route, the vehicle, passengers,
+-- luggage, the time of day, quoted or paid, and what a day includes). Only known keys, each a short text, are kept.
+CREATE OR REPLACE FUNCTION public._transport_clean(t jsonb)
+ RETURNS jsonb
+ LANGUAGE sql
+ IMMUTABLE
+ SET search_path TO ''
+AS $function$
+  select coalesce((select jsonb_object_agg(k, left(btrim(t->>k), 80))
+    from unnest(array['kind','dir','city','city2','veh','pax','bags','bag_n','time','night','paid','on','hours','km','x_hour','x_km','wait','tolls','tip']) k
+    where jsonb_typeof(t) = 'object' and coalesce(btrim(t->>k),'') <> ''), '{}'::jsonb)
+$function$;
+
+-- D-54: every transport price line this member may see, across all bus, van and car suppliers, for the Quotes tab.
+-- The same rules as on the supplier's own page (_price_visible, _can_see, hidden suppliers); no colleague's name is sent.
+CREATE OR REPLACE FUNCTION public.transport_prices(p_token text)
+ RETURNS json
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare m public.members;
+begin
+  m := public._auth(p_token);
+  return coalesce((select json_agg(json_build_object('id',p.id,'vendor_id',p.vendor_id,'label',p.label,'audience',p.audience,'pax_min',p.pax_min,'pax_max',p.pax_max,
+        'season',p.season,'price',p.price,'currency',p.currency,'vat',p.vat,'basis',p.basis,'is_agent',p.is_agent,'source',p.source,'checked_on',p.checked_on,
+        'note',p.note,'private',p.private,'org',p.org,'mine',(p.owner <> '' and p.owner = m.email),'transport',p.transport,'updated_at',p.updated_at)
+      order by p.checked_on desc, p.created_at desc)
+    from public.vendor_prices p join public.vendors v on v.id = p.vendor_id
+    where (v.category = 'Transport' or ',' || replace(coalesce(v.also_categories,''), ', ', ',') || ',' like '%,Transport,%')
+      and (m.is_admin or (not v.hidden and public._can_see(m, v.category, v.also_categories) and public._price_visible(p, v, m)))), '[]'::json);
+end $function$;
+
 CREATE OR REPLACE FUNCTION public._price_clean(p jsonb)
  RETURNS jsonb
  LANGUAGE sql
@@ -1189,6 +1223,8 @@ AS $function$
     'basis', coalesce(nullif(p->>'basis',''),'Per person'), 'is_agent', coalesce((p->>'is_agent')::boolean, true),
     'source', left(coalesce(p->>'source',''),300), 'checked_on', coalesce(p->>'checked_on',''), 'note', left(coalesce(p->>'note',''),500),
     'private', coalesce((p->>'private')::boolean, false))
+    -- D-54: a line saved by an older copy of the page carries no transport key, so its details are kept as they are
+    || case when p ? 'transport' then jsonb_build_object('transport', public._transport_clean(p->'transport')) else '{}'::jsonb end
 $function$
 ;
 
@@ -1201,12 +1237,12 @@ AS $function$
 declare nid uuid;
 begin
   if p_id is null then
-    insert into public.vendor_prices (vendor_id,label,audience,age_from,age_to,pax_min,pax_max,season,price,currency,vat,basis,is_agent,source,checked_on,note,private,created_by,updated_by)
-    values (p_vendor, c->>'label', c->>'audience', c->>'age_from', c->>'age_to', c->>'pax_min', c->>'pax_max', c->>'season', c->>'price', c->>'currency', c->>'vat', c->>'basis', (c->>'is_agent')::boolean, c->>'source', c->>'checked_on', c->>'note', coalesce((c->>'private')::boolean,false), p_editor, p_editor)
+    insert into public.vendor_prices (vendor_id,label,audience,age_from,age_to,pax_min,pax_max,season,price,currency,vat,basis,is_agent,source,checked_on,note,private,transport,created_by,updated_by)
+    values (p_vendor, c->>'label', c->>'audience', c->>'age_from', c->>'age_to', c->>'pax_min', c->>'pax_max', c->>'season', c->>'price', c->>'currency', c->>'vat', c->>'basis', (c->>'is_agent')::boolean, c->>'source', c->>'checked_on', c->>'note', coalesce((c->>'private')::boolean,false), coalesce(c->'transport','{}'::jsonb), p_editor, p_editor)
     returning id into nid;
     return nid;
   end if;
-  update public.vendor_prices set label=c->>'label', audience=c->>'audience', age_from=c->>'age_from', age_to=c->>'age_to', pax_min=c->>'pax_min', pax_max=c->>'pax_max', season=c->>'season', price=c->>'price', currency=c->>'currency', vat=c->>'vat', basis=c->>'basis', is_agent=(c->>'is_agent')::boolean, source=c->>'source', checked_on=c->>'checked_on', note=c->>'note', private=coalesce((c->>'private')::boolean,private), updated_by=p_editor, updated_at=now()
+  update public.vendor_prices set label=c->>'label', audience=c->>'audience', age_from=c->>'age_from', age_to=c->>'age_to', pax_min=c->>'pax_min', pax_max=c->>'pax_max', season=c->>'season', price=c->>'price', currency=c->>'currency', vat=c->>'vat', basis=c->>'basis', is_agent=(c->>'is_agent')::boolean, source=c->>'source', checked_on=c->>'checked_on', note=c->>'note', private=coalesce((c->>'private')::boolean,private), transport=coalesce(c->'transport',transport), updated_by=p_editor, updated_at=now()
   where id = p_id;
   return p_id;
 end $function$
@@ -2216,7 +2252,7 @@ begin
   if not m.is_admin and (v.hidden or not public._can_see(m, v.category, v.also_categories)) then raise exception 'That supplier is not available.'; end if;
   pp := v.prices_private; own := public._is_own(v, m);
   return json_build_object(
-    'prices', coalesce((select json_agg(json_build_object('id',p.id,'vendor_id',p.vendor_id,'label',p.label,'audience',p.audience,'age_from',p.age_from,'age_to',p.age_to,'pax_min',p.pax_min,'pax_max',p.pax_max,'season',p.season,'price',p.price,'currency',p.currency,'vat',p.vat,'basis',p.basis,'is_agent',p.is_agent,'source',p.source,'checked_on',p.checked_on,'note',p.note,'private',p.private,'sort',p.sort,
+    'prices', coalesce((select json_agg(json_build_object('id',p.id,'vendor_id',p.vendor_id,'label',p.label,'audience',p.audience,'age_from',p.age_from,'age_to',p.age_to,'pax_min',p.pax_min,'pax_max',p.pax_max,'season',p.season,'price',p.price,'currency',p.currency,'vat',p.vat,'basis',p.basis,'is_agent',p.is_agent,'source',p.source,'checked_on',p.checked_on,'note',p.note,'private',p.private,'sort',p.sort,'transport',p.transport,
           'org',p.org,
           'owner',case when m.is_admin or p.owner = m.email then p.owner else '' end,'mine',(p.owner <> '' and p.owner = m.email),
           'by',case when p.org and not m.is_admin and p.owner <> m.email then json_build_object('name','an organisation','role','','admin',false,'org',true)
@@ -4321,3 +4357,6 @@ revoke all on function public.ping() from public; grant execute on function publ
 alter default privileges for role postgres in schema public revoke all on tables from public, anon, authenticated;
 alter default privileges for role postgres in schema public revoke all on sequences from public, anon, authenticated;
 alter default privileges for role postgres in schema public revoke all on functions from public, anon, authenticated;
+revoke all on function public._transport_clean(jsonb) from public, anon, authenticated;
+revoke all on function public.transport_prices(text) from public;
+grant execute on function public.transport_prices(text) to anon, authenticated;

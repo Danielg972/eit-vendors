@@ -209,6 +209,53 @@ textarea.out{width:100%;min-height:160px;font-family:var(--f-mono);font-size:12p
 .prmore>summary .hint{font-weight:400}
 .prmore[open]>summary{display:none}
 .prgrp>.prices{padding:0 8px 8px;margin:0}
+/* D-54: transport prices, the same board on a supplier's page and in the Quotes tab */
+.tp-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:4px 0 6px}
+.tp-tile{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;border:1px solid var(--line);background:var(--card);border-radius:12px;padding:10px 12px;min-height:56px;color:var(--ink);font:inherit;cursor:pointer}
+.tp-tile b{font-size:15px;font-weight:600}
+.tp-tile span{font-size:12.5px;color:var(--ink-3)}
+.tp-tile[aria-selected="true"]{background:var(--olive);border-color:var(--olive);color:var(--on-olive)}
+.tp-tile[aria-selected="true"] span{color:var(--on-olive);opacity:.85}
+.tp-filters{display:flex;flex-wrap:wrap;align-items:flex-end;gap:4px 12px}
+.tp-filters .tp-veh{flex:1 1 100%;padding-top:4px}
+.chips .chip .hint{font-size:12px;margin-left:2px}
+.chip[aria-pressed="true"] .hint{color:var(--on-olive);opacity:.8}
+.tp-city{margin:2px 0 6px;min-width:200px;max-width:320px;flex:1}
+.tp-sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;margin:8px 0 2px}
+.tp-sum>div{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--olive-2);border-radius:10px;padding:8px 12px}
+.tp-sum small{display:block;font-size:12px;color:var(--ink-3)}
+.tp-sum b{font-size:20px;font-weight:500;font-variant-numeric:tabular-nums}
+.tp-sumnote{margin:4px 2px 8px;font-size:12.5px}
+.tp-sumnote:empty{display:none}
+.tplist{border:1px solid var(--line);border-radius:12px;background:var(--card);overflow:hidden;margin:6px 0 10px}
+.tprow+.tprow{border-top:1px solid var(--line)}
+.tprow>summary{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;min-height:56px;box-sizing:border-box;cursor:pointer;list-style:none}
+.tprow>summary::-webkit-details-marker{display:none}
+.tp-m{flex:1;min-width:0}
+.tp-r{font-weight:600;line-height:1.3;overflow-wrap:anywhere}
+.tp-s{font-size:13px;color:var(--olive-2);font-weight:500;margin-top:1px}
+:root:not([data-theme="light"]) .tp-s{color:var(--tab-on)}
+.tp-f{font-size:13px;line-height:1.4;color:var(--ink-2);margin-top:3px}
+.tp-t{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;margin-top:5px}
+.tp-t .tag{margin:0}
+.tp-vat{font-size:12px;color:var(--ink-3)}
+.tp-vat.miss{color:var(--warn)}
+.tp-t .pill{font-size:10px}
+.tp-p{text-align:right;white-space:nowrap;display:flex;flex-direction:column;align-items:flex-end}
+.tp-p b{font-size:19px;font-weight:600;font-variant-numeric:tabular-nums}
+.tp-p small{font-size:12px;color:var(--ink-3)}
+.tprow>summary::after{content:'›';color:var(--ink-3);font-size:20px;line-height:1;align-self:center;transition:transform .15s}
+.tprow[open]>summary::after{transform:rotate(90deg)}
+.tprow .pr-d .qcard{margin:0;border-style:dashed}
+.tp-card{grid-template-columns:1fr}
+.tp-acts{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 4px}
+.trf fieldset{border:1px solid var(--line);border-radius:12px;padding:6px 12px 10px;margin:0 0 10px;min-width:0}
+.trf legend{font-weight:600;font-size:14px;padding:0 6px;color:var(--ink-2)}
+.trf .flab{display:block;font-size:13px;font-weight:500;color:var(--ink-2);margin-bottom:6px}
+.trtg{display:flex;flex-wrap:wrap;gap:6px}
+.chip.sm{padding:7px 12px;font-size:14px;min-height:38px}
+.trshow{display:flex;flex-direction:column;gap:2px;background:var(--wash);border-radius:10px;padding:10px 12px;margin:0 0 8px}
+.trshow[hidden]{display:none}
 .prpick{margin:0 0 10px;max-width:320px}
 .prmore>summary{cursor:pointer;font-size:14px;color:var(--ink-2);padding:6px 0}.prmore[open]>summary{margin-bottom:8px}
 .pl{display:grid;grid-template-columns:1fr auto;gap:2px 12px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
@@ -928,15 +975,23 @@ const DB = {
         notes:[{id:'n1',body:'Ask for Avi as driver, great with kids. Meeting point moved to the gas station at the junction.',author:'rachel.ops@gmail.com',author_name:'Rachel Amar',created_at:dd(2)},
                {id:'n2',body:'Book at least 2 weeks ahead during chag.',author:OWNER,author_name:'Eretz Israel Tours',created_at:dd(20)}],
         requests:[]};
-      // an independent van driver's prices (D-29): airport transfers by direction and city, a day rate, each for a vehicle size
+      // an independent van driver's prices (D-29), with their details (D-54). Sample data, invented.
       S.demo['vendor_v4n0001']={
         prices:[
-          {id:'tp1',label:'Airport transfer: Ben Gurion → Jerusalem · Van, 9–10 seats',audience:'Vehicle',price:'450',currency:'ILS',vat:'plus_vat',basis:'Per vehicle',is_agent:true,season:'Night or Shabbat +25%',source:'WhatsApp from Eli',checked_on:'2026-09-20',note:''},
-          {id:'tp2',label:'Airport transfer: Jerusalem → Ben Gurion · Van, 9–10 seats',audience:'Vehicle',price:'420',currency:'ILS',vat:'plus_vat',basis:'Per vehicle',is_agent:true,season:'Night or Shabbat +25%',source:'WhatsApp from Eli',checked_on:'2026-09-20',note:''},
-          {id:'tp3',label:'Airport transfer: Ben Gurion ⇄ Tel Aviv, each way · Van, 9–10 seats',audience:'Vehicle',price:'300',currency:'ILS',vat:'plus_vat',basis:'Per vehicle',is_agent:true,season:'',source:'WhatsApp from Eli',checked_on:'2026-09-20',note:''},
-          {id:'tp4',label:'Day rate · Van, 9–10 seats',audience:'Vehicle',price:'1600',currency:'ILS',vat:'plus_vat',basis:'Per day',is_agent:true,season:'',source:'WhatsApp from Eli',checked_on:'2026-09-20',note:'10 hours and 250 km. Kvish 6 is extra.'},
-          {id:'tp5',label:'Airport transfer: Ben Gurion → Jerusalem · Van, 9–10 seats',audience:'Vehicle',price:'550',currency:'ILS',vat:'including_vat',basis:'Per vehicle',is_agent:false,season:'',source:'What he charges a private client',checked_on:'2026-09-20',note:''}],
+          {id:'tp1',label:'Airport transfer: Ben Gurion → Jerusalem · Van, 11–16 seats',audience:'Vehicle',price:'750',currency:'ILS',vat:'',basis:'Per vehicle',is_agent:true,season:'',source:'Sample: WhatsApp from the driver',checked_on:'2026-10-02',note:'',pax_max:'12',transport:{kind:'from',city:'Jerusalem',veh:'van16',pax:'12',bags:'yes',time:'day',paid:'quoted',wait:'60',tolls:'incl'}},
+          {id:'tp2',label:'Airport transfer: Jerusalem → Ben Gurion · Van, 11–16 seats',audience:'Vehicle',price:'950',currency:'ILS',vat:'',basis:'Per vehicle',is_agent:true,season:'',source:'Sample: WhatsApp from the driver',checked_on:'2026-10-02',note:'',pax_max:'15',transport:{kind:'to',city:'Jerusalem',veh:'van16',pax:'15',bags:'yes',bag_n:'15',time:'night',night:'+100 ₪',paid:'quoted'}},
+          {id:'tp3',label:'Airport transfer: Ben Gurion → Jerusalem · Car (up to 4 passengers)',audience:'Vehicle',price:'380',currency:'ILS',vat:'',basis:'Per vehicle',is_agent:true,season:'',source:'Sample: WhatsApp from the driver',checked_on:'2026-10-02',note:'',pax_max:'3',transport:{kind:'from',city:'Jerusalem',veh:'car',pax:'3',bags:'yes',paid:'quoted'}},
+          {id:'tp4',label:'Day rate · Van, 9–10 seats',audience:'Vehicle',price:'1600',currency:'ILS',vat:'plus_vat',basis:'Per day',is_agent:true,season:'',source:'Sample: WhatsApp from the driver',checked_on:'2026-09-20',note:'',transport:{kind:'day',city:'Beer Sheva',veh:'van10',hours:'10',km:'250',x_hour:'150',x_km:'3',tolls:'extra',tip:'extra',paid:'paid'}},
+          {id:'tp5',label:'Airport transfer: Ben Gurion → Tel Aviv · Van, 9–10 seats',audience:'Vehicle',price:'450',currency:'ILS',vat:'including_vat',basis:'Per vehicle',is_agent:false,season:'',source:'Sample: what he charges a private client',checked_on:'2026-09-20',note:''}],
         deals:[],notes:[],requests:[]};
+      S.demo['vendor_p0lk5sd']={
+        prices:[
+          {id:'tb1',label:'Day rate · Bus (36–60 seats)',audience:'Vehicle',price:'2400',currency:'ILS',vat:'plus_vat',basis:'Per day',is_agent:true,season:'',source:'Sample: quote email',checked_on:'2026-09-01',note:'',transport:{kind:'day',city:'Jerusalem',veh:'bus',hours:'12',km:'300',x_hour:'250',tolls:'extra',paid:'quoted'}},
+          {id:'tb2',label:'Half day · Bus (36–60 seats)',audience:'Vehicle',price:'1500',currency:'ILS',vat:'plus_vat',basis:'Per vehicle',is_agent:true,season:'',source:'Sample: quote email',checked_on:'2026-09-01',note:'',transport:{kind:'half',city:'Jerusalem',veh:'bus',hours:'5',paid:'quoted'}},
+          {id:'tb3',label:'Airport transfer: Ben Gurion → Jerusalem · Bus (36–60 seats)',audience:'Vehicle',price:'1300',currency:'ILS',vat:'plus_vat',basis:'Per vehicle',is_agent:true,season:'',source:'Sample: my receipt',checked_on:'2026-08-10',note:'',pax_max:'40',transport:{kind:'from',city:'Jerusalem',veh:'bus',pax:'40',bags:'yes',paid:'paid',wait:'90'}},
+          {id:'tb4',label:'Airport transfer: Ben Gurion → Jerusalem · Van, 11–16 seats',audience:'Vehicle',price:'820',currency:'ILS',vat:'plus_vat',basis:'Per vehicle',is_agent:true,season:'',source:'Sample: quote email',checked_on:'2026-09-01',note:'',pax_max:'14',transport:{kind:'from',city:'Jerusalem',veh:'van16',pax:'14',bags:'yes',paid:'quoted'}}],
+        deals:[],notes:[],requests:[]};
+      S.vendors.find(v=>v.id==='vendor_p0lk5sd')._prices=4;
       S.vendors.find(v=>v.id==='vendor_v4n0001')._prices=5;
       S.vendors.find(v=>v.id==='vendor_k3m9p2x')._prices=4; S.vendors.find(v=>v.id==='vendor_k3m9p2x')._deals=1; S.vendors.find(v=>v.id==='vendor_k3m9p2x')._notes=2;
       S.demoRequests=[{id:'r1',vendor_id:'vendor_a81qz0c',vendor_name:'Dan Panorama Jerusalem',kind:'vendor_fields',proposed:{agentPrice:'1250',phone:'+972 2 569 5000'},current:{agentPrice:'1150',phone:'+972 2 569 5695'},reason:'New group rate for 2027, and the group desk has a new number.',requested_by:'rachel.ops@gmail.com',requested_name:'Rachel Amar',created_at:dd(1)}];
@@ -1132,6 +1187,12 @@ const DB = {
   async removeDriver(did, vid){
     if(!LIVE){ if(vid){ const x=S.demoDrivers.find(y=>y.id===did); x.vendors=x.vendors.filter(z=>z!==vid); } else S.demoDrivers=S.demoDrivers.filter(y=>y.id!==did); return; }
     await rpc('driver_remove',{p_driver:did,p_vendor:vid||''});
+  },
+  async loadTransport(){   // D-54: every transport price line this member may see, for the Quotes tab
+    if(!LIVE){ const out=[]; S.vendors.filter(v=>catsOf(v).includes('Transport')).forEach(v=>{ const d=S.demo[v.id]; if(!d||!d.prices) return;
+        d.prices.forEach(p=>{ if(!S.admin && (p.private || (p.owner && !p.mine))) return; out.push(Object.assign({vendor_id:v.id},p)); }); });
+      return out; }
+    return await rpc('transport_prices',{});
   },
   async loadTracker(){
     if(!LIVE){ return Object.values(S.demoQuotes).flat().map(q=>Object.assign({can_edit:true},q)); }
@@ -1561,7 +1622,7 @@ function render(){
   const me=document.getElementById('meBtn'); if(me) me.onclick=()=>{ if(S.me) openMySettings(); };
   const ro=document.getElementById('ruleOk'); if(ro) ro.onclick=async()=>{ S.me.reminder_due=false; render(); if(LIVE){ try{ await sb.rpc('ack_reminder',{p_token:S.token}); }catch(e){} } };
   const so=document.getElementById('signOut'); if(so) so.onclick=()=>{ if(so.dataset.c!=='1'){ so.dataset.c='1'; so.textContent='Tap again. You\'ll need your link to return.'; return; } forgetToken(); boot(); };
-  app.querySelectorAll('.tab').forEach(t=>t.onclick=async()=>{ S.tab=t.dataset.tab; if(S.tab==='quotes'){ S.quotes=null; S.bookings=null; } if(S.tab==='jobs'&&LIVE) S.jobs=null; if(S.tab==='hikes'&&LIVE) S.hikes=null; render();
+  app.querySelectorAll('.tab').forEach(t=>t.onclick=async()=>{ S.tab=t.dataset.tab; if(S.tab==='quotes'){ S.quotes=null; S.tprices=null; S.bookings=null; } if(S.tab==='jobs'&&LIVE) S.jobs=null; if(S.tab==='hikes'&&LIVE) S.hikes=null; render();
     if(LIVE && S.tab==='review'){ try{ await DB.loadVendors(); await DB.loadRequests(); await DB.loadFeedback(); try{ await DB.loadReports(); }catch(e){} try{ await DB.loadClaims(); await DB.loadPendingNotes(); }catch(e){} if(hikesOn()){ try{ S.hikes=await DB.loadHikes(); }catch(e){} } render(); }catch(e){} }
     if(LIVE && S.tab==='team'){ try{ await DB.loadTeam(); render(); }catch(e){} } });
   const add=document.getElementById('add'); if(add) add.onclick=()=>openForm(null);
@@ -2403,14 +2464,13 @@ async function drawExtras(v){
   // A bus company's or driver's prices are shown in groups that open (D-29), not as one long list.
   const paint=()=>{
     pb.innerHTML = privNote + (det.prices.length ? (isTr ? trPricesHtml(v,det.prices,cardsOf) : prPricesHtml(det.prices,cardsOf,plCard))
-      : (privNote?'':`<p class="hint" style="margin:0 0 10px">${lim()?'No prices yet. Add the rate you got: everyone on the list sees it, without your name.':(catsOf(v).includes('Transport')?'No prices yet. Add airport transfers, a day rate and an hourly rate, one line for each vehicle size.':'No price lines yet. Add adult, child, Israeli senior or group rates as separate lines.')}</p>`));
+      : (privNote?'':`<p class="hint" style="margin:0 0 10px">${lim()?'No prices yet. Add the rate you got: everyone on the list sees it, without your name.':(catsOf(v).includes('Transport')?'No prices yet. Add an airport pickup or drop-off, a full or half day, or an hourly rate: one line for each vehicle size, with the passengers and luggage it was for.':'No price lines yet. Add adult, child, Israeli senior or group rates as separate lines.')}</p>`));
     pb.querySelectorAll('[data-pedit]').forEach(b=>b.onclick=()=>openPriceForm(v, det.prices.find(p=>p.id===b.dataset.pedit), null, det.prices_private));
     pb.querySelectorAll('[data-pdel]').forEach(b=>b.onclick=async()=>{
       if(S.admin || (det.prices.find(p=>p.id===b.dataset.pdel)||{}).mine){ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again'; return; } try{ await DB.deletePrice(v.id,b.dataset.pdel); toast('Price removed'); drawExtras(v); }catch(e){ toast(e.message); } return; }
       openReasonSheet('Suggest removing this price','Why should it be removed?', async reason=>{ await DB.deletePrice(v.id,b.dataset.pdel,reason); toast('Sent for approval'); openDetail(v.id); });
     });
-    const vf=pb.querySelector('#trVehF'); if(vf) vf.onchange=()=>{ trView(v.id).veh=vf.value; paint(); };
-    pb.querySelectorAll('details.prgrp').forEach(d=>d.addEventListener('toggle',()=>{ const o=trView(v.id).open; if(d.open) o.add(d.dataset.g); else o.delete(d.dataset.g); }));
+    if(isTr) tpWire(pb, 'v:'+v.id, paint);
   };
   paint();
   drawExtrasRest(v,det);
@@ -2826,54 +2886,60 @@ function trackerCard(r,stats){ const q=r.q, o=r.o, old=!r.recent||['Expired','De
     ${q.conditions?`<details class="qcond"><summary>Conditions</summary><p>${esc(q.conditions)}</p></details>`:''}
     ${by}${whoLine}
     ${!r.recent?'<div class="qsub">Older than two years. Not counted in the average.</div>':''}</div>`; }
-const qviewSwitch=()=>bookingsOn()?`<div class="otabs vtabs" role="tablist" style="margin:12px 0 10px"><button class="otab" type="button" role="tab" data-qv="tracker" aria-selected="${S.qview!=='bookings'}">Quote tracker</button><button class="otab" type="button" role="tab" data-qv="bookings" aria-selected="${S.qview==='bookings'}">Booking sheets</button></div>`:'';
+const qviewSwitch=()=>bookingsOn()?`<div class="otabs vtabs" role="tablist" style="margin:12px 0 10px"><button class="otab" type="button" role="tab" data-qv="tracker" aria-selected="${S.qview!=='bookings'}">Prices &amp; quotes</button><button class="otab" type="button" role="tab" data-qv="bookings" aria-selected="${S.qview==='bookings'}">Booking sheets</button></div>`:'';
 function wireQview(){ document.querySelectorAll('[data-qv]').forEach(x=>x.onclick=()=>{ if(S.qview===x.dataset.qv) return; S.qview=x.dataset.qv; render(); }); }
 async function viewQuotes(){
   const view=document.getElementById('view');
   if(bookingsOn()&&S.qview==='bookings'){ view.innerHTML=qviewSwitch()+`<div class="qt-intro"><h2>Booking sheets</h2><p>Book a bus or a van in writing. You send the job, the company fills in the price and every extra, and both sides keep the same sheet.</p></div><div id="bkBody"></div>`; wireQview(); return viewBookings(); }
-  if(!S.quotes){ view.innerHTML='<p class="hint" style="padding:24px 0">Loading quotes…</p>';
-    try{ const got=await DB.loadTracker(); S.quotes=got||[]; }catch(e){ if(S.tab==='quotes') view.innerHTML=`<div class="msg err">Couldn't load quotes: ${esc(e.message)}</div>`; return; }
+  if(!S.quotes||!S.tprices){ view.innerHTML='<p class="hint" style="padding:24px 0">Loading prices…</p>';
+    try{ const [q,tp]=await Promise.all([S.quotes||DB.loadTracker(), S.tprices||DB.loadTransport()]); S.quotes=q||[]; S.tprices=tp||[]; }
+    catch(e){ if(S.tab==='quotes') view.innerHTML=`<div class="msg err">Couldn't load prices: ${esc(e.message)}</div>`; return; }
     if(S.tab!=='quotes'||!document.getElementById('view')) return; }
-  const t=S.qt, all=trackerRows(S.quotes);
-  t.grp='vehicle';   // one group only now (D-46): go straight to the kinds of vehicle
-  const svcs=t.grp==='All'?[]:SERVICES.filter(x=>x[2]===t.grp&&all.some(r=>r.svc===x[0]));
-  if(t.svc!=='All'&&!svcs.some(x=>x[0]===t.svc)) t.svc='All';
-  const chip=(attr,val,label,on)=>`<button class="chip" data-${attr}="${esc(val)}" aria-pressed="${on}">${esc(label)}</button>`;
-  document.getElementById('view').innerHTML=`${qviewSwitch()}
-    <div class="qt-intro"><h2>Quote tracker</h2><p>What bus, van and car companies actually quoted: by the day, by the hour, in and out of season, with every extra they added. Shared by colleagues without names. Quotes for guides, hotels and activities are on each supplier's own page.</p></div>
-    <label class="search" for="qtq">${icons.search}<input id="qtq" type="search" placeholder="Search a supplier, vehicle or region" value="${esc(t.q)}" autocomplete="off"></label>
-    ${svcs.length>1?`<div class="chips" role="group" aria-label="Filter by kind" style="padding-top:2px">${chip('svc','All','All '+(SVC_GROUPS.find(x=>x[0]===t.grp)||['',''])[1].toLowerCase(),t.svc==='All')}${svcs.map(x=>chip('svc',x[0],x[1],t.svc===x[0])).join('')}</div>`:''}
-    ${all.length?`<div class="chips" role="group" aria-label="Filter by season" style="padding-top:2px">${chip('sea','All','All dates',t.season==='All')}${chip('sea','High','High season',t.season==='High')}${chip('sea','Regular','Regular season',t.season==='Regular')}</div>`:''}
+  const t=S.qt;
+  // D-54: the same board as on a supplier's page, for every bus, van and car supplier together. Every transport price
+  // added on a supplier's page shows here at once, beside the quotes colleagues shared.
+  view.innerHTML=`${qviewSwitch()}
+    <div class="qt-intro"><h2>Transport prices</h2><p>What bus, van and car companies charge: airport transfers, full and half days, by the hour, by vehicle size. Every price added on a supplier's page shows here, beside the quotes colleagues shared${lim()?'':', without names'}.</p></div>
+    <div class="tp-acts"><button class="btn soft" id="qtAddP" type="button">+ Add a price</button><button class="btn soft" id="qtAddQ" type="button">+ Add a quote</button></div>
+    <label class="search" for="qtq">${icons.search}<input id="qtq" type="search" placeholder="Search a supplier, city or region" value="${esc(t.q)}" autocomplete="off"></label>
     <div id="qtBody"></div>`;
-  const v2=document.getElementById('view'); wireQview();
-  v2.querySelector('#qtq').addEventListener('input',e=>{ t.q=e.target.value; drawTracker(); });
-  v2.querySelectorAll('[data-grp]').forEach(c=>c.onclick=()=>{ t.grp=c.dataset.grp; t.svc='All'; viewQuotes(); });
-  v2.querySelectorAll('[data-svc]').forEach(c=>c.onclick=()=>{ t.svc=c.dataset.svc; viewQuotes(); });
-  v2.querySelectorAll('[data-sea]').forEach(c=>c.onclick=()=>{ t.season=c.dataset.sea; viewQuotes(); });
+  wireQview();
+  view.querySelector('#qtq').addEventListener('input',e=>{ t.q=e.target.value; drawTracker(); });
+  view.querySelector('#qtAddP').onclick=()=>openQuotePicker('price');
+  view.querySelector('#qtAddQ').onclick=()=>openQuotePicker();
   drawTracker();
 }
+// Every row for the board: price lines (D-54) and the vehicle quotes from the quote tracker (D-2, D-46).
+function tpAllRows(){
+  const rows=[];
+  (S.tprices||[]).forEach(p=>{ const v=S.vendors.find(x=>x.id===p.vendor_id); if(v) rows.push({p,t:trOf(p),v}); });
+  trackerRows(S.quotes||[]).forEach(r=>{
+    const pax=String(r.q.pax||'').match(/\d+/), base={kind:'other',veh:VEH[r.svc]?r.svc:'',pax:pax?pax[0]:'',city:''};
+    const mk=(price,unit,label)=>rows.push({quote:r,v:r.v,season:seasonPill(r.q),
+      t:Object.assign({},base,{qkind:r.svc==='transfer'?'air':unit==='per day'?'day':unit==='per hour'?'hour':'other',qname:svcLabel(r.svc)+(label?' · '+label:'')+' · quote',qunit:unit||''}),
+      p:{price:price===''?'':String(price),currency:r.q.currency,vat:r.q.vat,is_agent:false,org:!!r.q.org,checked_on:r.q.received_on||'',private:false}});
+    if(r.rates.length) r.rates.forEach(x=>mk(x.price,x.unit,r.rates.length>1?x.label:''));
+    else { const tot=lineCalc(r.o.lines||[]).total; mk(tot||'','total',''); }
+  });
+  return rows;
+}
 function drawTracker(){
-  const box=document.getElementById('qtBody'); if(!box) return; const t=S.qt, all=trackerRows(S.quotes||[]);
-  if(!all.length){ box.innerHTML=`<div class="empty"><h3>No quotes here yet</h3><p>Add the first one: pick the supplier, enter the daily or hourly rate, and mark what was included and what cost extra. Once three quotes of the same kind are in, the average shows.</p><button class="btn accent" id="qtFirst" type="button">+ Add quote</button></div>`; box.querySelector('#qtFirst').onclick=()=>openQuotePicker(); return; }
-  const n=normN(t.q);
-  const typed=all.filter(r=>(t.grp==='All'||svcGroup(r.svc)===t.grp)&&(t.svc==='All'||r.svc===t.svc));
-  const rows=typed.filter(r=>(t.season==='All'||(r.season&&(t.season==='High')===r.season.high))&&(!n||normN([r.v.name,r.o.name,svcLabel(r.svc),({van20:'minibus sprinter',van16:'minibus sprinter',van10:'minivan',van8:'minivan vito v-class vip',car:'sedan suv vip'})[r.svc]||'',r.v.region,r.v.location].join(' ')).includes(n)));
-  const market=rateStats(all), shown=Object.values(rateStats(n?rows:typed)).sort((a,b)=>b.all.length-a.all.length);
-  const first=r=>r.rates.length?r.rates[0].price:null;
-  const sorted=[...rows].sort((a,b)=> t.sort==='low'||t.sort==='high' ? ((first(a)==null)-(first(b)==null) || (t.sort==='low'?first(a)-first(b):first(b)-first(a))) : String(b.ref||'').localeCompare(String(a.ref||'')));
-  const cap=t.allStats?shown.length:6;
-  box.innerHTML=`
-    ${shown.length?`<div class="qstats">${shown.slice(0,cap).map(statCard).join('')}</div>${shown.length>cap?`<button class="mini" id="qtMore" type="button">Show all ${shown.length} averages</button>`:''}
-      <p class="hint" style="margin:6px 0 0">${n?'Averages for what matches your search. ':''}High season is August, December and the weeks of Pesach and Sukkot (Chol HaMoed), worked out from each quote's dates. Averages use quotes from the last two years.</p>`:''}
-    <div class="qt-bar"><span>${rows.length} quote${rows.length===1?'':'s'} from ${new Set(rows.map(r=>r.v.id)).size} supplier${new Set(rows.map(r=>r.v.id)).size===1?'':'s'}</span>
-      <select id="qtSort" aria-label="Sort quotes"><option value="new"${t.sort==='new'?' selected':''}>Newest dates first</option><option value="low"${t.sort==='low'?' selected':''}>Cheapest first</option><option value="high"${t.sort==='high'?' selected':''}>Most expensive first</option></select></div>
-    ${sorted.length?sorted.map(r=>trackerCard(r,market)).join(''):'<div class="empty" style="padding:20px"><p>No quotes match. Try another type, season or search.</p></div>'}`;
-  const more=box.querySelector('#qtMore'); if(more) more.onclick=()=>{ t.allStats=true; drawTracker(); };
-  box.querySelector('#qtSort').onchange=e=>{ t.sort=e.target.value; drawTracker(); };
+  const box=document.getElementById('qtBody'); if(!box) return; const t=S.qt, all=tpAllRows(), n=normN(t.q);
+  if(!all.length){ box.innerHTML=`<div class="empty"><h3>No transport prices yet</h3><p>Add the first one on a bus company's or a driver's page, or here: an airport pickup, a full day or an hourly rate, with the vehicle size and the passengers it was for.</p><button class="btn accent" id="qtFirst" type="button">+ Add a price</button></div>`; box.querySelector('#qtFirst').onclick=()=>openQuotePicker('price'); return; }
+  const rows=n?all.filter(r=>normN([r.v.name,r.v.region,r.v.location,trRoute(r.t),r.t.city,r.t.city2].join(' ')).includes(n)):all;
+  if(!rows.length){ box.innerHTML='<div class="empty" style="padding:20px"><p>Nothing matches. Try another supplier, city or region.</p></div>'; return; }
+  const stats=rateStats(trackerRows(S.quotes||[]));
+  box.innerHTML=tpBoard('quotes', rows, {vendor:true, detail:r=>r.quote?trackerCard(r.quote,stats):tpLineCard(r)})
+    +`<p class="hint" style="margin:10px 2px 0">Prices are dated references, not the price. A quote's high or regular season comes from its dates (August, December, Pesach and Sukkot are high season).</p>`;
+  tpWire(box,'quotes',drawTracker);
   box.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>openDetail(b.dataset.open));
 }
-function openQuotePicker(){
-  const w=sheet('Add a quote', `<p style="margin:0 0 10px">Which bus, van or car company gave you the quote?</p>
+function tpLineCard(r){ const p=r.p;
+  return `<div class="pl tp-card">${[p.season?'Season: '+esc(p.season):'',p.note?esc(p.note):'',p.source?'Source: '+esc(p.source):'',p.checked_on?'Checked '+esc(ilDate(p.checked_on)):''].filter(Boolean).map(x=>`<span class="meta">${x}</span>`).join('')}
+    <span class="ctl"><button class="mini" type="button" data-open="${esc(r.v.id)}">Open ${esc(r.v.name)} ›</button></span></div>`; }
+function openQuotePicker(mode){
+  const asPrice=mode==='price';
+  const w=sheet(asPrice?'Add a transport price':'Add a quote', `<p style="margin:0 0 10px">${asPrice?'Which bus, van or car company or driver is the price from?':'Which bus, van or car company gave you the quote?'}</p>
     <label class="search" for="qpq">${icons.search}<input id="qpq" type="search" placeholder="Search supplier" autocomplete="off"></label>
     <div id="qpList" style="margin-top:10px"></div>
     <p class="hint" style="margin-top:12px">Not on the list? Add the company first, in the Suppliers tab. A quote from a guide, hotel or activity goes on that supplier's own page.</p>`, `<button class="btn soft" id="qpc" type="button">Cancel</button>`);
@@ -2881,7 +2947,8 @@ function openQuotePicker(){
   const draw=()=>{ const n=normN(inp.value);
     const hits=S.vendors.filter(v=>catsOf(v).includes('Transport')).filter(v=>!n||normN([v.name,v.category,v.also_categories,v.tags,v.region].join(' ')).includes(n)).sort((a,b)=>a.name.localeCompare(b.name)).slice(0,40);
     list.innerHTML=hits.length?hits.map(v=>`<button class="pick" type="button" data-v="${esc(v.id)}"><b>${esc(v.name)}</b><span>${esc(catMain(v))}</span></button>`).join(''):'<p class="hint">No transport company with that name.</p>';
-    list.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{ const v=S.vendors.find(x=>x.id===b.dataset.v); if(v) openQuoteForm(v,null,'quotes'); }); };
+    list.querySelectorAll('[data-v]').forEach(b=>b.onclick=async()=>{ const v=S.vendors.find(x=>x.id===b.dataset.v); if(!v) return;
+      if(asPrice){ let pp=false; try{ pp=(await DB.detail(v.id)).prices_private; }catch(e){} openPriceForm(v,null,null,pp); } else openQuoteForm(v,null,'quotes'); }); };
   inp.addEventListener('input',draw); w.querySelector('#qpc').onclick=closeSheet; draw(); setTimeout(()=>inp.focus(),50);
 }
 
@@ -3617,37 +3684,6 @@ function openReasonSheet(title, prompt, onSend){
     try{ await onSend(r); }catch(e){ w.querySelector('#rsnErr').innerHTML=`<div class="msg err">${esc(e.message)}</div>`; } };
 }
 
-// ---------- prices on a bus company's or a driver's page (D-29) ----------
-// On a Transport supplier a price says what it is for (airport transfer, day, hour) and for which vehicle size.
-// Both are written into the line's label ("Airport transfer: Ben Gurion → Jerusalem · Van, up to 8 seats"),
-// so the price table and the database functions are unchanged, and older free-text lines keep working.
-const TR_AIRPORT='Ben Gurion', TR_SEP=' · ', TR_EACH=', each way';
-const TR_BASIS={transfer:'Per vehicle',day:'Per day',hour:'Per hour'};
-const TR_CITIES=TOWNS.filter(t=>t!=='Ben Gurion Airport');
-const trCity=c=>String(c||'').replace(/\s+/g,' ').trim();
-function trLabel(t){
-  const veh=VEH[t.veh]?VEH[t.veh].label:'', c=trCity(t.city); let s;
-  if(t.kind==='transfer') s='Airport transfer: '+(t.dir==='to'?c+' → '+TR_AIRPORT:t.dir==='both'?TR_AIRPORT+' ⇄ '+c+TR_EACH:TR_AIRPORT+' → '+c);
-  else if(t.kind==='day') s='Day rate'; else if(t.kind==='hour') s='Per hour'; else s=String(t.text||'').trim();
-  return veh?(s?s+TR_SEP+veh:veh):s;
-}
-function trParse(label){
-  let s=String(label||'').trim(), veh='', m;
-  const hit=VEHICLES.find(x=>s===x[1]||s.endsWith(TR_SEP+x[1]));
-  if(hit){ veh=hit[0]; s=s===hit[1]?'':s.slice(0,-(TR_SEP+hit[1]).length); }
-  const o={kind:'other',dir:'from',city:'',veh,text:s};
-  if((m=s.match(/^Airport transfer: Ben Gurion ⇄ (.+), each way$/))) return Object.assign(o,{kind:'transfer',dir:'both',city:m[1],text:''});
-  if((m=s.match(/^Airport transfer: Ben Gurion → (.+)$/))) return Object.assign(o,{kind:'transfer',dir:'from',city:m[1],text:''});
-  if((m=s.match(/^Airport transfer: (.+) → Ben Gurion$/))) return Object.assign(o,{kind:'transfer',dir:'to',city:m[1],text:''});
-  if(s==='Day rate') return Object.assign(o,{kind:'day',text:''});
-  if(s==='Per hour') return Object.assign(o,{kind:'hour',text:''});
-  return o;
-}
-const TR_WHAT=[['transfer:from','Airport transfer: Ben Gurion → city'],['transfer:to','Airport transfer: city → Ben Gurion'],['transfer:both','Airport transfer: both ways, same price'],['day','Day rate'],['hour','Per hour'],['other','Something else']];
-const TR_GROUPS=[['transfer','Airport transfers'],['day','Day rate'],['hour','Per hour'],['other','Other prices']];
-// Which vehicle size is chosen and which groups are open on the transport page being looked at. Kept while the app is open.
-const TR_VIEW={vid:'',veh:'',open:new Set()};
-function trView(vid){ if(TR_VIEW.vid!==vid){ TR_VIEW.vid=vid; TR_VIEW.veh=''; TR_VIEW.open=new Set(); } return TR_VIEW; }
 // Prices on any other supplier (D-44): adult and child lines show in full, agent rates included;
 // every other line (student, soldier, senior, group, extras) is one row with its name and price, and opens on a tap.
 function prName(p){ const l=(p.label||'').trim(), w=priceWho(p);
@@ -3676,22 +3712,286 @@ function prPricesHtml(prices, cardsOf, plCard){
   if(!main.length) return `<div class="prlist">${rest.map(row).join('')}</div>`;
   return `<div class="prlist">${main.map(row).join('')}<details class="prmore"><summary>Show ${rest.length} more price${rest.length>1?'s':''} ›</summary>${rest.map(row).join('')}</details></div>`;
 }
-function trPricesHtml(v, prices, cardsOf){
-  const st=trView(v.id), rows=prices.map(p=>({p,t:trParse(p.label)}));
-  const sizes=VEHICLES.filter(x=>rows.some(r=>r.t.veh===x[0]));
-  if(st.veh && !sizes.some(x=>x[0]===st.veh)) st.veh='';
-  const shown=st.veh?rows.filter(r=>r.t.veh===st.veh):rows, few=rows.length<=3;
-  const key=r=>[r.p.org?1:0, r.t.city.toLowerCase(), ['from','to','both'].indexOf(r.t.dir), VEHICLES.findIndex(x=>x[0]===r.t.veh)];
-  const cmp=(a,b)=>{ const x=key(a), y=key(b); for(let i=0;i<x.length;i++){ if(x[i]<y[i]) return -1; if(x[i]>y[i]) return 1; } return 0; };
-  return (sizes.length>1?`<div class="f prpick"><label for="trVehF">Vehicle size</label><select id="trVehF"><option value="">All sizes</option>${sizes.map(x=>`<option value="${x[0]}"${st.veh===x[0]?' selected':''}>${esc(x[1])}</option>`).join('')}</select></div>`:'')
-    + TR_GROUPS.map(([k,name])=>{ const g=shown.filter(r=>r.t.kind===k); if(!g.length) return ''; if(k!=='other') g.sort(cmp);
-        return `<details class="prgrp" data-g="${k}"${few||st.open.has(k)?' open':''}><summary><b>${esc(name)}</b><span class="hint">${g.length} price${g.length>1?'s':''}</span></summary><div class="prices">${cardsOf(g.map(r=>k==='other'?r.p:Object.assign({},r.p,{_show:trLabel(Object.assign({},r.t,{kind:'other',text:k==='transfer'?trLabel(Object.assign({},r.t,{veh:''})).replace(/^Airport transfer: /,''):''}))})))}</div></details>`; }).join('');
+// ---------- prices on a bus company's or a driver's page (D-29, rebuilt as D-54) ----------
+// A transport price says what it is for (airport pickup or drop-off, a transfer, a full or half day, an hour), the route,
+// the vehicle size, the passengers and luggage, the time of day, and whether it was quoted or paid. Those details are kept
+// in vendor_prices.transport (D-54). The line's label is still written the D-29 way ("Airport transfer: Ben Gurion →
+// Jerusalem · Van, 11–16 seats"), so lines saved before D-54 read back from their label and nothing older breaks.
+// The same board shows on the supplier's page and, for every bus, van and car supplier together, in the Quotes tab.
+const TR_AIRPORT='Ben Gurion', TR_SEP=' · ', TR_EACH=', each way';
+const TR_CITIES=TOWNS.filter(t=>t!=='Ben Gurion Airport');
+const trCity=c=>String(c||'').replace(/\s+/g,' ').trim();
+const TR_KINDS=[ // key, what the form says, the tab it shows under
+  ['from','Airport pickup: Ben Gurion → city','air'],
+  ['to','Airport drop-off: city → Ben Gurion','air'],
+  ['both','Airport, either way (same price)','air'],
+  ['local','Transfer between two places (not the airport)','xfer'],
+  ['day','Full day with driver','day'],
+  ['half','Half day with driver','half'],
+  ['hour','By the hour','hour'],
+  ['other','Something else (extra hour, overnight…)','other']];
+const TR_K=Object.fromEntries(TR_KINDS.map(x=>[x[0],{label:x[1],group:x[2]}]));
+const TR_GROUPS=[['air','Airport transfers'],['xfer','Other transfers'],['day','Full day'],['half','Half day'],['hour','By the hour'],['other','Other prices']];
+const TR_PER={from:'one way',to:'one way',both:'each way',local:'one way',day:'a day',half:'half day',hour:'an hour'};
+const TR_BASIS={from:'Per vehicle',to:'Per vehicle',both:'Per vehicle',local:'Per vehicle',day:'Per day',half:'Per vehicle',hour:'Per hour'};
+const TR_BAGS=[['yes','With luggage'],['hand','Hand luggage only'],['none','No luggage']];
+const TR_TIME=[['day','Daytime'],['night','Night'],['shabbat','Shabbat / holiday'],['any','Any time, same price']];
+const TR_PAID=[['quoted','Quoted'],['paid','What was paid'],['list','Price list']];
+const TR_TOLL=[['incl','Included'],['extra','Extra']];
+const TR_TIP=[['incl','Included'],['extra','Expected on top'],['none','Not expected']];
+const trPick=(arr,k)=>(arr.find(x=>x[0]===k)||['',''])[1];
+function trLabel(t){
+  const veh=VEH[t.veh]?VEH[t.veh].label:'', c=trCity(t.city), k=t.kind; let s;
+  if(k==='from') s='Airport transfer: '+TR_AIRPORT+' → '+c;
+  else if(k==='to') s='Airport transfer: '+c+' → '+TR_AIRPORT;
+  else if(k==='both') s='Airport transfer: '+TR_AIRPORT+' ⇄ '+c+TR_EACH;
+  else if(k==='local') s='Transfer: '+c+' → '+trCity(t.city2);
+  else if(k==='day') s='Day rate'; else if(k==='half') s='Half day'; else if(k==='hour') s='Per hour';
+  else s=String(t.text||'').trim();
+  return veh?(s?s+TR_SEP+veh:veh):s;
 }
+// Reads a D-29 label back ("Airport transfer: Ben Gurion → Jerusalem · Van, up to 8 seats").
+function trParse(label){
+  let s=String(label||'').trim(), veh='', m;
+  const hit=VEHICLES.find(x=>s===x[1]||s.endsWith(TR_SEP+x[1]));
+  if(hit){ veh=hit[0]; s=s===hit[1]?'':s.slice(0,-(TR_SEP+hit[1]).length); }
+  const o={kind:'other',city:'',city2:'',veh,text:s};
+  if((m=s.match(/^Airport transfer: Ben Gurion ⇄ (.+), each way$/))) return Object.assign(o,{kind:'both',city:m[1],text:''});
+  if((m=s.match(/^Airport transfer: Ben Gurion → (.+)$/))) return Object.assign(o,{kind:'from',city:m[1],text:''});
+  if((m=s.match(/^Airport transfer: (.+) → Ben Gurion$/))) return Object.assign(o,{kind:'to',city:m[1],text:''});
+  if((m=s.match(/^Transfer: (.+) → (.+)$/))) return Object.assign(o,{kind:'local',city:m[1],city2:m[2],text:''});
+  if(s==='Day rate') return Object.assign(o,{kind:'day',text:''});
+  if(s==='Half day') return Object.assign(o,{kind:'half',text:''});
+  if(s==='Per hour') return Object.assign(o,{kind:'hour',text:''});
+  return o;
+}
+// One price line as a transport price: the stored details (D-54) over what its label says.
+function trOf(p){
+  const t=trParse(p.label), d=(p.transport&&typeof p.transport==='object')?p.transport:{};
+  Object.keys(d).forEach(k=>{ if(d[k]!=='' && d[k]!=null) t[k]=String(d[k]); });
+  if(!TR_K[t.kind]) t.kind='other';
+  if(t.kind==='other' && d.kind) t.text=trParse(p.label).text;
+  if(!t.pax && p.pax_max) t.pax=String(p.pax_max);
+  return t;
+}
+const trGroup=t=>t.qkind||(TR_K[t.kind]||TR_K.other).group;
+function trRoute(t){
+  const c=trCity(t.city);
+  if(t.qname) return t.qname;
+  if(t.kind==='from') return TR_AIRPORT+' → '+(c||'?');
+  if(t.kind==='to') return (c||'?')+' → '+TR_AIRPORT;
+  if(t.kind==='both') return TR_AIRPORT+' ⇄ '+(c||'?');
+  if(t.kind==='local') return (c||'?')+' → '+(trCity(t.city2)||'?');
+  if(t.kind==='day') return 'Full day'+(c?' from '+c:'');
+  if(t.kind==='half') return 'Half day'+(c?' from '+c:'');
+  if(t.kind==='hour') return 'By the hour'+(c?' in '+c:'');
+  return t.text||'Price';
+}
+const trPax=t=>t.pax?t.pax+' passenger'+(t.pax==='1'?'':'s'):'';
+function trBagsTxt(t){ if(!t.bags) return ''; const n=+t.bag_n; return t.bags==='yes'?(n?n+' suitcase'+(n>1?'s':''):'+ luggage'):trPick(TR_BAGS,t.bags); }
+// The small facts under a price: vehicle, passengers and luggage, time, what is included, quoted or paid.
+function trFacts(t,p,cur){
+  const f=[], m=x=>fmtMoney(cur||'ILS',+x);
+  f.push(VEH[t.veh]?VEH[t.veh].label:(t.qname?'':'Vehicle size not stated'));
+  const bg=trBagsTxt(t), pb=trPax(t)+(trPax(t)&&bg?(bg.startsWith('+')?' ':', '):'')+(trPax(t)?bg:bg.replace(/^\+ l/,'L')); if(pb) f.push(pb);
+  if(t.time&&t.time!=='day') f.push(trPick(TR_TIME,t.time)+(t.night&&(t.time==='night'||t.time==='shabbat')?' '+t.night:''));
+  if(t.night&&t.time!=='night'&&t.time!=='shabbat') f.push('Night / Shabbat '+t.night);
+  if(t.hours||t.km) f.push([t.hours?t.hours+' hours':'',t.km?t.km+' km':''].filter(Boolean).join(' and ')+' included');
+  if(t.x_hour) f.push('extra hour '+m(t.x_hour)); if(t.x_km) f.push('extra km '+m(t.x_km));
+  if(t.wait) f.push(t.wait+' min waiting included');
+  if(t.tolls) f.push('Kvish 6 '+(t.tolls==='incl'?'included':'extra')); if(t.tip) f.push('Tip '+trPick(TR_TIP,t.tip).toLowerCase());
+  if(t.on) f.push('for '+ilDate(t.on));
+  return f.filter(Boolean);
+}
+function trTags(p,t){
+  return (p.org?'<span class="tag" style="background:var(--ochre-wash);color:var(--ink)">Organisation rate</span>':(p.is_agent?'<span class="tag agent">Agent</span>':(t.qname?'':'<span class="tag">Public</span>')))
+    +(t.qname?'<span class="tag">Quote</span>':'')
+    +(t.paid?`<span class="tag${t.paid==='paid'?' reg':''}">${esc(trPick(TR_PAID,t.paid))}</span>`:'')
+    +(p.private?'<span class="tag" style="background:var(--bad-wash);color:var(--bad)">Private</span>':'')
+    +(p.mine&&!p.org?'<span class="tag" style="background:var(--ochre-wash);color:var(--ochre)">Only you</span>':'');
+}
+// The board: a tab for each kind of job, vehicle sizes as chips, a city to pick when there are several,
+// lowest / average / highest for what is shown, and one row per price that opens on a tap.
+const TPV={};
+const tpState=key=>TPV[key]=TPV[key]||{g:'',veh:'*',city:''};
+const avgN=a=>Math.round(a.reduce((x,y)=>x+y,0)/a.length);
+function tpBoard(key, rows, o){
+  o=o||{}; const st=tpState(key);
+  const groups=TR_GROUPS.map(([k,n])=>({k,n,rows:rows.filter(r=>trGroup(r.t)===k)})).filter(x=>x.rows.length);
+  if(!groups.length) return '';
+  if(!groups.some(x=>x.k===st.g)) st.g=groups[0].k;
+  const inG=groups.find(x=>x.k===st.g).rows;
+  const lowOf=list=>{ const il=list.filter(r=>r.p.price!==''&&r.p.price!=null&&(r.p.currency||'ILS')==='ILS'&&+r.p.price>0).map(r=>+r.p.price); return il.length?Math.min(...il):null; };
+  const tiles=`<div class="tp-tiles" role="tablist" aria-label="Kind of job">${groups.map(x=>{ const lo=lowOf(x.rows);
+      return `<button class="tp-tile" type="button" role="tab" data-tpg="${x.k}" aria-selected="${x.k===st.g}"><b>${esc(x.n)}</b><span>${x.rows.length} price${x.rows.length>1?'s':''}${lo!=null?' · from '+esc(fmtMoney('ILS',lo)):''}</span></button>`; }).join('')}</div>`;
+  const sizes=[...VEHICLES.filter(x=>inG.some(r=>r.t.veh===x[0])).map(x=>[x[0],x[1]]), ...(inG.some(r=>!VEH[r.t.veh])?[['','Size not stated']]:[])];
+  if(st.veh!=='*' && !sizes.some(x=>x[0]===st.veh)) st.veh='*';
+  const byVeh=inG.filter(r=>st.veh==='*'||(VEH[r.t.veh]?r.t.veh:'')===st.veh);
+  const cities=[...new Set(byVeh.map(r=>trCity(r.t.city)).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  if(st.city && !cities.includes(st.city)) st.city='';
+  const shown=byVeh.filter(r=>!st.city||trCity(r.t.city)===st.city);
+  const chip=(v,l,n)=>`<button class="chip" type="button" data-tpv="${esc(v)}" aria-pressed="${st.veh===v}">${esc(l)}${n!=null?` <span class="hint">${n}</span>`:''}</button>`;
+  const vehChips=sizes.length>1?`<div class="chips tp-veh" role="group" aria-label="Vehicle size">${chip('*','All sizes',null)}${sizes.map(x=>chip(x[0],x[1].replace(/ \(.*\)$/,''),inG.filter(r=>(VEH[r.t.veh]?r.t.veh:'')===x[0]).length)).join('')}</div>`:'';
+  const cityPick=cities.length>1?`<div class="f tp-city"><label for="tpc_${esc(key)}">City</label><select id="tpc_${esc(key)}" data-tpc="1"><option value="">All cities (${cities.length})</option>${cities.map(c=>`<option${st.city===c?' selected':''}>${esc(c)}</option>`).join('')}</select></div>`:'';
+  // lowest / average / highest, in the currency most of the shown prices are in
+  const priced=shown.filter(r=>r.p.price!==''&&r.p.price!=null&&+r.p.price>0&&!(r.p.org&&!lim()));
+  const curs={}; priced.forEach(r=>{ const c=r.p.currency||'ILS'; curs[c]=(curs[c]||0)+1; });
+  const cur=Object.keys(curs).sort((a,b)=>curs[b]-curs[a])[0], nums=priced.filter(r=>(r.p.currency||'ILS')===cur).map(r=>+r.p.price);
+  const sum=nums.length>1?`<div class="tp-sum"><div><small>Lowest</small><b class="mono">${esc(fmtMoney(cur,Math.min(...nums)))}</b></div>${nums.length>=3?`<div><small>Average of ${nums.length}</small><b class="mono">${esc(fmtMoney(cur,avgN(nums)))}</b></div>`:''}<div><small>Highest</small><b class="mono">${esc(fmtMoney(cur,Math.max(...nums)))}</b></div></div>
+    <p class="hint tp-sumnote">${st.veh==='*'&&sizes.length>1?'All vehicle sizes together: pick a size to compare like with like. ':''}${new Set(priced.map(r=>r.p.vat||'')).size>1?'VAT terms differ between these prices. ':''}${o.vendor?'Organisation rates are not counted.':''}</p>`:'';
+  const order=r=>[trCity(r.t.city).toLowerCase(),['from','to','both'].indexOf(r.t.kind),VEHICLES.findIndex(x=>x[0]===r.t.veh)<0?99:VEHICLES.findIndex(x=>x[0]===r.t.veh),(r.p.price===''?1e12:+r.p.price)];
+  const sorted=[...shown].sort((a,b)=>{ const x=order(a), y=order(b); for(let i=0;i<x.length;i++){ if(x[i]<y[i]) return -1; if(x[i]>y[i]) return 1; } return 0; });
+  const row=(r,i)=>{ const p=r.p, t=r.t, per=t.qunit||TR_PER[t.kind]||'', cur2=p.currency||'ILS';
+    return `<details class="tprow" data-tpi="${i}"><summary>
+      <div class="tp-m"><div class="tp-r">${esc(trRoute(t))}</div>
+        ${o.vendor&&r.v?`<div class="tp-s">${esc(r.v.name)}${r.v.region?' · '+esc(r.v.region):''}</div>`:''}
+        <div class="tp-f">${esc(trFacts(t,p,cur2).join(' · '))}</div>
+        <div class="tp-t">${trTags(p,t)}${vatLabel(p.vat)?`<span class="tp-vat">${esc(vatLabel(p.vat).replace('VAT','VAT'))}</span>`:'<span class="tp-vat miss">VAT not stated</span>'}${p.checked_on?`<span class="tp-vat">${esc(t.qname?'quoted ':'checked ')}${esc(ilDate(p.checked_on))}</span>`:''}${r.season||''}</div></div>
+      <div class="tp-p"><b class="mono">${p.price!==''&&p.price!=null?esc(money(cur2,p.price)):'—'}</b>${per?`<small>${esc(per)}</small>`:''}</div></summary>
+      <div class="pr-d">${o.detail?o.detail(r):''}</div></details>`; };
+  return `${tiles}<div class="tp-filters">${vehChips}${cityPick}</div>${sum}
+    <div class="tplist">${sorted.length?sorted.map((r,i)=>row(r,rows.indexOf(r))).join(''):'<p class="hint" style="padding:14px">Nothing for this size here yet.</p>'}</div>`;
+}
+function tpWire(box, key, redraw, onOpen){
+  const st=tpState(key);
+  box.querySelectorAll('[data-tpg]').forEach(b=>b.onclick=()=>{ if(st.g===b.dataset.tpg) return; st.g=b.dataset.tpg; st.city=''; redraw(); });
+  box.querySelectorAll('[data-tpv]').forEach(b=>b.onclick=()=>{ st.veh=b.dataset.tpv; redraw(); });
+  box.querySelectorAll('[data-tpc]').forEach(s=>s.onchange=()=>{ st.city=s.value; redraw(); });
+  if(onOpen) box.querySelectorAll('details.tprow').forEach(d=>d.addEventListener('toggle',()=>{ if(d.open) onOpen(d,+d.dataset.tpi); }));
+}
+// On the supplier's page: the same board, and a tap on a row shows its card with Edit and Remove.
+function trPricesHtml(v, prices, cardsOf){
+  const rows=prices.map(p=>({p,t:trOf(p),v}));
+  return tpBoard('v:'+v.id, rows, {detail:r=>cardsOf([Object.assign({},r.p,{_show:trRoute(r.t)})])});
+}
+
+// The transport price form (D-54): the job, when, the price, what is included, and where the price comes from.
+function openTrPriceForm(v, p, pre, pp){
+  const orgLine = lim() && (!p || p.mine);
+  const ownOnly = !S.admin && !orgLine && (pp || (p && p.mine)); const canChoose = !S.admin && !orgLine && !p && !pp;
+  const x=Object.assign({label:'',audience:'Vehicle',pax_min:'',pax_max:'',season:'',price:'',currency:v.currency||'ILS',vat:'',basis:'Per vehicle',is_agent:!lim(),source:'',checked_on:today(),note:'',transport:{}}, p||pre||{});
+  const t=trOf(x);
+  if(!p && !(pre&&(pre.label||pre.transport&&pre.transport.kind))){ t.kind=isIndep(v)?'from':'day'; const fl=[...fleetOf(v)]; if(fl.length===1) t.veh=fl[0]; }
+  const opt=(arr,val)=>arr.map(o=>{const [k,l]=Array.isArray(o)?o:[o,o];return `<option value="${esc(k)}"${String(val)===k?' selected':''}>${esc(l)}</option>`}).join('');
+  const cityOpts=val=>opt([['','Choose…'],...TR_CITIES.map(c=>[c,c]),['__other','Another place…']],TR_CITIES.includes(val)?val:(val?'__other':''));
+  const tg=(name,arr,val,lab)=>`<div class="f wide"><span class="flab">${esc(lab)}</span><div class="trtg" role="group" aria-label="${esc(lab)}">${arr.map(([k,l])=>`<button type="button" class="chip sm" data-tg="${name}" data-val="${k}" aria-pressed="${val===k}">${esc(l)}</button>`).join('')}</div></div>`;
+  const who = S.admin?'':orgLine?`<div class="lockbar">The rate you got from this supplier. ${pp?'This supplier\'s prices are kept private, so only you and Eretz Israel Tours see it.':'Everyone on the list sees it, without your name. Eretz Israel Tours sees who added it.'} It saves straight away.</div>`:(ownOnly?`<div class="lockbar">This price is just for you. Only you and Eretz Israel Tours see it. It saves straight away.</div>`:
+      (canChoose?`<div class="chips" role="radiogroup" aria-label="Who sees it" style="padding-top:0;margin-bottom:10px"><button type="button" class="chip" data-who="me" aria-pressed="true">Just for me</button><button type="button" class="chip" data-who="all" aria-pressed="false">Suggest for everyone</button></div>
+        <div class="lockbar" id="whoNote">Only you and Eretz Israel Tours see it. It saves straight away.</div>`:`<div class="lockbar">🔒 Shared prices are checked by Eretz Israel Tours before they appear. Your suggestion is sent with your reason.</div>`));
+  const body=`<form id="pf" class="trf" novalidate>${who}
+    <fieldset><legend>The job</legend><div class="grid">
+      <div class="f wide"><label for="tr_what">What is the price for?</label><select id="tr_what">${opt(TR_KINDS.map(k=>[k[0],k[1]]),t.kind)}</select></div>
+      <div class="f wide" id="trTextWrap"><label for="pl_label">What is it?</label><input id="pl_label" maxlength="90" value="${esc(t.kind==='other'?t.text:'')}" placeholder="Extra hour, driver overnight, guide's seat…"></div>
+      <div class="f" id="trCityWrap"><label for="tr_citySel" id="trCityLab">City</label><select id="tr_citySel">${cityOpts(t.city)}</select>
+        <input id="tr_city" maxlength="40" value="${esc(TR_CITIES.includes(t.city)?'':t.city)}" placeholder="Type the place" autocomplete="off" aria-label="Place name" style="margin-top:6px" hidden></div>
+      <div class="f" id="trCity2Wrap"><label for="tr_city2Sel">To</label><select id="tr_city2Sel">${cityOpts(t.city2)}</select>
+        <input id="tr_city2" maxlength="40" value="${esc(TR_CITIES.includes(t.city2)?'':t.city2)}" placeholder="Type the place" autocomplete="off" aria-label="Place name" style="margin-top:6px" hidden></div>
+      <div class="f"><label for="tr_veh">Vehicle size</label><select id="tr_veh">${opt([['','Not stated'],...VEHICLES.map(o=>[o[0],o[1]])],t.veh)}</select></div>
+      <div class="f"><label for="tr_pax">Passengers</label><input id="tr_pax" inputmode="numeric" maxlength="3" value="${esc(t.pax||'')}" placeholder="12"></div>
+      ${tg('bags',TR_BAGS,t.bags||'','Luggage')}
+      <div class="f" id="trBagNWrap"><label for="tr_bagn">Suitcases (if known)</label><input id="tr_bagn" inputmode="numeric" maxlength="3" value="${esc(t.bag_n||'')}" placeholder="12"></div>
+    </div></fieldset>
+    <fieldset><legend>When</legend><div class="grid">
+      ${tg('time',TR_TIME,t.time||'','Time of day')}
+      <div class="f"><label for="tr_night">Night or Shabbat extra</label><input id="tr_night" maxlength="40" value="${esc(t.night||'')}" placeholder="+25% · +100 ₪"></div>
+      <div class="f"><label for="tr_on">Date of the job (if any)</label><input id="tr_on" type="date" value="${esc(t.on||'')}"></div>
+    </div></fieldset>
+    <fieldset><legend>The price</legend><div class="grid">
+      <div class="f"><label for="pl_price" id="plPriceLab">Price</label><input id="pl_price" inputmode="decimal" value="${esc(x.price)}" placeholder="Leave empty if unknown"></div>
+      <div class="f"><label for="pl_cur">Currency</label><select id="pl_cur">${opt(['ILS','USD','EUR'],x.currency)}</select></div>
+      <div class="f"><label for="pl_vat">VAT</label><select id="pl_vat">${opt(VAT,x.vat)}</select></div>
+      <div class="f"${lim()?' hidden':''}><label for="pl_type">Agent or public price?</label><select id="pl_type">${opt([['1','Agent price'],['0','Public price']], x.is_agent?'1':'0')}</select></div>
+      ${tg('paid',TR_PAID,t.paid||'','Quoted, or what was paid?')}
+      <div class="f wide" id="trBasisWrap"><label for="pl_basis">Basis</label><select id="pl_basis">${opt(BASIS,x.basis)}</select></div>
+    </div></fieldset>
+    <fieldset id="trDayFs"><legend>Included in the day</legend><div class="grid">
+      <div class="f"><label for="tr_hours">Hours included</label><input id="tr_hours" inputmode="decimal" maxlength="5" value="${esc(t.hours||'')}" placeholder="10"></div>
+      <div class="f"><label for="tr_km">Km included</label><input id="tr_km" inputmode="numeric" maxlength="5" value="${esc(t.km||'')}" placeholder="250"></div>
+      <div class="f"><label for="tr_xh">Each extra hour</label><input id="tr_xh" inputmode="decimal" maxlength="8" value="${esc(t.x_hour||'')}" placeholder="150"></div>
+      <div class="f"><label for="tr_xk">Each extra km</label><input id="tr_xk" inputmode="decimal" maxlength="8" value="${esc(t.x_km||'')}" placeholder="3"></div>
+    </div></fieldset>
+    <fieldset id="trXferFs"><legend>On a transfer</legend><div class="grid">
+      <div class="f"><label for="tr_wait">Free waiting (minutes)</label><input id="tr_wait" inputmode="numeric" maxlength="4" value="${esc(t.wait||'')}" placeholder="60"></div>
+    </div></fieldset>
+    <fieldset><legend>Extras</legend><div class="grid">
+      ${tg('tolls',TR_TOLL,t.tolls||'','Kvish 6 (toll road)')}
+      ${tg('tip',TR_TIP,t.tip||'','Driver\'s tip')}
+    </div></fieldset>
+    <fieldset><legend>Where the price is from</legend><div class="grid">
+      <div class="f wide"><label for="pl_src">Source</label><input id="pl_src" value="${esc(x.source)}" placeholder="WhatsApp from the driver, quote email, my receipt"></div>
+      <div class="f"><label for="pl_chk">Date of the quote</label><input id="pl_chk" type="date" value="${esc(x.checked_on)}"></div>
+      <div class="f wide"><label for="pl_season">Season or dates</label><input id="pl_season" value="${esc(x.season)}" placeholder="Chol HaMoed +15% · until 31 Mar 2027"></div>
+      <div class="f wide"><label for="pl_note">Note</label><input id="pl_note" value="${esc(x.note)}" placeholder="Child seats on request. Second stop +100 ₪."></div>
+      ${S.admin?`<label class="check f wide" for="pl_priv"><input id="pl_priv" type="checkbox" ${x.private?'checked':''}><span><b>Private:</b> only you see this price</span></label>`:(ownOnly||orgLine?'':`<div class="f wide" id="reasonWrapP" ${canChoose?'hidden':''}><label for="pl_reason">Why are you adding or changing it? <em>*</em></label><input id="pl_reason" placeholder="New price from the driver on WhatsApp"></div>`)}
+    </div></fieldset>
+    <div class="trshow" id="trShowWrap"><span class="hint">Shows as</span><b id="trShow"></b><span id="trShowF" class="hint"></span></div>
+    <div id="plErr"></div></form>`;
+  let forMe = ownOnly || canChoose;
+  const saveTxt=()=>S.admin||ownOnly||orgLine||forMe?'Save':'Send for approval';
+  const w=sheet(orgLine?(p?'Edit your rate':'Add the rate you got'):(p?(S.admin||ownOnly?'Edit price':'Suggest a price change'):(S.admin?'Add a transport price':'Add a price')), body,
+    `<button class="btn soft" id="pc" type="button">Cancel</button>${!p?'<button class="btn soft" id="psMore" type="button">Save + add another</button>':''}<button class="btn primary" id="ps" type="button">${saveTxt()}</button>`);
+  const q=s=>w.querySelector(s);
+  w.querySelectorAll('[data-who]').forEach(b=>b.onclick=()=>{ forMe=b.dataset.who==='me'; w.querySelectorAll('[data-who]').forEach(o=>o.setAttribute('aria-pressed',o===b));
+    q('#whoNote').textContent = forMe?'Only you and Eretz Israel Tours see it. It saves straight away.':'🔒 Shared prices are checked by Eretz Israel Tours before they appear. Say where the price comes from.';
+    q('#reasonWrapP').hidden = forMe; q('#ps').textContent = saveTxt(); });
+  if(canChoose && pre && pre._who==='all'){ q('[data-who="all"]').onclick(); q('#pl_reason').value=pre._reason||''; }
+  const tgv={}; w.querySelectorAll('[data-tg]').forEach(b=>{ if(b.getAttribute('aria-pressed')==='true') tgv[b.dataset.tg]=b.dataset.val;
+    b.onclick=()=>{ const n=b.dataset.tg, on=tgv[n]!==b.dataset.val; tgv[n]=on?b.dataset.val:''; w.querySelectorAll(`[data-tg="${n}"]`).forEach(o=>o.setAttribute('aria-pressed',on&&o===b)); sync(); }; });
+  const place=(sel,inp)=>{ const s=q(sel).value; return trCity(s==='__other'?q(inp).value:s); };
+  const read=()=>{ const kind=q('#tr_what').value, num=s=>q(s).value.trim().replace(/[,₪$€\s]/g,'');
+    const o={kind,veh:q('#tr_veh').value,pax:num('#tr_pax'),bags:tgv.bags||'',bag_n:tgv.bags==='yes'?num('#tr_bagn'):'',time:tgv.time||'',night:q('#tr_night').value.trim(),on:q('#tr_on').value,paid:tgv.paid||'',tolls:tgv.tolls||'',tip:tgv.tip||''};
+    if(['from','to','both','local','day','half','hour'].includes(kind)) o.city=place('#tr_citySel','#tr_city');
+    if(kind==='local') o.city2=place('#tr_city2Sel','#tr_city2');
+    if(['day','half','hour'].includes(kind)) Object.assign(o,{hours:num('#tr_hours'),km:num('#tr_km'),x_hour:num('#tr_xh'),x_km:num('#tr_xk')});
+    if(['from','to','both','local'].includes(kind)) o.wait=num('#tr_wait');
+    o.text=q('#pl_label').value.trim();
+    return o; };
+  const sync=()=>{ const t2=read(), k=t2.kind, air=['from','to','both'].includes(k), xfer=air||k==='local', day=['day','half','hour'].includes(k);
+    q('#plErr').innerHTML='';
+    q('#trTextWrap').hidden=k!=='other'; q('#trBasisWrap').hidden=k!=='other';
+    q('#trCityWrap').hidden=k==='other'; q('#trCityLab').textContent=k==='local'?'From':air?'City':'Starting from (optional)';
+    q('#trCity2Wrap').hidden=k!=='local'; q('#trDayFs').hidden=!day; q('#trXferFs').hidden=!xfer; q('#trBagNWrap').hidden=tgv.bags!=='yes';
+    q('#tr_city').hidden=q('#tr_citySel').value!=='__other'; q('#tr_city2').hidden=q('#tr_city2Sel').value!=='__other';
+    q('#plPriceLab').textContent=(lim()?'Price':q('#pl_type').value==='1'?'Agent price':'Public price')+(TR_PER[k]?', '+TR_PER[k]:'');
+    const lab=trLabel(t2); q('#trShowWrap').hidden=!lab; q('#trShow').textContent=trRoute(t2); q('#trShowF').textContent=trFacts(t2,{},q('#pl_cur').value).join(' · ');
+  };
+  ['#tr_what','#tr_citySel','#tr_city2Sel','#tr_veh','#pl_type','#pl_cur'].forEach(s=>q(s).addEventListener('change',()=>{ sync(); if(/Sel$/.test(s)&&q(s).value==='__other') q(s.replace('Sel','')).focus(); }));
+  ['#tr_city','#tr_city2','#tr_pax','#tr_bagn','#tr_night','#pl_label','#tr_hours','#tr_km','#tr_xh','#tr_xk','#tr_wait'].forEach(s=>q(s).addEventListener('input',sync));
+  q('#tr_pax').addEventListener('change',()=>{ if(!q('#tr_veh').value){ const s=vehicleBySeats(q('#tr_pax').value); if(s && fleetOf(v).has(s)){ q('#tr_veh').value=s; sync(); } } });
+  sync();
+  q('#pc').onclick=()=>openDetail(v.id);
+  const save=async again=>{
+    const g=id=>q('#'+id).value.trim(), err=q('#plErr'), t2=read(), k=t2.kind, bad=m=>{ err.innerHTML=`<div class="msg err">${m}</div>`; err.scrollIntoView({block:'nearest'}); };
+    if(['from','to','both','local'].includes(k) && !t2.city) return bad(k==='local'?'Add where the transfer starts.':'Add the city the transfer goes to or comes from.');
+    if(k==='local' && !t2.city2) return bad('Add where the transfer ends.');
+    if(k!=='other' && !t2.veh && !t2.pax) return bad('Choose the vehicle size, or say how many passengers it was for.');
+    if(k==='other' && !t2.text) return bad('Say what the price is for.');
+    for(const [f,lab] of [['pax','Passengers'],['bag_n','Suitcases'],['hours','Hours included'],['km','Km included'],['x_hour','Each extra hour'],['x_km','Each extra km'],['wait','Free waiting']]) if(t2[f] && !/^\d+(\.\d+)?$/.test(t2[f])) return bad(lab+': enter a number.');
+    const price=g('pl_price').replace(/[,₪$€\s]/g,'');
+    if(price && !/^\d+(\.\d+)?$/.test(price)) return bad('Enter the price as a number, like 800, or leave it empty.');
+    const tr={}; Object.keys(t2).forEach(f=>{ if(f!=='text' && t2[f]) tr[f]=t2[f]; });
+    const line={id:p?p.id:undefined,label:trLabel(t2).slice(0,120),audience:'Vehicle',age_from:'',age_to:'',pax_min:'',pax_max:t2.pax||'',price,currency:g('pl_cur'),vat:g('pl_vat'),
+      basis:TR_BASIS[k]||g('pl_basis'),is_agent:!lim()&&g('pl_type')==='1',season:g('pl_season'),source:g('pl_src'),checked_on:g('pl_chk'),note:g('pl_note'),private:S.admin?q('#pl_priv').checked:false,transport:tr};
+    line.mine = !S.admin && forMe;
+    const reason = (S.admin||forMe||orgLine)?'':g('pl_reason');
+    if(!S.admin && !forMe && !orgLine && reason.length<3) return bad('Add a short reason, like where the price came from.');
+    const st=tpState('v:'+v.id); st.g=(TR_K[k]||TR_K.other).group;
+    try{ const r=await DB.savePrice(v.id,line,reason); S.tprices=null;
+      toast(r&&r.request?'Sent for approval':(r&&r.org?(pp?'Saved. Only you and Eretz Israel Tours see it.':'Saved. Everyone on the list sees this rate, without your name.'):(line.mine?'Saved. Only you see this price.':'Price saved')));
+      // the next line starts from this one: same job, route, vehicle, VAT and source; the price and the note are empty
+      if(again) openTrPriceForm(v,null,Object.assign({},line,{id:undefined,price:'',note:'',_who:forMe?'me':'all',_reason:reason}),pp); else openDetail(v.id); }
+    catch(e){ bad(esc(e.message)); }
+  };
+  q('#ps').onclick=()=>save(false);
+  const more=q('#psMore'); if(more) more.onclick=()=>save(true);
+}
+
 function openPriceForm(v, p, pre, pp){
+  if(catsOf(v).includes('Transport')) return openTrPriceForm(v, p, pre, pp);   // D-54: transport has its own form; the isTr parts below no longer run
   // A limited member's own line is an organisation rate: saved at once, shown to everyone without the name, never an agent rate.
   const orgLine = lim() && (!p || p.mine);
   const ownOnly = !S.admin && !orgLine && (pp || (p && p.mine)); const canChoose = !S.admin && !orgLine && !p && !pp;
-  const isTr = catsOf(v).includes('Transport');
+  const isTr = false;   // a Transport supplier never reaches here since D-54 (openTrPriceForm)
   const x=Object.assign({label:'',audience:isTr?'Vehicle':'Adult',age_from:'',age_to:'',pax_min:'',pax_max:'',season:'',price:'',currency:v.currency||'ILS',vat:'',basis:v.priceBasis||'Per person',is_agent:!lim(),source:'',checked_on:today(),note:''}, p||pre||{});
   const tr = isTr ? trParse(x.label) : null;
   if(isTr && !p && !(pre&&pre.label)){ tr.kind=isIndep(v)?'transfer':'day'; const fl=[...fleetOf(v)]; if(fl.length===1) tr.veh=fl[0]; }
