@@ -10,7 +10,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
-## D-58 · Batch confirm: one way and one kind for several prices at once (Eretz Israel Tours only)
+## D-58 · Batch confirm: one way and one kind for several prices at once (Eretz Israel Tours only; live since 17 October 2026, 23:41)
 
 **Owner, 17 Oct 2026, verbatim:** "New, my decision: batch confirm. On a supplier's page, add "Confirm prices…" that opens a list of that supplier's price lines with a tick box on each (all unconfirmed ones ticked by default). I choose one "how" (official list / supplier's document or email / paid invoice / conversation) and Tariff or Negotiated once, press "Confirm 12 prices", and every ticked line gets the same mark with today's date. Same rules as single confirm: only Eretz Israel Tours, only I see it, a changed price loses its mark. Show me a quick mock-up first, then build it, and put it live together with the Confirmed Price Mark screen if that isn't live yet."
 
@@ -33,6 +33,8 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 **Not checked:**
 - A price failing part way: the page's code cannot be reached from the test, and no test-only hook was added to the live page.
 - The live site and a real phone.
+
+**Live:** since 17 Oct 2026, 23:41. Pull request #80 was merged (main at 4756bef), and GitHub reports the site deployed from that commit. It went live on the owner's instruction in the same message as the decision. This session cannot open the live site, so it has not seen the page there.
 
 ## D-57 · A confirmed mark on each price line, and a read-only door for the Cockpit (database live since 17 October 2026, 22:36; the screen live for Eretz Israel Tours since 23:10; the reader key is not minted)
 

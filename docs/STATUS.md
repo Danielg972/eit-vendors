@@ -17,9 +17,9 @@
 | Terms version | `2026-10-03c` live (adds 2c, organisations as limited members; `2026-10-03a` added 6d, jobs). `2026-10-03d` on the branch `guide-for-clients`: 3a malicious posts, 3c licensed guides and D1, 6e a guide's page for clients, 6f your own page and reviews. All draft, not yet reviewed by a lawyer |
 | Decisions | `docs/DECISIONS.md` (D-1 Cockpit boundary; D-2 quote tracker; D-3 driver reviews; D-4 transport by vehicle size; D-5 booking sheets; D-6 welcome tour, name, use-and-add rule; D-7 Shomer Shabbat badge, kosher restaurants only; D-8 opening hours, no-certificate needs approval; D-9 verified hours, last entry, hours from websites; D-10 official buttons; D-11 jobs between colleagues and My days, live for Eretz Israel Tours only; D-15 limited members: organisations that are not in tourism; D-13 food nearby only on places; D-12 a guide's page for clients; D-14 claimed pages, disputes, reviews; D-16 licensed guides only, D1 for Eshkol, malicious posts) |
 
-## Batch confirm (D-58): "Confirm prices…" on a supplier's page, Eretz Israel Tours only (17 October 2026)
+## Batch confirm (D-58): "Confirm prices…" on a supplier's page, Eretz Israel Tours only: live since 17 October 2026, 23:41 (#80)
 
-Tick several prices, choose one way and one kind, and each gets the same mark with today's date, through the same `price_confirm` call as a single confirm. Front end only. Preview checks 51/51. Live state: see DECISIONS D-58.
+Tick several prices, choose one way and one kind, and each gets the same mark with today's date, through the same `price_confirm` call as a single confirm. Front end only. Preview checks 51/51. Not yet tried by a person on the live site.
 
 ## The confirmed mark and the Cockpit's read-only door (D-57): database live since 17 October 2026, 22:36; the screen live for Eretz Israel Tours since 23:10; the key is not minted
 
