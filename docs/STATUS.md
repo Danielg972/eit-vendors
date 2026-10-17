@@ -4,7 +4,7 @@
 
 *Short, factual status for the Cockpit Steward and other EIT projects. Updated by the Vendor Master session after any change that matters to them. The commit that last changed this file is its version.*
 
-**As of:** 16 October 2026
+**As of:** 17 October 2026
 
 ## Identity
 
@@ -16,6 +16,10 @@
 | Schema record | `supabase/schema.sql` (tables, functions, grants), plus `supabase/functions/files/index.ts` (edge function v12) and `supabase/functions/route/index.ts` (edge function `route` v1, D-53) |
 | Terms version | `2026-10-03c` live (adds 2c, organisations as limited members; `2026-10-03a` added 6d, jobs). `2026-10-03d` on the branch `guide-for-clients`: 3a malicious posts, 3c licensed guides and D1, 6e a guide's page for clients, 6f your own page and reviews. All draft, not yet reviewed by a lawyer |
 | Decisions | `docs/DECISIONS.md` (D-1 Cockpit boundary; D-2 quote tracker; D-3 driver reviews; D-4 transport by vehicle size; D-5 booking sheets; D-6 welcome tour, name, use-and-add rule; D-7 Shomer Shabbat badge, kosher restaurants only; D-8 opening hours, no-certificate needs approval; D-9 verified hours, last entry, hours from websites; D-10 official buttons; D-11 jobs between colleagues and My days, live for Eretz Israel Tours only; D-15 limited members: organisations that are not in tourism; D-13 food nearby only on places; D-12 a guide's page for clients; D-14 claimed pages, disputes, reviews; D-16 licensed guides only, D1 for Eshkol, malicious posts) |
+
+## The confirmed mark and the Cockpit's read-only door (D-57): database on production since 17 October 2026, 22:36; the screen waits for the owner's word; the key is not minted
+
+On the owner's "1 yes" and "2 OK. But I am inner circle. It's my app." (17 Oct, given to the Cockpit Steward). Database part, add only: `supabase/migrations/2026-10-17_cockpit_reader.sql`, run on production on the owner's "go" (17 Oct, 22:36); checked there: 184 functions equal the tested copy, probe 75/75, nothing left behind. **S1:** a price line gains `confirmed_at`, `confirmed_by`, `confirmed_how` (official list, supplier's own document or email, paid invoice, conversation with the supplier) and `kind` (tariff, negotiated); every line starts unconfirmed; only Eretz Israel Tours sets it (`price_confirm`) or sees it (`price_marks`); a changed price clears it; the "✓ Verified" source text is not read as confirmed. Screen built on the branch (owner approved the mock-up): Confirmed / Estimate under each price and a Confirm sheet, for Eretz Israel Tours only; preview checks 63/63; waits for his word to go live. **S2:** `cockpit_supplier_prices(p_token, p_supplier_id)` and `cockpit_supplier_search(p_token, p_text)`, read only, for one reader key (table `cockpit_readers`, minted and revoked in the SQL editor only; **not minted**: the owner makes it on 18 Oct with the Cockpit Steward). Returns Eretz Israel Tours' own lines, private ones included, and shared organisation rates; never another member's personal or private line, never contact details. Once the reader has read a supplier, deleting it or its lines archives them instead of cascading. Checked locally: probe 75/75, limited-member checks 98/98, schema record equals the migrated copy. Details in DECISIONS D-57.
 
 ## Transport prices with their details (D-54): live since 16 October 2026, 10:38
 
@@ -80,19 +84,19 @@ A hike can name the park or site it lies in, a park's page lists its hikes and h
 
 | | |
 |---|---|
-| Status | **None built. Disabled.** |
+| Status | **Supplier-app side on production (D-57, 17 Oct 2026, 22:36).** The read-only door (`cockpit_supplier_prices`, `cockpit_supplier_search`) and the reader key mechanism are live; no key exists, so the door opens for no one yet. The owner mints the key with the Cockpit Steward. Nothing is built in the Cockpit. |
 | Agreed boundary | D-1: the Vendor Master holds supplier identity and dated reference prices; the Cockpit holds trip-applied prices. Any later link is one-way, on Daniel's click, and snapshots the price into the trip. |
-| Supplier identity contract | Not written yet. It is the first integration step, after v4.97 is deployed and v4.98 is closed, and needs separate authorisation. |
-| Fields the Cockpit could later read | `vendors` (id, name, category, also_categories, contacts, region, location, maps_link, hours, hours_last, hours_source, hours_verified_at / _how, tags); `vendor_prices` (label, audience, price, currency, vat, basis, is_agent, source, checked_on, updated_at, private, owner) |
+| Supplier identity contract | Draft contract in the Cockpit control folder, `RETURN_SUPPLIER_LINK_DISCOVERY.md` §4–§5 (17 Oct 2026). The owner approved the one-way connection ("1 yes", 17 Oct). The Cockpit links a card to a supplier by a separate field holding `vendors.id`, never by reusing its own id (both look like `vendor_` + 7 characters). |
+| Fields the reader returns (D-57) | Supplier: id, name, category, also_categories, region, parent_id, status, archived_at, merged_into, prices_private, hours, hours_last, hours_source, hours_verified_at, hours_verified_how, reservation, cancellation (policy, notice amount and unit, day type, penalty, verified date). Each line: id, label, audience, age_from, age_to, pax_min, pax_max, basis, per_job, transport, is_agent, price, currency, vat, vat_stated, season, source, checked_on, loaded, confirmed, confirmed_at, confirmed_by, confirmed_how, kind, private, eit_own, archived, archived_at, updated_at. No contact details, no note, no member email. |
 | R5 export | Frozen, legacy backup only (owner: no active R5 use). Not round-tripped; IDs don't match R5; importing clears R5's trip view. |
 
 ## Data (counts worth watching)
 
 | | |
 |---|---|
-| Suppliers | 100 total: 50 live, 50 hidden or pending review |
-| Price lines | 119 |
-| Members | 6 approved (7 rows), all full members; 0 organisations, as counted 3 Oct 2026 |
+| Suppliers | 331 total, read 17 Oct 2026 |
+| Price lines | 903, read 17 Oct 2026; 0 confirmed (the field does not exist on production yet) |
+| Members | 33 approved, read 17 Oct 2026 |
 | Waiting for Eretz Israel Tours | 0 change requests, 0 supplier updates, 0 feedback |
 | Unverified imports | Old Providers Master List (33), Gmail sweep (17), remaining email-import items. All hidden until approved. |
 
@@ -176,6 +180,7 @@ A hike can name the park or site it lies in, a park's page lists its hikes and h
 
 ## Changes that would affect the Cockpit (log)
 
+- 2026-10-17: **On production since 22:36 (D-57), checked there (fingerprints, probe 75/75); no key minted:** the read-only door for the Cockpit (`cockpit_supplier_prices(p_token text, p_supplier_id text)`, `cockpit_supplier_search(p_token text, p_text text)`), one reader key (`cockpit_readers`; SQL editor only: `_cockpit_reader_mint`, `_cockpit_reader_revoke`; not minted), the confirmed mark on price lines (`confirmed_at`, `confirmed_by`, `confirmed_how`, `kind`), and archive instead of delete once the Cockpit has read a supplier (`vendors.archived_at`, `merged_into`, `vendor_prices.archived_at`, `cockpit_reads`). 34 tables, 184 functions. The screen for the mark waits for the owner's word.
 - 2026-10-03: **Live (about 22:45):** organisations see retail prices only (D-18). `_quote_visible` no longer lets an organisation see a guide's or agent's quote for a guide, even with guide rates on; bus and van quotes are the one exception. One helper replaced; 137 functions, 84 callable, unchanged. Also D-18: a guide who also runs jeeps is two entries; the two entries that combined them were split on 3 Oct (two new supplier ids; the jeep entry of each pair has `parent_id` set to its guide entry). For a later Cockpit read: `parent_id` no longer means only "a park site under its authority". Nothing else Cockpit-facing.
 - 2026-10-03: **Database live (about 22:00), app on the owner's merge:** a guide's page for clients, claimed pages, disputes, review approval, private notes, guide rules (D-12, D-14, D-16). New `vendors.client_bio`, `retail_price`, `claimed_by`, `claimed_at`; table `vendor_claims`; `vendor_files.for_clients`; `vendor_reports.by_owner`; `vendor_notes.private`, `status`; `driver_reviews.private`. 27 tables, 137 functions. New supplier tags `Licensed tour guide`, `Specialty guide`, `D1 license`. `retail_price` is free text, not a price the Cockpit can apply.
 - 2026-10-03: **Live (about 21:40):** limited members, organisations that are not in tourism (D-15), terms `2026-10-03c`, `files` function v11. `members` gains `member_type`, `sections`, four `see_*` switches, `org`, `credentials`; `vendor_prices`, `quotes`, `vendor_notes`, `driver_reviews` and `vendor_files` gain `org` (true when an organisation added the row); `vendor_notes` gains `rating`. New RPCs `request_access_org`, `review_add`, `member_set_access`. 26 tables, 123 functions. For a later Cockpit read of `vendor_prices`: a line with `org = true` is what an organisation was charged, not an agent rate and not a public price; it has `owner` set and `is_agent` false. No IDs or export formats changed.

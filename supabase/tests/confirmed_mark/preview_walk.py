@@ -1,0 +1,93 @@
+# The confirmed mark on a price line (D-57): Eretz Israel Tours sees "Confirmed" or "Estimate" under each price on a supplier's
+# page and sets the mark with "Confirm this price"; a guide, an agent and an organisation see the page exactly as before.
+# Preview mode only (sample data, no network).
+#   python3 -m http.server 8765 &   then   python3 supabase/tests/confirmed_mark/preview_walk.py [folder for pictures]
+import asyncio, os, sys, datetime
+from playwright.async_api import async_playwright
+OUT=(sys.argv[1] if len(sys.argv)>1 else '/tmp/confirmed_mark').rstrip('/')+'/'; os.makedirs(OUT, exist_ok=True)
+res=[]; errs=[]; JEEP='vendor_k3m9p2x'; BUS='vendor_p0lk5sd'
+TODAY=datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=3))).strftime('%d/%m/%Y')
+def check(n,c,d=''): res.append(c); print(('PASS ' if c else 'FAIL ')+n+('' if c else ' :: '+str(d)[:300]))
+async def page(p,w,h,tag,dark=False,query=''):
+    b=await p.chromium.launch(); ctx=await b.new_context(viewport={'width':w,'height':h},device_scale_factor=2,color_scheme='dark' if dark else 'light')
+    await ctx.add_init_script("try{localStorage.setItem('eitv_tour_seen','1')}catch(e){}")
+    pg=await ctx.new_page(); pg.on('pageerror',lambda e: errs.append(tag+': '+str(e)))
+    await pg.goto('http://localhost:8765/index.html'+query); await pg.wait_for_selector('.tabs')
+    return b,pg
+async def rows(pg,sel='#pricesBox .prrow > summary'):
+    return await pg.eval_on_selector_all(sel,'e=>e.map(x=>x.innerText.replace(/\\s+/g," ").trim())')
+async def admin(p,w,h,tag,dark=False):
+    b,pg=await page(p,w,h,tag,dark)
+    await pg.click(f'#results .row[data-id="{JEEP}"]'); await pg.wait_for_selector('#pricesBox .prlist .pr-mk')
+    r=await rows(pg)
+    check(tag+': the regular adult price says Estimate, not confirmed yet', 'Estimate · not confirmed yet' in r[0] and '₪420' in r[0], r)
+    check(tag+': the agent adult price says Confirmed, how, the date and the kind', 'Confirmed · supplier\'s own document or email' in r[1] and 'negotiated' in r[1] and '₪360' in r[1], r)
+    check(tag+': every row carries a mark', await pg.locator('#pricesBox .prlist > .prrow > summary .pr-mk').count()==await pg.locator('#pricesBox .prlist > .prrow').count())
+    await pg.locator('#pricesBox').screenshot(path=OUT+tag+'_list.png')
+    await pg.click('#pricesBox .prlist > .prrow >> nth=1'); await pg.wait_for_timeout(100)
+    d=await pg.inner_text('#pricesBox .prlist > .prrow[open] .pr-d')
+    check(tag+': a confirmed price offers "Change the mark"', 'Change the mark' in d, d)
+    await pg.click('#pricesBox .prlist > .prrow >> nth=1'); await pg.click('#pricesBox .prlist > .prrow >> nth=0'); await pg.wait_for_timeout(100)
+    await pg.click('#pricesBox .prlist > .prrow[open] [data-pmk]'); await pg.wait_for_selector('#mkGo')
+    t=await pg.inner_text('.sheet')
+    check(tag+': the sheet asks how you know it (four ways) and the kind', all(x in t for x in ["The supplier's official list","The supplier's own document or email",'A paid invoice','A conversation with the supplier','Tariff','Negotiated']), t)
+    check(tag+': it says a website, an import or a colleague\'s list does not count', "does not count" in t, t)
+    check(tag+': the button carries today\'s date, day/month/year', ('Confirm · today '+TODAY) in t, t)
+    check(tag+': no "Take the mark off" on a price with no mark', await pg.locator('#mkOff').count()==0)
+    await pg.screenshot(path=OUT+tag+'_sheet.png')
+    await pg.click('#mkGo'); await pg.wait_for_timeout(100)
+    check(tag+': nothing is saved until a way is chosen', 'Choose how you know the price.' in await pg.inner_text('#mkErr'))
+    await pg.click('.mk-opts label:has-text("official list")'); await pg.click('.mk-kind label:has-text("Tariff")')
+    await pg.screenshot(path=OUT+tag+'_sheet_chosen.png')
+    await pg.click('#mkGo'); await pg.wait_for_selector('#pricesBox .prlist .pr-mk')
+    r=await rows(pg)
+    check(tag+': after saving, the page is back and the price says Confirmed · official list · today · tariff', ('Confirmed · official list · '+TODAY+' · tariff') in r[0], r)
+    await pg.click('#pricesBox .prlist > .prrow >> nth=0'); await pg.wait_for_timeout(100)
+    await pg.click('#pricesBox .prlist > .prrow[open] [data-pmk]'); await pg.wait_for_selector('#mkOff')
+    check(tag+': the sheet opens with the saved choice ticked', await pg.locator('input[name="mkHow"][value="official_list"]').is_checked() and await pg.locator('input[name="mkKind"][value="tariff"]').is_checked())
+    await pg.click('#mkOff'); await pg.wait_for_selector('#pricesBox .prlist .pr-mk')
+    r=await rows(pg)
+    check(tag+': "Take the mark off" makes it an estimate again', 'Estimate · not confirmed yet' in r[0] and 'tariff' not in r[0], r)
+    await pg.click('#pricesBox .prlist > .prrow >> nth=0'); await pg.click('#pricesBox .prlist > .prrow[open] [data-pmk]'); await pg.wait_for_selector('#mkBack')
+    await pg.click('#mkBack'); await pg.wait_for_selector('#pricesBox .prlist .pr-mk')
+    check(tag+': Back returns to the supplier without saving', 'Estimate' in (await rows(pg))[0])
+    await pg.click('#pricesBox .prmore > summary'); await pg.wait_for_timeout(100)
+    m=await rows(pg,'#pricesBox .prmore > .prrow > summary')
+    check(tag+': a price with only a kind says Estimate · not confirmed yet · tariff', any('Estimate · not confirmed yet · tariff' in x for x in m), m)
+    check(tag+': no sideways scroll', not await pg.evaluate("()=>document.documentElement.scrollWidth>innerWidth+1"))
+    await pg.locator('#pricesBox').screenshot(path=OUT+tag+'_list_more.png')
+    # a bus company: the transport board shows the mark on each row
+    await pg.click('#closeS'); await pg.click(f'#results .row[data-id="{BUS}"]'); await pg.wait_for_selector('#pricesBox .tprow')
+    tr=await rows(pg,'#pricesBox .tprow > summary')
+    check(tag+': on a bus company, each transport row carries a mark', await pg.locator('#pricesBox .tprow > summary .pr-mk').count()==await pg.locator('#pricesBox .tprow').count() and len(tr)>0, tr)
+    allg=pg.locator('#pricesBox [data-tpg]')
+    for i in range(await allg.count()):
+        await allg.nth(i).click(); await pg.wait_for_timeout(80)
+        tr+=await rows(pg,'#pricesBox .tprow > summary')
+    check(tag+': the paid-invoice transfer says Confirmed · paid invoice', any('Confirmed · paid invoice' in x for x in tr), tr)
+    await pg.locator('#pricesBox').screenshot(path=OUT+tag+'_bus.png')
+    # the Quotes tab across suppliers shows no mark (the marks are read per supplier page only)
+    await pg.click('#closeS')
+    q=pg.locator('[data-tab="quotes"]')
+    if await q.count():
+        await q.first.click(); await pg.wait_for_timeout(300)
+        check(tag+': the Quotes tab shows no mark', await pg.locator('.pr-mk').count()==0)
+    await b.close()
+async def member(p,who,tag,query=''):
+    b,pg=await page(p,390,844,tag,False,query)
+    if who: await pg.select_option('#demoAs', who); await pg.wait_for_timeout(200)
+    await pg.click(f'#results .row[data-id="{JEEP}"]'); await pg.wait_for_selector('#pricesBox .prrow, #pricesBox .hint, #pricesBox .tprow')
+    await pg.wait_for_timeout(200)
+    check(tag+': no Confirmed or Estimate line', await pg.locator('.pr-mk').count()==0)
+    await pg.click('#pricesBox .prrow >> nth=0'); await pg.wait_for_timeout(100)
+    check(tag+': no Confirm button', await pg.locator('[data-pmk]').count()==0)
+    body=await pg.inner_text('#pricesBox')
+    check(tag+': the words Confirmed and Estimate never appear', 'Confirmed' not in body and 'Estimate' not in body, body)
+    await pg.locator('#pricesBox').screenshot(path=OUT+tag+'_list.png'); await b.close()
+async def main():
+    async with async_playwright() as p:
+        await admin(p,390,844,'eit_phone'); await admin(p,390,844,'eit_phone_dark',True); await admin(p,1280,800,'eit_desktop')
+        await member(p,'guide','guide'); await member(p,'agent','agent'); await member(p,'org','org')
+    for e in errs: print('ERROR',e)
+    print(f'{sum(res)}/{len(res)} passed, {len(errs)} page errors')
+asyncio.run(main())

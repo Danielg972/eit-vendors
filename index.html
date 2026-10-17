@@ -198,6 +198,9 @@ textarea.out{width:100%;min-height:160px;font-family:var(--f-mono);font-size:12p
 .prlist .prrow>summary{display:flex;align-items:center;gap:10px;padding:12px 14px;min-height:48px;box-sizing:border-box;cursor:pointer;list-style:none}
 .prrow>summary::-webkit-details-marker,.prmore>summary::-webkit-details-marker{display:none}
 .prrow .pr-n{flex:1;min-width:0;line-height:1.35}
+.pr-mk{display:block;margin-top:4px;font-size:12px;font-weight:400;line-height:1.4}.pr-mk svg{vertical-align:-4px;margin-right:4px}.pr-mk b{font-weight:600}.pr-mk.ok{color:var(--ok)}.pr-mk.est{color:var(--warn)}
+.mk-box{margin:6px 0 2px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;display:flex;align-items:center;flex-wrap:wrap;gap:8px}.mk-box .pr-mk{margin:0;flex:1;min-width:0}.mk-opts input{width:18px;height:18px;margin:0;accent-color:var(--ok)}.mk-kind input{accent-color:var(--olive)}
+.mk-opts{display:flex;flex-direction:column;gap:8px}.mk-opts label{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:10px;cursor:pointer}.mk-opts label:has(input:checked){border:2px solid var(--ok);background:var(--ok-wash)}.mk-kind{flex-direction:row}.mk-kind label{flex:1;justify-content:center}.mk-kind label:has(input:checked){border-color:var(--olive);background:transparent}
 .prrow .pr-n .tag{margin-left:4px;vertical-align:1px}
 .prrow .pr-a{white-space:nowrap;font-weight:600}
 .prrow>summary::after{content:'›';color:var(--ink-3);font-size:20px;line-height:1;transition:transform .15s}
@@ -1096,6 +1099,18 @@ const DB = {
   async deletePrice(vid, id, reason){
     if(!LIVE){ const d=await DB.detail(vid); d.prices=d.prices.filter(p=>p.id!==id); bump(vid,'_prices',-1); return {request:false}; }
     const r = await rpc('price_delete',{p_id:id,p_reason:reason||''}); await DB.refreshVendor(vid); return r;
+  },
+  // D-57: the confirmed marks on one supplier's lines (Eretz Israel Tours only), and setting or taking off one mark.
+  async marks(vid){
+    if(!LIVE){ const d=n=>new Date(Date.now()-n*86400000).toISOString();
+      S.demoMarks=S.demoMarks||{vendor_k3m9p2x:{p1:{confirmed_at:d(3),confirmed_by:'Eretz Israel Tours',confirmed_how:'supplier_document',kind:'negotiated'},p3:{confirmed_at:null,confirmed_by:'',confirmed_how:'',kind:'tariff'}},
+        vendor_p0lk5sd:{tb3:{confirmed_at:d(8),confirmed_by:'Eretz Israel Tours',confirmed_how:'paid_invoice',kind:'negotiated'}}};
+      return S.demoMarks[vid]||{}; }
+    return await rpc('price_marks',{p_vendor:vid});
+  },
+  async confirmPrice(vid, id, how, kind){
+    if(!LIVE){ const m=(S.demoMarks[vid]=S.demoMarks[vid]||{}); m[id]={confirmed_at:how?new Date().toISOString():null,confirmed_by:how?'Eretz Israel Tours':'',confirmed_how:how||'',kind:kind||''}; return m[id]; }
+    return await rpc('price_confirm',{p_id:id,p_how:how||'',p_kind:kind||''});
   },
   async addDeal(vid, deal){
     if(!LIVE){ const d=await DB.detail(vid); d.deals.unshift(Object.assign({id:'d'+Date.now(),reported_by:S.user.email,created_at:new Date().toISOString()},deal)); bump(vid,'_deals',1); return; }
@@ -2462,12 +2477,14 @@ async function drawExtras(v){
   let det; try{ det=await DB.detail(v.id); }catch(e){ const pb=document.getElementById('pricesBox'); if(pb) pb.innerHTML=`<div class="msg err">Couldn't load: ${esc(e.message)}</div>`; return; }
   const me=(S.user.email||'').toLowerCase();
   const pb=document.getElementById('pricesBox'); if(!pb) return;
+  // D-57: Eretz Israel Tours only. A failed read leaves _mk undefined, so no mark shows rather than a wrong one.
+  if(S.admin){ let mk=null; try{ mk=await DB.marks(v.id); }catch(e){} if(mk) det.prices=det.prices.map(p=>Object.assign({},p,{_mk:mk[p.id]||null})); }
   const privNote = (!S.admin && det.prices_private) ? '<p class="hint" style="margin:0 0 10px">Eretz Israel Tours keeps its prices for this supplier private. You can still add your own prices: only you (and Eretz Israel Tours) see them.</p>' : '';
   const plCard=(p,hdr)=>`${hdr?'<div class="favs-h" style="margin:8px 2px 0">Organisation rates · what schools, yeshivas and other organisations were charged</div>':''}<div class="pl${p.by&&!p.by.admin?' colleague':''}">${fromBadge(p.by,p.by_date,p.org?(p.mine?'Your rate ·':'From'):(p.owner?(p.mine?'Your own price ·':'Own price from'):'From'))}
       <span class="who3">${esc(p._show||p.label||p.audience)}</span><span class="amt">${p.price?esc(money(p.currency,p.price)):'<span class="hint">Price to confirm</span>'}</span>
       <span class="meta">${p.org&&!p.private?'<span class="tag" style="background:var(--ochre-wash);color:var(--ink)">Organisation rate</span>':(p.owner||p.org?'<span class="tag" style="background:var(--ochre-wash);color:var(--ochre)">Only '+(p.mine?'you':'them')+' and Eretz Israel Tours see this</span>':(p.private?'<span class="tag" style="background:var(--bad-wash);color:var(--bad)">Private</span>':''))}${p.org?'':(p.is_agent?'<span class="tag agent">Agent rate</span>':'<span class="tag">Public price</span>')}${esc(priceWho(p))} · ${esc((p.basis||'').toLowerCase())}${vatLabel(p.vat)?' · '+esc(vatLabel(p.vat).toLowerCase()):''}${p.season?' · '+esc(p.season):''}</span>
       ${p.note||p.source||p.checked_on?`<span class="meta">${p.note?esc(p.note)+'<br>':''}${p.source?'Source: '+esc(p.source):''}${p.checked_on?' · checked '+esc(ilDate(p.checked_on)):''}</span>`:''}
-      <span class="ctl">${p.org&&!p.mine&&!S.admin?'':`${(S.admin&&!(p.owner&&!p.mine))||p.mine?`<button class="mini" data-pedit="${esc(p.id)}" type="button">Edit</button>`:(S.admin?'':`<button class="mini" data-pedit="${esc(p.id)}" type="button">Suggest change</button>`)}<button class="mini" data-pdel="${esc(p.id)}" type="button">${S.admin||p.mine?'Remove':'Suggest removing'}</button>`}</span></div>`;
+      ${markCard(p)}<span class="ctl">${p.org&&!p.mine&&!S.admin?'':`${(S.admin&&!(p.owner&&!p.mine))||p.mine?`<button class="mini" data-pedit="${esc(p.id)}" type="button">Edit</button>`:(S.admin?'':`<button class="mini" data-pedit="${esc(p.id)}" type="button">Suggest change</button>`)}<button class="mini" data-pdel="${esc(p.id)}" type="button">${S.admin||p.mine?'Remove':'Suggest removing'}</button>`}</span></div>`;
   const cardsOf=list=>list.map((p,i)=>plCard(p,p.org&&!(list[i-1]&&list[i-1].org))).join('');
   const isTr=catsOf(v).includes('Transport');
   // A bus company's or driver's prices are shown in groups that open (D-29), not as one long list.
@@ -2479,6 +2496,7 @@ async function drawExtras(v){
       if(S.admin || (det.prices.find(p=>p.id===b.dataset.pdel)||{}).mine){ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again'; return; } try{ await DB.deletePrice(v.id,b.dataset.pdel); toast('Price removed'); drawExtras(v); }catch(e){ toast(e.message); } return; }
       openReasonSheet('Suggest removing this price','Why should it be removed?', async reason=>{ await DB.deletePrice(v.id,b.dataset.pdel,reason); toast('Sent for approval'); openDetail(v.id); });
     });
+    pb.querySelectorAll('[data-pmk]').forEach(b=>b.onclick=()=>openMarkSheet(v, det.prices.find(p=>p.id===b.dataset.pmk)));
     if(isTr) tpWire(pb, 'v:'+v.id, paint);
   };
   paint();
@@ -3693,6 +3711,45 @@ function openReasonSheet(title, prompt, onSend){
     try{ await onSend(r); }catch(e){ w.querySelector('#rsnErr').innerHTML=`<div class="msg err">${esc(e.message)}</div>`; } };
 }
 
+// D-57: the confirmed mark on a price line, seen and set by Eretz Israel Tours only (G2). The marks come from price_marks,
+// separately from vendor_detail, so no member ever receives them. p._mk is undefined when the marks were not loaded (a
+// member, the Quotes tab, or a failed read): then nothing is shown, rather than calling every price an estimate.
+const MARK_HOW=[['official_list','The supplier\'s official list','official list'],['supplier_document','The supplier\'s own document or email','supplier\'s own document or email'],
+  ['paid_invoice','A paid invoice','paid invoice'],['supplier_conversation','A conversation with the supplier','conversation with the supplier']];
+const MARK_SEAL='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l2.4 2.2 3.2-.4.9 3.1 2.8 1.6-1.1 3 1.1 3-2.8 1.6-.9 3.1-3.2-.4L12 22l-2.4-2.2-3.2.4-.9-3.1-2.8-1.6 1.1-3-1.1-3 2.8-1.6.9-3.1 3.2.4z"/><path d="M8.5 12l2.3 2.3 4.7-4.7"/></svg>';
+const MARK_EST='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke-dasharray="3 3"/></svg>';
+const mkDate=ts=>{ try{ return new Date(ts).toLocaleDateString('en-GB',{timeZone:'Asia/Jerusalem'}); }catch(e){ return ''; } };
+function markLine(p){
+  if(!S.admin || !p || p._mk===undefined) return '';
+  const m=p._mk||{}, kind=m.kind?' · '+esc(m.kind):'';
+  if(m.confirmed_at) return `<span class="pr-mk ok">${MARK_SEAL}<b>Confirmed</b> <span>· ${esc((MARK_HOW.find(x=>x[0]===m.confirmed_how)||[])[2]||'')} · ${esc(mkDate(m.confirmed_at))}${kind}</span></span>`;
+  return `<span class="pr-mk est">${MARK_EST}<b>Estimate</b> <span>· not confirmed yet${kind}</span></span>`;
+}
+function markCard(p){
+  if(!S.admin || !p || p._mk===undefined || !p.id) return '';
+  return `<div class="mk-box">${markLine(p)}<button class="mini" data-pmk="${esc(p.id)}" type="button">${p._mk&&p._mk.confirmed_at?'Change the mark':'Confirm this price'}</button></div>`;
+}
+function openMarkSheet(v, p){
+  if(!p) return;
+  const m=p._mk||{}, back=()=>openDetail(v.id);
+  const w=sheet('Confirm this price', `<p class="hint" style="margin:0 0 12px">${esc(p._show||prName(p))} · <b class="mono">${p.price?esc(money(p.currency,p.price)):'—'}</b></p>
+    <fieldset style="border:0;margin:0;padding:0"><legend class="flab" style="margin-bottom:8px">How do you know it?</legend>
+      <div class="mk-opts">${MARK_HOW.map(([k,l])=>`<label><input type="radio" name="mkHow" value="${k}"${m.confirmed_how===k?' checked':''}>${esc(l)}</label>`).join('')}</div></fieldset>
+    <p class="hint" style="margin:8px 0 14px">A website, an import or a colleague's list does not count. Leave it as an estimate.</p>
+    <fieldset style="border:0;margin:0;padding:0"><legend class="flab" style="margin-bottom:8px">What kind of price?</legend>
+      <div class="mk-opts mk-kind"><label><input type="radio" name="mkKind" value="tariff"${m.kind==='tariff'?' checked':''}>Tariff</label><label><input type="radio" name="mkKind" value="negotiated"${m.kind==='negotiated'?' checked':''}>Negotiated</label></div></fieldset>
+    <p class="hint" style="margin:12px 0 0">Only Eretz Israel Tours sees this mark. If the amount, VAT, basis, who it is for or the season changes, the mark comes off by itself.</p>
+    ${m.confirmed_at?'<p style="margin:12px 0 0;text-align:center"><button class="mini" id="mkOff" type="button">Take the mark off</button></p>':''}<div id="mkErr"></div>`,
+    `<button class="btn soft" id="mkBack" type="button">Back</button><button class="btn primary" id="mkGo" type="button">Confirm · today ${esc(mkDate(new Date()))}</button>`);
+  const err=t=>{ w.querySelector('#mkErr').innerHTML=`<div class="msg err">${esc(t)}</div>`; };
+  const val=n=>{ const r=w.querySelector(`input[name="${n}"]:checked`); return r?r.value:''; };
+  const save=async(how,kind,ok)=>{ try{ await DB.confirmPrice(v.id,p.id,how,kind); toast(ok); back(); }catch(e){ err(e.message); } };
+  w.querySelectorAll('input[name="mkHow"]').forEach(r=>r.onchange=()=>{ w.querySelector('#mkErr').innerHTML=''; });
+  w.querySelector('#mkBack').onclick=back;
+  w.querySelector('#mkGo').onclick=()=>{ const how=val('mkHow'); if(!how){ err('Choose how you know the price.'); return; } save(how,val('mkKind'),'Price confirmed'); };
+  const off=w.querySelector('#mkOff'); if(off) off.onclick=()=>save('','','Mark taken off');
+}
+
 // Prices on any other supplier (D-44): adult and child lines show in full, agent rates included;
 // every other line (student, soldier, senior, group, extras) is one row with its name and price, and opens on a tap.
 function prName(p){ const l=(p.label||'').trim(), w=priceWho(p);
@@ -3716,7 +3773,7 @@ function prPricesHtml(prices, cardsOf, plCard){
   prices=prPair(prices);
   const main=prices.filter(isMain), rest=prices.filter(p=>!isMain(p));
   // One clean list, as a ticketing app shows it: name, agent tag and price on each row; details and buttons open on a tap.
-  const row=p=>`<details class="prrow${p._pr?' pr-'+p._pr:''}"><summary><span class="pr-n">${p._pr==='ag'?'':esc(prName(p._pr==='rg'?Object.assign({},p,{label:String(p.label||'').replace(/\s*\((?:direct|public|direct\/public)\)|,?\s*\bdirect(?: price)?\b/gi,'')}):p))}${p.is_agent&&!p.org?' <span class="tag agent">Agent</span>':(p._pr==='rg'?' <span class="tag reg">Regular</span>':'')}${/^verified/i.test(p.source||'')?' <span class="tag" style="background:var(--ok-wash);color:var(--ok)">✓ Verified</span>':''}${p.private?' <span class="tag" style="background:var(--bad-wash);color:var(--bad)">Private</span>':''}</span><span class="mono pr-a">${p.price?esc(money(p.currency,p.price)):'—'}</span></summary><div class="pr-d">${plCard(p,false)}</div></details>`;
+  const row=p=>`<details class="prrow${p._pr?' pr-'+p._pr:''}"><summary><span class="pr-n">${p._pr==='ag'?'':esc(prName(p._pr==='rg'?Object.assign({},p,{label:String(p.label||'').replace(/\s*\((?:direct|public|direct\/public)\)|,?\s*\bdirect(?: price)?\b/gi,'')}):p))}${p.is_agent&&!p.org?' <span class="tag agent">Agent</span>':(p._pr==='rg'?' <span class="tag reg">Regular</span>':'')}${/^verified/i.test(p.source||'')?' <span class="tag" style="background:var(--ok-wash);color:var(--ok)">✓ Verified</span>':''}${p.private?' <span class="tag" style="background:var(--bad-wash);color:var(--bad)">Private</span>':''}${markLine(p)}</span><span class="mono pr-a">${p.price?esc(money(p.currency,p.price)):'—'}</span></summary><div class="pr-d">${plCard(p,false)}</div></details>`;
   if(!rest.length || prices.length<=3) return `<div class="prlist">${prices.map(row).join('')}</div>`;
   if(!main.length) return `<div class="prlist">${rest.map(row).join('')}</div>`;
   return `<div class="prlist">${main.map(row).join('')}<details class="prmore"><summary>Show ${rest.length} more price${rest.length>1?'s':''} ›</summary>${rest.map(row).join('')}</details></div>`;
@@ -3855,7 +3912,7 @@ function tpBoard(key, rows, o){
       <div class="tp-m"><div class="tp-r">${esc(trRoute(t))}</div>
         ${o.vendor&&r.v?`<div class="tp-s">${esc(r.v.name)}${r.v.region?' · '+esc(r.v.region):''}</div>`:''}
         <div class="tp-f">${esc(trFacts(t,p,cur2).join(' · '))}</div>
-        <div class="tp-t">${trTags(p,t)}${vatLabel(p.vat)?`<span class="tp-vat">${esc(vatLabel(p.vat).replace('VAT','VAT'))}</span>`:'<span class="tp-vat miss">VAT not stated</span>'}${p.checked_on?`<span class="tp-vat">${esc(t.qname?'quoted ':'checked ')}${esc(ilDate(p.checked_on))}</span>`:''}${r.season||''}</div></div>
+        <div class="tp-t">${trTags(p,t)}${vatLabel(p.vat)?`<span class="tp-vat">${esc(vatLabel(p.vat).replace('VAT','VAT'))}</span>`:'<span class="tp-vat miss">VAT not stated</span>'}${p.checked_on?`<span class="tp-vat">${esc(t.qname?'quoted ':'checked ')}${esc(ilDate(p.checked_on))}</span>`:''}${r.season||''}</div>${markLine(p)}</div>
       <div class="tp-p"><b class="mono">${p.price!==''&&p.price!=null?esc(money(cur2,p.price)):'—'}</b>${per?`<small>${esc(per)}</small>`:''}</div></summary>
       <div class="pr-d">${o.detail?o.detail(r):''}</div></details>`; };
   return `${tiles}<div class="tp-filters">${vehChips}${cityPick}</div>${sum}
