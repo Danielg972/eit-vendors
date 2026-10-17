@@ -300,6 +300,9 @@ textarea.out{width:100%;min-height:160px;font-family:var(--f-mono);font-size:12p
 .sec-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
 .sec-head legend{margin:0}
 .sec-head .mini{margin-left:auto}
+.sec-head:has(.sec-btns){flex-wrap:wrap}.sec-head:has(.sec-btns) legend{white-space:nowrap}.sec-btns{margin-left:auto;display:flex;gap:6px;justify-content:flex-end}.sec-btns .mini{margin-left:0;white-space:nowrap}.mini.mk-go{border-color:var(--ok);color:var(--ok)}
+.bk-list{border:1px solid var(--line);border-radius:10px;overflow:hidden}.bk-list label{display:flex;align-items:center;gap:10px;min-height:52px;padding:6px 12px;cursor:pointer}.bk-list label+label{border-top:1px solid var(--line)}.bk-list input{width:20px;height:20px;margin:0;flex:none;accent-color:var(--ok)}.bk-list .bk-n{flex:1;min-width:0;line-height:1.3}.bk-list .bk-n .pr-mk{margin-top:2px}.bk-list .mono{font-weight:600;white-space:nowrap}
+.bk-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 8px;font-size:13px}.mk-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.mk-grid label{padding:0 10px;font-size:14px;line-height:1.25}
 .qcard{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px}
 .qcard.old{opacity:.6}
 /* quote tracker */
@@ -2411,7 +2414,7 @@ function openDetail(id, opt){
     ${isTr&&bookingsOn()?`<fieldset><div class="sec-head"><legend>Booking sheets</legend><button class="mini" id="addBooking" type="button">+ New booking sheet</button></div><div id="bookingsBox"><p class="hint">Loading…</p></div></fieldset>`:''}
     ${isTr?`<fieldset class="drv-pane keep"><div class="sec-head"><legend>${indep?'Driver':'Drivers of '+esc(v.name)}</legend><button class="mini" id="addDriver" type="button">+ Add or find a driver</button></div>
       <p class="hint" style="margin:0 0 10px">${indep?'An independent van driver. Reviews from colleagues who rode with him.':'Employed or contracted by this company. A driver keeps his reviews if he also drives for another company.'}</p><div id="driversBox"><p class="hint">Loading…</p></div></fieldset>`:''}
-    <fieldset><div class="sec-head"><legend>${lim()?'Prices':'Standard prices'}</legend><button class="mini" id="addPrice" type="button">${lim()?'+ Add the rate you got':'+ Add price'}</button></div>
+    <fieldset><div class="sec-head"><legend>${lim()?'Prices':'Standard prices'}</legend><span class="sec-btns">${S.admin?'<button class="mini mk-go" id="mkBatch" type="button" hidden>✓ Confirm prices…</button>':''}<button class="mini" id="addPrice" type="button">${lim()?'+ Add the rate you got':'+ Add price'}</button></span></div>
       ${S.admin?`<label class="switch" for="ppToggle" style="margin-bottom:10px"><input id="ppToggle" type="checkbox" ${v.prices_private?'checked':''}><span><b>Keep this supplier's prices private</b><br><span class="hint">Colleagues still see the supplier and contacts, but no prices. You can also mark single price lines private.</span></span></label>`:''}
       <div id="pricesBox"><p class="hint">Loading…</p></div></fieldset>
     <fieldset><div class="sec-head"><legend>Deals and discounts</legend><button class="mini" id="addDeal" type="button">+ Add deal</button></div><div id="dealsBox"><p class="hint">Loading…</p></div></fieldset>
@@ -2497,6 +2500,7 @@ async function drawExtras(v){
       openReasonSheet('Suggest removing this price','Why should it be removed?', async reason=>{ await DB.deletePrice(v.id,b.dataset.pdel,reason); toast('Sent for approval'); openDetail(v.id); });
     });
     pb.querySelectorAll('[data-pmk]').forEach(b=>b.onclick=()=>openMarkSheet(v, det.prices.find(p=>p.id===b.dataset.pmk)));
+    const mkb=document.getElementById('mkBatch'); if(mkb){ const ok=det.prices.filter(p=>p._mk!==undefined); mkb.hidden=!ok.length; mkb.onclick=()=>openBatchMarkSheet(v, ok); }
     if(isTr) tpWire(pb, 'v:'+v.id, paint);
   };
   paint();
@@ -3748,6 +3752,44 @@ function openMarkSheet(v, p){
   w.querySelector('#mkBack').onclick=back;
   w.querySelector('#mkGo').onclick=()=>{ const how=val('mkHow'); if(!how){ err('Choose how you know the price.'); return; } save(how,val('mkKind'),'Price confirmed'); };
   const off=w.querySelector('#mkOff'); if(off) off.onclick=()=>save('','','Mark taken off');
+}
+// D-58 (the owner, 17 Oct: "batch confirm ... I choose one how and Tariff or Negotiated once, press Confirm 12 prices, and every
+// ticked line gets the same mark with today's date. Same rules as single confirm"): a list of the supplier's prices with a tick
+// box each (the unconfirmed ones ticked), one way and one kind for all. Each ticked price goes through price_confirm, the same
+// call as a single confirm, so the database rules are unchanged; a price that fails is named and the others keep their mark.
+function openBatchMarkSheet(v, prices){
+  if(!prices || !prices.length) return;
+  const back=()=>openDetail(v.id), isTr=catsOf(v).includes('Transport');
+  const nameOf=p=>isTr&&p.transport&&Object.keys(p.transport).length?(p.label||trRoute(trOf(p))):prName(p);
+  const rows=prices.map(p=>`<label><input type="checkbox" data-bk="${esc(p.id)}"${p._mk&&p._mk.confirmed_at?'':' checked'}><span class="bk-n">${esc(nameOf(p))}${p.is_agent&&!p.org?' <span class="tag agent">Agent</span>':''}${markLine(p)}</span><span class="mono">${p.price?esc(money(p.currency,p.price)):'—'}</span></label>`).join('');
+  const short=[['official_list','Official list'],['supplier_document','Their document or email'],['paid_invoice','Paid invoice'],['supplier_conversation','Conversation']];
+  const w=sheet('Confirm prices', `<p class="hint" style="margin:0 0 10px">${esc(v.name)} · tick the prices you know are right.</p>
+    <div class="bk-top"><span id="bkCount"></span><span><button class="mini" id="bkAll" type="button">Tick all</button> <button class="mini" id="bkNone" type="button">None</button></span></div>
+    <div class="bk-list">${rows}</div>
+    <fieldset style="border:0;margin:14px 0 0;padding:0"><legend class="flab" style="margin-bottom:8px">How do you know them?</legend>
+      <div class="mk-opts mk-grid">${short.map(([k,l])=>`<label><input type="radio" name="mkHow" value="${k}">${esc(l)}</label>`).join('')}</div></fieldset>
+    <p class="hint" style="margin:8px 0 12px">A website, an import or a colleague's list does not count. Leave those as estimates.</p>
+    <fieldset style="border:0;margin:0;padding:0"><legend class="flab" style="margin-bottom:8px">What kind of prices?</legend>
+      <div class="mk-opts mk-kind"><label><input type="radio" name="mkKind" value="tariff">Tariff</label><label><input type="radio" name="mkKind" value="negotiated">Negotiated</label></div></fieldset>
+    <p class="hint" style="margin:12px 0 0">Every ticked price gets the same mark with today's date (${esc(mkDate(new Date()))}). Only Eretz Israel Tours sees it; a price that changes later loses its mark.</p><div id="mkErr"></div>`,
+    `<button class="btn soft" id="mkBack" type="button">Back</button><button class="btn primary" id="mkGo" type="button"></button>`);
+  const boxes=[...w.querySelectorAll('[data-bk]')], go=w.querySelector('#mkGo');
+  const err=t=>{ w.querySelector('#mkErr').innerHTML=t?`<div class="msg err">${esc(t)}</div>`:''; };
+  const count=()=>{ const n=boxes.filter(b=>b.checked).length; w.querySelector('#bkCount').textContent=`${n} of ${boxes.length} ticked`; go.textContent=n?`Confirm ${n} price${n>1?'s':''}`:'Tick a price first'; go.disabled=!n; return n; };
+  boxes.forEach(b=>b.onchange=count); count();
+  w.querySelector('#bkAll').onclick=()=>{ boxes.forEach(b=>b.checked=true); count(); };
+  w.querySelector('#bkNone').onclick=()=>{ boxes.forEach(b=>b.checked=false); count(); };
+  w.querySelectorAll('input[name="mkHow"]').forEach(r=>r.onchange=()=>err(''));
+  w.querySelector('#mkBack').onclick=back;
+  go.onclick=async()=>{
+    const r=w.querySelector('input[name="mkHow"]:checked'); if(!r){ err('Choose how you know the prices.'); return; }
+    const k=w.querySelector('input[name="mkKind"]:checked'), ids=boxes.filter(b=>b.checked).map(b=>b.dataset.bk);
+    go.disabled=true; let done=0; const failed=[];
+    for(const id of ids){ go.textContent=`Confirming ${done+failed.length+1} of ${ids.length}…`;
+      try{ await DB.confirmPrice(v.id, id, r.value, k?k.value:''); done++; }catch(e){ const p=prices.find(x=>x.id===id); failed.push((p?nameOf(p):'A price')+': '+e.message); } }
+    if(!failed.length){ toast(`${done} price${done>1?'s':''} confirmed`); back(); return; }
+    toast(`${done} of ${ids.length} confirmed`); err(`Not confirmed: ${failed.join(' · ')}`); go.textContent='Back to the supplier'; go.disabled=false; go.onclick=back;
+  };
 }
 
 // Prices on any other supplier (D-44): adult and child lines show in full, agent rates included;

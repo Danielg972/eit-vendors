@@ -10,6 +10,30 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-58 · Batch confirm: one way and one kind for several prices at once (Eretz Israel Tours only)
+
+**Owner, 17 Oct 2026, verbatim:** "New, my decision: batch confirm. On a supplier's page, add "Confirm prices…" that opens a list of that supplier's price lines with a tick box on each (all unconfirmed ones ticked by default). I choose one "how" (official list / supplier's document or email / paid invoice / conversation) and Tariff or Negotiated once, press "Confirm 12 prices", and every ticked line gets the same mark with today's date. Same rules as single confirm: only Eretz Israel Tours, only I see it, a changed price loses its mark. Show me a quick mock-up first, then build it, and put it live together with the Confirmed Price Mark screen if that isn't live yet."
+
+**Mock-up:** screens 4 and 5 of the Claude artifact "Confirmed Price Mark" (private to the owner), published before the build. The Confirmed Price Mark screen (D-57) was already live since 23:10, so D-58 goes live on its own.
+
+**Built (front end only, no database change):**
+- On a supplier's page, beside the Prices heading, Eretz Israel Tours alone sees "✓ Confirm prices…". It shows only once the marks have loaded.
+- It opens a sheet listing every price of that supplier: name, Agent tag, current mark and amount, each with a tick box. Unconfirmed prices start ticked; confirmed ones start unticked. There are "Tick all" and "None" buttons and a count ("3 of 4 ticked").
+- You choose one way (Official list · Their document or email · Paid invoice · Conversation) and optionally Tariff or Negotiated, then press "Confirm N prices". Nothing is saved until a way is chosen, and the button cannot be pressed with nothing ticked.
+- Every ticked price goes through `price_confirm`, the same database call as a single confirm. The rules are therefore unchanged: Eretz Israel Tours only, never seen by members, cleared when the price changes.
+- If a price fails, it is named with the reason, and the others keep their new mark.
+
+**Implementation choices (labelled):**
+- One call per price rather than a new all-or-nothing database function. This keeps the database untouched; the cost is that a failure part way leaves the earlier prices confirmed, and the sheet says so.
+- Ticking an already-confirmed price replaces its mark with the new way and today's date.
+- The kind is optional, as in the single sheet.
+
+**Checked (preview, by the building session):** `supabase/tests/confirmed_mark/batch_walk.py` 51/51, `confirmed_mark/preview_walk.py` 63/63, `transport_prices/preview_walk.py` 46/46, 0 page errors. Covered: phone, phone in dark mode and desktop as Eretz Israel Tours; a guide, an agent and an organisation see no button.
+
+**Not checked:**
+- A price failing part way: the page's code cannot be reached from the test, and no test-only hook was added to the live page.
+- The live site and a real phone.
+
 ## D-57 · A confirmed mark on each price line, and a read-only door for the Cockpit (database live since 17 October 2026, 22:36; the screen live for Eretz Israel Tours since 23:10; the reader key is not minted)
 
 **Owner, 17 Oct 2026, verbatim** (given to the Cockpit Steward): "1 yes" (approving a one-way connection, supplier app to Cockpit, only on his click: "The cockpit reads Inner Circle prices one way, only when you click, and nothing in Inner Circle ever changes a trip."); "2 OK. But I am inner circle. It's my app." (approving the two supplier-app pieces below). Earlier the same day: "the vendor list in EIT Build is not very good. It doesn't have all the variations, like children, agent prices, seniors, group, all the pricing things that I need, opening, closing, cancellation dates". Order: `IC_ORDER_COCKPIT_READER_S1_S2_2026_10_17.md` (Drive, 5,653 B, SHA-256 597eeccc…829660). Written contract: the draft in `RETURN_SUPPLIER_LINK_DISCOVERY.md` (Cockpit control folder, 27,038 B), §4 and §5. Rules: D-1, F1, F2, F4, D1–D7, E1, E2, E4, G1–G12.
