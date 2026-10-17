@@ -10,7 +10,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
-## D-57 · A confirmed mark on each price line, and a read-only door for the Cockpit (database on production since 17 October 2026, 22:36; the screen is built and waits for the owner's word; the reader key is not minted)
+## D-57 · A confirmed mark on each price line, and a read-only door for the Cockpit (database live since 17 October 2026, 22:36; the screen live for Eretz Israel Tours since 23:10; the reader key is not minted)
 
 **Owner, 17 Oct 2026, verbatim** (given to the Cockpit Steward): "1 yes" (approving a one-way connection, supplier app to Cockpit, only on his click: "The cockpit reads Inner Circle prices one way, only when you click, and nothing in Inner Circle ever changes a trip."); "2 OK. But I am inner circle. It's my app." (approving the two supplier-app pieces below). Earlier the same day: "the vendor list in EIT Build is not very good. It doesn't have all the variations, like children, agent prices, seniors, group, all the pricing things that I need, opening, closing, cancellation dates". Order: `IC_ORDER_COCKPIT_READER_S1_S2_2026_10_17.md` (Drive, 5,653 B, SHA-256 597eeccc…829660). Written contract: the draft in `RETURN_SUPPLIER_LINK_DISCOVERY.md` (Cockpit control folder, 27,038 B), §4 and §5. Rules: D-1, F1, F2, F4, D1–D7, E1, E2, E4, G1–G12.
 
@@ -40,7 +40,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 **Not checked:** a real Cockpit calling the door; the screen on the live site or a real phone (preview only).
 
-**Live:** the database part since 17 Oct 2026, 22:36, on the owner's word; nothing anyone sees changed (no key, no screen). The screen waits for the owner's word (G1). The reader key: the owner, 17 Oct: "Do NOT make the Cockpit key. I will make it tomorrow with the Steward's help."
+**Live:** the database part since 17 Oct 2026, 22:36, on the owner's word; nothing anyone sees changed (no key, no screen). The screen went live on the owner's word, 17 Oct: "go — put the Confirmed Price Mark screen live (Eretz Israel Tours only)." Before merging: branch 0 behind `main`, production unchanged (184 fingerprints), limited-member checks 98/98, preview walks 63/63 and 46/46. Pull request #78 merged (main at 61c34c5); GitHub reports the site deployed from that commit at 23:10 Israel time. Not seen after go-live: the page the live site serves (this session cannot reach the site) and a real phone. The reader key: the owner, 17 Oct: "Do NOT make the Cockpit key. I will make it tomorrow with the Steward's help."
 
 ## D-56 · Mapeak's map, with the hike's route, on each hike's page (live since 16 October 2026)
 
