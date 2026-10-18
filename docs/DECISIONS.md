@@ -10,7 +10,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
-## D-60 · Batch confirm, made safe and faster: a check before saving, already-confirmed prices skipped, all or nothing, one undo (Eretz Israel Tours only; built 18 October 2026; **not live**, waiting for the owner's word on the mock-up)
+## D-60 · Batch confirm, made safe and faster: a check before saving, already-confirmed prices skipped, all or nothing, one undo (Eretz Israel Tours only; owner's "go" 18 October 2026; database on production since 18 Oct; the screen goes live with the pull request below)
 
 **Owner, 17 Oct 2026, verbatim:** "I need a faster way of approving prices. It's one by one. Like city of David. I just put all of those prices in. I should be able to batch confirm them."
 
@@ -25,7 +25,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 - One database call, `price_confirm_batch`, saves all or nothing. Each line gets its own `confirmed_at`, `confirmed_by` ('Eretz Israel Tours') and `confirmed_how`, the same fields a single confirm writes. A line already confirmed is skipped even if sent. A line not of that supplier (or deleted meanwhile) stops the whole batch: nothing is saved and the sheet says so.
 - **Undo:** after saving, "↶ Undo the batch (N)" shows beside "Confirm prices…" for the rest of the visit. Tap, then "Tap again to undo". `price_confirm_batch_undo` takes the mark off every line still carrying the batch's own mark and puts back the kind each had. A line changed since (price edited, or confirmed again on its own) is left as it is and the message counts it. A batch is undone once.
 
-**Database (add only, not on production):** `supabase/migrations/2026-10-18b_batch_confirm.sql` — table `price_confirm_batches` (RLS on, no grants to anon or authenticated, no policies), functions `price_confirm_batch(p_token, p_vendor, p_ids, p_how, p_kind)` and `price_confirm_batch_undo(p_token, p_batch)`, both through `_auth(p_token, true)`. Nothing replaced: `price_confirm`, `price_marks`, the mark guard and the Cockpit's functions are untouched.
+**Database (add only, on production since 18 Oct 2026 on the owner's "go"):** `supabase/migrations/2026-10-18b_batch_confirm.sql` — table `price_confirm_batches` (RLS on, no grants to anon or authenticated, no policies), functions `price_confirm_batch(p_token, p_vendor, p_ids, p_how, p_kind)` and `price_confirm_batch_undo(p_token, p_batch)`, both through `_auth(p_token, true)`. Nothing replaced: `price_confirm`, `price_marks`, the mark guard and the Cockpit's functions are untouched.
 
 **Implementation choices (labelled):**
 - Kind stays optional, as in the single sheet; with none chosen each line keeps the kind it had (a single confirm with none chosen clears it).
@@ -39,11 +39,15 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 **Not checked:** the live site and a real phone; the all-or-nothing refusal from the screen (only from the database probe); two people confirming the same supplier at once.
 
-**Mock-up (G1):** seven screens, Claude artifact "Batch Confirm Mock-up" (private to the owner), https://claude.ai/artifact/JKiovWUXucsWuwjyJaTtQT. **Waiting for the owner's word.** On "go": run the migration on production, re-run the probe there (without `run_probe.py`), then merge the page.
+**Mock-up (G1):** seven screens, Claude artifact "Batch Confirm Mock-up" (private to the owner), https://claude.ai/artifact/JKiovWUXucsWuwjyJaTtQT.
 
-## D-59 · (taken on 18 October 2026 by the usage-log session)
+**Owner, 18 Oct 2026, verbatim:** "go. Also fix the records while you're there: mark D-59 as live in the rulebook, and add D-59's table to supabase/schema.sql."
 
-Recorded here by the D-60 session so the number is not used twice: commit 8d132d2 (pull request #82, merged), "D-59: record searches, tabs, hikes, the welcome tour and visit length", migration `supabase/migrations/2026-10-18_usage_log.sql` (applied 18 Oct). That session wrote it in the rulebook's change log (18 Oct, about 13:20, "waiting for the owner (G1)"), but not here, in STATUS or in README, and not in the rulebook's register line (G12); pull request #82 was merged by the owner at 12:50 on 18 Oct (GitHub), so its screen part is live. Its owner words and checks are in the commit message and the rulebook.
+**On production (18 Oct):** main had not moved (5f1161e) and production had not changed since the rolled-back probe (no batch table; same migrations). The migration was applied through the connector as `batch_confirm_2026_10_18b`. Checked there: both function bodies equal the file (md5), security definer, `search_path` empty, execute for anon and authenticated only through the token check; the table has RLS on, no grants to anon or authenticated, 0 policies; 187 functions, 36 tables. The probe, run as it is in the file: **35/35**, failed none, and nothing left behind (0 batches, 0 sample members, 0 sample suppliers). The screen goes live by the pull request from `ccr-d684f88e-o0rcdo`.
+
+## D-59 · Record searches, tabs, hikes, the welcome tour and visit length for Recent activity (live since 18 October 2026, 12:50)
+
+Recorded here by the D-60 session so the number is not used twice: commit 8d132d2 (pull request #82, merged), "D-59: record searches, tabs, hikes, the welcome tour and visit length", migration `supabase/migrations/2026-10-18_usage_log.sql` (applied 18 Oct). That session wrote it in the rulebook's change log (18 Oct, about 13:20, "waiting for the owner (G1)"), but not here, in STATUS or in README, and not in the rulebook's register line (G12); pull request #82 was merged by the owner at 12:50 on 18 Oct (GitHub), so its screen part is live. Its owner words and checks are in the commit message and the rulebook. On the owner's word (18 Oct, with D-60's go), its table and functions were added to `supabase/schema.sql` after checking production: `log_usage` and `activity_feed` there equal the migration file with the comment lines inside the functions removed; the table, its checks, index, RLS and grants match.
 
 ## D-58 · Batch confirm: one way and one kind for several prices at once (Eretz Israel Tours only; live since 17 October 2026, 23:41)
 
