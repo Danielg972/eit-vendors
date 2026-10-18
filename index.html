@@ -1649,7 +1649,7 @@ function render(){
   const me=document.getElementById('meBtn'); if(me) me.onclick=()=>{ if(S.me) openMySettings(); };
   const ro=document.getElementById('ruleOk'); if(ro) ro.onclick=async()=>{ S.me.reminder_due=false; render(); if(LIVE){ try{ await sb.rpc('ack_reminder',{p_token:S.token}); }catch(e){} } };
   const so=document.getElementById('signOut'); if(so) so.onclick=()=>{ if(so.dataset.c!=='1'){ so.dataset.c='1'; so.textContent='Tap again. You\'ll need your link to return.'; return; } forgetToken(); boot(); };
-  app.querySelectorAll('.tab').forEach(t=>t.onclick=async()=>{ S.tab=t.dataset.tab; if(S.tab==='quotes'){ S.quotes=null; S.tprices=null; S.bookings=null; } if(S.tab==='jobs'&&LIVE) S.jobs=null; if(S.tab==='hikes'&&LIVE) S.hikes=null; render();
+  app.querySelectorAll('.tab').forEach(t=>t.onclick=async()=>{ S.tab=t.dataset.tab; usage('tab', ({vendors:'Suppliers',quotes:'Quotes',hikes:'Hikes',jobs:'Jobs',review:'Review',team:'Team'})[S.tab]||S.tab); if(S.tab==='quotes'){ S.quotes=null; S.tprices=null; S.bookings=null; } if(S.tab==='jobs'&&LIVE) S.jobs=null; if(S.tab==='hikes'&&LIVE) S.hikes=null; render();
     if(LIVE && S.tab==='review'){ try{ await DB.loadVendors(); await DB.loadRequests(); await DB.loadFeedback(); try{ await DB.loadReports(); }catch(e){} try{ await DB.loadClaims(); await DB.loadPendingNotes(); }catch(e){} if(hikesOn()){ try{ S.hikes=await DB.loadHikes(); }catch(e){} } render(); }catch(e){} }
     if(LIVE && S.tab==='team'){ try{ await DB.loadTeam(); render(); }catch(e){} } });
   const add=document.getElementById('add'); if(add) add.onclick=()=>openForm(null);
@@ -1709,7 +1709,7 @@ function viewVendors(){
     list.hidden=false; q.setAttribute('aria-expanded','true'); on=-1;
     list.querySelectorAll('button').forEach(b=>b.onmousedown=e=>{ e.preventDefault(); pick(hits[+b.dataset.i]); });
   };
-  q.addEventListener('input',()=>{ S.q=q.value; drawList(); show(); });
+  q.addEventListener('input',()=>{ S.q=q.value; drawList(); show(); usageSearch(q.value); });
   q.addEventListener('keydown',e=>{
     if(list.hidden) return;
     const bs=[...list.querySelectorAll('button')];
@@ -1921,6 +1921,10 @@ function feedDayLabel(d){ const t=new Date(); t.setHours(0,0,0,0); const x=new D
 function feedDemo(){ const ago=m=>new Date(Date.now()-m*60000).toISOString();
   return [
     {at:ago(5),who:'rachel.ops@gmail.com',who_name:'Sample colleague A',kind:'seen',what:'last opened the app',detail:''},
+    {at:ago(11),who:'rachel.ops@gmail.com',who_name:'Sample colleague A',kind:'visit',what:'was in the app',detail:'7'},
+    {at:ago(7),who:'rachel.ops@gmail.com',who_name:'Sample colleague A',kind:'search',what:'searched for',detail:'jeep golan'},
+    {at:ago(7),who:'rachel.ops@gmail.com',who_name:'Sample colleague A',kind:'tab',what:'opened the tab',detail:'Hikes'},
+    {at:ago(69),who:'sample.b@gmail.com',who_name:'Sample colleague B',kind:'tour',what:'welcome tour:',detail:'left at screen 4 of 9'},
     {at:ago(6),who:'rachel.ops@gmail.com',who_name:'Sample colleague A',kind:'note',what:'wrote a note on',vendor_id:'',vendor_name:'Sample Hills 4x4 Rentals',detail:'Good driver, on time, clean jeep.'},
     {at:ago(8),who:'rachel.ops@gmail.com',who_name:'Sample colleague A',kind:'tap',what:'tapped WhatsApp on',vendor_id:'',vendor_name:'Sample Desert Wheels',detail:''},
     {at:ago(9),who:'rachel.ops@gmail.com',who_name:'Sample colleague A',kind:'tap',what:'opened',vendor_id:'',vendor_name:'Sample Desert Wheels',detail:''},
@@ -1937,17 +1941,24 @@ function feedSessions(rows){ // rows newest first -> visits, newest first, each 
   return out.sort((a,b)=>b.end-a.end); }
 function feedVendor(r){ return r.vendor_name?(r.vendor_id?`<button class="linkbtn" type="button" data-fopen="${esc(r.vendor_id)}">${esc(r.vendor_name)}</button>`:`<b>${esc(r.vendor_name)}</b>`):''; }
 function feedSessionHtml(s){
-  const st=new Date(s.start), en=new Date(s.end), opens=[], filters=[], lines=[];
+  const st=new Date(s.start), en=new Date(s.end), opens=[], filters=[], lines=[], searches=[], tabs=[], hikes=[]; let mins=0;
   s.ev.forEach(r=>{
+    if(r.kind==='visit'){ mins=Math.max(mins, +r.detail||0); return; }
+    if(r.kind==='search'){ if(r.detail&&!searches.includes(r.detail)) searches.push(r.detail); return; }
+    if(r.kind==='tab'){ if(r.detail&&!tabs.includes(r.detail)) tabs.push(r.detail); return; }
+    if(r.kind==='hike'){ if(r.detail&&!hikes.includes(r.detail)) hikes.push(r.detail); return; }
     if(r.kind==='tap'&&r.what==='opened'){ if(r.vendor_name&&!opens.some(o=>o.vendor_name===r.vendor_name)) opens.push(r); return; }
     if(r.kind==='filter'){ if(r.detail&&!filters.includes(r.detail)) filters.push(r.detail); return; }
     if(r.kind==='seen') return;
     const q=r.kind==='note'&&r.detail?`<span class="fq">“${esc(r.detail)}”</span>`:'';
-    lines.push(`<li><span class="hint">${feedHM(new Date(r.at))}</span> ${esc(r.what)}${r.vendor_name?' '+feedVendor(r):''}${r.kind!=='note'&&r.detail?` <span class="hint">· ${esc(r.detail)}</span>`:''}${q}</li>`); });
+    lines.push(`<li><span class="hint">${feedHM(new Date(r.at))}</span> ${esc(r.what)}${r.vendor_name?' '+feedVendor(r):''}${r.kind==='tour'?' '+esc(r.detail):(r.kind!=='note'&&r.detail?` <span class="hint">· ${esc(r.detail)}</span>`:'')}${q}</li>`); });
   if(opens.length) lines.push(`<li>looked at ${opens.slice(0,12).map(feedVendor).join(', ')}${opens.length>12?` and ${opens.length-12} more`:''}</li>`);
+  if(searches.length) lines.push(`<li>searched for ${searches.map(x=>'“'+esc(x)+'”').join(', ')}</li>`);
+  if(hikes.length) lines.push(`<li>looked at the hike${hikes.length>1?'s':''} ${hikes.slice(0,8).map(x=>'<b>'+esc(x)+'</b>').join(', ')}${hikes.length>8?` and ${hikes.length-8} more`:''}</li>`);
+  if(tabs.length) lines.push(`<li><span class="hint">opened ${tabs.map(esc).join(', ')}</span></li>`);
   if(filters.length) lines.push(`<li><span class="hint">filtered by ${filters.map(esc).join(', ')}</span></li>`);
-  if(!lines.length) lines.push('<li><span class="hint">opened the app, tapped nothing</span></li>');
-  const span=s.end-s.start>=60000?`${feedHM(st)}–${feedHM(en)}`:feedHM(en);
+  if(!lines.length) lines.push(`<li><span class="hint">${mins?'looked around, nothing recorded beyond that':'opened the app, tapped nothing'}</span></li>`);
+  const span=(s.end-s.start>=60000?`${feedHM(st)}–${feedHM(en)}`:feedHM(en))+(mins?` · about ${mins} min`:'');
   return `<div class="feed-s"><div class="fh"><b>${esc(s.name)}</b><span class="hint">${span}</span></div><ul>${lines.join('')}</ul></div>`; }
 async function drawFeed(view){
   const box=view.querySelector('#feedBox'); if(!box||!S.admin) return;
@@ -2262,6 +2273,25 @@ function track(vid, action){
   try{ fetch(SUPABASE_URL+'/rest/v1/rpc/log_action',{method:'POST',keepalive:true,headers:{apikey:SUPABASE_KEY,'Content-Type':'application/json'},body:JSON.stringify({p_token:S.token,p_vendor:vid||'',p_action:action})}); }catch(e){}
 }
 document.addEventListener('click',e=>{ const a=e.target.closest('[data-track]'); if(a) track(a.dataset.v||'', a.dataset.track); }, true);
+// More of what members do, for Eretz Israel Tours' Recent activity (D-59, the owner 18 Oct: "how can it be someone logs in
+// and doesnt click even one thing?"): searches (once typing stops), the Quotes / Hikes / Jobs tabs, hikes opened, how far
+// the welcome tour got, and how long a visit lasts (a beat once a minute while the app is on screen). Only Eretz Israel
+// Tours reads it, through activity_feed. Nothing is shown to the member.
+function usage(kind, val){
+  if(!LIVE || !S.token) return;
+  try{ fetch(SUPABASE_URL+'/rest/v1/rpc/log_usage',{method:'POST',keepalive:true,headers:{apikey:SUPABASE_KEY,'Content-Type':'application/json'},body:JSON.stringify({p_token:S.token,p_kind:kind,p_value:String(val||'').slice(0,120)})}); }catch(e){}
+}
+let usVisit='', usHidden=0, usSearched=[], usSearchT=0;
+function usageBeat(){ if(!LIVE || !S.token || !S.me || S.me.status!=='approved') return;
+  if(!usVisit){ usVisit=Math.random().toString(36).slice(2,12); usSearched=[]; } usage('visit', usVisit); }
+setInterval(()=>{ if(document.visibilityState==='visible') usageBeat(); }, 60000);
+setTimeout(usageBeat, 5000);
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='hidden'){ usHidden=Date.now(); return; }
+  if(usHidden && Date.now()-usHidden>30*60000) usVisit='';   // back after half an hour or more: a new visit
+  usageBeat(); });
+function usageSearch(v){ clearTimeout(usSearchT); const t=String(v||'').trim(); if(t.length<2) return;
+  usSearchT=setTimeout(()=>{ const k=t.toLowerCase(); if(usSearched.some(x=>x.startsWith(k))) return; usSearched.push(k); usage('search', t); }, 1500); }
 function bccOn(){ return !!(S.me && S.me.bcc_email && !S.me.bcc_opt_out && !S.me.is_admin); }
 function mailHref(em, force){ const useBcc = force===undefined ? bccOn() : force; return 'mailto:'+em+(useBcc?'?bcc='+encodeURIComponent(S.me.bcc_email):''); }
 // Opening an email (D-22). A phone opens its mail app. A computer often has no mail program set for email links, so the
@@ -5498,6 +5528,7 @@ function hkRepHtml(x, name){
 async function openHike(id){
   let d; try{ d=await DB.hikeDetail(id); }catch(e){ toast(e.message); return; }
   const h=d.hike, reps=d.reports||[], r=h.r||{}, n=hkN(h), nav=hkNav(h.start_place, h.name), mk=h.markers||[];
+  usage('hike', h.name);
   const row=(k,v)=>v?`<dt>${k}</dt><dd>${v}</dd>`:'';
   const ages=r.age_min!=null&&r.age_max!=null?'ages '+r.age_min+' to '+r.age_max:r.age_min!=null?'youngest '+r.age_min:r.age_max!=null?'oldest '+r.age_max:'';
   const groups=[r.group_min!=null?(r.group_min===r.group_max?r.group_min+(r.group_min===1?' person':' people'):r.group_min+' to '+r.group_max+' people'):'', ages].filter(Boolean).join(', ');
@@ -6302,7 +6333,11 @@ function openTour(replay){
   const steps=tourSteps(replay), last=steps.length-1; let i=0;
   const w=document.createElement('div'); w.id='tourWrap'; w.className='tour'; w.setAttribute('role','dialog'); w.setAttribute('aria-modal','true'); w.setAttribute('aria-label','Welcome tour');
   document.body.appendChild(w);
-  const end=()=>{ tourDone(); w.remove(); if(S.shared) openShared(); };
+  // D-59: how far the welcome tour got (not when it is replayed)
+  let tFar=0, tLogged=false; const tLog=t=>{ if(replay||tLogged) return; tLogged=true; usage('tour', t); document.removeEventListener('visibilitychange', tAway); };
+  const tAway=()=>{ if(document.visibilityState==='hidden' && document.body.contains(w)) tLog(tFar?`left at screen ${tFar} of ${last}`:'left on the first screen'); };
+  if(!replay) document.addEventListener('visibilitychange', tAway);
+  const end=()=>{ tLog(i===last?'finished':`skipped at screen ${tFar} of ${last}`); tourDone(); w.remove(); if(S.shared) openShared(); };
   const draw=()=>{
     w.innerHTML=`<div class="tour-in">${i?`<div class="tour-top"><span class="tour-n">${i} of ${last}</span><div class="tour-bar" aria-hidden="true">${steps.slice(1).map((x,k)=>`<i${k<i?' class="on"':''}></i>`).join('')}</div>${i<last?'<button class="tour-skip" type="button" data-t="skip">Skip</button>':'<span style="width:12px"></span>'}</div>`:''}
       <div class="tour-body">${steps[i].html}</div>
@@ -6310,8 +6345,8 @@ function openTour(replay){
     wireCopy(w);
     w.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{ const a=b.dataset.t;
       if(a==='terms') return openTerms();
-      if(a==='next'){ if(i===last) return end(); i++; } else if(a==='back'){ i--; } else if(a==='skip'){ i=last; }
-      draw(); });
+      if(a==='next'){ if(i===last) return end(); i++; } else if(a==='back'){ i--; } else if(a==='skip'){ tLog(`skipped at screen ${tFar} of ${last}`); i=last; }
+      tFar=Math.max(tFar,i); draw(); });
   };
   draw();
 }
