@@ -10,6 +10,41 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-60 · Batch confirm, made safe and faster: a check before saving, already-confirmed prices skipped, all or nothing, one undo (Eretz Israel Tours only; built 18 October 2026; **not live**, waiting for the owner's word on the mock-up)
+
+**Owner, 17 Oct 2026, verbatim:** "I need a faster way of approving prices. It's one by one. Like city of David. I just put all of those prices in. I should be able to batch confirm them."
+
+**Order given with it (18 Oct):** on one supplier's price lines, Eretz Israel Tours ticks several lines (or "select all"), picks one way and one kind for the batch and confirms them in one action, with a clear count and a review step before saving; each line still gets its own confirmed_at / confirmed_by / confirmed_how; already-confirmed lines are shown and skipped; one undo for the whole batch. Eretz Israel Tours only. G1, add-only database changes, rolled-back probes on production, no change to the Cockpit and no reader key. Rules checked: D-1, F1, D1–D7, E1, E2, G1–G12.
+
+**Why a new number:** D-58 (live since 17 Oct, 23:41) already gives "Confirm prices…", but it saves straight away, re-marks confirmed prices if ticked, saves price by price (a failure part way leaves some saved), and has no undo. D-60 changes those four things and keeps everything else.
+
+**Built:**
+- The same "✓ Confirm prices…" button. The list shows the unconfirmed prices ticked, with Tick all / None and a count ("5 of 5 ticked · 1 already confirmed"). Prices already confirmed are listed underneath, "Already confirmed · skipped (N)", with their mark and no tick box.
+- One way (official list · their document or email · paid invoice · conversation) and optionally Tariff or Negotiated, then "Review N prices…".
+- **Check before saving:** how many, which supplier, how, kind, today's date, how many skipped, and the list of prices that will be marked. Back keeps the ticks and choices. "Confirm N prices" saves.
+- One database call, `price_confirm_batch`, saves all or nothing. Each line gets its own `confirmed_at`, `confirmed_by` ('Eretz Israel Tours') and `confirmed_how`, the same fields a single confirm writes. A line already confirmed is skipped even if sent. A line not of that supplier (or deleted meanwhile) stops the whole batch: nothing is saved and the sheet says so.
+- **Undo:** after saving, "↶ Undo the batch (N)" shows beside "Confirm prices…" for the rest of the visit. Tap, then "Tap again to undo". `price_confirm_batch_undo` takes the mark off every line still carrying the batch's own mark and puts back the kind each had. A line changed since (price edited, or confirmed again on its own) is left as it is and the message counts it. A batch is undone once.
+
+**Database (add only, not on production):** `supabase/migrations/2026-10-18b_batch_confirm.sql` — table `price_confirm_batches` (RLS on, no grants to anon or authenticated, no policies), functions `price_confirm_batch(p_token, p_vendor, p_ids, p_how, p_kind)` and `price_confirm_batch_undo(p_token, p_batch)`, both through `_auth(p_token, true)`. Nothing replaced: `price_confirm`, `price_marks`, the mark guard and the Cockpit's functions are untouched.
+
+**Implementation choices (labelled):**
+- Kind stays optional, as in the single sheet; with none chosen each line keeps the kind it had (a single confirm with none chosen clears it).
+- The undo button lasts for the visit (leaving the app forgets it); the batch record stays in the database, so an older batch can still be undone from the SQL editor if ever needed.
+- At most 500 prices in one batch.
+- To re-mark a price already confirmed, open that price (the single sheet), as before.
+
+**Checked:**
+- On production, rolled back: `supabase/tests/batch_confirm/production_probe.sql` with the migration put in by `run_probe.py`, as one statement that ends by raising its result: **35/35**, then a read-only check that no table, function, sample member or sample supplier was left. Covers: a guide, an organisation and a bad link refused; anon and authenticated cannot read the batch table; no way / a website / a wrong kind / nothing ticked refused; a line of another supplier refuses the whole batch with nothing saved; each line its own record; the confirmed line skipped and untouched; no kind keeps the kind; members never see a mark; undo clears the batch's lines and puts the kind back, leaves an edited line and a re-confirmed line, refuses a second undo; the single confirm and the mark guard unchanged; every real price line unchanged.
+- Preview (sample data): `supabase/tests/confirmed_mark/batch_walk.py` **78/78** (phone, phone dark, desktop as Eretz Israel Tours; a guide, an agent and an organisation see no button), `confirmed_mark/preview_walk.py` 63/63, `transport_prices/preview_walk.py` 46/46, 0 page errors.
+
+**Not checked:** the live site and a real phone; the all-or-nothing refusal from the screen (only from the database probe); two people confirming the same supplier at once.
+
+**Mock-up (G1):** seven screens, Claude artifact "Batch Confirm Mock-up" (private to the owner), https://claude.ai/artifact/JKiovWUXucsWuwjyJaTtQT. **Waiting for the owner's word.** On "go": run the migration on production, re-run the probe there (without `run_probe.py`), then merge the page.
+
+## D-59 · (taken on 18 October 2026 by the usage-log session)
+
+Recorded here by the D-60 session so the number is not used twice: commit 8d132d2 (pull request #82, merged), "D-59: record searches, tabs, hikes, the welcome tour and visit length", migration `supabase/migrations/2026-10-18_usage_log.sql` (applied 18 Oct). That session did not write its own entry here, in STATUS, in README or in the rulebook; its owner words and checks are in the commit message.
+
 ## D-58 · Batch confirm: one way and one kind for several prices at once (Eretz Israel Tours only; live since 17 October 2026, 23:41)
 
 **Owner, 17 Oct 2026, verbatim:** "New, my decision: batch confirm. On a supplier's page, add "Confirm prices…" that opens a list of that supplier's price lines with a tick box on each (all unconfirmed ones ticked by default). I choose one "how" (official list / supplier's document or email / paid invoice / conversation) and Tariff or Negotiated once, press "Confirm 12 prices", and every ticked line gets the same mark with today's date. Same rules as single confirm: only Eretz Israel Tours, only I see it, a changed price loses its mark. Show me a quick mock-up first, then build it, and put it live together with the Confirmed Price Mark screen if that isn't live yet."

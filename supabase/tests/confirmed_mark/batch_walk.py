@@ -1,4 +1,4 @@
-# Batch confirm (D-58): on a supplier's page Eretz Israel Tours opens "Confirm prices…", ticks prices (the unconfirmed ones are
+# Batch confirm (D-58, rebuilt as D-60: review step, already-confirmed shown and skipped, one undo): on a supplier's page Eretz Israel Tours opens "Confirm prices…", ticks prices (the unconfirmed ones are
 # ticked to start), chooses one way and one kind, and every ticked price gets the same mark with today's date. Colleagues and
 # organisations see no button. Preview mode only (sample data, no network).
 #   python3 -m http.server 8765 &   then   python3 supabase/tests/confirmed_mark/batch_walk.py [folder for pictures]
@@ -22,6 +22,8 @@ async def board_rows(pg):
         await allg.nth(i).click(); await pg.wait_for_timeout(80)
         rows+=await pg.eval_on_selector_all('#pricesBox .tprow > summary','e=>e.map(x=>x.innerText.replace(/\\s+/g," ").trim())')
     return rows
+async def board_rows_quiet(pg):
+    return await pg.eval_on_selector_all('#pricesBox .pr-mk','e=>e.map(x=>x.innerText)')
 async def admin(p,w,h,tag,dark=False):
     b,pg=await page(p,w,h,tag,dark)
     await open_vendor(pg,BUS)
@@ -30,35 +32,55 @@ async def admin(p,w,h,tag,dark=False):
     await pg.screenshot(path=OUT+tag+'_page.png')
     await btn.click(); await pg.wait_for_selector('.bk-list')
     boxes=pg.locator('[data-bk]'); n=await boxes.count()
-    ticked=[await boxes.nth(i).is_checked() for i in range(n)]
     ids=[await boxes.nth(i).get_attribute('data-bk') for i in range(n)]
-    check(tag+': every price of the supplier is listed (4 sample prices)', n==4, n)
-    check(tag+': the unconfirmed ones are ticked, the confirmed one is not', ticked==[i!='tb3' for i in ids], list(zip(ids,ticked)))
-    check(tag+': the count and the button say 3', '3 of 4 ticked' in await pg.inner_text('#bkCount') and await pg.inner_text('#mkGo')=='Confirm 3 prices')
-    check(tag+': the confirmed one shows its mark in the list', 'Confirmed · paid invoice' in await pg.inner_text('.bk-list'))
+    check(tag+': the three unconfirmed prices have a tick box, all ticked', n==3 and 'tb3' not in ids and all([await boxes.nth(i).is_checked() for i in range(n)]), ids)
+    check(tag+': the confirmed one is shown under "Already confirmed · skipped (1)" with its mark, no tick box', 'Already confirmed · skipped (1)' in await pg.inner_text('.sheet-body') and 'Confirmed · paid invoice' in await pg.inner_text('.bk-done'))
+    check(tag+': the count says 3 of 3 and 1 already confirmed', (await pg.inner_text('#bkCount')).strip()=='3 of 3 ticked · 1 already confirmed', await pg.inner_text('#bkCount'))
+    check(tag+': the button says Review 3 prices…', await pg.inner_text('#mkGo')=='Review 3 prices…', await pg.inner_text('#mkGo'))
     await pg.screenshot(path=OUT+tag+'_sheet.png')
     await pg.click('#bkNone')
     check(tag+': None unticks all and the button cannot be pressed', await pg.inner_text('#mkGo')=='Tick a price first' and await pg.locator('#mkGo').is_disabled())
     await pg.click('#bkAll')
-    check(tag+': Tick all ticks all four', await pg.inner_text('#mkGo')=='Confirm 4 prices')
-    await boxes.nth(ids.index('tb3')).uncheck()
-    check(tag+': unticking one makes it 3 again', await pg.inner_text('#mkGo')=='Confirm 3 prices')
+    check(tag+': Tick all ticks the three again', await pg.inner_text('#mkGo')=='Review 3 prices…')
+    await boxes.nth(0).uncheck()
+    check(tag+': unticking one makes it 2', await pg.inner_text('#mkGo')=='Review 2 prices…')
+    await boxes.nth(0).check()
     await pg.click('#mkGo'); await pg.wait_for_timeout(100)
-    check(tag+': nothing is saved until a way is chosen', 'Choose how you know the prices.' in await pg.inner_text('#mkErr'))
+    check(tag+': no review until a way is chosen', 'Choose how you know the prices.' in await pg.inner_text('#mkErr'))
     await pg.click('.mk-grid label:has-text("Official list")'); await pg.click('.mk-kind label:has-text("Tariff")')
     check(tag+': the warning goes once a way is chosen', (await pg.inner_text('#mkErr')).strip()=='')
     await pg.screenshot(path=OUT+tag+'_sheet_chosen.png')
+    await pg.click('#mkGo'); await pg.wait_for_selector('.bk-sum')
+    t=await pg.inner_text('.sheet')
+    check(tag+': the review says Confirm 3 prices, the way, the kind, today and 1 skipped', all(x in t for x in ['Check before saving','Confirm 3 prices','The supplier\'s official list','Tariff','today, '+TODAY,'1 already confirmed, not changed']), t)
+    check(tag+': the review lists the three prices and not the confirmed one', await pg.locator('.bk-rev > div').count()==3)
+    check(tag+': nothing is saved yet', 'tariff' not in ' '.join(await board_rows_quiet(pg)))
+    await pg.screenshot(path=OUT+tag+'_review.png')
+    # Back keeps the ticks and the choices
+    await pg.click('#mkBack'); await pg.wait_for_selector('.bk-list')
+    check(tag+': Back from the review keeps the ticks and the way', await pg.inner_text('#mkGo')=='Review 3 prices…' and await pg.locator('input[name="mkHow"][value="official_list"]').is_checked() and await pg.locator('input[name="mkKind"][value="tariff"]').is_checked())
+    await pg.click('#mkGo'); await pg.wait_for_selector('.bk-sum')
     await pg.click('#mkGo'); await pg.wait_for_selector('#pricesBox .pr-mk')
+    check(tag+': the toast gives the count and the skip', '3 prices confirmed · 1 already confirmed, skipped' in await pg.inner_text('#toast'), await pg.inner_text('#toast'))
     rows=await board_rows(pg)
-    check(tag+': the three ticked prices now show Confirmed · official list · today · tariff', sum(('Confirmed · official list · '+TODAY+' · tariff') in r for r in rows)==3, rows)
-    check(tag+': the unticked one keeps its own mark (paid invoice)', sum('Confirmed · paid invoice' in r for r in rows)==1, rows)
+    check(tag+': the three now show Confirmed · official list · today · tariff', sum(('Confirmed · official list · '+TODAY+' · tariff') in r for r in rows)==3, rows)
+    check(tag+': the skipped one keeps its own mark (paid invoice)', sum('Confirmed · paid invoice' in r for r in rows)==1, rows)
+    u=pg.locator('#mkUndo')
+    check(tag+': an Undo for the whole batch shows beside Confirm prices…', await u.is_visible() and await u.inner_text()=='↶ Undo the batch (3)', await u.inner_text())
     await pg.locator('#pricesBox').screenshot(path=OUT+tag+'_after.png')
-    # opening it again: nothing is ticked now (all confirmed), and re-confirming a ticked one replaces its mark
-    await pg.click('#mkBatch'); await pg.wait_for_selector('.bk-list')
-    check(tag+': once all are confirmed, nothing starts ticked', '0 of 4 ticked' in await pg.inner_text('#bkCount'), await pg.inner_text('#bkCount'))
-    await pg.locator('[data-bk="tb3"]').check(); await pg.click('.mk-grid label:has-text("Conversation")'); await pg.click('#mkGo'); await pg.wait_for_selector('#pricesBox .pr-mk')
+    # all confirmed: nothing to tick
+    await pg.click('#mkBatch'); await pg.wait_for_selector('.bk-done')
+    check(tag+': once all are confirmed, nothing to tick and nothing to press', await pg.locator('[data-bk]').count()==0 and await pg.inner_text('#mkGo')=='Nothing to confirm' and 'already confirmed' in await pg.inner_text('.sheet-body'))
+    await pg.click('#mkBack'); await pg.wait_for_selector('#mkUndo')
+    # the undo: tap, tap again
+    await pg.click('#mkUndo')
+    check(tag+': the first tap asks again', await pg.inner_text('#mkUndo')=='Tap again to undo')
+    await pg.click('#mkUndo'); await pg.wait_for_timeout(300); await pg.wait_for_selector('#pricesBox .pr-mk')
+    check(tag+': the toast says 3 back to estimate', 'Batch undone: 3 prices back to estimate' in await pg.inner_text('#toast'), await pg.inner_text('#toast'))
     rows=await board_rows(pg)
-    check(tag+': re-confirming one replaces its mark with the new way and today', sum(('Confirmed · conversation with the supplier · '+TODAY) in r for r in rows)==1 and sum('paid invoice' in r for r in rows)==0, rows)
+    check(tag+': after the undo, no tariff mark from the batch is left', sum('official list' in r for r in rows)==0 and sum('Confirmed · paid invoice' in r for r in rows)==1, rows)
+    check(tag+': the Undo button is gone', not await pg.locator('#mkUndo').is_visible())
+    await pg.locator('#pricesBox').screenshot(path=OUT+tag+'_undone.png')
     # a supplier that is not transport
     await pg.click('#closeS'); await open_vendor(pg,JEEP)
     await pg.click('#mkBatch'); await pg.wait_for_selector('.bk-list')

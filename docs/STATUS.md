@@ -4,7 +4,7 @@
 
 *Short, factual status for the Cockpit Steward and other EIT projects. Updated by the Vendor Master session after any change that matters to them. The commit that last changed this file is its version.*
 
-**As of:** 17 October 2026
+**As of:** 18 October 2026
 
 ## Identity
 
@@ -16,6 +16,14 @@
 | Schema record | `supabase/schema.sql` (tables, functions, grants), plus `supabase/functions/files/index.ts` (edge function v12) and `supabase/functions/route/index.ts` (edge function `route` v1, D-53) |
 | Terms version | `2026-10-03c` live (adds 2c, organisations as limited members; `2026-10-03a` added 6d, jobs). `2026-10-03d` on the branch `guide-for-clients`: 3a malicious posts, 3c licensed guides and D1, 6e a guide's page for clients, 6f your own page and reviews. All draft, not yet reviewed by a lawyer |
 | Decisions | `docs/DECISIONS.md` (D-1 Cockpit boundary; D-2 quote tracker; D-3 driver reviews; D-4 transport by vehicle size; D-5 booking sheets; D-6 welcome tour, name, use-and-add rule; D-7 Shomer Shabbat badge, kosher restaurants only; D-8 opening hours, no-certificate needs approval; D-9 verified hours, last entry, hours from websites; D-10 official buttons; D-11 jobs between colleagues and My days, live for Eretz Israel Tours only; D-15 limited members: organisations that are not in tourism; D-13 food nearby only on places; D-12 a guide's page for clients; D-14 claimed pages, disputes, reviews; D-16 licensed guides only, D1 for Eshkol, malicious posts) |
+
+## Batch confirm with a check before saving, skip and one undo (D-60): built 18 October 2026, not live, waiting for the owner's word on the mock-up
+
+Eretz Israel Tours only. On top of D-58: a "Check before saving" step with the count; prices already confirmed shown and skipped; one database call that saves all or nothing (`price_confirm_batch`), each line still with its own mark; "↶ Undo the batch (N)" for the rest of the visit (`price_confirm_batch_undo`). Database, add only, **not on production**: `supabase/migrations/2026-10-18b_batch_confirm.sql` (table `price_confirm_batches`, RLS on, no grants; two functions). Proved on production with a rolled-back probe, 35/35, nothing left behind; preview 78/78. Nothing for the Cockpit changes. Mock-up: https://claude.ai/artifact/JKiovWUXucsWuwjyJaTtQT. Details in DECISIONS D-60.
+
+## Usage log (D-59): live since 18 October 2026 (#82)
+
+Searches, tabs, hikes opened, how far the welcome tour got and visit length are recorded for Eretz Israel Tours' Recent activity only (`usage_log`, `log_usage`; `supabase/migrations/2026-10-18_usage_log.sql`). Recorded here by the D-60 session from the commit message (8d132d2); not checked further.
 
 ## Batch confirm (D-58): "Confirm prices…" on a supplier's page, Eretz Israel Tours only: live since 17 October 2026, 23:41 (#80)
 
