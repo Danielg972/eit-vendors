@@ -43,7 +43,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ## D-59 · (taken on 18 October 2026 by the usage-log session)
 
-Recorded here by the D-60 session so the number is not used twice: commit 8d132d2 (pull request #82, merged), "D-59: record searches, tabs, hikes, the welcome tour and visit length", migration `supabase/migrations/2026-10-18_usage_log.sql` (applied 18 Oct). That session did not write its own entry here, in STATUS, in README or in the rulebook; its owner words and checks are in the commit message.
+Recorded here by the D-60 session so the number is not used twice: commit 8d132d2 (pull request #82, merged), "D-59: record searches, tabs, hikes, the welcome tour and visit length", migration `supabase/migrations/2026-10-18_usage_log.sql` (applied 18 Oct). That session wrote it in the rulebook's change log (18 Oct, about 13:20, "waiting for the owner (G1)"), but not here, in STATUS or in README, and not in the rulebook's register line (G12); pull request #82 was merged by the owner at 12:50 on 18 Oct (GitHub), so its screen part is live. Its owner words and checks are in the commit message and the rulebook.
 
 ## D-58 · Batch confirm: one way and one kind for several prices at once (Eretz Israel Tours only; live since 17 October 2026, 23:41)
 
