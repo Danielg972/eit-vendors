@@ -10,7 +10,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
-## D-60 · Batch confirm, made safe and faster: a check before saving, already-confirmed prices skipped, all or nothing, one undo (Eretz Israel Tours only; owner's "go" 18 October 2026; database on production since 18 Oct; the screen goes live with the pull request below)
+## D-60 · Batch confirm, made safe and faster: a check before saving, already-confirmed prices skipped, all or nothing, one undo (Eretz Israel Tours only; live since 18 October 2026, 20:37)
 
 **Owner, 17 Oct 2026, verbatim:** "I need a faster way of approving prices. It's one by one. Like city of David. I just put all of those prices in. I should be able to batch confirm them."
 
@@ -43,7 +43,9 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 **Owner, 18 Oct 2026, verbatim:** "go. Also fix the records while you're there: mark D-59 as live in the rulebook, and add D-59's table to supabase/schema.sql."
 
-**On production (18 Oct):** main had not moved (5f1161e) and production had not changed since the rolled-back probe (no batch table; same migrations). The migration was applied through the connector as `batch_confirm_2026_10_18b`. Checked there: both function bodies equal the file (md5), security definer, `search_path` empty, execute for anon and authenticated only through the token check; the table has RLS on, no grants to anon or authenticated, 0 policies; 187 functions, 36 tables. The probe, run as it is in the file: **35/35**, failed none, and nothing left behind (0 batches, 0 sample members, 0 sample suppliers). The screen goes live by the pull request from `ccr-d684f88e-o0rcdo`.
+**On production (18 Oct):** main had not moved (5f1161e) and production had not changed since the rolled-back probe (no batch table; same migrations). The migration was applied through the connector as `batch_confirm_2026_10_18b`. Checked there: both function bodies equal the file (md5), security definer, `search_path` empty, execute for anon and authenticated only through the token check; the table has RLS on, no grants to anon or authenticated, 0 policies; 187 functions, 36 tables. The probe, run as it is in the file: **35/35**, failed none, and nothing left behind (0 batches, 0 sample members, 0 sample suppliers). 
+
+**Live:** since 18 Oct 2026, 20:37. Pull request #83 was merged on the owner's "go" (main at 9accbb7), and GitHub reports the site deployed from that commit at 20:37. This session cannot open the live site, so it has not seen the page there.
 
 ## D-59 · Record searches, tabs, hikes, the welcome tour and visit length for Recent activity (live since 18 October 2026, 12:50)
 
