@@ -149,6 +149,14 @@ legend{font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--
 .panel p{margin:0 0 12px;color:var(--ink-2);font-size:14px}
 .rev{display:flex;gap:12px;align-items:center;padding:12px 0;border-top:1px solid var(--line);flex-wrap:wrap}
 .rev:first-of-type{border-top:0}
+.fm-cmp{display:grid;grid-template-columns:22px minmax(0,1fr) minmax(0,1fr);gap:6px 8px;font-size:13.5px;align-items:start;margin-top:8px}
+.fm-cmp .fm-hd{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);font-weight:600}
+.fm-cmp .fm-lab{grid-column:1/-1;font-size:12px;font-weight:600;color:var(--ink-2);margin-top:4px}
+.fm-cmp .fm-tick{width:18px;height:18px;margin:1px 0 0;accent-color:var(--olive-2)}
+.fm-cmp>span{min-width:0;overflow-wrap:anywhere;white-space:pre-line}
+.fm-cmp .fm-old{color:var(--ink-3);text-decoration:line-through}
+.fm-cmp .fm-same{color:var(--ok)}
+.fm-cmp .fm-agent{color:var(--agent);font-weight:600}
 .rev .who2{flex:1;min-width:180px}
 .rev .who2 b{display:block}
 .rev .who2 span{font-size:13px;color:var(--ink-2)}
@@ -891,6 +899,8 @@ const secName=k=>(SECTIONS.find(x=>x[0]===k)||[0,k])[1];
 // Eshkol / Midbari rentals (D-42) and wineries under Restaurant and Attraction / Site (D-43) each open to Eretz Israel Tours first
 // and to colleagues when he switches them on in the Team tab (G2). The database enforces both; these only shape the screen.
 const rentalsOn=()=>!LIVE||!!(S.me&&S.me.rentals);
+// D-61: the supplier details form. Eretz Israel Tours, and full members once it is opened to them; never an organisation.
+const formsOn=()=>!lim()&&(LIVE?!!(S.me&&S.me.forms):(S.admin||!!S.formsDemoAll));
 const winOn=()=>!LIVE||!!(S.me&&S.me.wineries);
 // An organisation sees a winery with restaurants, and with sites too once wineries are under both (D-43).
 const secHas=(c,secs)=>secs.includes(secOf(c))||(c==='Winery'&&winOn()&&secs.includes('sites'));
@@ -937,6 +947,8 @@ function sample(){
     v({id:'vendor_wn00002',name:'Sample Valley Cellars',category:'Winery',tags:'Tasting, Restaurant',kosher:'Rabbanut',location:'Sample valley',region:'Galilee',listedPrice:'75',listedPriceVatTreatment:'including_vat',priceBasis:'Per person',notes:'Sample details, made up for the preview.'}),
     v({id:'vendor_rs00001',name:'Sample Grill House',category:'Restaurant',tags:'Meat, Group menus',kosher:'Rabbanut',location:'Jerusalem',region:'Jerusalem',agentPrice:'95',priceBasis:'Per person',notes:'Sample details, made up for the preview.'}),
     v({id:'vendor_rs00002',name:'Sample Dairy Café',category:'Restaurant',tags:'Dairy, Mehadrin',kosher:'Rabbanut Mehadrin',location:'Tel Aviv',region:'Tel Aviv & Center',listedPrice:'70',priceBasis:'Per person',notes:'Sample details, made up for the preview.'}),
+    // Preview only, for the supplier details form (D-61): invented, as in the mock-up of 19 Oct.
+    v({id:'vendor_sw00001',name:'Sample Workshop',category:'Activity',tags:'Workshop',contactPerson:'Sample Name',phone:'050-000-0000',location:'Old City, Jerusalem',region:'Jerusalem',agentPrice:'75',priceBasis:'Per person',notes:'Sample details, made up for the preview.'}),
     v({id:'vendor_z2c8m1v',name:'Ronit Katz',category:'Guide',phone:'+972 50 777 2211',languages:'English, Hebrew, French',agentPrice:'1600',priceBasis:'Per day',active:'Inactive',notes:'On leave until spring'})
   ];
 }
@@ -969,7 +981,7 @@ async function filesApi(action, body){
 }
 const DB = {
   async init(){
-    if(!LIVE){ S.user={email:OWNER}; S.me={name:'Eretz Israel Tours',email:OWNER,status:'approved',is_admin:true}; S.admin=true; S.contributor=true; S.vendors=sample();
+    if(!LIVE){ S.user={email:OWNER}; S.me={name:'Eretz Israel Tours',email:OWNER,status:'approved',is_admin:true}; S.admin=true; S.contributor=true; S.vendors=sample(); demoFormsInit();
       const dd=n=>new Date(Date.now()-n*86400000).toISOString();
       // two sample pictures for the guide's client section: drawn here, not photographs
       const pic=(a,b,c)=>'data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="${a}"/><circle cx="148" cy="56" r="22" fill="${c}"/><path d="M0 150 L50 96 L92 136 L134 84 L200 148 V200 H0Z" fill="${b}"/><text x="100" y="186" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#fff">Sample picture</text></svg>`);
@@ -1085,7 +1097,7 @@ const DB = {
     if(error) throw new Error(error.message);
     S.me = data; S.user = data?{email:data.email}:null;
     S.contributor = !!(data && data.status==='approved'); S.admin = !!(data && data.is_admin && S.contributor);
-    if(S.contributor){ await DB.loadVendors(); if(rentalsOn()){ try{ S.rentals=await DB.loadRentals(); }catch(e){ S.rentals=[]; } } if(jobsOn()){ try{ S.jobs=await DB.loadJobs(); }catch(e){ S.jobs=null; } } if(hikesOn()){ try{ S.hikes=await DB.loadHikes(); }catch(e){ S.hikes=null; } } try{ await DB.loadFeedback(); }catch(e){} if(S.admin){ await DB.loadTeam(); try{ await DB.loadRequests(); }catch(e){} try{ await DB.loadReports(); }catch(e){} try{ await DB.loadClaims(); await DB.loadPendingNotes(); }catch(e){} } }
+    if(S.contributor){ await DB.loadVendors(); if(rentalsOn()){ try{ S.rentals=await DB.loadRentals(); }catch(e){ S.rentals=[]; } } if(jobsOn()){ try{ S.jobs=await DB.loadJobs(); }catch(e){ S.jobs=null; } } if(hikesOn()){ try{ S.hikes=await DB.loadHikes(); }catch(e){ S.hikes=null; } } try{ await DB.loadFeedback(); }catch(e){} if(S.admin){ await DB.loadTeam(); try{ await DB.loadRequests(); }catch(e){} try{ await DB.loadReports(); }catch(e){} try{ await DB.loadForms(); }catch(e){} try{ await DB.loadClaims(); await DB.loadPendingNotes(); }catch(e){} } }
   },
   async loadVendors(){ if(!LIVE) return; try{ S.vendors = await rpc('vendors_list'); }catch(e){ toast('Could not load vendors: '+e.message); } try{ S.myTop = await rpc('my_top'); }catch(e){ S.myTop=[]; } try{ S.usage = await rpc('my_usage'); }catch(e){} },
   async loadTeam(){ if(!LIVE) return; S.members = await rpc('members_list'); },
@@ -1302,6 +1314,22 @@ const DB = {
     if(!LIVE) return;
     try{ const all = await rpc('vendors_list'); S.vendors = all; }catch(e){}
   },
+  // D-61: the supplier details form (link, review list, apply, tie a new entry, discard)
+  async formNew(vid, name){
+    if(!LIVE){ const v=S.vendors.find(x=>x.id===vid), nm=v?v.name:String(name||'').trim(); if(nm.length<2) throw new Error('Write the business name.');
+      return {key:'sample', business_name:nm, expires_at:new Date(Date.now()+30*86400000).toISOString()}; }
+    return await rpc('supplier_form_new',{p_vendor:vid||'',p_name:name||''});
+  },
+  async loadForms(){
+    if(!LIVE){ demoFormsInit(); return S.forms; }
+    const r=await rpc('supplier_forms_list'); S.forms=(r&&r.forms)||[]; S.formsWaiting=(r&&r.waiting)||0; return S.forms;
+  },
+  async formApply(id, keys){ if(!LIVE) return demoFormApply(id, keys); return await rpc('supplier_form_apply',{p_id:id,p_keys:keys}); },
+  async formLink(id, vid){
+    if(!LIVE){ const f=(S.forms||[]).find(x=>x.id===id); if(f){ f.vendor_id=vid; f.vendor_name=(S.vendors.find(x=>x.id===vid)||{}).name||f.business_name; demoFormRows(f); } return {ok:true}; }
+    return await rpc('supplier_form_link',{p_id:id,p_vendor:vid});
+  },
+  async formDiscard(id){ if(!LIVE){ S.forms=(S.forms||[]).filter(f=>f.id!==id); return; } await rpc('supplier_form_discard',{p_id:id}); },
   async loadReports(){
     if(!LIVE){ S.reports=S.reports||[]; return S.reports; }
     S.reports = await rpc('vendor_reports_list'); return S.reports;
@@ -1646,7 +1674,7 @@ function useBump(kind, val){ if(!val||val==='All') return; /* order updates next
 function mixKey(v){ const seed=(S.user&&S.user.email||'')+new Date().toISOString().slice(0,10)+v.id; let h=2166136261; for(let i=0;i<seed.length;i++){ h^=seed.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
 
 function render(){
-  const pending = S.vendors.filter(v=>v.review_status==='pending').length + (S.requests||[]).length + hikesWaiting() + (S.admin?(S.feedback||[]).filter(f=>f.status==='New').length+(S.reports||[]).filter(r=>r.status==='New').length+(S.claims||[]).length+(S.noteQueue||[]).length:0);
+  const pending = S.vendors.filter(v=>v.review_status==='pending').length + (S.requests||[]).length + hikesWaiting() + (S.admin?(S.feedback||[]).filter(f=>f.status==='New').length+(S.reports||[]).filter(r=>r.status==='New').length+(S.claims||[]).length+(S.noteQueue||[]).length+(S.forms||[]).length:0);
   const waiting = S.members.filter(m=>m.status==='pending').length;
   const tabs = [['vendors','Suppliers',icons.list],['quotes','Quotes',icons.quote]];
   if(hikesOn()) tabs.push(['hikes','Hikes',hkIcon]); else if(S.tab==='hikes') S.tab='vendors';
@@ -1668,7 +1696,7 @@ function render(){
   const ro=document.getElementById('ruleOk'); if(ro) ro.onclick=async()=>{ S.me.reminder_due=false; render(); if(LIVE){ try{ await sb.rpc('ack_reminder',{p_token:S.token}); }catch(e){} } };
   const so=document.getElementById('signOut'); if(so) so.onclick=()=>{ if(so.dataset.c!=='1'){ so.dataset.c='1'; so.textContent='Tap again. You\'ll need your link to return.'; return; } forgetToken(); boot(); };
   app.querySelectorAll('.tab').forEach(t=>t.onclick=async()=>{ S.tab=t.dataset.tab; usage('tab', ({vendors:'Suppliers',quotes:'Quotes',hikes:'Hikes',jobs:'Jobs',review:'Review',team:'Team'})[S.tab]||S.tab); if(S.tab==='quotes'){ S.quotes=null; S.tprices=null; S.bookings=null; } if(S.tab==='jobs'&&LIVE) S.jobs=null; if(S.tab==='hikes'&&LIVE) S.hikes=null; render();
-    if(LIVE && S.tab==='review'){ try{ await DB.loadVendors(); await DB.loadRequests(); await DB.loadFeedback(); try{ await DB.loadReports(); }catch(e){} try{ await DB.loadClaims(); await DB.loadPendingNotes(); }catch(e){} if(hikesOn()){ try{ S.hikes=await DB.loadHikes(); }catch(e){} } render(); }catch(e){} }
+    if(LIVE && S.tab==='review'){ try{ await DB.loadVendors(); await DB.loadRequests(); await DB.loadFeedback(); try{ await DB.loadReports(); }catch(e){} try{ await DB.loadForms(); }catch(e){} try{ await DB.loadClaims(); await DB.loadPendingNotes(); }catch(e){} if(hikesOn()){ try{ S.hikes=await DB.loadHikes(); }catch(e){} } render(); }catch(e){} }
     if(LIVE && S.tab==='team'){ try{ await DB.loadTeam(); render(); }catch(e){} } });
   const add=document.getElementById('add'); if(add) add.onclick=()=>openForm(null);
   const addQ=document.getElementById('addQ'); if(addQ) addQ.onclick=()=>openQuotePicker();
@@ -1857,6 +1885,105 @@ function reportsPanel(){
       <div class="btn-row"><button class="btn soft" data-open="${esc(r.vendor_id)}">Open supplier</button>${r.status==='New'?`<button class="btn soft" data-rp="${esc(r.id)}" data-st="Dismissed">Dismiss</button><button class="btn primary" data-rp="${esc(r.id)}" data-st="Fixed">Done</button>`:''}</div></div>`).join('') : '<div class="empty" style="padding:16px">No updates waiting.</div>'}
   </section>`;
 }
+// ---------- Supplier details form (D-61, 19 Oct 2026) ----------
+// The owner, 19 Oct: "Can you integrate that into he app so people can send this form to venders?" A full member sends a
+// supplier a link to a plain Eretz Israel Tours form (f/?k=…, one supplier, single use, 30 days). The supplier's page knows
+// only the business name and shows nothing from the app (B1). The answers wait in Review until Eretz Israel Tours ticks
+// what to keep: fields go onto the entry, prices come in as new lines "from the supplier", not confirmed.
+const formLinkUrl=k=>LIVE?APP_URL+'f/?k='+encodeURIComponent(k):APP_URL+'f/index.html?demo=1';
+const formMsg=link=>`Hi, this is ${(S.me&&S.me.name)||'a colleague'}. Could you fill in your business details for Eretz Israel Tours' guides? It takes about 5 minutes.\nשלום, נשמח אם תמלאו את פרטי העסק:\n${link}`;
+async function openSendForm(v, name){
+  const back=()=>v?openDetail(v.id):closeSheet();
+  const w=sheet('Send details form', '<div id="sfBody"><p class="hint">Making the link…</p></div>', '<button class="btn soft" id="sfBack" type="button">Back</button>');
+  w.querySelector('#sfBack').onclick=back;
+  const box=w.querySelector('#sfBody'); let r;
+  try{ r=await DB.formNew(v?v.id:'', name||''); }catch(e){ box.innerHTML=`<div class="msg err">${esc(e.message)}</div>`; return; }
+  const link=formLinkUrl(r.key), msg=formMsg(link), ph=v?firstPhone(v.whatsapp||'')||firstPhone(v.phone||''):'';
+  box.innerHTML=`<p style="margin:0 0 8px"><b>${esc(r.business_name)}</b></p>
+    <p class="hint" style="margin:0 0 6px">The supplier gets this on WhatsApp:</p>
+    <div class="f wide"><textarea id="sfMsg" rows="5" dir="auto">${esc(msg)}</textarea></div>
+    <div class="msg" style="background:var(--warn-wash);color:var(--warn)">The supplier sees only an Eretz Israel Tours form. Never send a supplier a link to the app itself.</div>
+    <p class="hint" style="margin:10px 0 0">The link is for this supplier only, works once, and closes after 30 days. The answers go to Eretz Israel Tours, who checks them before anything changes on the list.</p>
+    <div class="btn-row" style="margin-top:12px"><button class="btn primary" id="sfWa" type="button" style="background:#1f8f4e;border-color:#1f8f4e">Send on WhatsApp</button><button class="btn soft" id="sfCopy" type="button">Copy link</button></div>
+    <input id="sfLink" type="text" value="${esc(link)}" readonly style="position:absolute;left:-9999px" aria-hidden="true" tabindex="-1">`;
+  w.querySelector('#sfWa').onclick=()=>{ const t=w.querySelector('#sfMsg').value; window.open(`https://wa.me/${ph?intlDigits(ph):''}?text=${encodeURIComponent(t)}`,'_blank','noopener'); };
+  w.querySelector('#sfCopy').onclick=()=>copyText(link, w.querySelector('#sfLink'));
+}
+// Preview only: two answered sample forms, the same as the mock-up's (all invented).
+function demoFormsInit(){
+  if(S.demoFormsDone) return; S.demoFormsDone=true; const dd=n=>new Date(Date.now()-n*86400000).toISOString();
+  S.formsWaiting=1;
+  S.forms=[
+    {id:'fm1',vendor_id:'vendor_sw00001',vendor_name:'Sample Workshop',business_name:'Sample Workshop',sent_name:'Sample Member',sent_at:dd(2),answered_at:dd(0),consent:true,types:'Activity',
+     rows:[{k:'location',label:'Address',cur:'Old City, Jerusalem',new:'12 Sample St, Jerusalem',same:false,tick:true},
+           {k:'phone',label:'Phone',cur:'050-000-0000',new:'050-000-0000',same:true,tick:false},
+           {k:'hours',label:'Hours',cur:'',new:'Sun–Thu 09:00–17:00 · Fri 09:00–13:00 · Sat closed',same:false,tick:true},
+           {k:'price_agent',label:'Agent price',cur:'₪75',new:'₪80 · from the supplier\n“₪80 per person”',price:'80',said:'₪80 per person',same:false,tick:true},
+           {k:'details',label:'Other details',cur:'',new:'Visit length: 1.5 hours\nGroup size: 10 – 40\nVisit for guides: Sample: Sunday mornings, up to 15 guides',same:false,tick:true}]},
+    {id:'fm2',vendor_id:null,vendor_name:null,business_name:'Sample Winery',sent_name:'Sample Member',sent_at:dd(3),answered_at:dd(1),consent:true,types:'Winery',
+     rows:[{k:'name',label:'Business name',cur:'',new:'Sample Winery',same:false,tick:false},{k:'location',label:'Address',cur:'',new:'Sample village',same:false,tick:true},
+           {k:'region',label:'Region',cur:'',new:'Binyamin & Shomron',same:false,tick:true},{k:'contactPerson',label:'Booking contact',cur:'',new:'Sample Owner',same:false,tick:true},
+           {k:'phone',label:'Phone',cur:'',new:'050-000-1111',same:false,tick:true},{k:'kosher',label:'Kosher',cur:'',new:'Sample Rabbanut',same:false,tick:true},
+           {k:'price_agent',label:'Agent price',cur:'',new:'₪60 · from the supplier',price:'60',said:'60',same:false,tick:true}]}];
+}
+const FORM_FIELDS=['name','location','region','maps_link','contactPerson','phone','whatsapp','email','website','hours','hours_last','kosher','languages','payTerms','cancelPolicy'];
+function demoFormRows(f){ const v=S.vendors.find(x=>x.id===f.vendor_id)||{};
+  f.rows=f.rows.map(r=>{ if(r.k.startsWith('price')||r.k==='details') return r; const cur=r.k==='shabbat'?(tagHas(v.tags,SHABBAT_TAG)?'Yes, closed on Shabbat':'No, open on Shabbat'):String(v[r.k]||'');
+    const same=cur.trim().toLowerCase()===String(r.new).trim().toLowerCase(); return Object.assign({},r,{cur,same,tick:!same&&r.k!=='name'}); }); }
+async function demoFormApply(id, keys){
+  const f=(S.forms||[]).find(x=>x.id===id); if(!f) throw new Error('This form is no longer waiting.'); if(!f.vendor_id) throw new Error('Create the entry first.');
+  const v=S.vendors.find(x=>x.id===f.vendor_id); await DB.detail(v.id); const d=S.demo[v.id]; let np=0;
+  const src='From the supplier: details form, '+new Date().toLocaleDateString('en-GB');
+  f.rows.filter(r=>keys.includes(r.k)).forEach(r=>{
+    if(r.k.startsWith('price')){ np++; (d.prices=d.prices||[]).push({id:'fp'+Date.now()+np,label:r.k==='price_agent'?'Rate for licensed guides and agents':r.label,audience:r.k==='price_child'?'Child':r.k==='price_group'?'Group':'Adult',price:r.price,currency:'ILS',vat:'',basis:r.k==='price_group'?'Per group':'Per person',is_agent:r.k==='price_agent',season:'',source:src,checked_on:today(),note:r.said&&r.said!==r.price?'In their words: '+r.said:''}); }
+    else if(r.k==='details'){ (d.notes=d.notes||[]).unshift({id:'fn'+Date.now(),body:src+'\n'+r.new,author:OWNER,author_name:'Eretz Israel Tours',created_at:new Date().toISOString()}); }
+    else if(r.k==='shabbat'){ const t=String(v.tags||'').split(',').map(s=>s.trim()).filter(s=>s&&s.toLowerCase()!==SHABBAT_TAG.toLowerCase()); if(/^Yes/.test(r.new)) t.push(SHABBAT_TAG); v.tags=t.join(', '); }
+    else { v[r.k]=r.new; if(r.k==='hours'||r.k==='hours_last'){ v.hours_verified_how=''; v.hours_verified_by=''; v.hours_source="the supplier's details form, "+new Date().toLocaleDateString('en-GB'); } } });
+  if(v._prices!=null) v._prices+=np;
+  S.forms=S.forms.filter(x=>x.id!==id); return {applied:keys.length,prices:np,vendor_id:v.id};
+}
+function formsPanel(){
+  if(!LIVE) demoFormsInit();
+  const list=S.forms||[], wait=S.formsWaiting||0;
+  if(!list.length && !wait) return '';
+  const day=iso=>iso?new Date(iso).toLocaleDateString('en-GB'):'';
+  const card=f=>{
+    const head=`<div class="who2"><b>${f.vendor_id?esc(f.vendor_name||f.business_name):'New: '+esc(f.business_name)}</b><span>${f.vendor_id?'':'Not on the list yet · '}Sent by ${esc(f.sent_name||'a colleague')} · answered ${day(f.answered_at)}</span>${f.consent?'':'<span style="color:var(--warn);font-weight:600">⚠ The supplier did not tick the box to share these details with colleagues.</span>'}</div>`;
+    if(!f.vendor_id) return `<div class="rev fm" style="display:block" data-fm="${esc(f.id)}">${head}
+      <div class="btn-row" style="margin-top:8px"><button class="btn primary" data-fmnew="${esc(f.id)}" type="button">Create entry from form</button><button class="btn soft" data-fmdisc="${esc(f.id)}" type="button">Discard</button></div></div>`;
+    const rows=f.rows||[], n=rows.filter(r=>r.tick).length;
+    return `<div class="rev fm" style="display:block" data-fm="${esc(f.id)}">${head}
+      <div class="fm-cmp"><span></span><span class="fm-hd">In the app</span><span class="fm-hd">From the supplier</span>
+      ${rows.map(r=>{ const adds=(r.k.startsWith('price')||r.k==='details')&&!r.na;
+        return `<span class="fm-lab">${esc(r.label)}${adds?' <span class="hint">· added as a new '+(r.k==='details'?'note':'price line')+'</span>':''}</span>
+        ${r.same||r.na?'<span></span>':`<input type="checkbox" class="fm-tick" data-fk="${esc(r.k)}" aria-label="Keep the supplier's ${esc(r.label.toLowerCase())}" ${r.tick?'checked':''}>`}
+        <span class="${r.same||adds||!r.cur?'':'fm-old'}">${r.cur?esc(r.cur):`<span class="hint">${adds?'—':'Not set'}</span>`}</span>
+        <span class="${r.same?'fm-same':r.k==='price_agent'?'fm-agent':''}">${r.same?'Same ✓':esc(r.new)}</span>`; }).join('')}</div>
+      <div class="btn-row" style="margin-top:10px"><button class="btn primary" data-fmapply="${esc(f.id)}" type="button" ${n?'':'disabled'}>Apply ${n} ticked</button><button class="btn soft" data-open="${esc(f.vendor_id)}" type="button">Open supplier</button><button class="btn soft" data-fmdisc="${esc(f.id)}" type="button">Discard</button></div>
+      <div class="fm-err"></div></div>`; };
+  return `<section class="panel" id="formsPanel"><h3>Supplier forms${list.length?` <span class="badge">${list.length} new</span>`:''}</h3>
+    <p>Answers suppliers sent from the details form a colleague sent them. Only you see this list. Tick what to keep and tap Apply: fields go onto the supplier's entry, prices are added as new lines from the supplier (not confirmed), and other details as a note. Nothing changes until you apply.${wait?` ${wait} form${wait===1?'':'s'} sent and not answered yet.`:''}</p>
+    ${list.length?list.map(card).join(''):'<div class="empty" style="padding:16px">No answers waiting.</div>'}</section>`;
+}
+function formPreset(f){
+  const p={_form:f.id, name:f.business_name};
+  (f.rows||[]).forEach(r=>{ if(FORM_FIELDS.includes(r.k)) p[r.k]=r.new; if(r.k==='shabbat'&&/^Yes/.test(r.new)) p.tags=SHABBAT_TAG; });
+  const c=String(f.types||'').split(',').map(s=>s.trim()).find(t=>CATEGORIES.includes(t)); if(c) p.category=c;
+  return p;
+}
+function wireFormsPanel(view){
+  const box=view.querySelector('#formsPanel'); if(!box) return;
+  box.querySelectorAll('.fm').forEach(c=>{ const btn=c.querySelector('[data-fmapply]'); if(!btn) return;
+    const count=()=>{ const n=c.querySelectorAll('.fm-tick:checked').length; btn.textContent=`Apply ${n} ticked`; btn.disabled=!n; };
+    c.querySelectorAll('.fm-tick').forEach(t=>t.onchange=count);
+    btn.onclick=async()=>{ const keys=[...c.querySelectorAll('.fm-tick:checked')].map(t=>t.dataset.fk); if(!keys.length) return;
+      btn.disabled=true; btn.textContent='Applying…';
+      try{ const r=await DB.formApply(btn.dataset.fmapply, keys); if(LIVE){ await DB.loadVendors(); await DB.loadForms(); } toast(`Applied ${r.applied}${r.prices?` · ${r.prices} price line${r.prices===1?'':'s'} added, not confirmed`:''}`); render(); }
+      catch(e){ count(); c.querySelector('.fm-err').innerHTML=`<div class="msg err">${esc(e.message)}</div>`; } }; });
+  box.querySelectorAll('[data-fmdisc]').forEach(b=>b.onclick=async()=>{ if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Tap again to discard'; return; }
+    b.disabled=true; try{ await DB.formDiscard(b.dataset.fmdisc); if(LIVE) await DB.loadForms(); toast('Discarded. Nothing was changed.'); render(); }catch(e){ b.disabled=false; toast(e.message); } });
+  box.querySelectorAll('[data-fmnew]').forEach(b=>b.onclick=()=>{ const f=(S.forms||[]).find(x=>x.id===b.dataset.fmnew); if(f) openForm(null, formPreset(f)); });
+}
 // After approving: a ready welcome message, sent from Eretz Israel Tours' own WhatsApp or email in one tap.
 function welcomeText(m, lang){
   const first=String(m.name||'').trim().split(/\s+/)[0]||'';
@@ -1883,6 +2010,7 @@ function viewReview(){
   const pend=S.vendors.filter(v=>v.review_status==='pending');
   const appr=S.vendors.filter(v=>v.review_status==='approved');
   view.innerHTML = `
+    ${formsPanel()}
     ${hikesPanel()}
     ${claimsPanel()}
     ${notesPanel()}
@@ -1909,6 +2037,7 @@ function viewReview(){
   const decide=async(b,yes)=>{ b.disabled=true; try{ await DB.decideRequest(yes?b.dataset.ryes:b.dataset.rno, yes); await DB.loadRequests(); toast(yes?'Approved and applied':'Rejected'); render(); }catch(e){ b.disabled=false; toast(e.message); } };
   view.querySelectorAll('[data-ryes]').forEach(b=>b.onclick=()=>decide(b,true));
   wireFeedbackPanel(view);
+  wireFormsPanel(view);
   wireReviewQueues(view);
   wireHikesPanel(view);
   view.querySelectorAll('[data-rp]').forEach(b=>b.onclick=async()=>{ b.disabled=true; try{ await DB.setReport(b.dataset.rp,b.dataset.st); toast(b.dataset.st==='Fixed'?'Marked done':'Dismissed'); render(); }catch(e){ b.disabled=false; toast(e.message); } });
@@ -2030,6 +2159,10 @@ function viewTeam(){
       <p>Rental companies and their vehicles: day price, km, terms, notes for the renter and an availability calendar. <span id="rtAllNote">${S.me&&S.me.rentals_for==='all'?'Open to all colleagues.':'For now only you see them.'}</span></p>
       <label class="switch" for="rtAll"><input id="rtAll" type="checkbox" ${S.me&&S.me.rentals_for==='all'?'checked':''}><span><b>Open Eshkol / Midbari rentals to all colleagues</b><br><span class="hint">Colleagues then see the category, add vehicles and mark the calendars; organisations see it with Transportation, never an agent day price. You can switch it off again; vehicles and calendars already saved are kept.</span></span></label>
     </section>`:''}
+    ${!LIVE||(S.me&&S.me.forms_for)?`<section class="panel"><h3>Supplier forms</h3>
+      <p>A link a member sends a supplier, so the supplier fills in its own details on a plain Eretz Israel Tours form. The answers come to your Review list; nothing changes until you apply them. <span id="sfAllNote">${(LIVE?S.me&&S.me.forms_for==='all':S.formsDemoAll)?'Open to all full members.':'For now only you can send it.'}</span></p>
+      <label class="switch" for="sfAll"><input id="sfAll" type="checkbox" ${(LIVE?S.me&&S.me.forms_for==='all':S.formsDemoAll)?'checked':''}><span><b>Open supplier forms to all full members</b><br><span class="hint">Guides and agents then see "Send form to supplier" on a supplier's page and on Add supplier. Organisations never do. The answers still come only to you. You can switch it off again; forms already sent still work.</span></span></label>
+    </section>`:''}
     ${!LIVE||(S.me&&S.me.wineries_for)?`<section class="panel"><h3>Wineries</h3>
       <p>Wineries under Restaurant and under Attraction / Site, instead of their own button. <span id="wnAllNote">${S.me&&S.me.wineries_for==='all'?'On for all colleagues.':'For now only you see it this way.'}</span></p>
       <label class="switch" for="wnAll"><input id="wnAll" type="checkbox" ${S.me&&S.me.wineries_for==='all'?'checked':''}><span><b>Put wineries under Restaurant and Attraction / Site for all colleagues</b><br><span class="hint">Colleagues then find wineries with the Wineries button under either one. An organisation that sees sites starts seeing wineries too; one that sees restaurants keeps them. No winery changes.</span></span></label>
@@ -2057,6 +2190,9 @@ function viewTeam(){
    ['wnAll','wineries_for','wnAllNote',['On for all colleagues.','For now only you see it this way.'],['Wineries are under Restaurant and Attraction / Site for all colleagues','Wineries are back to their own button for colleagues']]].forEach(([id,key,nid,notes,toasts])=>{
     const sw=view.querySelector('#'+id); if(sw) sw.onchange=async e=>{ const on=e.target.checked;
       try{ if(LIVE){ const { error } = await sb.rpc('set_setting',{p_token:S.token,p_key:key,p_value:on?'all':'admin'}); if(error) throw new Error(error.message); } if(S.me) S.me[key]=on?'all':'admin'; const nt=view.querySelector('#'+nid); if(nt) nt.textContent=notes[on?0:1]; toast(toasts[on?0:1]); }catch(err){ e.target.checked=!on; toast(err.message); } }; });
+  const sfAll=view.querySelector('#sfAll'); if(sfAll) sfAll.onchange=async e=>{ const on=e.target.checked;   // D-61
+    try{ if(LIVE){ const { error } = await sb.rpc('set_setting',{p_token:S.token,p_key:'forms_for',p_value:on?'all':'admin'}); if(error) throw new Error(error.message); S.me.forms_for=on?'all':'admin'; } else S.formsDemoAll=on;
+      const nt=view.querySelector('#sfAllNote'); if(nt) nt.textContent=on?'Open to all full members.':'For now only you can send it.'; toast(on?'Supplier forms are open to all full members':'Supplier forms are back to you only'); }catch(err){ e.target.checked=!on; toast(err.message); } };
   const hkAll=view.querySelector('#hkAll'); if(hkAll) hkAll.onchange=async e=>{ const on=e.target.checked;
     try{ if(LIVE){ const { error } = await sb.rpc('set_setting',{p_token:S.token,p_key:'hikes_for',p_value:on?'all':'admin'}); if(error) throw new Error(error.message); } S.me.hikes_for=on?'all':'admin'; const nt=view.querySelector('#hkAllNote'); if(nt) nt.textContent=on?'Open to all colleagues.':'For now only you see the Hikes tab.'; toast(on?'Hikes are open to all colleagues':'Hikes are back to you only'); }catch(err){ e.target.checked=!on; toast(err.message); } };
   const jf=view.querySelector('#jobsFor'); if(jf) jf.onchange=async()=>{ const v=jf.value, was=(S.me&&S.me.jobs_for)||'admin';
@@ -2483,7 +2619,7 @@ function openDetail(id, opt){
     <div id="claimBox"></div>
     <div class="disclaim"><b>Shared by colleagues.</b> This list is crowdsourced. Eretz Israel Tours takes no responsibility for mistakes. Always confirm details with the supplier before booking, and take care when you add or change information. See a mistake? Tap the red <b>Tap here to report a change</b> button at the top, or use Feedback.</div>
     <p class="stamp">Added by ${esc(who(v.created_by))} on ${fmtDate(v.created_at)}. Last changed by ${esc(who(v.updated_by))} on ${fmtDate(v.updated_at)}. <span class="idtag">${esc(v.id)}</span></p>`;
-  let foot=`<button class="btn primary" id="edit">${S.admin?'Edit':'Edit or suggest a change'}</button>`;
+  let foot=`${formsOn()?'<button class="btn soft" id="sendForm" type="button">Send form to supplier</button>':''}<button class="btn primary" id="edit">${S.admin?'Edit':'Edit or suggest a change'}</button>`;
   if(S.admin){
     foot = `<button class="btn danger" id="del">Delete</button><span style="flex:1"></span>`
       + (v.review_status!=='approved'?'<button class="btn soft" id="rej">Reject</button><button class="btn accent" id="appr">Approve</button>':'') + foot;
@@ -2492,6 +2628,7 @@ function openDetail(id, opt){
   addShare(w,'s',v.id,v.name,()=>openDetail(v.id,opt), v.review_status&&v.review_status!=='approved'?'This supplier is still waiting for review, so colleagues cannot open it yet. Approve it first.':'');
   S.openVendor=v.name; track(v.id,'open'); if(!S.myTop.includes(v.id)) S.myTop=[...S.myTop,v.id];
   w.querySelector('#edit').onclick=()=>openForm(v);
+  const sf=w.querySelector('#sendForm'); if(sf) sf.onclick=()=>openSendForm(v);
   w.querySelector('#upd').onclick=()=>openReport(v);
   const hd=w.querySelector('#hvDo'); if(hd) hd.onclick=()=>hoursVerifyPopup(v);
   const hu=w.querySelector('#hvUndo'); if(hu) hu.onclick=async()=>{ if(hu.dataset.c!=='1'){ hu.dataset.c='1'; hu.textContent='Tap again to undo'; return; } try{ await DB.verifyHours(v.id,''); openDetail(v.id); }catch(e){ toast(e.message); } };
@@ -4465,6 +4602,8 @@ function openForm(v, preset){
       <div class="btn-row" style="margin-top:8px">${('contacts' in navigator && 'select' in navigator.contacts)?'<button type="button" class="btn soft" id="qfContacts">📇 From my contacts</button>':''}<button type="button" class="btn soft" id="qfPasteBtn">📋 Paste text</button><button type="button" class="btn soft" id="qfVcfBtn">📎 Contact card (.vcf)</button><input type="file" id="qfVcf" accept=".vcf,text/vcard,text/x-vcard" hidden></div>
       <div id="qfPasteWrap" hidden style="margin-top:8px"><textarea id="qfText" rows="5" placeholder="Paste an email signature, a WhatsApp contact, a website's contact page, a Google Maps link… Names, phones, emails, websites and map links are picked out."></textarea><div class="btn-row" style="margin-top:6px"><button type="button" class="btn primary" id="qfGo">Fill the form</button></div></div>
       <div id="qfMsg" class="hint" style="margin-top:6px"></div></div>
+    ${!v&&formsOn()&&!(preset&&preset._form)?'<div class="quickfill"><b>📨 Rather the supplier fills it in?</b> <span class="hint">Write the business name below, then send them a details form. Their answers come to Eretz Israel Tours to check.</span><div class="btn-row" style="margin-top:8px"><button type="button" class="btn soft" id="sfNew">Send form to supplier</button></div><div id="sfNewMsg"></div></div>':''}
+    ${preset&&preset._form?'<div class="lockbar">From a supplier\'s details form. Check each field and choose the category. Prices and other details are added after you save, from the Review list.</div>':''}
     <fieldset><legend>Supplier</legend><div class="grid">
       ${inp('name','Vendor or company name','text','Golan Jeeps Ltd.',true,true)}
       <div id="dupBox" class="f wide" hidden></div>
@@ -4517,6 +4656,10 @@ function openForm(v, preset){
   const w=sheet(v?(guarded?'Edit or suggest a change':'Edit supplier'):'New supplier', body, foot);
   const f=w.querySelector('#vf');
   w.querySelector('#cancel').onclick=closeSheet;
+  const sfn=w.querySelector('#sfNew'); if(sfn) sfn.onclick=()=>{ const nm=w.querySelector('#f_name').value.trim();
+    if(nm.length<2){ w.querySelector('#sfNewMsg').innerHTML='<div class="msg err">Write the business name first.</div>'; w.querySelector('#f_name').focus(); return; }
+    if(dupCheck()){ w.querySelector('#sfNewMsg').innerHTML='<div class="msg err">This supplier is already on the list. Open it and send the form from its page.</div>'; return; }
+    openSendForm(null, nm); };
   const tagsIn=f.querySelector('#f_tags'), tagSug=f.querySelector('#tagSug');
   const alsoIn=f.querySelector('#f_also_categories'), alsoSug=f.querySelector('#alsoSug');
   const curCats=()=>({category:f.querySelector('#f_category').value, also_categories:alsoIn.value});
@@ -4607,7 +4750,11 @@ function openForm(v, preset){
       if(changed.length && reason.length<3) probs.push('You changed '+changed.map(k=>k==='tags'?'Specialty guide':(FIELD_LABEL[k]||REVIEW_LABEL[k]||k)).join(', ')+'. Say briefly why, at the bottom.'); }
     if(probs.length){ err.innerHTML=`<div class="msg err">${probs.join(' ')}</div>`; err.scrollIntoView({block:'center'}); return; }
     const btn=w.querySelector('#saveBtn'); btn.disabled=true; btn.textContent='Saving…';
-    try{ const saved=await DB.save(data, reason); if(!v && preset && preset.parent_id && S.admin){ try{ await DB.setSite(saved.id, preset.parent_id, preset.reservation||''); }catch(e){} } closeSheet(); S.tab='vendors'; render();
+    try{ const saved=await DB.save(data, reason); if(!v && preset && preset.parent_id && S.admin){ try{ await DB.setSite(saved.id, preset.parent_id, preset.reservation||''); }catch(e){} }
+      if(!v && preset && preset._form && S.admin){   // D-61: the new entry takes the form; its prices and other details are then applied from Review
+        try{ await DB.formLink(preset._form, saved.id); if(LIVE) await DB.loadForms(); }catch(e){ toast(e.message); }
+        closeSheet(); S.tab='review'; render(); toast('Supplier added. Now tick the prices and details to add from the form.'); return; }
+      closeSheet(); S.tab='vendors'; render();
       if(!v){ openDetail(saved.id); toast(S.admin?'Supplier added. You can add prices, deals and photos now.':'Added. It will be reviewed. You can add prices and photos now.'); }
       else { openDetail(saved.id); toast(saved._request?'Saved. Your 🔒 changes were sent for approval.':'Saved'); } }
     catch(e){ btn.disabled=false; btn.textContent=v?'Save changes':'Add supplier'; err.innerHTML=`<div class="msg err">Couldn't save: ${esc(e.message)}</div>`; }
