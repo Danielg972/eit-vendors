@@ -39,7 +39,7 @@ Shared vendor list for Eretz Israel Tours colleagues. Static single-page app (Gi
 - **Email BCC:** the Email button adds the BCC address from `app_settings.bcc_email` (set in Team tab) unless the colleague opted out (`members.bcc_opt_out`, My settings via their name). First use shows an explainer pop-up. Terms 6a (bold) describes it (version 2026-10-01d). WhatsApp and calls can't be copied.
 - **Documents with black-out:** file kinds now include Price list and Booking confirmation; uploads can be marked "only me and Eretz Israel Tours" (`vendor_files.private`). Before upload, images and PDFs open in a black-out editor (pdf.js + jsPDF from cdnjs); saved files are flattened so hidden text can't be recovered. File tiles show who uploaded.
 
-## Supplier details form (D-61, 19 Oct 2026; built on the branch supplier-form-d61, not live)
+## Supplier details form (D-61, 19 Oct 2026; live for Eretz Israel Tours; the switch for full members is off)
 
 - **Send:** `openSendForm(v, name)` (index.html) from "Send form to supplier" (`#sendForm`, the supplier page's bottom bar) or "Rather the supplier fills it in?" on Add supplier (`#sfNew`). Shown when `formsOn()`: Eretz Israel Tours, or full members when `whoami.forms` (setting `forms_for` = `all`); never a limited member. `supplier_form_new(p_token, p_vendor, p_name)` returns the key once; only its hash is stored. The link is `f/?k=…`.
 - **The supplier's page:** `f/index.html`, like `b/index.html` a page that knows one link and nothing else. It calls `supplier_form_open(p_key)` (business name and expiry only) and `supplier_form_answer(p_key, p_answers)` with the publishable key; `_form_clean` keeps only known fields. Single use, 30 days.

@@ -10,7 +10,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
-## D-61 · A full member can send a supplier a details form; the answers wait in Eretz Israel Tours' review list (built 19 October 2026 on the branch supplier-form-d61; not live)
+## D-61 · A full member can send a supplier a details form; the answers wait in Eretz Israel Tours' review list (live since 19 October 2026 for Eretz Israel Tours only; the switch for full members is off)
 
 **Owner, 19 Oct 2026, 10:13, verbatim:** "Can you integrate that into he app so people can send this form to venders?" (the bilingual Eretz Israel Tours supplier details form made that morning as a separate private Claude page). **About 10:16:** the answers go to Eretz Israel Tours' review list; all full members can send it; the form lives on the app's address. **10:18**, asked whether that meant a separate page on vendors.eretzisraeltours.com showing only the form, and told that the address itself shows a vendors site exists while rule B1 says suppliers never see the app: "Yes that's what I meant". Read as: B1 stands for the app, its list, prices and notes; the form page is the one page on the app's address a supplier may open, and it shows nothing from the app.
 
@@ -36,7 +36,11 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 **Not checked:** the live site and a real phone; WhatsApp opening with the message; a real supplier filling the form; the welcome tour and terms do not mention the form.
 
-**For the owner before going live:** the consent line on the supplier's page ("I agree that Eretz Israel Tours may share these business details with licensed tour guides and travel professionals") is new wording shown to people who are not members; it belongs on the lawyer's list with the other personal-data points. The page lives on the app's address (the owner's choice at 10:18).
+**Owner, 19 Oct 2026, verbatim:** "yes · 2 lawyer list · 3 anyone can share jobs". Go live in the order given; leave "Open supplier forms to all full members" off; the consent line goes on the lawyer's list.
+
+**On production (19 Oct, about 22:55):** main had the records branch merged first (#85, main db3bb56); the D-61 branch was brought up to date with it (README sections kept from both sides); limited-member checks 98/98 and the local probe 77/77 on the merged branch. `2026-10-19_supplier_forms.sql` was applied through the connector as `supplier_forms_2026_10_19`. Checked there: 37 tables, row security on all, 197 functions, 0 table grants, 0 policies; the table and the three helpers closed to anon and authenticated; the 12 new or replaced functions equal the tested build; `forms_for` not set (Eretz Israel Tours only). The D-61 block was added to `supabase/schema.sql`: a clean build equals production in all 197 functions; `supabase/tests/production_fingerprints.txt` holds the 197. The probe on production after go-live, rolled back: **77/77**, nothing left behind.
+
+**Before go-live (kept from the build):** the consent line on the supplier's page ("I agree that Eretz Israel Tours may share these business details with licensed tour guides and travel professionals") is new wording shown to people who are not members; it belongs on the lawyer's list with the other personal-data points. The page lives on the app's address (the owner's choice at 10:18).
 
 ## D-60 · Batch confirm, made safe and faster: a check before saving, already-confirmed prices skipped, all or nothing, one undo (Eretz Israel Tours only; live since 18 October 2026, 20:37)
 
@@ -1015,7 +1019,9 @@ On the owner's word (11 Oct, 08:43: "Create a Jordan valley region"), after his 
 
 ---
 
-## D-11 · Jobs between colleagues, and My days (live; colleagues receive jobs, Eretz Israel Tours posts)
+## D-11 · Jobs between colleagues, and My days (live; any colleague may post a job, since corrected 19 Oct 2026)
+
+**Correction, 19 October 2026 (the owner, verbatim):** "anyone can share jobs". The setting on production is `jobs_for` = `all` (read 19 Oct): every approved full member sees, answers and posts jobs and marks days. Organisations (limited members) still have no Jobs tab and cannot post (C4; `_jobs_post` leaves them out). No app change was needed; only the records said "only Eretz Israel Tours posts". When it was switched to `all` is not in the records; the owner confirms it as it stands. Whether a job is ever charged for is still his open decision.
 
 **Decided by:** the owner (Eretz Israel Tours), in the Vendor Master Claude session, 2 October 2026, 17:16 Israel time (the idea) and 3 October 2026, 20:02–20:47 (the mock-up, the go-ahead to build, and the go-ahead to go live).
 
