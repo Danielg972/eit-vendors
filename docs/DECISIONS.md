@@ -77,7 +77,19 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ## D-59 · Record searches, tabs, hikes, the welcome tour and visit length for Recent activity (live since 18 October 2026, 12:50)
 
-Recorded here by the D-60 session so the number is not used twice: commit 8d132d2 (pull request #82, merged), "D-59: record searches, tabs, hikes, the welcome tour and visit length", migration `supabase/migrations/2026-10-18_usage_log.sql` (applied 18 Oct). That session wrote it in the rulebook's change log (18 Oct, about 13:20, "waiting for the owner (G1)"), but not here, in STATUS or in README, and not in the rulebook's register line (G12); pull request #82 was merged by the owner at 12:50 on 18 Oct (GitHub), so its screen part is live. Its owner words and checks are in the commit message and the rulebook. On the owner's word (18 Oct, with D-60's go), its table and functions were added to `supabase/schema.sql` after checking production: `log_usage` and `activity_feed` there equal the migration file with the comment lines inside the functions removed; the table, its checks, index, RLS and grants match.
+**Owner, 18 Oct 2026, 12:43, verbatim:** "i feel like youre not seeing activity. how can it be someone logs in and doesnt click even one thing?" Offered: record these for Eretz Israel Tours' Recent activity only, with a line for the next terms release. **12:44:** "yes".
+
+**Found before it:** only supplier opens, contact taps, filters switched on, saved changes and the last visit time were recorded; not the terms and welcome tour a new member sees first, searches, browsing, the other tabs, hikes, or how long a visit lasts.
+
+**Built (pull request #82, commit 8d132d2, merged by the owner at 12:50 on 18 Oct):**
+- Database, add and replace only, `supabase/migrations/2026-10-18_usage_log.sql`, on production since 18 Oct (applied as `usage_log_2026_10_18`): table `usage_log` (RLS on, no grants to anon or authenticated, no policies); `log_usage(p_token, p_kind, p_value)` through `_auth` (kinds search, tab, hike, tour, visit; at most 30 a minute; one visit row whose `last_at` moves on); `activity_feed` replaced with the same rows plus `usage_log`, limit 1500 (800 before).
+- Screen: searches once typing stops, tabs, hikes, the tour finished / skipped / left at screen N (not on replay), a beat once a minute while the app is on screen (back after 30 minutes or more is a new visit); Recent activity shows visit length beside the time and lines for searches, hikes, tabs and the tour.
+
+**For the next terms release (G13):** the terms should say the app records searches, pages opened and visit length, seen only by Eretz Israel Tours.
+
+**Records:** first numbered D-52 in the pull request and renumbered before merge (D-52 was the share links). Not written here, in STATUS or README by the session that built it; recorded by the D-60 session on 18 Oct (table and functions added to `supabase/schema.sql`). **19 Oct:** the comment lines inside `log_usage` and `activity_feed` in `supabase/schema.sql` were taken out, because production holds those functions without them; a clean build now equals production in all 187 functions, and `supabase/tests/production_fingerprints.txt` was refreshed to 187 (it still held the 184 of 17 Oct, before D-59 and D-60). Limited-member checks on the clean build: 98 of 98.
+
+**Not checked:** the live calls from a real phone; the building session's tests ran headless on sample data.
 
 ## D-58 · Batch confirm: one way and one kind for several prices at once (Eretz Israel Tours only; live since 17 October 2026, 23:41)
 

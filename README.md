@@ -46,6 +46,12 @@ Shared vendor list for Eretz Israel Tours colleagues. Static single-page app (Gi
 - **Review:** `formsPanel()` / `wireFormsPanel()` read `supplier_forms_list` (Eretz Israel Tours only). Each row comes from `_form_rows(answers, vendor)`: `k`, `label`, `cur` (in the app), `new` (from the supplier), `same`, `tick`. `supplier_form_apply(p_token, p_id, p_keys)` applies the ticked rows: fields through `vendor_save`, prices as new unconfirmed lines through `_price_write` (an agent rate is an agent line), the rest as a note through `review_post`, hours Unverified with the form as source. "Create entry from form" opens `openForm(null, formPreset(f))`; on save `supplier_form_link` ties the form to the new entry. `supplier_form_discard` drops an answer.
 - **Team:** switch `#sfAll` sets `forms_for` through `set_setting`.
 - Table `supplier_forms` (RLS on, no grants, no policies). Migration `supabase/migrations/2026-10-19_supplier_forms.sql`; checks `supabase/tests/supplier_forms/` (`run.sh` builds a local copy and runs the probe and the limited-member checks; `run_probe.py` prints the probe with the migration inside it, for production; `preview_walk.py`).
+## Usage log for Recent activity (D-59, live since 18 Oct 2026, 12:50, #82)
+
+- `usage_log` (member, kind, value, created_at, last_at; RLS on, no grants, no policies). `log_usage(p_token, p_kind, p_value)` through `_auth`: kinds `search`, `tab`, `hike`, `tour`, `visit`; at most 30 rows a minute per member; a `visit` row is one per visit (the app sends a random visit id) and its `last_at` moves on while the app is on screen.
+- The app sends a search once typing stops (not a shorter repeat in the same visit), each tab, each hike opened, the welcome tour finished / skipped / left at screen N (not on replay), and a beat once a minute while it is on screen (back after 30 minutes or more is a new visit).
+- `activity_feed` (Eretz Israel Tours only) shows these lines and the visit length beside the time; limit 1500 rows.
+- Migration `supabase/migrations/2026-10-18_usage_log.sql`. Only Eretz Israel Tours sees it; the terms do not yet say so (next terms release).
 
 ## A confirmed mark on each price line, and a read-only door for the Cockpit (17 Oct 2026, decision D-57; database live since 17 Oct 2026, 22:36; screen live for Eretz Israel Tours since 23:10, pull request #78)
 
