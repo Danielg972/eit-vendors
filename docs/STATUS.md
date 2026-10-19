@@ -4,7 +4,7 @@
 
 *Short, factual status for the Cockpit Steward and other EIT projects. Updated by the Vendor Master session after any change that matters to them. The commit that last changed this file is its version.*
 
-**As of:** 18 October 2026
+**As of:** 19 October 2026
 
 ## Identity
 
@@ -23,7 +23,7 @@ Eretz Israel Tours only. On top of D-58: a "Check before saving" step with the c
 
 ## Usage log (D-59): live since 18 October 2026, 12:50 (#82)
 
-Searches, tabs, hikes opened, how far the welcome tour got and visit length are recorded for Eretz Israel Tours' Recent activity only (`usage_log`, `log_usage`; `supabase/migrations/2026-10-18_usage_log.sql`). Recorded here by the D-60 session from the commit message (8d132d2). Its table and functions are now in `supabase/schema.sql`, checked against production.
+Searches, tabs, hikes opened, how far the welcome tour got and visit length are recorded for Eretz Israel Tours' Recent activity only (`usage_log`, `log_usage`; `activity_feed` reads them; `supabase/migrations/2026-10-18_usage_log.sql`). In `supabase/schema.sql` exactly as on production (19 Oct: a clean build equals production in all 187 functions; `supabase/tests/production_fingerprints.txt` holds the 187). Read on production 19 Oct, about 21:00: 125 rows from 7 members. The next terms release should say this is recorded.
 
 ## Batch confirm (D-58): "Confirm prices…" on a supplier's page, Eretz Israel Tours only: live since 17 October 2026, 23:41 (#80)
 
