@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Supplier details · פרטי ספק</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Eretz Israel Tours: supplier details form · פרטי ספק">
+<meta property="og:title" content="Eretz Israel Tours · Supplier details · פרטי ספק">
+<meta property="og:description" content="Please fill in your business details · נשמח אם תמלאו את פרטי העסק">
+<meta name="theme-color" content="#1f3a2e">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600&family=Secular+One&display=swap">
+<style>
+/* The supplier's side of a details form (D-61). This page knows one business name (from the key in its link) and nothing
+   else from the app: no menu, no login, no link into the list (rule B1). One narrow column, English labels with Hebrew. */
+:root{--ink:#16261e;--ink-2:#4a5a50;--ink-3:#7c8a80;--ground:#f3f5f1;--card:#fff;--line:#dde3db;--wash:#e8ede5;--olive:#1f3a2e;--olive-2:#2c5140;
+  --on-olive:#f3f5f1;--ok:#2f7a4a;--ok-wash:#e3f1e7;--warn:#a66a12;--warn-wash:#fbefd9;--bad:#a63b2e;--bad-wash:#f8e3df;
+  --f-display:"Secular One","Rubik",system-ui,sans-serif;--f-body:"Rubik",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--ink:#e6ebe4;--ink-2:#b0bcb2;--ink-3:#86938a;--ground:#121a15;--card:#1a241e;--line:#2c3a31;--wash:#223029;
+  --olive:#2c5140;--olive-2:#6cc58c;--on-olive:#f3f5f1;--ok:#6cc58c;--ok-wash:#1d3325;--warn:#e0a15a;--warn-wash:#3a2c1a;--bad:#f0907f;--bad-wash:#3a1f1a;color-scheme:dark}}
+:root[data-theme="dark"]{--ink:#e6ebe4;--ink-2:#b0bcb2;--ink-3:#86938a;--ground:#121a15;--card:#1a241e;--line:#2c3a31;--wash:#223029;
+  --olive:#2c5140;--olive-2:#6cc58c;--on-olive:#f3f5f1;--ok:#6cc58c;--ok-wash:#1d3325;--warn:#e0a15a;--warn-wash:#3a2c1a;--bad:#f0907f;--bad-wash:#3a1f1a;color-scheme:dark}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;background:var(--ground);color:var(--ink);font:16px/1.45 var(--f-body)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+[hidden]{display:none!important}
+.wrap{max-width:640px;margin:0 auto;padding:0 16px calc(48px + env(safe-area-inset-bottom,0px))}
+.top{background:var(--card);border-bottom:1px solid var(--line);margin:0 -16px;padding:calc(16px + env(safe-area-inset-top,0px)) 16px 14px}
+.brand{font-size:12px;letter-spacing:.09em;text-transform:uppercase;font-weight:600;color:var(--olive-2)}
+h1{font:400 24px/1.2 var(--f-display);margin:4px 0 0}
+.intro{color:var(--ink-2);margin:10px 0 0;font-size:15px}
+.he{font-weight:400;color:var(--ink-3)}
+section{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-top:14px;display:flex;flex-direction:column;gap:12px}
+h2{font:400 18px/1.2 var(--f-display);margin:0;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline}
+h2 .he{font-family:var(--f-body);font-size:15px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:560px){.grid{grid-template-columns:minmax(0,1fr)}}
+.f{display:flex;flex-direction:column;gap:5px;min-width:0}
+.f.full{grid-column:1/-1}
+label,.lbl{font-weight:600;font-size:14px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.req{color:var(--warn)}
+input[type=text],input[type=tel],input[type=email],input[type=url],input[type=time],select,textarea{width:100%;min-height:44px;border:1px solid var(--line);background:var(--ground);border-radius:7px;padding:9px 10px;font-size:16px}
+input.pre{background:var(--ok-wash)}
+textarea{min-height:80px;resize:vertical}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid var(--olive-2);outline-offset:1px}
+.hint{font-size:13px;color:var(--ink-3);margin:0}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{position:relative}
+.chip input{position:absolute;opacity:0;inset:0}
+.chip span{display:inline-flex;align-items:center;min-height:38px;padding:6px 12px;border:1px solid var(--line);border-radius:999px;font-size:14px;background:var(--ground)}
+.chip input:checked+span{background:var(--wash);border-color:var(--olive-2);color:var(--olive-2);font-weight:600}
+.chip input:focus-visible+span{outline:2px solid var(--olive-2)}
+.hrow{display:grid;grid-template-columns:76px minmax(0,1fr) minmax(0,1fr) auto;gap:8px;align-items:center}
+.hrow .day{font-weight:600;font-size:14px;line-height:1.2}
+.hrow .day small{display:block;color:var(--ink-3);font-weight:400}
+.hrow.off input[type=time]{opacity:.35}
+.closed{display:flex;align-items:center;gap:5px;font-size:13px;color:var(--ink-2);white-space:nowrap}
+@media (max-width:400px){.hrow{grid-template-columns:64px minmax(0,1fr) minmax(0,1fr)}.closed{grid-column:2/-1}}
+.consent{display:flex;gap:10px;align-items:flex-start;font-size:14px;font-weight:400}
+.consent input{margin-top:3px;width:18px;height:18px;flex:none}
+.big{display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;min-height:52px;border:0;border-radius:9px;background:var(--olive-2);color:var(--on-olive);font-weight:600;font-size:16px;padding:8px 12px}
+.big:disabled{opacity:.55}
+.ban{margin-top:14px;border-radius:10px;padding:14px 16px}
+.ban.ok{background:var(--ok-wash);color:var(--ok)}
+.ban.bad{background:var(--bad-wash);color:var(--bad)}
+.ban b{display:block;font-size:17px;margin-bottom:4px}
+.err{background:var(--bad-wash);color:var(--bad);border-radius:8px;padding:10px 12px;font-size:15px;margin:0}
+.foot{margin:22px 0 0;font-size:12.5px;color:var(--ink-3);text-align:center}
+.demo{background:var(--warn-wash);color:var(--warn);font-size:13px;padding:6px 16px;margin:0 -16px}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"><div class="top"><div class="brand">Eretz Israel Tours</div><h1>Supplier details · <span class="he">פרטי ספק</span></h1></div><p class="intro">Loading… · טוען…</p></div>
+<script>
+(function(){
+"use strict";
+const SUPABASE_URL = "https://wjuqtjlrtcywjaspjpwu.supabase.co";
+const SUPABASE_KEY = "sb_publishable_uEEI8iTld1pPzys6GL0QnA_b4WVb_2A";
+const LIVE = /(^|\.)github\.io$/.test(location.hostname) || /(^|\.)eretzisraeltours\.com$/.test(location.hostname);
+const qs = new URLSearchParams(location.search);
+const KEY = qs.get('k') || '';
+const DEMO = !LIVE || (qs.has('demo') && !KEY);
+const EIT_WA = '972559440364';   // Eretz Israel Tours' own business WhatsApp, for photos and price lists
+const app = document.getElementById('app');
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+// The app's own categories and regions, so the answers drop straight into an entry.
+const TYPES = [['Attraction / Site','Site / attraction'],['Activity','Activity / workshop'],['Adventure','Extreme: jeeps, ATV, rappelling, water'],['Restaurant','Restaurant / café'],['Winery','Winery'],['Hotel','Hotel / lodging'],['Transport','Transport'],['Other','Other']];
+const REGIONS = ['Jerusalem','Gush Etzion & Judea','Binyamin & Shomron','Jordan Valley','Dead Sea & Judean Desert','Negev & Arava','Gaza Envelope - עוטף עזה','Eilat','Tel Aviv & Center','Modiin','Shfela','Haifa & Coast','Galilee','Golan','Countrywide'];
+const DAYS = [['Sun','ראשון'],['Mon','שני'],['Tue','שלישי'],['Wed','רביעי'],['Thu','חמישי'],['Fri','שישי'],['Sat','שבת']];
+
+async function api(fn, args){
+  if(DEMO){ await new Promise(r=>setTimeout(r,150)); window.__sent={fn, args};   // preview only: the checks read what would have been sent
+    if(fn==='supplier_form_open') return {business_name:'Sample Workshop', expires_at:new Date(Date.now()+29*86400000).toISOString()};
+    return {ok:true}; }
+  let r; try{ r=await fetch(SUPABASE_URL+'/rest/v1/rpc/'+fn,{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY},body:JSON.stringify(args)}); }
+  catch(e){ throw new Error('No connection. Try again. · אין חיבור לאינטרנט. נסו שוב.'); }
+  let j=null; try{ j=await r.json(); }catch(e){}
+  if(!r.ok){ const e=new Error((j&&j.message)||'Something went wrong. Try again.'); e.code=j&&j.code; throw e; }
+  return j;
+}
+const top=()=>`<div class="top"><div class="brand">Eretz Israel Tours</div><h1>Supplier details · <span class="he" dir="rtl" lang="he">פרטי ספק</span></h1></div>${DEMO?'<p class="demo">Preview with a sample business. Nothing is sent.</p>':''}`;
+const txt=(id,en,he,o)=>{ o=o||{}; return `<div class="f${o.full?' full':''}"><label for="${id}"><span>${en}${o.req?' <span class="req">*</span>':''}</span>${he?`<span class="he" dir="rtl" lang="he">${he}</span>`:''}</label><input type="${o.type||'text'}" id="${id}" name="${id}"${o.dir?` dir="${o.dir}"`:' dir="auto"'}${o.ph?` placeholder="${esc(o.ph)}"`:''}${o.ac?` autocomplete="${o.ac}"`:''}${o.mode?` inputmode="${o.mode}"`:''}${o.val!=null?` value="${esc(o.val)}"`:''}${o.cls?` class="${o.cls}"`:''}></div>`; };
+const area=(id,en,he,ph)=>`<div class="f full"><label for="${id}"><span>${en}</span>${he?`<span class="he" dir="rtl" lang="he">${he}</span>`:''}</label><textarea id="${id}" name="${id}" dir="auto"${ph?` placeholder="${esc(ph)}"`:''}></textarea></div>`;
+const sel=(id,en,he,opts)=>`<div class="f"><label for="${id}"><span>${en}</span>${he?`<span class="he" dir="rtl" lang="he">${he}</span>`:''}</label><select id="${id}" name="${id}"><option value="">Choose… · בחרו</option>${opts.map(o=>`<option value="${esc(o[0])}">${esc(o[1])}</option>`).join('')}</select></div>`;
+
+function formView(F){
+  app.innerHTML=`${top()}
+  <p class="intro">Thank you for sharing your details with Eretz Israel Tours. Fill in what you can; anything you skip can be completed by phone. The details are checked by Eretz Israel Tours before they are used.</p>
+  <p class="intro" dir="rtl" lang="he">תודה! מלאו מה שאפשר, אפשר בעברית או באנגלית. הפרטים נבדקים על ידי Eretz Israel Tours לפני שמשתמשים בהם.</p>
+  <form id="form" novalidate>
+  <section><h2>The business <span class="he" dir="rtl" lang="he">העסק</span></h2><div class="grid">
+    ${txt('name','Business name','שם העסק',{req:1,full:1,val:F.business_name,cls:'pre',ac:'organization'})}
+    ${txt('name_he','Business name in Hebrew, if different','שם העסק בעברית',{full:1,dir:'rtl'})}
+    <div class="f full"><span class="lbl"><span>What kind of business?</span><span class="he" dir="rtl" lang="he">סוג העסק</span></span><div class="chips">${TYPES.map(t=>`<label class="chip"><input type="checkbox" name="type" value="${esc(t[0])}"><span>${esc(t[1])}</span></label>`).join('')}</div></div>
+    ${area('about','What do you offer groups and families?','מה אתם מציעים?','A few lines on the experience, what visitors do, what makes it special.')}
+    ${txt('website','Website','אתר',{type:'url',ph:'https://'})}
+    ${txt('social','Instagram / Facebook','',{})}
+  </div></section>
+  <section><h2>Location <span class="he" dir="rtl" lang="he">מיקום</span></h2><div class="grid">
+    ${txt('address','Full address','כתובת מלאה',{full:1,ac:'street-address'})}
+    ${txt('city','City','עיר',{ac:'address-level2'})}
+    ${sel('region','Region','אזור',REGIONS.map(r=>[r,r]))}
+    ${txt('maps','Google Maps or Waze link','קישור למפה',{full:1,type:'url',ph:'Paste the link to your pin'})}
+    ${txt('parking','Bus parking / drop-off','חניית אוטובוס',{full:1,ph:'Where can a bus stop or park?'})}
+  </div></section>
+  <section><h2>Contact for bookings <span class="he" dir="rtl" lang="he">איש קשר להזמנות</span></h2><div class="grid">
+    ${txt('contact','Name','שם',{req:1,ac:'name'})}
+    ${txt('role','Role','תפקיד',{})}
+    ${txt('phone','Phone','טלפון',{req:1,type:'tel',ac:'tel',ph:'05X-XXX-XXXX',dir:'ltr'})}
+    ${txt('whatsapp','WhatsApp, if different','וואטסאפ',{type:'tel',dir:'ltr'})}
+    ${txt('email','Email','אימייל',{full:1,type:'email',ac:'email',dir:'ltr'})}
+    ${txt('booking_how','How should guides book?','איך מזמינים?',{full:1,ph:'Phone, WhatsApp, online link, how far ahead…'})}
+  </div></section>
+  <section><h2>Opening hours <span class="he" dir="rtl" lang="he">שעות פתיחה</span></h2>
+    <div id="hours">${DAYS.map((d,i)=>`<div class="hrow" id="row_${i}" style="margin-bottom:8px"><div class="day">${d[0]}<small dir="rtl" lang="he">${d[1]}</small></div><input type="time" id="open_${i}" aria-label="${d[0]} opens"><input type="time" id="close_${i}" aria-label="${d[0]} closes"><label class="closed" for="closed_${i}"><input type="checkbox" id="closed_${i}"> Closed · סגור</label></div>`).join('')}</div>
+    <div class="grid">
+      ${txt('last_entry','Last entry','כניסה אחרונה',{ph:'e.g. 1 hour before closing'})}
+      ${sel('shabbat','Open on Shabbat?','פתוח בשבת?',[['closed','Closed on Shabbat (Shomer Shabbat) · סגור בשבת'],['open','Open on Shabbat · פתוח בשבת']])}
+      ${txt('hours_notes','Holidays and seasonal changes','חגים ועונות',{full:1})}
+    </div></section>
+  <section><h2>Groups and the visit <span class="he" dir="rtl" lang="he">קבוצות וביקור</span></h2><div class="grid">
+    ${txt('duration','Typical visit length','משך הביקור',{ph:'e.g. 1.5 hours'})}
+    ${txt('capacity','Group size (min – max)','גודל קבוצה',{ph:'e.g. 10 – 80'})}
+    ${txt('ages','Suitable ages','גילאים',{})}
+    ${txt('languages','Languages','שפות',{ph:'Hebrew, English…'})}
+    ${sel('kosher','Food on site: kosher?','כשרות',[['none','No food served · אין אוכל'],['cert','Kosher, with a certificate · כשר עם תעודה'],['nocert','Kosher, no certificate · כשר בלי תעודה'],['not','Not kosher · לא כשר']])}
+    ${txt('kosher_cert','Certificate (which?)','תעודה',{ph:'e.g. Rabbanut Jerusalem, Mehadrin'})}
+    ${txt('access','Accessibility','נגישות',{full:1,ph:'Wheelchair, strollers, stairs…'})}
+  </div></section>
+  <section><h2>Prices <span class="he" dir="rtl" lang="he">מחירים</span></h2>
+    <p class="hint">Prices in ₪. · מחירים בשקלים.</p><div class="grid">
+    ${txt('p_adult','Adult','מבוגר',{mode:'decimal'})}
+    ${txt('p_child','Child (which ages?)','ילד',{})}
+    ${txt('p_group','Group price / minimum charge','מחיר קבוצה / מינימום',{})}
+    ${txt('p_trade','Rate for licensed guides and agents','מחיר סוכן',{})}
+    ${sel('guide_free','Guide and driver enter free?','מורה דרך ונהג בחינם?',[['Yes, guide and driver free','Yes, guide and driver · כן, שניהם'],['Guide free only','Guide only · מורה דרך בלבד'],['No','No · לא']])}
+    ${sel('vat','Prices include VAT?','כולל מע״מ?',[['including_vat','Include VAT · כולל מע״מ'],['plus_vat','Plus VAT · לא כולל מע״מ'],['exempt','Exempt business · עוסק פטור']])}
+    ${txt('payment','Payment methods and terms','אמצעי תשלום',{full:1,ph:'Credit card, bank transfer, Bit, invoice; when payment is due'})}
+    ${area('cancel','Cancellation policy','מדיניות ביטול','')}
+  </div></section>
+  <section><h2>Visit for guides <span class="he" dir="rtl" lang="he">סיור היכרות למורי דרך</span></h2><div class="grid">
+    ${area('fam','Would you host a group of guides? Suggested days and times','','e.g. Sunday–Thursday mornings, up to 15 guides, about 1 hour')}
+    ${area('notes','Anything else we should know','הערות','')}
+  </div>
+    <label class="consent" for="consent"><input type="checkbox" id="consent"><span>I agree that Eretz Israel Tours may share these business details with licensed tour guides and travel professionals. <span dir="rtl" lang="he">אני מאשר/ת שיתוף פרטי העסק עם מורי דרך ואנשי מקצוע בתיירות.</span></span></label>
+    <p class="hint">Photos or a price list? Send them to Eretz Israel Tours on <a href="https://wa.me/${EIT_WA}" target="_blank" rel="noopener">WhatsApp</a>. · תמונות או מחירון? שלחו לנו בוואטסאפ.</p>
+    <div id="err"></div>
+    <button class="big" id="send" type="submit">Send to Eretz Israel Tours · שליחה</button>
+  </section>
+  </form>
+  <p class="foot">Eretz Israel Tours · eretzisraeltours.com</p>`;
+  const form=app.querySelector('#form'), DK='eit-sf-draft-'+(KEY||'demo').slice(0,12);
+  const fields=[...form.querySelectorAll('input,select,textarea')];
+  const save=()=>{ try{ const o={}; fields.forEach(el=>{ if(!el.id&&el.name!=='type') return; if(el.name==='type') o['type:'+el.value]=el.checked; else o[el.id]=el.type==='checkbox'?el.checked:el.value; }); localStorage.setItem(DK, JSON.stringify(o)); }catch(e){} };
+  try{ const o=JSON.parse(localStorage.getItem(DK)||'null'); if(o) fields.forEach(el=>{ const k=el.name==='type'?'type:'+el.value:el.id; if(!(k in o)) return; if(el.type==='checkbox') el.checked=!!o[k]; else el.value=o[k]; }); }catch(e){}
+  const shade=()=>DAYS.forEach((d,i)=>app.querySelector('#row_'+i).classList.toggle('off', app.querySelector('#closed_'+i).checked)); shade();
+  form.addEventListener('input', save); form.addEventListener('change', ()=>{ save(); shade(); });
+  form.addEventListener('submit', async e=>{ e.preventDefault();
+    const v=id=>(app.querySelector('#'+id).value||'').trim(), err=app.querySelector('#err'), btn=app.querySelector('#send');
+    const miss=[]; if(!v('name')&&!v('name_he')) miss.push('the business name'); if(!v('contact')) miss.push('a contact name'); if(v('phone').replace(/\D/g,'').length<7) miss.push('a phone number');
+    if(miss.length){ err.innerHTML=`<p class="err">Please add ${miss.join(', ')} so Eretz Israel Tours can reach you. · נא למלא שם עסק, איש קשר וטלפון.</p>`; err.scrollIntoView({block:'center'}); return; }
+    const a={}; ['name','name_he','about','website','social','address','city','region','maps','parking','contact','role','phone','whatsapp','email','booking_how','last_entry','shabbat','hours_notes','duration','capacity','ages','languages','kosher','kosher_cert','access','p_adult','p_child','p_group','p_trade','guide_free','vat','payment','cancel','fam','notes'].forEach(k=>{ const x=v(k); if(x) a[k]=x; });
+    a.types=[...form.querySelectorAll('input[name=type]:checked')].map(x=>x.value).join(', ');
+    a.hours=hoursText(); a.consent=app.querySelector('#consent').checked;
+    btn.disabled=true; btn.textContent='Sending… · שולח…'; err.innerHTML='';
+    try{ await api('supplier_form_answer',{p_key:KEY,p_answers:a}); try{ localStorage.removeItem(DK); }catch(x){} doneView(); window.scrollTo(0,0); }
+    catch(x){ btn.disabled=false; btn.textContent='Send to Eretz Israel Tours · שליחה'; err.innerHTML=`<p class="err">${esc(x.message)}</p>`; }
+  });
+}
+// Opening hours as one line, with days that share hours run together: "Sun–Thu 09:00–17:00 · Fri 09:00–13:00 · Sat closed".
+function hoursText(){
+  const each=DAYS.map((d,i)=>{ if(app.querySelector('#closed_'+i).checked) return 'closed'; const o=app.querySelector('#open_'+i).value, c=app.querySelector('#close_'+i).value; return o||c?(o||'?')+'–'+(c||'?'):''; });
+  const out=[]; let i=0;
+  while(i<7){ if(!each[i]){ i++; continue; } let j=i; while(j+1<7&&each[j+1]===each[i]) j++; out.push((j>i?DAYS[i][0]+'–'+DAYS[j][0]:DAYS[i][0])+' '+each[i]); i=j+1; }
+  return out.join(' · ');
+}
+function doneView(){
+  app.innerHTML=`${top()}<div class="ban ok" role="status"><b>Thank you! · תודה!</b>Eretz Israel Tours has your details. The link now closes. · הפרטים התקבלו. הקישור נסגר.</div>
+    <p class="hint" style="margin-top:12px">Photos or a price list? Send them to Eretz Israel Tours on <a href="https://wa.me/${EIT_WA}" target="_blank" rel="noopener">WhatsApp</a>.</p>
+    <p class="foot">Eretz Israel Tours · eretzisraeltours.com</p>`;
+}
+function deadView(msg){
+  const sent=/already sent/i.test(msg), he=sent?'הטופס כבר נשלח. תודה!':/expired/i.test(msg)?'תוקף הקישור פג. בקשו קישור חדש ממי ששלח אותו.':'הקישור אינו פעיל. בקשו קישור חדש ממי ששלח אותו.';
+  app.innerHTML=`${top()}<div class="ban ${sent?'ok':'bad'}" role="alert"><b>${esc(msg)}</b><span dir="rtl" lang="he">${he}</span></div><p class="foot">Eretz Israel Tours · eretzisraeltours.com</p>`;
+}
+(async()=>{
+  if(!KEY&&!DEMO) return deadView('This link is not complete. Ask the person who sent it to send it again.');
+  try{ formView(await api('supplier_form_open',{p_key:KEY})); }
+  catch(e){ const dead=e.code==='28000'||/not active|already sent|expired/i.test(e.message);
+    if(dead) return deadView(e.message);
+    app.innerHTML=`${top()}<div class="ban bad">${esc(e.message)}</div><button class="big" id="retry" type="button" style="margin-top:12px">Try again · נסו שוב</button>`;
+    app.querySelector('#retry').onclick=()=>location.reload(); }
+})();
+})();
+</script>
+</body>
+</html>

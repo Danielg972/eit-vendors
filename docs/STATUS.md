@@ -4,7 +4,7 @@
 
 *Short, factual status for the Cockpit Steward and other EIT projects. Updated by the Vendor Master session after any change that matters to them. The commit that last changed this file is its version.*
 
-**As of:** 18 October 2026
+**As of:** 19 October 2026
 
 ## Identity
 
@@ -16,6 +16,10 @@
 | Schema record | `supabase/schema.sql` (tables, functions, grants), plus `supabase/functions/files/index.ts` (edge function v12) and `supabase/functions/route/index.ts` (edge function `route` v1, D-53) |
 | Terms version | `2026-10-03c` live (adds 2c, organisations as limited members; `2026-10-03a` added 6d, jobs). `2026-10-03d` on the branch `guide-for-clients`: 3a malicious posts, 3c licensed guides and D1, 6e a guide's page for clients, 6f your own page and reviews. All draft, not yet reviewed by a lawyer |
 | Decisions | `docs/DECISIONS.md` (D-1 Cockpit boundary; D-2 quote tracker; D-3 driver reviews; D-4 transport by vehicle size; D-5 booking sheets; D-6 welcome tour, name, use-and-add rule; D-7 Shomer Shabbat badge, kosher restaurants only; D-8 opening hours, no-certificate needs approval; D-9 verified hours, last entry, hours from websites; D-10 official buttons; D-11 jobs between colleagues and My days, live for Eretz Israel Tours only; D-15 limited members: organisations that are not in tourism; D-13 food nearby only on places; D-12 a guide's page for clients; D-14 claimed pages, disputes, reviews; D-16 licensed guides only, D1 for Eshkol, malicious posts) |
+
+## Supplier details form (D-61): built on the branch supplier-form-d61, 19 October 2026; not live
+
+A full member sends a supplier a link (`f/?k=…`, one supplier, single use, 30 days) to a plain Eretz Israel Tours form that shows only the business name. The answers wait in Review → Supplier forms until Eretz Israel Tours ticks what to keep; prices come in as new lines from the supplier, not confirmed; agent rates stay away from organisations. Team switch "Open supplier forms to all full members" (off). Database file `supabase/migrations/2026-10-19_supplier_forms.sql`, not on production. Waits for the owner's word to go live (G1, G11).
 
 ## Batch confirm with a check before saving, skip and one undo (D-60): live since 18 October 2026, 20:37 (#83)
 
