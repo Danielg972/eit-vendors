@@ -4613,7 +4613,7 @@ revoke all on function public.price_marks(text, text) from public; grant execute
 revoke all on function public.cockpit_supplier_search(text, text) from public; grant execute on function public.cockpit_supplier_search(text, text) to anon, authenticated;
 revoke all on function public.cockpit_supplier_prices(text, text) from public; grant execute on function public.cockpit_supplier_prices(text, text) to anon, authenticated;
 
--- ===== Added 2026-10-18 (D-59): usage_log, log_usage, activity_feed replaced (supabase/migrations/2026-10-18_usage_log.sql; on production since 18 Oct 2026, applied by the usage-log session; recorded here on 18 Oct by the D-60 session after checking production: log_usage and activity_feed equal this text with the comment lines inside them removed; the table, its checks, index, RLS and grants match) =====
+-- ===== Added 2026-10-18 (D-59): usage_log, log_usage, activity_feed replaced (supabase/migrations/2026-10-18_usage_log.sql; on production since 18 Oct 2026, applied by the usage-log session; recorded here on 18 Oct by the D-60 session after checking production; on 19 Oct the comment lines inside log_usage and activity_feed were taken out so a clean build equals production exactly (all 187 function fingerprints, read 19 Oct); the table, its checks, index, RLS and grants match) =====
 create table if not exists public.usage_log (
   id bigint generated always as identity primary key,
   member text not null,
@@ -4639,7 +4639,6 @@ begin
   m := public._auth(p_token);
   if p_kind not in ('search','tab','hike','tour','visit') then return; end if;
   if p_kind = 'visit' then
-    -- one row per visit (the app sends a random visit id); while the app is on screen it moves last_at on
     update public.usage_log set last_at = now() where member = m.email and kind = 'visit' and value = v and created_at > now() - interval '1 day';
     if found then return; end if;
   end if;
@@ -4662,11 +4661,9 @@ begin
   me := lower((public._auth(p_token, true)).email);
   return coalesce((select json_agg(e order by e.at desc) from (
     select * from (
-      -- joined, and last opened
       select m.created_at as at, m.email as who, 'joined' as kind, 'asked to join' as what, null::text as vendor_id, coalesce(nullif(m.role,''),'') as detail
         from public.members m where m.created_at > since
       union all select m.last_seen_at, m.email, 'seen', 'last opened the app', null, '' from public.members m where m.last_seen_at > since
-      -- taps and filters
       union all select a.created_at, a.member, 'tap',
           case a.action when 'open' then 'opened' when 'call' then 'tapped Call on' when 'whatsapp' then 'tapped WhatsApp on'
             when 'email' then 'tapped Email on' when 'website' then 'opened the website of' when 'waze' then 'tapped Waze for'
@@ -4675,7 +4672,6 @@ begin
             else a.action end, a.vendor_id, ''
         from public.action_log a where a.created_at > since
       union all select f.created_at, f.member, 'filter', 'filtered by ' || f.kind, null, f.value from public.filter_log f where f.created_at > since
-      -- additions and changes
       union all select v.created_at, v.created_by, 'add', 'added the supplier', v.id, v.category || case when v.review_status = 'pending' then ' · waiting for your review' else '' end
         from public.vendors v where v.created_at > since
       union all select v.updated_at, v.updated_by, 'edit', 'edited', v.id, 'last change only'
@@ -4706,7 +4702,6 @@ begin
       union all select h.created_at, h.added_by, 'add', 'added a hike', null, h.name from public.hikes h where h.created_at > since
       union all select h.created_at, h.author, 'add', 'wrote a hike report', null, '' from public.hike_reports h where h.created_at > since
       union all select f.created_at, f.author, 'report', 'sent feedback', null, f.kind || ': ' || left(f.message, 200) from public.feedback f where f.created_at > since
-      -- D-59: searches, tabs, hikes opened, the welcome tour, and how long a visit lasted
       union all select u.created_at, u.member, u.kind,
           case u.kind when 'search' then 'searched for' when 'tab' then 'opened the tab' when 'hike' then 'opened the hike'
             when 'tour' then 'welcome tour:' else 'was in the app' end,
