@@ -4634,8 +4634,8 @@ function openForm(v, preset){
     </div></fieldset>
     <fieldset><legend>Pricing</legend><div class="grid">
       <div class="f wide" id="freeWrap"><button type="button" class="btn soft" id="freeBtn">🆓 It's free (no entrance fee)</button></div>
-      ${lim()?'':`${inp('agentPrice','Agent price (ours)','number','0')}${sel('agentPriceVatTreatment','Agent price VAT',VAT)}`}
-      ${noPrice?'':`${inp('listedPrice',lim()?'Listed price':'Listed price (public)','number','0')}${sel('listedPriceVatTreatment','Listed price VAT',VAT)}`}
+      ${lim()?'':`${inp('agentPrice','Agent price (ours)','number','Empty if unknown')}${sel('agentPriceVatTreatment','Agent price VAT',VAT)}`}
+      ${noPrice?'':`${inp('listedPrice',lim()?'Listed price':'Listed price (public)','number','Empty if unknown')}${sel('listedPriceVatTreatment','Listed price VAT',VAT)}`}
       ${sel('currency','Currency',['ILS','USD','EUR'])}${sel('priceBasis','Price basis',BASIS)}
       ${noPrice?'':inp('maxPax','Max people for this price','number','15')}${inp('payTerms','Payment terms','text','50% deposit, balance on arrival',true)}
     </div><p class="hint" style="margin:8px 0 0">Leave VAT as Unknown if you're not sure.</p></fieldset>
@@ -4714,7 +4714,14 @@ function openForm(v, preset){
     kf.onchange=async()=>{ const f0=kf.files[0]; kf.value=''; if(!f0) return; kcb.disabled=true; km.textContent='Uploading…';
       try{ const fl=await shrink(f0); if(fl.size>10485760) throw new Error('That file is over 10 MB'); await DB.upload(v.id, fl, 'Kosher certificate', null, false); km.textContent='✓ Certificate added. It shows on the supplier page.'; toast('Kosher certificate added'); }
       catch(e){ km.textContent=e.message; } kcb.disabled=false; }; }
-  const fb=f.querySelector('#freeBtn'); if(fb) fb.onclick=()=>{ const ap=f.querySelector('#f_agentPrice'); if(ap) ap.value='0'; const lp=f.querySelector('#f_listedPrice'); if(lp) lp.value='0'; const vt=f.querySelector('#f_agentPriceVatTreatment'); if(vt) vt.value='not_applicable'; const lt=f.querySelector('#f_listedPriceVatTreatment'); if(lt) lt.value='not_applicable'; toast('Marked free'); };
+  // The free button works both ways: once a price is 0 it offers to take "free" off again, so a wrong tap is never stuck.
+  const fb=f.querySelector('#freeBtn'); if(fb){ const ap=f.querySelector('#f_agentPrice'), lp=f.querySelector('#f_listedPrice'), vt=f.querySelector('#f_agentPriceVatTreatment'), lt=f.querySelector('#f_listedPriceVatTreatment');
+    const zero=e=>!!e && String(e.value).trim()!=='' && Number(e.value)===0, isFree=()=>zero(ap)||zero(lp);
+    const drawFree=()=>{ fb.textContent=isFree()?'↩ Not free: clear the 0 price':'🆓 It\'s free (no entrance fee)'; };
+    fb.onclick=()=>{ if(isFree()){ [[ap,vt],[lp,lt]].forEach(([e,t])=>{ if(zero(e)){ e.value=''; if(t) t.value=''; } }); toast('Free taken off. Type the price, or leave it empty.'); }
+      else { if(ap) ap.value='0'; if(lp) lp.value='0'; if(vt) vt.value='not_applicable'; if(lt) lt.value='not_applicable'; toast('Marked free'); }
+      drawFree(); };
+    [ap,lp].forEach(e=>e&&e.addEventListener('input',drawFree)); drawFree(); }
   const langIn=f.querySelector('#f_languages'), langSug=f.querySelector('#langSug');
   const langList=()=>langIn.value.split(',').map(t=>t.trim()).filter(Boolean);
   const drawLang=()=>{ const have=langList().map(t=>t.toLowerCase()); langSug.innerHTML=LANG_OPTS.map(l=>`<button type="button" class="mini${have.includes(l.toLowerCase())?' on':''}" data-lang="${esc(l)}">${have.includes(l.toLowerCase())?'✓ ':''}${esc(l)}</button>`).join('');
