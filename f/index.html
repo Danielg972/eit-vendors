@@ -117,7 +117,7 @@ function formView(F){
     <div class="f full"><span class="lbl"><span>What kind of business?</span><span class="he" dir="rtl" lang="he">סוג העסק</span></span><div class="chips">${TYPES.map(t=>`<label class="chip"><input type="checkbox" name="type" value="${esc(t[0])}"><span>${esc(t[1])}</span></label>`).join('')}</div></div>
     ${area('about','What do you offer groups and families?','מה אתם מציעים?','A few lines on the experience, what visitors do, what makes it special.')}
     ${txt('website','Website','אתר',{type:'url',ph:'https://'})}
-    ${txt('social','Instagram / Facebook','',{})}
+    ${area('links','Instagram, Facebook, TikTok, TripAdvisor, Google business page: paste the links, one per line','קישורים: אינסטגרם, פייסבוק, טיקטוק, טריפאדבייזר, גוגל','https://instagram.com/…')}
   </div></section>
   <section><h2>Location <span class="he" dir="rtl" lang="he">מיקום</span></h2><div class="grid">
     ${txt('address','Full address','כתובת מלאה',{full:1,ac:'street-address'})}
@@ -128,6 +128,7 @@ function formView(F){
   </div></section>
   <section><h2>Contact for bookings <span class="he" dir="rtl" lang="he">איש קשר להזמנות</span></h2><div class="grid">
     ${txt('contact','Name','שם',{req:1,ac:'name'})}
+    ${txt('contact_he','Name in Hebrew, if different','שם בעברית',{dir:'rtl'})}
     ${txt('role','Role','תפקיד',{})}
     ${txt('phone','Phone','טלפון',{req:1,type:'tel',ac:'tel',ph:'05X-XXX-XXXX',dir:'ltr'})}
     ${txt('whatsapp','WhatsApp, if different','וואטסאפ',{type:'tel',dir:'ltr'})}
@@ -182,7 +183,7 @@ function formView(F){
     const v=id=>(app.querySelector('#'+id).value||'').trim(), err=app.querySelector('#err'), btn=app.querySelector('#send');
     const miss=[]; if(!v('name')&&!v('name_he')) miss.push('the business name'); if(!v('contact')) miss.push('a contact name'); if(v('phone').replace(/\D/g,'').length<7) miss.push('a phone number');
     if(miss.length){ err.innerHTML=`<p class="err">Please add ${miss.join(', ')} so Eretz Israel Tours can reach you. · נא למלא שם עסק, איש קשר וטלפון.</p>`; err.scrollIntoView({block:'center'}); return; }
-    const a={}; ['name','name_he','about','website','social','address','city','region','maps','parking','contact','role','phone','whatsapp','email','booking_how','last_entry','shabbat','hours_notes','duration','capacity','ages','languages','kosher','kosher_cert','access','p_adult','p_child','p_group','p_trade','guide_free','vat','payment','cancel','fam','notes'].forEach(k=>{ const x=v(k); if(x) a[k]=x; });
+    const a={}; ['name','name_he','about','website','links','address','city','region','maps','parking','contact','contact_he','role','phone','whatsapp','email','booking_how','last_entry','shabbat','hours_notes','duration','capacity','ages','languages','kosher','kosher_cert','access','p_adult','p_child','p_group','p_trade','guide_free','vat','payment','cancel','fam','notes'].forEach(k=>{ const x=v(k); if(x) a[k]=x; });
     a.types=[...form.querySelectorAll('input[name=type]:checked')].map(x=>x.value).join(', ');
     a.hours=hoursText(); a.consent=app.querySelector('#consent').checked;
     btn.disabled=true; btn.textContent='Sending… · שולח…'; err.innerHTML='';
