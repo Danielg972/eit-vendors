@@ -10,7 +10,9 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
-## D-63 · Hebrew fields for the business name and the contact person (built, not live)
+## D-63 · Hebrew fields for the business name and the contact person (live since 25 Oct 2026, about 19:05)
+
+**Live:** the owner, 25 Oct 2026, 18:56: "Go live". Production read first: 37 tables, 197 functions equal to the record, 0 table grants, 0 policies. Migration applied through the connector at the first try; afterwards 198 functions, every fingerprint equal to supabase/tests/production_fingerprints.txt; production_probe.sql run on production as a rolled-back transaction: 39 checks, 0 failed, nothing left behind. Pull request #89 merged (main 28d1916).
 
 **Owner, 25 Oct 2026, verbatim:** "I want to start having Hebrew fields for the names of the business and [a Hebrew] option for contact people".
 
@@ -25,7 +27,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 **Implementation choices (the owner may change any):** Hebrew boxes are optional; the Hebrew name shows on the card only when the English name does not already contain it; no check that the Hebrew name is in Hebrew letters; the bracket helper only suggests; existing bracketed names are left as they are.
 
-## D-62 · Online links on a supplier's page: social media, TripAdvisor, Google business page (built, not live)
+## D-62 · Online links on a supplier's page: social media, TripAdvisor, Google business page (live since 25 Oct 2026, about 19:05)
 
 **Owner, 25 Oct 2026, verbatim:** "Make a link for social media", then "Also tripadvisor and Google business page", then, after seeing a mock-up: "Build it".
 
