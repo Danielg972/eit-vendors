@@ -846,6 +846,9 @@ create table public.vendors (
   claimed_at timestamp with time zone,
   archived_at timestamp with time zone,
   merged_into text default ''::text not null,
+  links text default ''::text not null,
+  name_he text default ''::text not null,
+  "contactPerson_he" text default ''::text not null,
   constraint vendors_pkey PRIMARY KEY (id),
   constraint vendors_active_check CHECK ((active = ANY (ARRAY['Active'::text, 'Inactive'::text]))),
   constraint "vendors_agentPriceVatTreatment_check" CHECK (("agentPriceVatTreatment" = ANY (ARRAY[''::text, 'including_vat'::text, 'plus_vat'::text, 'not_applicable'::text]))),
@@ -873,7 +876,9 @@ create table public.vendors (
   constraint vendors_reservation_check CHECK ((reservation = ANY (ARRAY[''::text, 'required'::text, 'recommended'::text, 'not_needed'::text]))),
   constraint vendors_review_status_check CHECK ((review_status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text]))),
   constraint vendors_tags_check CHECK ((length(tags) <= 300)),
-  constraint vendors_merged_into_check check (length(merged_into) <= 40)
+  constraint vendors_merged_into_check check (length(merged_into) <= 40),
+  constraint vendors_links_check CHECK (((length(links) <= 6000) AND ((links = ''::text) OR (links ~* '^https?://\S+(\nhttps?://\S+)*$'::text)))),
+  constraint vendors_hebrew_check CHECK (((length(name_he) <= 200) AND (length("contactPerson_he") <= 200)))
 );
 alter table public.vendors enable row level security;
 CREATE INDEX vendors_claimed_by_idx ON public.vendors USING btree (claimed_by) WHERE (claimed_by <> ''::text);
@@ -1155,7 +1160,7 @@ CREATE OR REPLACE FUNCTION public._all_fields()
  IMMUTABLE
  SET search_path TO ''
 AS $function$
-  select array['name','category','active','contactPerson','phone','whatsapp','email','website','location','languages','kosher','maxCap','listedPrice','listedPriceVatTreatment','agentPrice','agentPriceVatTreatment','maxPax','priceBasis','currency','payTerms','cancelPolicy','cancelNoticeAmount','cancelNoticeUnit','cancelDayType','cancelPenalty','cancelPolicyVerifiedDate','npResLink','rateReliability','rateService','rateValue','strengths','weaknesses','notes','region','tags','experience_years','agent_link','agent_howto','also_categories','maps_link','hours','hours_last']::text[]
+  select array['name','category','active','contactPerson','phone','whatsapp','email','website','location','languages','kosher','maxCap','listedPrice','listedPriceVatTreatment','agentPrice','agentPriceVatTreatment','maxPax','priceBasis','currency','payTerms','cancelPolicy','cancelNoticeAmount','cancelNoticeUnit','cancelDayType','cancelPenalty','cancelPolicyVerifiedDate','npResLink','rateReliability','rateService','rateValue','strengths','weaknesses','notes','region','tags','experience_years','agent_link','agent_howto','also_categories','maps_link','hours','hours_last','name_he','contactPerson_he','links']::text[]
 $function$
 ;
 
@@ -1192,7 +1197,7 @@ CREATE OR REPLACE FUNCTION public._locked_fields()
  IMMUTABLE
  SET search_path TO ''
 AS $function$
-  select array['name','category','active','contactPerson','phone','whatsapp','email','website','npResLink','listedPrice','listedPriceVatTreatment','agentPrice','agentPriceVatTreatment','maxPax','priceBasis','currency','payTerms','cancelPolicy','cancelNoticeAmount','cancelNoticeUnit','cancelDayType','cancelPenalty','cancelPolicyVerifiedDate']::text[]
+  select array['name','name_he','category','active','contactPerson','contactPerson_he','phone','whatsapp','email','website','npResLink','listedPrice','listedPriceVatTreatment','agentPrice','agentPriceVatTreatment','maxPax','priceBasis','currency','payTerms','cancelPolicy','cancelNoticeAmount','cancelNoticeUnit','cancelDayType','cancelPenalty','cancelPolicyVerifiedDate']::text[]
 $function$
 ;
 
@@ -1345,8 +1350,8 @@ begin
   if r.hours is distinct from o.hours or r.hours_last is distinct from o.hours_last then
     r.hours_verified_at := null; r.hours_verified_by := ''; r.hours_verified_how := ''; r.hours_source := '';
   end if;
-  update public.vendors v set (name,category,active,"contactPerson",phone,whatsapp,email,website,location,languages,kosher,"maxCap","listedPrice","listedPriceVatTreatment","agentPrice","agentPriceVatTreatment","maxPax","priceBasis",currency,"payTerms","cancelPolicy","cancelNoticeAmount","cancelNoticeUnit","cancelDayType","cancelPenalty","cancelPolicyVerifiedDate","npResLink","rateReliability","rateService","rateValue",strengths,weaknesses,notes,region,tags,experience_years,agent_link,agent_howto,also_categories,maps_link,hours,hours_last,hours_source,hours_verified_at,hours_verified_by,hours_verified_how)
-    = (r.name,r.category,r.active,r."contactPerson",r.phone,r.whatsapp,r.email,r.website,r.location,r.languages,r.kosher,r."maxCap",r."listedPrice",r."listedPriceVatTreatment",r."agentPrice",r."agentPriceVatTreatment",r."maxPax",r."priceBasis",r.currency,r."payTerms",r."cancelPolicy",r."cancelNoticeAmount",r."cancelNoticeUnit",r."cancelDayType",r."cancelPenalty",r."cancelPolicyVerifiedDate",r."npResLink",r."rateReliability",r."rateService",r."rateValue",r.strengths,r.weaknesses,r.notes,r.region,r.tags,r.experience_years,r.agent_link,r.agent_howto,r.also_categories,r.maps_link,r.hours,r.hours_last,r.hours_source,r.hours_verified_at,r.hours_verified_by,r.hours_verified_how)
+  update public.vendors v set (name,category,active,"contactPerson",phone,whatsapp,email,website,location,languages,kosher,"maxCap","listedPrice","listedPriceVatTreatment","agentPrice","agentPriceVatTreatment","maxPax","priceBasis",currency,"payTerms","cancelPolicy","cancelNoticeAmount","cancelNoticeUnit","cancelDayType","cancelPenalty","cancelPolicyVerifiedDate","npResLink","rateReliability","rateService","rateValue",strengths,weaknesses,notes,region,tags,experience_years,agent_link,agent_howto,also_categories,maps_link,hours,hours_last,hours_source,hours_verified_at,hours_verified_by,hours_verified_how,name_he,"contactPerson_he",links)
+    = (r.name,r.category,r.active,r."contactPerson",r.phone,r.whatsapp,r.email,r.website,r.location,r.languages,r.kosher,r."maxCap",r."listedPrice",r."listedPriceVatTreatment",r."agentPrice",r."agentPriceVatTreatment",r."maxPax",r."priceBasis",r.currency,r."payTerms",r."cancelPolicy",r."cancelNoticeAmount",r."cancelNoticeUnit",r."cancelDayType",r."cancelPenalty",r."cancelPolicyVerifiedDate",r."npResLink",r."rateReliability",r."rateService",r."rateValue",r.strengths,r.weaknesses,r.notes,r.region,r.tags,r.experience_years,r.agent_link,r.agent_howto,r.also_categories,r.maps_link,r.hours,r.hours_last,r.hours_source,r.hours_verified_at,r.hours_verified_by,r.hours_verified_how,r.name_he,r."contactPerson_he",r.links)
   where v.id = p_id returning * into r;
   return r;
 end $function$
@@ -2382,6 +2387,9 @@ begin
   foreach f in array public._all_fields() loop
     clean := clean || jsonb_build_object(f, left(coalesce(p_data->>f,''), 2000));
   end loop;
+  -- D-62: online links, http and https only, one per line, at most 10 (a bad one is refused). D-63: the Hebrew name and contact.
+  clean := clean || jsonb_build_object('links', public._links_clean(left(coalesce(p_data->>'links',''), 6000), true),
+    'name_he', left(coalesce(p_data->>'name_he',''), 200), 'contactPerson_he', left(coalesce(p_data->>'contactPerson_he',''), 200));
   -- Kosher rule (D-7, D-8): no non-kosher restaurants; a restaurant that is kosher without a certificate is an exception Eretz Israel Tours approves.
   is_rest := (clean->>'category') = 'Restaurant' or (clean->>'also_categories') ~* '(^|,)\s*Restaurant\s*(,|$)';
   if is_rest and (clean->>'kosher') ~* '^\s*(not kosher|non[- ]?kosher|kosher[- ]style)' then raise exception 'The list does not accept non-kosher restaurants.'; end if;
@@ -2410,8 +2418,8 @@ begin
       foreach f in array agent_fields loop clean := clean || jsonb_build_object(f, ''); end loop;
     end if;
     select * into r from jsonb_populate_record(null::public.vendors, clean);
-    insert into public.vendors (name,category,active,"contactPerson",phone,whatsapp,email,website,location,languages,kosher,"maxCap","listedPrice","listedPriceVatTreatment","agentPrice","agentPriceVatTreatment","maxPax","priceBasis",currency,"payTerms","cancelPolicy","cancelNoticeAmount","cancelNoticeUnit","cancelDayType","cancelPenalty","cancelPolicyVerifiedDate","npResLink","rateReliability","rateService","rateValue",strengths,weaknesses,notes,region,tags,experience_years,agent_link,agent_howto,also_categories,maps_link,hours,hours_last)
-    values (r.name,r.category,r.active,r."contactPerson",r.phone,r.whatsapp,r.email,r.website,r.location,r.languages,r.kosher,r."maxCap",r."listedPrice",r."listedPriceVatTreatment",r."agentPrice",r."agentPriceVatTreatment",r."maxPax",r."priceBasis",r.currency,r."payTerms",r."cancelPolicy",r."cancelNoticeAmount",r."cancelNoticeUnit",r."cancelDayType",r."cancelPenalty",r."cancelPolicyVerifiedDate",r."npResLink",r."rateReliability",r."rateService",r."rateValue",r.strengths,r.weaknesses,r.notes,r.region,r.tags,r.experience_years,r.agent_link,r.agent_howto,r.also_categories,r.maps_link,r.hours,r.hours_last)
+    insert into public.vendors (name,category,active,"contactPerson",phone,whatsapp,email,website,location,languages,kosher,"maxCap","listedPrice","listedPriceVatTreatment","agentPrice","agentPriceVatTreatment","maxPax","priceBasis",currency,"payTerms","cancelPolicy","cancelNoticeAmount","cancelNoticeUnit","cancelDayType","cancelPenalty","cancelPolicyVerifiedDate","npResLink","rateReliability","rateService","rateValue",strengths,weaknesses,notes,region,tags,experience_years,agent_link,agent_howto,also_categories,maps_link,hours,hours_last,name_he,"contactPerson_he",links)
+    values (r.name,r.category,r.active,r."contactPerson",r.phone,r.whatsapp,r.email,r.website,r.location,r.languages,r.kosher,r."maxCap",r."listedPrice",r."listedPriceVatTreatment",r."agentPrice",r."agentPriceVatTreatment",r."maxPax",r."priceBasis",r.currency,r."payTerms",r."cancelPolicy",r."cancelNoticeAmount",r."cancelNoticeUnit",r."cancelDayType",r."cancelPenalty",r."cancelPolicyVerifiedDate",r."npResLink",r."rateReliability",r."rateService",r."rateValue",r.strengths,r.weaknesses,r.notes,r.region,r.tags,r.experience_years,r.agent_link,r.agent_howto,r.also_categories,r.maps_link,r.hours,r.hours_last,r.name_he,r."contactPerson_he",r.links)
     returning * into r;
     -- a member who adds his own business does not rate it (D-14)
     if public._is_own(r, m) then update public.vendors set "rateReliability" = '', "rateService" = '', "rateValue" = '', strengths = '', weaknesses = '' where id = r.id; end if;
@@ -2423,6 +2431,10 @@ begin
   -- An app version from before opening hours existed sends no "hours": keep what is stored.
   if not (p_data ? 'hours') then clean := clean || jsonb_build_object('hours', coalesce(cur->>'hours','')); end if;
   if not (p_data ? 'hours_last') then clean := clean || jsonb_build_object('hours_last', coalesce(cur->>'hours_last','')); end if;
+  -- An app version from before D-62 / D-63 sends no links and no Hebrew fields: keep what is stored.
+  if not (p_data ? 'links') then clean := clean || jsonb_build_object('links', coalesce(cur->>'links','')); end if;
+  if not (p_data ? 'name_he') then clean := clean || jsonb_build_object('name_he', coalesce(cur->>'name_he','')); end if;
+  if not (p_data ? 'contactPerson_he') then clean := clean || jsonb_build_object('contactPerson_he', coalesce(cur->>'contactPerson_he','')); end if;
   if m.is_admin then
     r := public._vendor_apply(p_data->>'id', clean);
     return json_build_object('vendor', public._vendor_view(r.id, true), 'request', false);
@@ -2584,7 +2596,7 @@ $function$;
 create or replace function public._booking_json(b public.bookings)
  returns json language sql stable security definer set search_path to ''
 as $function$
-  select json_build_object('id',b.id,'vendor_id',b.vendor_id,'vendor_name',(select v.name from public.vendors v where v.id = b.vendor_id),
+  select json_build_object('id',b.id,'vendor_id',b.vendor_id,'vendor_name',(select v.name from public.vendors v where v.id = b.vendor_id),'vendor_name_he',(select v.name_he from public.vendors v where v.id = b.vendor_id),
     'key',b.link_key,'status',b.status,'client_ref',b.client_ref,'booker_name',b.booker_name,'booker_phone',b.booker_phone,
     'date_from',b.date_from,'date_to',b.date_to,'days',b.days,'day_plan',b.day_plan,'terms_off',b.terms_off,'pax',b.pax,'service',b.service,'seats',b.seats,'tourists',b.tourists,
     'pickup_time',b.pickup_time,'pickup_place',b.pickup_place,'route',b.route,'dropoff_time',b.dropoff_time,'dropoff_place',b.dropoff_place,
@@ -2861,6 +2873,7 @@ begin
   if b.id is null then raise exception 'This link is not active.' using errcode = '28000'; end if;
   return json_build_object('status',b.status,
     'company',(select v.name from public.vendors v where v.id = b.vendor_id),
+    'company_he',(select v.name_he from public.vendors v where v.id = b.vendor_id),
     'booker_name',b.booker_name,
     'booker_role',(select case when mm.org <> '' then mm.org else mm.role end from public.members mm where mm.email = b.owner limit 1),
     'booker_phone',b.booker_phone,
@@ -4845,10 +4858,10 @@ create or replace function public._form_clean(a jsonb)
  returns jsonb language sql immutable set search_path to ''
 as $function$
   select coalesce((select jsonb_object_agg(k, v) from (
-      select k, left(btrim(coalesce(a->>k, '')), case when k in ('about','cancel','fam','notes') then 1500
+      select k, left(btrim(coalesce(a->>k, '')), case when k in ('about','cancel','fam','notes','links') then 1500
           when k in ('hours','hours_notes','payment','booking_how','parking','access') then 300 else 120 end) as v
       from unnest(array['name','name_he','types','about','website','social','address','city','region','maps','parking',
-        'contact','role','phone','whatsapp','email','booking_how','hours','last_entry','shabbat','hours_notes','duration',
+        'contact','contact_he','links','role','phone','whatsapp','email','booking_how','hours','last_entry','shabbat','hours_notes','duration',
         'capacity','ages','languages','kosher','kosher_cert','access','p_adult','p_child','p_group','p_trade','guide_free',
         'vat','payment','cancel','fam','notes']) k) x
     where v <> ''
@@ -4865,22 +4878,28 @@ revoke all on function public._form_clean(jsonb) from public, anon, authenticate
 create or replace function public._form_rows(a jsonb, v public.vendors)
  returns jsonb language plpgsql stable set search_path to ''
 as $function$
-declare out jsonb := '[]'::jsonb; s text; loc text; shab boolean; num text; f text; d text[] := '{}';
+declare out jsonb := '[]'::jsonb; s text; loc text; shab boolean; num text; f text; d text[] := '{}'; sup text; lk text;
   t text := coalesce(v.tags, '');
 begin
   -- fields of the entry: what the app has now beside what the supplier sent
   loc := nullif(concat_ws(', ', nullif(a->>'address',''), case when coalesce(a->>'city','') <> '' and position(lower(a->>'city') in lower(coalesce(a->>'address',''))) = 0 then a->>'city' end), '');
   shab := t ~* '(^|,)\s*Shomer Shabbat\s*(,|$)';
+  -- D-62: the supplier's links (the links box, or the older single Instagram / Facebook box), added to the ones the entry has
+  sup := public._links_clean(concat_ws(E'\n', nullif(a->>'links',''), nullif(a->>'social','')), false);
+  lk := case when sup <> '' then public._links_clean(concat_ws(E'\n', nullif(coalesce(v.links, ''), ''), sup), false) end;
   for f, s in select * from (values
       ('name', coalesce(nullif(a->>'name',''), a->>'name_he')),
+      ('name_he', a->>'name_he'),
       ('location', loc),
       ('region', a->>'region'),
       ('maps_link', a->>'maps'),
       ('contactPerson', nullif(concat_ws(' · ', nullif(a->>'contact',''), nullif(a->>'role','')), '')),
+      ('contactPerson_he', a->>'contact_he'),
       ('phone', a->>'phone'),
       ('whatsapp', a->>'whatsapp'),
       ('email', a->>'email'),
       ('website', a->>'website'),
+      ('links', lk),
       ('hours', a->>'hours'),
       ('hours_last', a->>'last_entry'),
       ('shabbat', case a->>'shabbat' when 'closed' then 'Yes, closed on Shabbat' when 'open' then 'No, open on Shabbat' end),
@@ -4891,15 +4910,15 @@ begin
       ('cancelPolicy', a->>'cancel')) x(k, n)
   loop
     continue when coalesce(s, '') = '';
-    out := out || jsonb_build_array(jsonb_build_object('k', f, 'label', case f when 'name' then 'Business name' when 'location' then 'Address'
-        when 'region' then 'Region' when 'maps_link' then 'Map pin' when 'contactPerson' then 'Booking contact' when 'phone' then 'Phone'
-        when 'whatsapp' then 'WhatsApp' when 'email' then 'Email' when 'website' then 'Website' when 'hours' then 'Hours'
+    out := out || jsonb_build_array(jsonb_build_object('k', f, 'label', case f when 'name' then 'Business name' when 'name_he' then 'Name in Hebrew' when 'location' then 'Address'
+        when 'region' then 'Region' when 'maps_link' then 'Map pin' when 'contactPerson' then 'Booking contact' when 'contactPerson_he' then 'Booking contact in Hebrew' when 'phone' then 'Phone'
+        when 'whatsapp' then 'WhatsApp' when 'email' then 'Email' when 'website' then 'Website' when 'links' then 'Online links' when 'hours' then 'Hours'
         when 'hours_last' then 'Last entry' when 'shabbat' then 'Shomer Shabbat' when 'kosher' then 'Kosher' when 'languages' then 'Languages'
         when 'payTerms' then 'Payment terms' else 'Cancellation policy' end,
       'cur', case f when 'shabbat' then case when v.id is null then '' when shab then 'Yes, closed on Shabbat' else 'No, open on Shabbat' end
-        when 'name' then coalesce(v.name, '') when 'location' then coalesce(v.location, '') when 'region' then coalesce(v.region, '')
-        when 'maps_link' then coalesce(v.maps_link, '') when 'contactPerson' then coalesce(v."contactPerson", '') when 'phone' then coalesce(v.phone, '')
-        when 'whatsapp' then coalesce(v.whatsapp, '') when 'email' then coalesce(v.email, '') when 'website' then coalesce(v.website, '')
+        when 'name' then coalesce(v.name, '') when 'name_he' then coalesce(v.name_he, '') when 'location' then coalesce(v.location, '') when 'region' then coalesce(v.region, '')
+        when 'maps_link' then coalesce(v.maps_link, '') when 'contactPerson' then coalesce(v."contactPerson", '') when 'contactPerson_he' then coalesce(v."contactPerson_he", '') when 'phone' then coalesce(v.phone, '')
+        when 'whatsapp' then coalesce(v.whatsapp, '') when 'email' then coalesce(v.email, '') when 'website' then coalesce(v.website, '') when 'links' then coalesce(v.links, '')
         when 'hours' then coalesce(v.hours, '') when 'hours_last' then coalesce(v.hours_last, '') when 'kosher' then coalesce(v.kosher, '')
         when 'languages' then coalesce(v.languages, '') when 'payTerms' then coalesce(v."payTerms", '') else coalesce(v."cancelPolicy", '') end,
       'new', s));
@@ -4920,10 +4939,9 @@ begin
   end loop;
   -- everything else, as one note on the entry
   d := d || array_remove(array[
-    case when coalesce(a->>'name','') <> '' and coalesce(a->>'name_he','') <> '' then 'Name in Hebrew: ' || (a->>'name_he') end,
     case when coalesce(a->>'types','') <> '' then 'Kind of business: ' || (a->>'types') end,
     case when coalesce(a->>'about','') <> '' then 'What they offer: ' || (a->>'about') end,
-    case when coalesce(a->>'social','') <> '' then 'Instagram / Facebook: ' || (a->>'social') end,
+    case when sup = '' and coalesce(a->>'links', a->>'social', '') <> '' then 'Online (not a link): ' || left(concat_ws(' ', a->>'links', a->>'social'), 300) end,
     case when coalesce(a->>'parking','') <> '' then 'Bus parking / drop-off: ' || (a->>'parking') end,
     case when coalesce(a->>'booking_how','') <> '' then 'How to book: ' || (a->>'booking_how') end,
     case when coalesce(a->>'hours_notes','') <> '' then 'Holidays and seasons: ' || (a->>'hours_notes') end,
@@ -4938,9 +4956,9 @@ begin
   if array_length(d, 1) > 0 then
     out := out || jsonb_build_array(jsonb_build_object('k', 'details', 'label', 'Other details', 'cur', '', 'new', left(array_to_string(d, E'\n'), 3000)));
   end if;
-  -- same: already what the app has; tick: ticked to start (a changed name is left for Eretz Israel Tours to tick)
+  -- same: already what the app has; tick: ticked to start (a changed name, English or Hebrew, is left for Eretz Israel Tours to tick)
   return coalesce((select jsonb_agg(r || jsonb_build_object('same', lower(btrim(r->>'cur')) = lower(btrim(r->>'new')) and r->>'k' not like 'price%' and r->>'k' <> 'details',
-      'tick', not (lower(btrim(r->>'cur')) = lower(btrim(r->>'new')) and r->>'k' not like 'price%' and r->>'k' <> 'details') and r->>'k' <> 'name' and not (r ? 'na')) order by n)
+      'tick', not (lower(btrim(r->>'cur')) = lower(btrim(r->>'new')) and r->>'k' not like 'price%' and r->>'k' <> 'details') and r->>'k' not in ('name', 'name_he') and not (r ? 'na')) order by n)
     from jsonb_array_elements(out) with ordinality e(r, n)), '[]'::jsonb);
 end $function$;
 revoke all on function public._form_rows(jsonb, public.vendors) from public, anon, authenticated;
@@ -5161,3 +5179,32 @@ as $function$
     'org', org)
   from public.members m where token_hash = public._hash(p_token);
 $function$;
+
+-- ===== Added 2026-10-25 (D-62, D-63): online links on a supplier's page; Hebrew business name and contact (supabase/migrations/2026-10-25_online_links_hebrew_names.sql; built, NOT on production). The three columns and their checks are in the vendors table above; _all_fields, _locked_fields, _vendor_apply, vendor_save, _form_clean, _form_rows, _booking_json and booking_open above are replaced in place. =====
+create or replace function public._links_clean(p text, p_strict boolean default false)
+ returns text language plpgsql immutable set search_path to ''
+as $function$
+declare t text; u text; out text[] := '{}'; seen text[] := '{}';
+begin
+  foreach t in array regexp_split_to_array(btrim(coalesce(p, '')), '\s+') loop
+    continue when t = '';
+    u := t;
+    if u !~* '^https?://' then
+      if u ~* '^[a-z0-9-]+(\.[a-z0-9-]+)+(:[0-9]{1,5})?([/?#]|$)' then u := 'https://' || u;
+      elsif p_strict then raise exception 'Only web links can be saved (https://…). This is not one: %', left(t, 60);
+      else continue; end if;
+    end if;
+    if length(u) > 500 or u !~* '^https?://[a-z0-9-]+(\.[a-z0-9-]+)+(:[0-9]{1,5})?([/?#][^<>"''`\\[:cntrl:]]*)?$' then
+      if p_strict then raise exception 'That link does not look right: %', left(t, 60); end if;
+      continue;
+    end if;
+    continue when lower(u) = any (seen);
+    seen := seen || lower(u); out := out || u;
+  end loop;
+  if coalesce(array_length(out, 1), 0) > 10 then
+    if p_strict then raise exception 'At most 10 online links.'; end if;
+    out := out[1:10];
+  end if;
+  return array_to_string(out, E'\n');
+end $function$;
+revoke all on function public._links_clean(text, boolean) from public, anon, authenticated;

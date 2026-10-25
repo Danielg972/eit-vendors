@@ -69,6 +69,16 @@ main{max-width:760px;margin:0 auto;padding:16px 16px 110px}
 .row:last-child{border-bottom:0}
 .row:hover{background:var(--wash)}
 .row-name{font-weight:600;font-size:16px;min-width:0;overflow-wrap:anywhere}
+.he-name{font-weight:500;font-size:14.5px;color:var(--ink-2);unicode-bidi:isolate;white-space:nowrap}
+.he-title{margin:-4px 0 10px;font-size:17px;font-weight:500;color:var(--ink-2);text-align:start}
+.online .olist{display:grid;background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.orow{display:flex;align-items:center;gap:10px;padding:12px 14px;min-height:48px;color:var(--ink);text-decoration:none;border-top:1px solid var(--line)}
+.orow:first-child{border-top:0}.orow:hover{background:var(--wash)}
+.oname{font-weight:600;flex:none}.osub{color:var(--ink-3);font-size:13.5px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.oext{margin-left:auto;width:18px;height:18px;color:var(--ink-3);flex:none}.oext svg{width:18px;height:18px;display:block}
+.f input[dir="rtl"]{text-align:right}
+.lnk-rows{display:grid;gap:6px}.lnk-row{display:flex;gap:6px;align-items:center}.lnk-row input{flex:1;min-width:0}.lnk-row .lnk-k{font-size:12px;color:var(--ink-3);flex:none;width:8.4em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lnk-row .x{border:1px solid var(--line);background:var(--card);border-radius:8px;width:38px;height:38px;flex:none;font-size:18px;line-height:1;color:var(--ink-3)}
 .row-meta{grid-column:1;font-size:13px;color:var(--ink-2);display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center}
 .row-price{grid-column:2;grid-row:1 / span 2;text-align:right;align-self:center}
 .row-price b{display:block;font-family:var(--f-mono);font-weight:500;font-size:15px}
@@ -780,7 +790,7 @@ const LIVE = /(^|\.)github\.io$/.test(location.hostname) || /(^|\.)eretzisraelto
 // R5 field order (from itinerary_builder R5 saveVendor)
 const R5_FIELDS = ['name','category','active','contactPerson','phone','whatsapp','email','website','location','languages','kosher','maxCap','listedPrice','listedPriceVatTreatment','agentPrice','agentPriceVatTreatment','maxPax','priceBasis','currency','payTerms','cancelPolicy','cancelNoticeAmount','cancelNoticeUnit','cancelDayType','cancelPenalty','cancelPolicyVerifiedDate','npResLink','rateReliability','rateService','rateValue','strengths','weaknesses','notes'];
 const CATEGORIES = ['Hotel','Guide','Transport','Vehicle Rental','Restaurant','Winery','Attraction / Site','Activity','Adventure','National Parks','Travel Agent','Itinerary Planner','Flight','Other'];
-const EXTRA_FIELDS = ['region','tags','experience_years','also_categories','maps_link','hours','hours_last'];
+const EXTRA_FIELDS = ['region','tags','experience_years','also_categories','maps_link','hours','hours_last','name_he','contactPerson_he','links'];
 // Vehicle sizes, used everywhere in Transport: what a company offers (tags), what a quote is for, list filters.
 // Seat ranges follow how Israeli companies sell them: 6-8 seat vans (Vito / V-Class), 9-10, minibuses of 14-16 and 19-20
 // (19 passengers is the limit of the small-bus licence), midibuses of 25-35, buses of 50-60.
@@ -948,6 +958,8 @@ function sample(){
     v({id:'vendor_rs00001',name:'Sample Grill House',category:'Restaurant',tags:'Meat, Group menus',kosher:'Rabbanut',location:'Jerusalem',region:'Jerusalem',agentPrice:'95',priceBasis:'Per person',notes:'Sample details, made up for the preview.'}),
     v({id:'vendor_rs00002',name:'Sample Dairy Café',category:'Restaurant',tags:'Dairy, Mehadrin',kosher:'Rabbanut Mehadrin',location:'Tel Aviv',region:'Tel Aviv & Center',listedPrice:'70',priceBasis:'Per person',notes:'Sample details, made up for the preview.'}),
     // Preview only, for the supplier details form (D-61): invented, as in the mock-up of 19 Oct.
+    v({id:'vendor_ol00001',name:'Sample Olive Press',name_he:'בית בד לדוגמה',category:'Activity',tags:'Workshop, Family',contactPerson:'Sample Host',contactPerson_he:'מארח לדוגמה',phone:'050-000-0062',whatsapp:'050-000-0062',location:'Sample village',region:'Galilee',listedPrice:'60',listedPriceVatTreatment:'including_vat',agentPrice:'45',priceBasis:'Per person',
+      links:'https://www.instagram.com/sample_olive_press\nhttps://www.facebook.com/sampleolivepress\nhttps://www.tripadvisor.com/Attraction_Review-g000000-d0000000-Sample_Olive_Press.html\nhttps://maps.app.goo.gl/SampleOlivePress\nhttps://www.youtube.com/@sampleolivepress\nhttps://www.tiktok.com/@sample_olive_press',notes:'Sample details, made up for the preview.'}),
     v({id:'vendor_sw00001',name:'Sample Workshop',category:'Activity',tags:'Workshop',contactPerson:'Sample Name',phone:'050-000-0000',location:'Old City, Jerusalem',region:'Jerusalem',agentPrice:'75',priceBasis:'Per person',notes:'Sample details, made up for the preview.'}),
     v({id:'vendor_z2c8m1v',name:'Ronit Katz',category:'Guide',phone:'+972 50 777 2211',languages:'English, Hebrew, French',agentPrice:'1600',priceBasis:'Per day',active:'Inactive',notes:'On leave until spring'})
   ];
@@ -1663,7 +1675,7 @@ const wineHere=(c,v)=>winOn() && WINE_HOMES.includes(c) && isWinery(v) && subOk(
 function catOk(v){ const on=catsOn(); if(!on.length) return true; const mine=catsOf(v); return on.some(c=>(mine.includes(c) && subOk(c,v)) || wineHere(c,v)); }
 function filtered(){
   const q=normN(S.q);
-  return S.vendors.filter(v=>catOk(v) && (S.reg==='All'||(v.region||'')===S.reg) && (!q || normN([v.name,v.location,v.region,v.tags,v.contactPerson,v.category,catsOf(v).map(catDisp).join(' '),v.notes,rtHay(v)].join(' ')).includes(q)))
+  return S.vendors.filter(v=>catOk(v) && (S.reg==='All'||(v.region||'')===S.reg) && (!q || normN([v.name,v.name_he,v.location,v.region,v.tags,v.contactPerson,v.contactPerson_he,v.category,catsOf(v).map(catDisp).join(' '),v.notes,rtHay(v)].join(' ')).includes(q)))
     .sort(S.sort==='az' ? (a,b)=>a.name.localeCompare(b.name) : (a,b)=>mixKey(a)-mixKey(b));
 }
 // Mixed order: a shuffle that is different for each person and changes every day, so no supplier sits at the top
@@ -1710,7 +1722,7 @@ function render(){
 function suggestTerms(){
   const seen=new Map();
   const add=(t,kind)=>{ t=String(t||'').trim(); if(t.length<2) return; const k=t.toLowerCase(); if(!seen.has(k)) seen.set(k,{t,kind}); };
-  S.vendors.forEach(v=>{ add(v.name,'Supplier'); add(v.region,'Region'); add(v.location,'Area'); add(v.contactPerson,'Contact'); add(catDisp(v.category),'Category'); String(v.tags||'').split(',').forEach(t=>add(t,t.trim().toLowerCase()===SHABBAT_TAG.toLowerCase()?'Shabbat':'Type')); });
+  S.vendors.forEach(v=>{ add(v.name,'Supplier'); add(v.name_he,'Supplier'); add(v.region,'Region'); add(v.location,'Area'); add(v.contactPerson,'Contact'); add(v.contactPerson_he,'Contact'); add(catDisp(v.category),'Category'); String(v.tags||'').split(',').forEach(t=>add(t,t.trim().toLowerCase()===SHABBAT_TAG.toLowerCase()?'Shabbat':'Type')); });
   return [...seen.values()];
 }
 function viewVendors(){
@@ -1785,7 +1797,7 @@ function drawList(){
   if(!S.vendors.length){ box.innerHTML=`<div class="list"><div class="empty"><h3>No suppliers yet</h3>Tap <b>Add supplier</b> to add the first hotel, guide, bus company or site.</div></div>`; return; }
   box.innerHTML = `<div class="count" style="display:flex;align-items:center;gap:8px">${rows.length} of ${S.vendors.length} suppliers<span style="flex:1"></span><button class="mini" id="sortBtn" type="button" title="Mixed order changes daily so no supplier always comes first">${S.sort==='az'?'Order: A–Z':'Order: Mixed'}</button></div>` + (rows.length? `<div class="list">${rows.map(v=>`
     <button class="row" data-id="${esc(v.id)}">
-      <span class="row-name">${esc(v.name)}</span>
+      <span class="row-name">${esc(v.name)}${heName(v)?` <span class="he-name" dir="rtl" lang="he">${esc(heName(v))}</span>`:''}</span>
       <span class="row-price">${priceLine(v)}</span>
       <span class="row-meta"><span class="cat">${esc(catLabel(v))}</span>${v.region||v.location?`<span>${esc(v.region||v.location)}</span>`:''}${tagsNoShab(v)?`<span class="hint">${esc(tagsNoShab(v))}</span>`:''}${shabPill(v)}${v.category==='Guide'&&v.experience_years?`<span class="hint">${esc(v.experience_years)} yrs</span>`:''}${v.reservation==='required'?'<span class="clip">📅 Reserve ahead</span>':''}${statusPill(v)}${v._prices?`<span class="clip">${v._prices} price${v._prices>1?'s':''}</span>`:''}${v._deals?`<span class="clip">🏷 ${v._deals} deal${v._deals>1?'s':''}</span>`:''}${v._notes?`<span class="clip">💬 ${v._notes}</span>`:''}${v._files?`<span class="clip">📎 ${v._files}</span>`:''}</span>${rtRowHtml(v)}
     </button>`).join('')}</div>` : `<div class="list"><div class="empty"><h3>Nothing matches</h3>Try a shorter search or pick “All”.</div></div>`);
@@ -1926,7 +1938,7 @@ function demoFormsInit(){
            {k:'phone',label:'Phone',cur:'',new:'050-000-1111',same:false,tick:true},{k:'kosher',label:'Kosher',cur:'',new:'Sample Rabbanut',same:false,tick:true},
            {k:'price_agent',label:'Agent price',cur:'',new:'₪60 · from the supplier',price:'60',said:'60',same:false,tick:true}]}];
 }
-const FORM_FIELDS=['name','location','region','maps_link','contactPerson','phone','whatsapp','email','website','hours','hours_last','kosher','languages','payTerms','cancelPolicy'];
+const FORM_FIELDS=['name','name_he','location','region','maps_link','contactPerson','contactPerson_he','phone','whatsapp','email','website','links','hours','hours_last','kosher','languages','payTerms','cancelPolicy'];
 function demoFormRows(f){ const v=S.vendors.find(x=>x.id===f.vendor_id)||{};
   f.rows=f.rows.map(r=>{ if(r.k.startsWith('price')||r.k==='details') return r; const cur=r.k==='shabbat'?(tagHas(v.tags,SHABBAT_TAG)?'Yes, closed on Shabbat':'No, open on Shabbat'):String(v[r.k]||'');
     const same=cur.trim().toLowerCase()===String(r.new).trim().toLowerCase(); return Object.assign({},r,{cur,same,tick:!same&&r.k!=='name'}); }); }
@@ -2407,15 +2419,16 @@ setTimeout(upCheck,1500);
 function vatLabel(x){ const f=VAT.find(p=>p[0]===x); return f&&x?f[1]:''; }
 const AUDIENCES=['Adult','Child','Israeli senior','Senior','Student','Soldier','Group','Private','Vehicle','Other'];
 const DEAL_KINDS=['Credit card club','Coupon site','Coupon code','Group trick','Other'];
-const LOCKED=['name','category','active','contactPerson','phone','whatsapp','email','website','npResLink','listedPrice','listedPriceVatTreatment','agentPrice','agentPriceVatTreatment','maxPax','priceBasis','currency','payTerms','cancelPolicy','cancelNoticeAmount','cancelNoticeUnit','cancelDayType','cancelPenalty','cancelPolicyVerifiedDate'];
-const FIELD_LABEL={kosher:'Kosher',hours:'Opening hours',hours_last:'Last entry and other times',name:'Name',category:'Category',active:'Status',contactPerson:'Contact person',phone:'Phone',whatsapp:'WhatsApp',email:'Email',website:'Website',npResLink:'Park booking link',listedPrice:'Listed price',listedPriceVatTreatment:'Listed price VAT',agentPrice:'Agent price',agentPriceVatTreatment:'Agent price VAT',maxPax:'Max people',priceBasis:'Price basis',currency:'Currency',payTerms:'Payment terms',cancelPolicy:'Cancellation policy',cancelNoticeAmount:'Notice',cancelNoticeUnit:'Notice unit',cancelDayType:'Counted in',cancelPenalty:'Penalty',cancelPolicyVerifiedDate:'Policy checked on',label:'Label',audience:'For',age_from:'Age from',age_to:'Age to',pax_min:'Min people',pax_max:'Max people',season:'Season / dates',price:'Price',vat:'VAT',basis:'Basis',is_agent:'Agent rate',source:'Source',checked_on:'Checked on',note:'Note'};
+const LOCKED=['name','name_he','category','active','contactPerson','contactPerson_he','phone','whatsapp','email','website','npResLink','listedPrice','listedPriceVatTreatment','agentPrice','agentPriceVatTreatment','maxPax','priceBasis','currency','payTerms','cancelPolicy','cancelNoticeAmount','cancelNoticeUnit','cancelDayType','cancelPenalty','cancelPolicyVerifiedDate'];
+const FIELD_LABEL={name_he:'Name in Hebrew',contactPerson_he:'Contact person in Hebrew',links:'Online links',kosher:'Kosher',hours:'Opening hours',hours_last:'Last entry and other times',name:'Name',category:'Category',active:'Status',contactPerson:'Contact person',phone:'Phone',whatsapp:'WhatsApp',email:'Email',website:'Website',npResLink:'Park booking link',listedPrice:'Listed price',listedPriceVatTreatment:'Listed price VAT',agentPrice:'Agent price',agentPriceVatTreatment:'Agent price VAT',maxPax:'Max people',priceBasis:'Price basis',currency:'Currency',payTerms:'Payment terms',cancelPolicy:'Cancellation policy',cancelNoticeAmount:'Notice',cancelNoticeUnit:'Notice unit',cancelDayType:'Counted in',cancelPenalty:'Penalty',cancelPolicyVerifiedDate:'Policy checked on',label:'Label',audience:'For',age_from:'Age from',age_to:'Age to',pax_min:'Min people',pax_max:'Max people',season:'Season / dates',price:'Price',vat:'VAT',basis:'Basis',is_agent:'Agent rate',source:'Source',checked_on:'Checked on',note:'Note'};
 const ic = {
   call:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>',
   wa:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l1.7-5A8.5 8.5 0 1 1 8 19.3z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.5-2-1-1 1a3.5 3.5 0 0 1-2-2l1-1-1-2z"/></svg>',
   mail:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>',
   web:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>',
   maps:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg>',
-  nav:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>'
+  nav:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>',
+  ext:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>'
 };
 // Other companies' marks (WhatsApp, Waze, Google Maps). The app never draws them.
 // If the brand owner's own file is in brand/ (see brand/README.md) it is shown unchanged; otherwise a plain icon.
@@ -2536,6 +2549,42 @@ function contactBar(v){
     a.push(`<a class="act" ${t('maps')} href="${esc(gmap)}" target="_blank" rel="noopener" title="Open with Google Maps" aria-label="Open with Google Maps">${bmark('google-maps',ic.maps)}Google Maps</a>`); }
   return a.length?`<div class="actions">${a.join('')}</div>`:'';
 }
+// ---------- D-62: online links on a supplier's page ----------
+// The owner, 25 Oct 2026: "Make a link for social media", "Also tripadvisor and Google business page", then "Build it".
+// Stored one link per line in vendors.links (http and https only; the database cleans them, _links_clean). Each row is a
+// plain-text name worked out from the address and the app's own plain icon: other companies' logos are never drawn (A7).
+const LINK_KINDS=[[/(^|\.)instagram\.com$/,'Instagram'],[/(^|\.)facebook\.com$|^fb\.com$|^fb\.me$/,'Facebook'],[/(^|\.)tiktok\.com$/,'TikTok'],
+  [/(^|\.)tripadvisor\.[a-z.]+$/,'TripAdvisor'],[/(^|\.)youtube\.com$|^youtu\.be$/,'YouTube'],[/(^|\.)(x|twitter)\.com$/,'X (Twitter)'],[/(^|\.)linkedin\.com$/,'LinkedIn'],
+  [/^maps\.app\.goo\.gl$|^g\.page$|^business\.google\.com$|^g\.co$/,'Google business page']];
+const linkList=v=>String(v&&v.links||'').split(/\s+/).map(t=>t.trim()).filter(t=>/^https?:\/\/[^\s<>"']+$/i.test(t));
+function linkInfo(u){
+  let x; try{ x=new URL(u); }catch(e){ return {name:'Website',sub:'',href:''}; }
+  if(!/^https?:$/.test(x.protocol)) return {name:'Website',sub:'',href:''};
+  const host=x.hostname.toLowerCase().replace(/^www\./,''), seg=x.pathname.split('/').filter(Boolean);
+  let name=(LINK_KINDS.find(k=>k[0].test(host))||[0,''])[1];
+  if(!name && /(^|\.)google\.[a-z.]+$/.test(host) && (seg[0]==='maps'||host.startsWith('maps.'))) name='Google business page';
+  if(!name && host==='goo.gl' && seg[0]==='maps') name='Google business page';
+  let sub='';
+  const handle=h=>h&&!/^(p|reel|reels|stories|explore|watch|share|groups|pages|profile\.php|channel|c|user|in|company|hashtag|events|people|search|maps|place|tr|video)$/i.test(h)?h:'';
+  if(name==='Instagram'||name==='TikTok'||name==='X (Twitter)'){ const h=handle(seg[0]); if(h) sub='@'+h.replace(/^@/,''); }
+  else if(name==='Facebook'){ const h=handle(seg[0]); if(h) sub=h; }
+  else if(name==='YouTube'){ if(seg[0]&&seg[0][0]==='@') sub=seg[0]; }
+  else if(name==='LinkedIn'){ if(seg[1]) sub=seg[1]; }
+  else if(!name) name=host||'Website';
+  try{ sub=decodeURIComponent(sub); }catch(e){}
+  return {name, sub:sub.slice(0,40), href:x.href};
+}
+function onlineBox(v){
+  const L=linkList(v).map(linkInfo).filter(l=>l.href); if(!L.length) return '';
+  return `<fieldset class="online"><legend>Online</legend><div class="olist">${L.map(l=>`<a class="orow" data-track="website" data-v="${esc(v.id)}" href="${esc(l.href)}" target="_blank" rel="noopener"><span class="oname">${esc(l.name)}</span>${l.sub?`<span class="osub" dir="auto">${esc(l.sub)}</span>`:''}<span class="oext" aria-hidden="true">${ic.ext}</span></a>`).join('')}</div></fieldset>`;
+}
+// ---------- D-63: the Hebrew name ----------
+// The owner, 25 Oct 2026: "I want to start having Hebrew fields for the names of the business and [a Hebrew] option for contact people".
+// Shown under the English name unless the English name already carries the same Hebrew in brackets ("Name (שם)").
+const HEB=/[\u0590-\u05FF]/;
+const heName=v=>{ const h=String(v&&v.name_he||'').trim(); return h && !String(v.name||'').includes(h) ? h : ''; };
+// "Tractor Tours Sample (טרקטורונים לדוגמה)" → the Hebrew in brackets, offered (never saved on its own) when name_he is empty.
+const heFromName=n=>{ const m=String(n||'').match(/[(（]([^()（）]*[\u0590-\u05FF][^()（）]*)[)）]/); return m?m[1].trim():''; };
 function money(cur,p){ if(String(p).trim()!=='' && Number(p)===0) return 'Free'; return (CUR_SIGN[cur]||'')+Number(p).toLocaleString('en-US'); }
 function priceWho(p){
   let w=p.audience; if(p.audience==='Child' && (p.age_from||p.age_to)) w+=` ${p.age_from||'0'}–${p.age_to||'?'}`;
@@ -2572,12 +2621,12 @@ function openDetail(id, opt){
   const notice=v.cancelNoticeAmount?`${esc(v.cancelNoticeAmount)} ${esc((v.cancelNoticeUnit||'').toLowerCase())}${v.cancelDayType?' ('+esc(v.cancelDayType.toLowerCase())+')':''}`:'';
   const rating=['rateReliability','rateService','rateValue'].map((k,i)=>v[k]?`${['Reliability','Service','Value'][i]} <b class="mono">${esc(v[k])}/5</b>`:'').filter(Boolean).join(' · ');
   const sections=[
-    ['Contact',rows([['Contact',esc(v.contactPerson)],['Phone',v.phone?`<span class="mono">${esc(v.phone)}</span>`:''],['WhatsApp',v.whatsapp?`<span class="mono">${esc(v.whatsapp)}</span>`:''],['Email',esc(v.email)],['Website',esc(v.website)],['Region',esc(v.region)],[v.category==='Guide'?'Guide details':'Type',esc(tagsNoShab(v))],['Years guiding',v.category==='Guide'&&v.experience_years?esc(v.experience_years)+' years':''],['Area',esc(v.location)],['Map pin',v.maps_link?`<a data-track="maps" data-v="${esc(v.id)}" href="${esc(v.maps_link)}" target="_blank" rel="noopener">Open map pin</a>`:''],['Languages',esc(v.languages)],['Kosher',(v.kosher||rel('kosher',v))?(v.kosher?esc(v.kosher):'<span class="hint">Not added</span>')+`<span id="kcert"></span>`:''],['Max capacity',v.maxCap?esc(v.maxCap)+' people':''],['Park booking',v.npResLink?`<a data-track="booking" data-v="${esc(v.id)}" href="${esc(v.npResLink)}" target="_blank" rel="noopener">Reservation page</a>`:'']])],
+    ['Contact',rows([['Contact',esc(v.contactPerson)+(v.contactPerson_he?`${v.contactPerson?' · ':''}<span dir="rtl" lang="he">${esc(v.contactPerson_he)}</span>`:'')],['Phone',v.phone?`<span class="mono">${esc(v.phone)}</span>`:''],['WhatsApp',v.whatsapp?`<span class="mono">${esc(v.whatsapp)}</span>`:''],['Email',esc(v.email)],['Website',esc(v.website)],['Region',esc(v.region)],[v.category==='Guide'?'Guide details':'Type',esc(tagsNoShab(v))],['Years guiding',v.category==='Guide'&&v.experience_years?esc(v.experience_years)+' years':''],['Area',esc(v.location)],['Map pin',v.maps_link?`<a data-track="maps" data-v="${esc(v.id)}" href="${esc(v.maps_link)}" target="_blank" rel="noopener">Open map pin</a>`:''],['Languages',esc(v.languages)],['Kosher',(v.kosher||rel('kosher',v))?(v.kosher?esc(v.kosher):'<span class="hint">Not added</span>')+`<span id="kcert"></span>`:''],['Max capacity',v.maxCap?esc(v.maxCap)+' people':''],['Park booking',v.npResLink?`<a data-track="booking" data-v="${esc(v.id)}" href="${esc(v.npResLink)}" target="_blank" rel="noopener">Reservation page</a>`:'']])],
     [S.admin?(v.prices_private?'Main price (goes to R5) · private':'Main price (goes to R5)'):'Main price',rows([['Agent price',price(v.agentPrice,v.agentPriceVatTreatment)],['Listed price',price(v.listedPrice,v.listedPriceVatTreatment)],['Basis',esc(v.priceBasis)],['Max people',esc(v.maxPax)],['Payment terms',esc(v.payTerms)]])],
     ['Cancellation',rows([['Policy',esc(v.cancelPolicy)],['Notice',notice],['Penalty',esc(v.cancelPenalty)],['Checked',esc(ilDate(v.cancelPolicyVerifiedDate))]])],
     ['Experience',rows([['Ratings',rating],['Strengths',esc(v.strengths)],['Weaknesses',esc(v.weaknesses)],['Summary',esc(v.notes)]])]
   ].filter(s=>s[1] && !(v._own && s[0]==='Experience'));
-  const body=`${vtabs}<div class="keep" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px"><span class="cat">${esc(catLabel(v))}</span>${v.region||v.location?`<span class="hint">${esc(v.region||v.location)}</span>`:''}${shabPill(v)}${statusPill(v)}${claimedPill(v)}${guideSpecialty(v)?'<span class="pill pending">Specialty guide · not licensed</span>':''}</div>
+  const body=`${vtabs}${heName(v)?`<p class="he-title keep" dir="rtl" lang="he">${esc(heName(v))}</p>`:''}<div class="keep" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px"><span class="cat">${esc(catLabel(v))}</span>${v.region||v.location?`<span class="hint">${esc(v.region||v.location)}</span>`:''}${shabPill(v)}${statusPill(v)}${claimedPill(v)}${guideSpecialty(v)?'<span class="pill pending">Specialty guide · not licensed</span>':''}</div>
     ${ownBar(v)}
     <div class="hrs"><span class="hint">Opening hours</span>${v.hours?`<b>${esc(v.hours)}</b>`:`<span class="hint">· not added yet</span><button class="mini" id="addHours" type="button">+ Add hours</button>`}
       ${v.hours_last?`<span class="hint brk">Last entry and other times</span><b>${esc(v.hours_last)}</b>`:''}
@@ -2587,6 +2636,7 @@ function openDetail(id, opt){
     ${isTr?`<fieldset><legend>Vehicles</legend>${(fl=>fl.length?`<div class="flags" style="margin:0 0 4px">${fl.map(x=>`<span class="flag info" style="font-size:13.5px;padding:5px 10px">${esc(x[1])}</span>`).join('')}</div>`:`<p class="hint" style="margin:0">Not marked yet. Tap Edit and choose which vehicles ${indep?'he has':'they have'}: buses, vans by size, cars.</p>`)(VEHICLES.filter(x=>fleetOf(v).has(x[0])))}</fieldset>`:''}
     <div id="parentBox"></div>
     ${contactBar(v)}
+    ${onlineBox(v)}
     <button class="btn red upd" id="upd" type="button">Tap here to report a change <span>if this supplier closed, moved, or a detail is wrong</span></button>
     <div id="resBox"></div>
     ${lim()?'':agentBox(v)}
@@ -3417,7 +3467,7 @@ function bkOkRows(b){
       c?'✓ '+(via?c+' · told to the guide'+(by?' ('+by+')':''):[by,c].filter(Boolean).join(' · ')):'waiting',!!c]]; }
 // o.seen = the version this reader last sent or accepted: rows the other side changed since are marked red, with the
 // earlier value. o.loose = compare only rows the earlier version had filled in (the guide's "terms you expect").
-function bkSheetHtml(b,t,o){ o=o||{}; const has=!!(t&&t.price), comp=b.company||b.vendor_name||'', seen=o.seen||null;
+function bkSheetHtml(b,t,o){ o=o||{}; const has=!!(t&&t.price), comp=b.company||b.vendor_name||'', compHe=b.company_he||b.vendor_name_he||'', seen=o.seen||null;
   const oldJob=seen&&('date_from' in seen)?Object.fromEntries(bkJobRows(seen,true).map(r=>[r[1],r[2]])):null;
   const st=seen&&seen.terms, oldTerm=st&&Object.keys(st).length?Object.fromEntries(bkTermRows(st).map(r=>[r[1],r[2]])):null;
   const was=(old,r)=>{ if(!old) return null; const prev=old[r[1]]||''; if(prev===(r[2]||'')) return null; if(o.loose&&!prev) return null; return prev||'—'; };
@@ -3427,7 +3477,7 @@ function bkSheetHtml(b,t,o){ o=o||{}; const has=!!(t&&t.price), comp=b.company||
   const jobs=bkJobRows(b,true).filter(r=>r[2]||was(oldJob,r)!=null);
   const off=bkOff(b), terms=has?bkTermRows(t).filter((r,i)=>!bkRowOff(r,off)&&(r[2]||i<BK_MUST||was(oldTerm,r)!=null)):[];
   const ok=has?bkOkRows(b):null;
-  const who=[['מזמין','Booked by',[b.booker_name,b.booker_phone].filter(Boolean).join(' · ')],['חברה','Company',comp],
+  const who=[['מזמין','Booked by',[b.booker_name,b.booker_phone].filter(Boolean).join(' · ')],['חברה','Company',compHe&&compHe!==comp?compHe:comp,compHe&&compHe!==comp?comp:null],
     has&&!ok?[b.terms_by==='guide'?'נרשם ע״י המזמין':'מולא ע״י','Filled in by',b.terms_by==='guide'?'לפי תשובת החברה'+(b.answered_by?' ('+b.answered_by+')':''):[b.answered_by,b.answered_at?bkWhen(b.answered_at):''].filter(Boolean).join(' · '),b.terms_by==='guide'?'entered by the guide from the company\'s answer':null]:null,
     has&&!ok&&b.status==='confirmed'?['אושר','Confirmed',b.confirmed_at?bkWhen(b.confirmed_at):'✓',null]:null].filter(r=>r&&r[2]);
   return `<div class="bks" dir="rtl" lang="he">
@@ -3443,7 +3493,7 @@ function bkChanged(b,t,seen,loose){ if(!seen) return 0; let n=0;
   const st=seen.terms; if(st&&Object.keys(st).length&&t){ const o=Object.fromEntries(bkTermRows(st).map(r=>[r[1],r[2]])); const off=bkOff(b); bkTermRows(t).forEach(r=>{ if(bkRowOff(r,off)) return; const p=o[r[1]]||''; if(p!==(r[2]||'')&&!(loose&&!p)) n++; }); }
   return n; }
 // Plain text for WhatsApp or email. ask = short note with the link; template = no link, blanks to fill in; summary = the filled sheet.
-function bkText(b,t,mode,link){ const L=[], comp=b.company||b.vendor_name||'';
+function bkText(b,t,mode,link){ const L=[], comp=b.company||b.vendor_name||'', compHe=b.company_he||b.vendor_name_he||'';
   const two=r=>{ if(r[3]==null||r[3]===r[2]) L.push(r[0]+' · '+r[1]+': '+r[2]); else { L.push(r[0]+': '+r[2]); L.push(r[1]+': '+r[3]); } };
   if(mode==='ask'){
     L.push('שלום, יש לי הזמנת רכב: '+[bkDates(b,true),bkVehicle(b,true),b.pax?b.pax+' נוסעים':''].filter(Boolean).join(', ')+'.');
@@ -3451,7 +3501,7 @@ function bkText(b,t,mode,link){ const L=[], comp=b.company||b.vendor_name||'';
     L.push('נא למלא מחיר ותנאים בקישור, זה לוקח דקה:'); L.push(link); L.push('תודה, '+(b.booker_name||''));
     L.push(''); L.push('Vehicle booking for '+bkDates(b,false)+'. Please fill in the price and terms at the link. Thanks, '+(b.booker_name||''));
     return L.join('\n'); }
-  L.push('*דף הזמנת רכב · Vehicle booking sheet*'); if(comp) L.push(comp);
+  L.push('*דף הזמנת רכב · Vehicle booking sheet*'); if(comp) L.push(compHe&&compHe!==comp?compHe+' · '+comp:comp);
   L.push(''); bkJobRows(b).forEach(two);
   if(mode==='template'){
     L.push(''); L.push('*נא למלא ולהחזיר · Please fill in and send back:*');
@@ -4597,7 +4647,7 @@ function openForm(v, preset){
   const area=(k,label,ph)=>`<div class="f wide"><label for="f_${k}">${label}${REVIEW_FIELDS.includes(k)?lk(k):''}</label><textarea id="f_${k}" name="${k}" rows="2" placeholder="${esc(ph)}">${esc(x[k])}</textarea></div>`;
   const stars=(k,label)=>`<div class="f"><label>${label}${lk(k)}</label><div class="stars" data-k="${k}">${[1,2,3,4,5].map(n=>`<button type="button" data-n="${n}" aria-pressed="${x[k]===String(n)}" aria-label="${label} ${n}">${n}</button>`).join('')}</div><input type="hidden" id="f_${k}" name="${k}" value="${esc(x[k])}"></div>`;
   const body=`<form id="vf" novalidate>
-    ${guarded?'<div class="lockbar">🔒 Name, contact details, the main price and cancellation terms are checked by Eretz Israel Tours. Change them here and say why, and the change shows once approved. Everything else saves straight away.</div>':''}
+    ${guarded?'<div class="lockbar">🔒 Name (English and Hebrew), contact details, the main price and cancellation terms are checked by Eretz Israel Tours. Change them here and say why, and the change shows once approved. Everything else saves straight away.</div>':''}
     <div class="quickfill"><b>⚡ Quick fill</b> <span class="hint">Fill the form from a contact or text instead of typing.</span>
       <div class="btn-row" style="margin-top:8px">${('contacts' in navigator && 'select' in navigator.contacts)?'<button type="button" class="btn soft" id="qfContacts">📇 From my contacts</button>':''}<button type="button" class="btn soft" id="qfPasteBtn">📋 Paste text</button><button type="button" class="btn soft" id="qfVcfBtn">📎 Contact card (.vcf)</button><input type="file" id="qfVcf" accept=".vcf,text/vcard,text/x-vcard" hidden></div>
       <div id="qfPasteWrap" hidden style="margin-top:8px"><textarea id="qfText" rows="5" placeholder="Paste an email signature, a WhatsApp contact, a website's contact page, a Google Maps link… Names, phones, emails, websites and map links are picked out."></textarea><div class="btn-row" style="margin-top:6px"><button type="button" class="btn primary" id="qfGo">Fill the form</button></div></div>
@@ -4606,6 +4656,7 @@ function openForm(v, preset){
     ${preset&&preset._form?'<div class="lockbar">From a supplier\'s details form. Check each field and choose the category. Prices and other details are added after you save, from the Review list.</div>':''}
     <fieldset><legend>Supplier</legend><div class="grid">
       ${inp('name','Vendor or company name','text','Golan Jeeps Ltd.',true,true)}
+      <div class="f wide"><label for="f_name_he">Name in Hebrew <span class="hint">(optional)</span>${lk('name_he')}</label><input id="f_name_he" name="name_he" dir="rtl" lang="he" value="${esc(x.name_he||'')}" maxlength="200" placeholder="שם העסק בעברית"><div id="heSug" hidden style="margin-top:6px"></div></div>
       <div id="dupBox" class="f wide" hidden></div>
       ${sel('category','Main category',[['','Choose…'],...byUse('category',myCats()).map(c=>[c,catDisp(c)])],false,true)}
       <div class="f wide"><label>Also offers <span class="hint">(optional, e.g. a guide who also drives jeep tours)</span></label><input type="hidden" id="f_also_categories" value="${esc(x.also_categories||'')}"><div class="presets" id="alsoSug" style="margin:6px 0 0"></div></div>
@@ -4622,8 +4673,9 @@ function openForm(v, preset){
       <div class="f wide" id="npWrap" ${x.category==='National Parks'?'':'hidden'}><label for="f_npResLink">National park booking link</label><input id="f_npResLink" name="npResLink" type="url" value="${esc(x.npResLink)}" placeholder="https://booking.parks.org.il/…"></div>
     </div></fieldset>
     <fieldset><legend>Contact</legend><div class="grid">
-      ${inp('contactPerson','Contact person','text','Moshe Cohen')}${inp('phone','Phone','tel','+972 52 000 0000')}${inp('whatsapp','WhatsApp','tel','+972 52 000 0000')}
+      ${inp('contactPerson','Contact person','text','Moshe Cohen')}<div class="f"><label for="f_contactPerson_he">Contact person in Hebrew${lk('contactPerson_he')}</label><input id="f_contactPerson_he" name="contactPerson_he" dir="rtl" lang="he" value="${esc(x.contactPerson_he||'')}" maxlength="200" placeholder="משה כהן"></div>${inp('phone','Phone','tel','+972 52 000 0000')}${inp('whatsapp','WhatsApp','tel','+972 52 000 0000')}
       ${inp('email','Email','email')}${inp('website','Website','text','example.co.il')}
+      <div class="f wide" id="lnkWrap"><label for="lnkAdd0">Online links <span class="hint">(Instagram, Facebook, TikTok, TripAdvisor, Google business page…)</span></label><input type="hidden" id="f_links" value="${esc(x.links||'')}"><div class="lnk-rows" id="lnkRows"></div><div class="btn-row" style="margin-top:6px"><button type="button" class="mini" id="lnkMore">+ Add another link</button></div><span class="hint">Paste one link in each box, or several at once. The page names each one by its address. Saves straight away, no approval needed.</span></div>
       <div class="f"><label for="f_regionSel">Region</label><select id="f_regionSel"><option value="">Choose…</option>${byUse('region',REGIONS).map(r=>`<option${x.region===r?' selected':''}>${esc(r)}</option>`).join('')}<option value="__other"${x.region&&!REGIONS.includes(x.region)?' selected':''}>Other…</option></select>
         <input id="f_regionOther" placeholder="Type the region" value="${esc(x.region&&!REGIONS.includes(x.region)?x.region:'')}" ${x.region&&!REGIONS.includes(x.region)?'':'hidden'} style="margin-top:6px"><input type="hidden" id="f_region" value="${esc(x.region)}"></div>
       ${inp('location','Town or address','text','Start typing: Jerusalem, Mitzpe Ramon…')}
@@ -4738,6 +4790,24 @@ function openForm(v, preset){
     box.hidden=!hit; box.innerHTML = hit?`<div class="dup"><b>${esc(hit.name)}</b> is already on the list (${esc(catMain(hit))}). <button type="button" class="btn soft" style="padding:4px 10px;margin-left:4px" id="goDup">Open it</button></div>`:'';
     const g=box.querySelector('#goDup'); if(g) g.onclick=()=>openDetail(hit.id); return hit; };
   f.querySelector('#f_name').addEventListener('input',dupCheck); dupCheck();
+  // D-62: one box per link; pasting several links into one box splits them into rows. The hidden f_links holds them, one per line.
+  const lnkRows=f.querySelector('#lnkRows'), lnkHid=f.querySelector('#f_links');
+  const lnkVals=()=>[...lnkRows.querySelectorAll('input')].map(e=>e.value.trim()).filter(Boolean);
+  const lnkSync=()=>{ lnkHid.value=lnkVals().join('\n'); lnkRows.querySelectorAll('.lnk-row').forEach(r=>{ const t=r.querySelector('input').value.trim(), k=r.querySelector('.lnk-k'); k.textContent=t?(/^https?:\/\//i.test(t)||/^[a-z0-9-]+(\.[a-z0-9-]+)+([/?#]|$)/i.test(t)?linkInfo(/^https?:/i.test(t)?t:'https://'+t).name:'Not a link'):''; }); f.querySelector('#lnkMore').hidden=lnkRows.children.length>=10; };
+  const lnkRow=(val,focus)=>{ if(lnkRows.children.length>=10) return; const r=document.createElement('div'); r.className='lnk-row';
+    r.innerHTML=`<input type="url" inputmode="url" dir="ltr" id="lnkAdd${lnkRows.children.length}" placeholder="https://instagram.com/…" value="${esc(val||'')}"><span class="lnk-k"></span><button type="button" class="x" aria-label="Remove this link">×</button>`;
+    const inp=r.querySelector('input');
+    inp.addEventListener('input',()=>{ const parts=inp.value.split(/\s+/).filter(Boolean); if(parts.length>1){ inp.value=parts[0]; parts.slice(1).forEach(p=>lnkRow(p)); } lnkSync(); });
+    r.querySelector('.x').onclick=()=>{ r.remove(); if(!lnkRows.children.length) lnkRow(''); lnkSync(); };
+    lnkRows.appendChild(r); if(focus) inp.focus(); lnkSync(); };
+  const lnk0=String(x.links||'').split(/\s+/).filter(Boolean); (lnk0.length?lnk0:['']).forEach(u=>lnkRow(u));
+  f.querySelector('#lnkMore').onclick=()=>lnkRow('',true);
+  // D-63: when the Hebrew name is empty and the English name has Hebrew in brackets, offer to copy it (never saved on its own).
+  const heIn=f.querySelector('#f_name_he'), heSug=f.querySelector('#heSug');
+  const drawHe=()=>{ const h=heFromName(f.querySelector('#f_name').value); heSug.hidden=!(h&&!heIn.value.trim());
+    heSug.innerHTML=heSug.hidden?'':`<button type="button" class="mini" id="heUse">Use “<span dir="rtl" lang="he">${esc(h)}</span>” from the name</button> <span class="hint">Copies it here; nothing is saved until you save.</span>`;
+    const b=heSug.querySelector('#heUse'); if(b) b.onclick=()=>{ heIn.value=h; heIn.dispatchEvent(new Event('input',{bubbles:true})); drawHe(); }; };
+  f.querySelector('#f_name').addEventListener('input',drawHe); heIn.addEventListener('input',drawHe); drawHe();
   w.querySelector('#saveBtn').onclick=async()=>{
     syncReg(); const data = v?{id:v.id}:{}; R5_FIELDS.concat(EXTRA_FIELDS).forEach(k=>{ const el=f.querySelector('#f_'+k); data[k]= el?el.value:(x[k]||''); });
     { const typed={tags:data.tags}; const on=shabOn||isShabbat(typed); data.tags=tagList({tags:tagsNoShab(typed)}).concat(on?[SHABBAT_TAG]:[]).join(', '); }
@@ -4745,7 +4815,11 @@ function openForm(v, preset){
     data.maps_link=String(data.maps_link||'').trim(); if(data.maps_link && !/^https?:\/\//i.test(data.maps_link)) data.maps_link='https://'+data.maps_link;
     data.experience_years=String(data.experience_years||'').replace(/\D/g,'').slice(0,2); if(!catsOf(data).includes('Guide') && !x.experience_years) data.experience_years='';
     const err=f.querySelector('#formErr');
+    lnkSync(); data.links=lnkVals().map(u=>/^https?:\/\//i.test(u)?u:'https://'+u).join('\n');
     const probs=[]; if(!data.name.trim()) probs.push('Add the supplier name.');
+    { const badL=lnkVals().filter(u=>!(/^https?:\/\/[a-z0-9-]+(\.[a-z0-9-]+)+(:\d{1,5})?([/?#][^\s<>"'`\\]*)?$/i.test(u)||/^[a-z0-9-]+(\.[a-z0-9-]+)+(:\d{1,5})?([/?#][^\s<>"'`\\]*)?$/i.test(u)));
+      if(badL.length) probs.push('Only web links can be saved as online links: '+badL.map(u=>'“'+u.slice(0,40)+'”').join(', ')+'.');
+      if(lnkVals().length>10) probs.push('At most 10 online links.'); }
     if(catsOf(data).includes('Restaurant') && notKosher(data.kosher)) probs.push('The list does not accept non-kosher restaurants.'); if(!data.category) probs.push('Choose a category.');
     if(!v && dupCheck()) probs.push('This supplier is already on the list. Open it and edit it instead.');
     const isG=catsOf(data).includes('Guide'), lic=tagHas(data.tags,GUIDE_LICENSED), spec=tagHas(data.tags,GUIDE_SPECIALTY), wasG=!!v&&catsOf(v).includes('Guide');

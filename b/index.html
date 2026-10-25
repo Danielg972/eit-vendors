@@ -180,7 +180,7 @@ function bkOkRows(b){
       c?'✓ '+(via?c+' · told to the guide'+(by?' ('+by+')':''):[by,c].filter(Boolean).join(' · ')):'waiting',!!c]]; }
 // o.seen = the version this reader last sent or accepted: rows the other side changed since are marked red, with the
 // earlier value. o.loose = compare only rows the earlier version had filled in (the guide's "terms you expect").
-function bkSheetHtml(b,t,o){ o=o||{}; const has=!!(t&&t.price), comp=b.company||b.vendor_name||'', seen=o.seen||null;
+function bkSheetHtml(b,t,o){ o=o||{}; const has=!!(t&&t.price), comp=b.company||b.vendor_name||'', compHe=b.company_he||b.vendor_name_he||'', seen=o.seen||null;
   const oldJob=seen&&('date_from' in seen)?Object.fromEntries(bkJobRows(seen,true).map(r=>[r[1],r[2]])):null;
   const st=seen&&seen.terms, oldTerm=st&&Object.keys(st).length?Object.fromEntries(bkTermRows(st).map(r=>[r[1],r[2]])):null;
   const was=(old,r)=>{ if(!old) return null; const prev=old[r[1]]||''; if(prev===(r[2]||'')) return null; if(o.loose&&!prev) return null; return prev||'—'; };
@@ -190,7 +190,7 @@ function bkSheetHtml(b,t,o){ o=o||{}; const has=!!(t&&t.price), comp=b.company||
   const jobs=bkJobRows(b,true).filter(r=>r[2]||was(oldJob,r)!=null);
   const off=bkOff(b), terms=has?bkTermRows(t).filter((r,i)=>!bkRowOff(r,off)&&(r[2]||i<BK_MUST||was(oldTerm,r)!=null)):[];
   const ok=has?bkOkRows(b):null;
-  const who=[['מזמין','Booked by',[b.booker_name,b.booker_phone].filter(Boolean).join(' · ')],['חברה','Company',comp],
+  const who=[['מזמין','Booked by',[b.booker_name,b.booker_phone].filter(Boolean).join(' · ')],['חברה','Company',compHe&&compHe!==comp?compHe:comp,compHe&&compHe!==comp?comp:null],
     has&&!ok?[b.terms_by==='guide'?'נרשם ע״י המזמין':'מולא ע״י','Filled in by',b.terms_by==='guide'?'לפי תשובת החברה'+(b.answered_by?' ('+b.answered_by+')':''):[b.answered_by,b.answered_at?bkWhen(b.answered_at):''].filter(Boolean).join(' · '),b.terms_by==='guide'?'entered by the guide from the company\'s answer':null]:null,
     has&&!ok&&b.status==='confirmed'?['אושר','Confirmed',b.confirmed_at?bkWhen(b.confirmed_at):'✓',null]:null].filter(r=>r&&r[2]);
   return `<div class="bks" dir="rtl" lang="he">
@@ -206,7 +206,7 @@ function bkChanged(b,t,seen,loose){ if(!seen) return 0; let n=0;
   const st=seen.terms; if(st&&Object.keys(st).length&&t){ const o=Object.fromEntries(bkTermRows(st).map(r=>[r[1],r[2]])); const off=bkOff(b); bkTermRows(t).forEach(r=>{ if(bkRowOff(r,off)) return; const p=o[r[1]]||''; if(p!==(r[2]||'')&&!(loose&&!p)) n++; }); }
   return n; }
 // Plain text for WhatsApp or email. ask = short note with the link; template = no link, blanks to fill in; summary = the filled sheet.
-function bkText(b,t,mode,link){ const L=[], comp=b.company||b.vendor_name||'';
+function bkText(b,t,mode,link){ const L=[], comp=b.company||b.vendor_name||'', compHe=b.company_he||b.vendor_name_he||'';
   const two=r=>{ if(r[3]==null||r[3]===r[2]) L.push(r[0]+' · '+r[1]+': '+r[2]); else { L.push(r[0]+': '+r[2]); L.push(r[1]+': '+r[3]); } };
   if(mode==='ask'){
     L.push('שלום, יש לי הזמנת רכב: '+[bkDates(b,true),bkVehicle(b,true),b.pax?b.pax+' נוסעים':''].filter(Boolean).join(', ')+'.');
@@ -214,7 +214,7 @@ function bkText(b,t,mode,link){ const L=[], comp=b.company||b.vendor_name||'';
     L.push('נא למלא מחיר ותנאים בקישור, זה לוקח דקה:'); L.push(link); L.push('תודה, '+(b.booker_name||''));
     L.push(''); L.push('Vehicle booking for '+bkDates(b,false)+'. Please fill in the price and terms at the link. Thanks, '+(b.booker_name||''));
     return L.join('\n'); }
-  L.push('*דף הזמנת רכב · Vehicle booking sheet*'); if(comp) L.push(comp);
+  L.push('*דף הזמנת רכב · Vehicle booking sheet*'); if(comp) L.push(compHe&&compHe!==comp?compHe+' · '+comp:comp);
   L.push(''); bkJobRows(b).forEach(two);
   if(mode==='template'){
     L.push(''); L.push('*נא למלא ולהחזיר · Please fill in and send back:*');
