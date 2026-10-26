@@ -10,6 +10,16 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-64 · The old single "Main price" comes off a supplier's page once it has price lines (live 26 Oct 2026)
+
+**Owner, 26 Oct 2026, 12:20:** "Sure if it's just clutter remove it." Asked at 12:19 why the main price that goes to R5 is only the adult price (Machon Ayalon): R5's supplier record holds one listed and one agent price, so that box can hold only one number; the full prices (adult, child, senior, student) are the price lines. Offered: hide the box on any supplier that already has price lines.
+
+**Built (front end only, branch `main-price-box`):** on a supplier's page, once its price lines load, the agent price, listed price and basis rows of the old "Main price" box are taken out. Max people and payment terms stay, under the heading "Booking terms"; if neither is filled the box goes. A supplier with no price lines keeps "Main price" as before. The words "(goes to R5)" are gone everywhere (R5 is frozen, F3). The saved fields (`agentPrice`, `listedPrice`, `priceBasis`) are untouched, as are the edit form, the price chip on the supplier list and the legacy R5 export.
+
+**Checked:** `supabase/tests/main_price_box/preview_walk.py` 21/21 in preview (phone, phone dark, desktop). No database, terms or Cockpit change. Built and checked by the same session.
+
+---
+
 ## D-63 · Hebrew fields for the business name and the contact person (live since 25 Oct 2026, about 19:05)
 
 **Live:** the owner, 25 Oct 2026, 18:56: "Go live". Production read first: 37 tables, 197 functions equal to the record, 0 table grants, 0 policies. Migration applied through the connector at the first try; afterwards 198 functions, every fingerprint equal to supabase/tests/production_fingerprints.txt; production_probe.sql run on production as a rolled-back transaction: 39 checks, 0 failed, nothing left behind. Pull request #89 merged (main 28d1916).
