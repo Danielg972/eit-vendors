@@ -10,6 +10,12 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-66 · "Open now" on places you visit (live 26 Oct 2026)
+
+**Owner, 26 Oct 2026, 21:02:** "I like the open now idea. I like how city of David looks, so forget revamping." (The idea was in a mock-up of a restyled list, 15:56; the restyle itself is dropped.) **21:29**, after a picture of it in the app's own style: "Go live"
+
+On the supplier list and beside "Opening hours" on a supplier's page, a place you visit (sites, parks, wineries, restaurants, activities; not hotels, guides, transport, jeeps) shows "Open now · until 17:00" or "Closed now", worked out from its hours on Israel's clock today, using the season the clock is on (D-65). Implementation choices, all toward showing nothing rather than something wrong: holiday eves and festivals are left out; a part of a site with its own name, a row with a remark, a time past midnight or a day it cannot read gives no mark; hours whose sources disagree, or visits only by appointment or arrangement, give no mark; days not listed are not taken as closed; "Closed Shabbat" gives no mark on a Saturday from 16:00. Front end only, no database change. Checked: supabase/tests/open_now/preview_walk.py 10/10 in preview.
+
 ## D-65 · Winter or summer hours come first by themselves, with the D-33 hours layout (live 26 Oct 2026)
 
 **Owner, 26 Oct 2026, 15:39:** "Update city of David winter hours. Can we set winter hours as default when winter hours begin", with City of David's own notice of winter hours from 25 Oct. **15:56**, after an inline mock-up of the City of David hours box: "Go live."

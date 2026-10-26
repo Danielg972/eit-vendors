@@ -17,6 +17,10 @@
 | Terms version | `2026-10-03c` live (adds 2c, organisations as limited members; `2026-10-03a` added 6d, jobs). `2026-10-03d` on the branch `guide-for-clients`: 3a malicious posts, 3c licensed guides and D1, 6e a guide's page for clients, 6f your own page and reviews. All draft, not yet reviewed by a lawyer |
 | Decisions | `docs/DECISIONS.md` (D-1 Cockpit boundary; D-2 quote tracker; D-3 driver reviews; D-4 transport by vehicle size; D-5 booking sheets; D-6 welcome tour, name, use-and-add rule; D-7 Shomer Shabbat badge, kosher restaurants only; D-8 opening hours, no-certificate needs approval; D-9 verified hours, last entry, hours from websites; D-10 official buttons; D-11 jobs between colleagues and My days, live for Eretz Israel Tours only; D-15 limited members: organisations that are not in tourism; D-13 food nearby only on places; D-12 a guide's page for clients; D-14 claimed pages, disputes, reviews; D-16 licensed guides only, D1 for Eshkol, malicious posts) |
 
+## "Open now" on places you visit (D-66): live 26 October 2026
+
+Front end only, branch `open-now-d66`. On the list and beside a supplier's opening hours: "Open now · until …" or "Closed now", from its hours on Israel's clock; nothing when unsure. No database change. Details in DECISIONS D-66.
+
 ## Opening hours laid out (D-33) and the current season first (D-65): live 26 October 2026
 
 Front end only, branch `seasonal-hours-d65`. A supplier's hours show as days and times; where both Summer and Winter are listed, the one on Israel's clock today comes first with "Now" and the other folds. No database change. Details in DECISIONS D-65.
