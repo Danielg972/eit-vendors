@@ -86,6 +86,7 @@ main{max-width:760px;margin:0 auto;padding:16px 16px 110px}
 .cat{font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--ochre);font-weight:600}
 .pill{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.4px;border-radius:999px;padding:2px 8px}
 .pill.approved{background:var(--ok-wash);color:var(--ok)}
+.pill.off{background:var(--wash);color:var(--ink-3)}
 .pill.pending{background:var(--warn-wash);color:var(--warn)}
 .pill.rejected{background:var(--bad-wash);color:var(--bad)}
 .pill.inactive{background:var(--wash);color:var(--ink-3)}
@@ -1828,7 +1829,7 @@ function drawList(){
     <button class="row" data-id="${esc(v.id)}">
       <span class="row-name">${esc(v.name)}${heName(v)?` <span class="he-name" dir="rtl" lang="he">${esc(heName(v))}</span>`:''}</span>
       <span class="row-price">${priceLine(v)}</span>
-      <span class="row-meta"><span class="cat">${esc(catLabel(v))}</span>${v.region||v.location?`<span>${esc(v.region||v.location)}</span>`:''}${tagsNoShab(v)?`<span class="hint">${esc(tagsNoShab(v))}</span>`:''}${shabPill(v)}${v.category==='Guide'&&v.experience_years?`<span class="hint">${esc(v.experience_years)} yrs</span>`:''}${v.reservation==='required'?'<span class="clip">📅 Reserve ahead</span>':''}${statusPill(v)}${v._prices?`<span class="clip">${v._prices} price${v._prices>1?'s':''}</span>`:''}${v._deals?`<span class="clip">🏷 ${v._deals} deal${v._deals>1?'s':''}</span>`:''}${v._notes?`<span class="clip">💬 ${v._notes}</span>`:''}${v._files?`<span class="clip">📎 ${v._files}</span>`:''}</span>${rtRowHtml(v)}
+      <span class="row-meta"><span class="cat">${esc(catLabel(v))}</span>${v.region||v.location?`<span>${esc(v.region||v.location)}</span>`:''}${tagsNoShab(v)?`<span class="hint">${esc(tagsNoShab(v))}</span>`:''}${shabPill(v)}${openNowPill(v)}${v.category==='Guide'&&v.experience_years?`<span class="hint">${esc(v.experience_years)} yrs</span>`:''}${v.reservation==='required'?'<span class="clip">📅 Reserve ahead</span>':''}${statusPill(v)}${v._prices?`<span class="clip">${v._prices} price${v._prices>1?'s':''}</span>`:''}${v._deals?`<span class="clip">🏷 ${v._deals} deal${v._deals>1?'s':''}</span>`:''}${v._notes?`<span class="clip">💬 ${v._notes}</span>`:''}${v._files?`<span class="clip">📎 ${v._files}</span>`:''}</span>${rtRowHtml(v)}
     </button>`).join('')}</div>` : `<div class="list"><div class="empty"><h3>Nothing matches</h3>Try a shorter search or pick “All”.</div></div>`);
   box.querySelectorAll('.row').forEach(r=>r.onclick=()=>openDetail(r.dataset.id));
 }
@@ -2735,10 +2736,71 @@ function hoursLinesHtml(text, esc, clock){
   on.sort((a,b)=>(hxSeasonOf(b)===clock)-(hxSeasonOf(a)===clock));
   return `<ul class="hx-ul">${on.map(li).join('')}</ul>`+(off.length?`<details class="hx-off"><summary>${hxSeasonName(clock==='winter'?'summer':'winter')}</summary><ul class="hx-ul">${off.map(li).join('')}</ul></details>`:'');
 }
+// D-66 (owner, 26 Oct 2026: "I like the open now idea"): "Open now" or "Closed now" on a place you visit, worked out
+// from its opening hours on Israel's clock today. Only plain rows count: days and times, or "Closed Shabbat", for the
+// season Israel's clock is on (or no season). Holiday eves and festivals are left out, since the app cannot know them.
+// A part of a site (a row with its own name), a row with a remark beside it, a time past midnight, or a day it cannot
+// read means no mark at all: better nothing than a wrong "Open now". Days not listed are not taken as closed.
+const HX_WD={sun:0,sunday:0,mon:1,monday:1,tue:2,tues:2,tuesday:2,wed:3,wednesday:3,thu:4,thur:4,thurs:4,thursday:4,fri:5,friday:5,sat:6,saturday:6,shabbat:6};
+const HX_SPECIAL=/\b(eves?|holidays?|festivals?|rosh|pesach|passover|sukkot|yom|chol|hamoed|intermediate|school|july|august|jul|aug)\b/i;
+function hxDays(d){
+  const out=new Set(); const t=String(d||'').trim().toLowerCase(); if(!t) return null;
+  if(/^(daily|every day|all week|sun\s*[–—-]\s*sat|sunday\s*[–—-]\s*saturday)$/.test(t)) return new Set([0,1,2,3,4,5,6]);
+  const parts=t.split(/\s*(?:,|&|\band\b)\s*/).filter(Boolean); let any=false;
+  for(const p of parts){
+    if(HX_SPECIAL.test(p)) continue;
+    const r=/^([a-z]+)\s*(?:[–—-]|\bto\b)\s*([a-z]+)$/.exec(p);
+    if(r){ const a=HX_WD[r[1]], b=HX_WD[r[2]]; if(a===undefined||b===undefined) return null; for(let i=a;;i=(i+1)%7){ out.add(i); if(i===b) break; } any=true; continue; }
+    if(HX_WD[p]!==undefined){ out.add(HX_WD[p]); any=true; continue; }
+    return null;
+  }
+  return any?out:new Set();
+}
+function hxIsraelNow(now){
+  try{ const f=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Jerusalem',weekday:'short',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(now||new Date());
+    const g=k=>(f.find(x=>x.type===k)||{}).value; const wd=HX_WD[String(g('weekday')).toLowerCase()];
+    if(wd===undefined) return null; return {wd, min:Number(g('hour'))*60+Number(g('minute'))}; }catch(e){ return null; }
+}
+const HX_DOUBT=/\b(third[- ]party|listings?|contradicts?|differ|reported|(?:english|hebrew|homepage|contact) page|page says|by appointment|by (?:advance )?(?:arrangement|booking)|booking only|pre-booked|no fixed|no regular)\b/i;
+const HX_SATNIGHT=/\b(after shabbat|end of shabbat|shabbat ends|saturday night|sat night|motzei)\b/i;
+const hxMin=t=>{ const m=/^(\d{1,2}):(\d{2})$/.exec(t); return m?Number(m[1])*60+Number(m[2]):NaN; };
+// -> {open:true, until:'17:00'} | {open:false} | null
+function openNow(v, now){
+  if(!v||!v.hours||!foodOk(v)) return null;
+  if(catsOf(v).every(c=>c==='Hotel')) return null;   // a hotel's hours are check-in times, not opening hours
+  // Sources that disagree, or visits only by arrangement: no mark.
+  if(HX_DOUBT.test(v.hours)) return null;
+  const n=hxIsraelNow(now); if(!n) return null;
+  const clock=hxClock(now); let last=''; const today=[];
+  for(const b of hxBlocks(v.hours)){
+    const k=b.sub?last:hxSeasonOf(b.label||b.text); last=k;
+    if(b.k!=='rows') continue;
+    if(k&&k!==clock) continue;
+    if(b.label&&!HX_SEASON.test(b.label)) continue;
+    for(const r of b.rows){
+      if(r.name) continue;
+      if(r.n) return null;
+      const days=hxDays(r.d); if(!days) { if(HX_SPECIAL.test(r.d||'')) continue; return null; }
+      if(!days.has(n.wd)) continue;
+      if(r.t==='Closed'){ today.push({closed:true}); continue; }
+      const [a,z]=String(r.t).split('–').map(hxMin); if(!(a<z)) return null;
+      today.push({a,z,t:r.t,w:days.size});
+    }
+  }
+  if(!today.length) return null;
+  // "Closed Shabbat" on a Saturday says nothing about Saturday night, when a place may reopen: no mark from 16:00.
+  if(today.some(x=>x.closed)) return today.some(x=>!x.closed)||(n.wd===6&&(n.min>=16*60||HX_SATNIGHT.test(v.hours)))?null:{open:false};
+  // "Sun–Thu 10:00–16:00, Wed 12:00–20:00": the row for fewer days is the one that counts.
+  const w=Math.min(...today.map(x=>x.w)), rows=today.filter(x=>x.w===w);
+  const on=rows.find(x=>n.min>=x.a&&n.min<x.z);
+  return on?{open:true, until:on.t.split('–')[1]}:{open:false};
+}
+function openNowPill(v){ const o=openNow(v); if(!o) return '';
+  return o.open?`<span class="pill approved" title="From the opening hours listed here">Open now · until ${esc(o.until)}</span>`:'<span class="pill off">Closed now</span>'; }
 function hoursCard(v){
   if(!v.hours&&!v.hours_last) return `<div class="hrs"><span class="hint">Opening hours</span><span class="hint">· not added yet</span><button class="mini" id="addHours" type="button">+ Add hours</button></div>`;
   const ck=hxSeasonClock([v.hours,v.hours_last]);
-  return `<fieldset><div class="sec-head"><legend>Opening hours</legend>${v.hours?'':'<button class="mini" id="addHours" type="button">+ Add hours</button>'}</div>
+  return `<fieldset><div class="sec-head"><legend>Opening hours</legend>${openNowPill(v)}${v.hours?'':'<button class="mini" id="addHours" type="button">+ Add hours</button>'}</div>
     <div class="hx-card">${v.hours?`<div class="hx-body">${hoursHtml(v.hours,esc,undefined,ck)}</div>`:''}
       ${v.hours_last?`<div class="hx-sub"${v.hours?'':' style="border-top:0"'}>Last entry and other times</div>${hoursLinesHtml(v.hours_last,esc,ck)}`:''}
       <div class="hx-foot">${hoursCheck(v)}</div></div></fieldset>`;
