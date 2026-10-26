@@ -2622,7 +2622,9 @@ function openDetail(id, opt){
   const rating=['rateReliability','rateService','rateValue'].map((k,i)=>v[k]?`${['Reliability','Service','Value'][i]} <b class="mono">${esc(v[k])}/5</b>`:'').filter(Boolean).join(' · ');
   const sections=[
     ['Contact',rows([['Contact',esc(v.contactPerson)+(v.contactPerson_he?`${v.contactPerson?' · ':''}<span dir="rtl" lang="he">${esc(v.contactPerson_he)}</span>`:'')],['Phone',v.phone?`<span class="mono">${esc(v.phone)}</span>`:''],['WhatsApp',v.whatsapp?`<span class="mono">${esc(v.whatsapp)}</span>`:''],['Email',esc(v.email)],['Website',esc(v.website)],['Region',esc(v.region)],[v.category==='Guide'?'Guide details':'Type',esc(tagsNoShab(v))],['Years guiding',v.category==='Guide'&&v.experience_years?esc(v.experience_years)+' years':''],['Area',esc(v.location)],['Map pin',v.maps_link?`<a data-track="maps" data-v="${esc(v.id)}" href="${esc(v.maps_link)}" target="_blank" rel="noopener">Open map pin</a>`:''],['Languages',esc(v.languages)],['Kosher',(v.kosher||rel('kosher',v))?(v.kosher?esc(v.kosher):'<span class="hint">Not added</span>')+`<span id="kcert"></span>`:''],['Max capacity',v.maxCap?esc(v.maxCap)+' people':''],['Park booking',v.npResLink?`<a data-track="booking" data-v="${esc(v.id)}" href="${esc(v.npResLink)}" target="_blank" rel="noopener">Reservation page</a>`:'']])],
-    [S.admin?(v.prices_private?'Main price (goes to R5) · private':'Main price (goes to R5)'):'Main price',rows([['Agent price',price(v.agentPrice,v.agentPriceVatTreatment)],['Listed price',price(v.listedPrice,v.listedPriceVatTreatment)],['Basis',esc(v.priceBasis)],['Max people',esc(v.maxPax)],['Payment terms',esc(v.payTerms)]])],
+    // D-64: the single agent/listed price is the old R5 field. Once the supplier has price lines it is only a copy of one
+    // of them, so drawExtras takes it out (data-mainprice) and the box keeps only max people and payment terms, or goes.
+    [S.admin&&v.prices_private?'Main price · private':'Main price',(()=>{ const m=rows([['Agent price',price(v.agentPrice,v.agentPriceVatTreatment)],['Listed price',price(v.listedPrice,v.listedPriceVatTreatment)],['Basis',esc(v.priceBasis)]]), t=rows([['Max people',esc(v.maxPax)],['Payment terms',esc(v.payTerms)]]); return m||t?(m?`<div data-mainprice style="display:contents">${m}</div>`:'')+t:''; })()],
     ['Cancellation',rows([['Policy',esc(v.cancelPolicy)],['Notice',notice],['Penalty',esc(v.cancelPenalty)],['Checked',esc(ilDate(v.cancelPolicyVerifiedDate))]])],
     ['Experience',rows([['Ratings',rating],['Strengths',esc(v.strengths)],['Weaknesses',esc(v.weaknesses)],['Summary',esc(v.notes)]])]
   ].filter(s=>s[1] && !(v._own && s[0]==='Experience'));
@@ -2726,6 +2728,10 @@ async function drawExtras(v){
   const cardsOf=list=>list.map((p,i)=>plCard(p,p.org&&!(list[i-1]&&list[i-1].org))).join('');
   const isTr=catsOf(v).includes('Transport');
   // A bus company's or driver's prices are shown in groups that open (D-29), not as one long list.
+  // D-64: with price lines showing, drop the old single main price (an R5 leftover) from the page.
+  const mp=(pb.closest('.sheet-body')||document).querySelector('[data-mainprice]');
+  if(mp && det.prices.length){ const fs=mp.closest('fieldset'), dl=mp.parentElement; mp.remove();
+    if(fs){ if(!dl.children.length) fs.remove(); else { const lg=fs.querySelector('legend'); if(lg) lg.textContent='Booking terms'; } } }
   const paint=()=>{
     pb.innerHTML = privNote + (det.prices.length ? (isTr ? trPricesHtml(v,det.prices,cardsOf) : prPricesHtml(det.prices,cardsOf,plCard))
       : (privNote?'':`<p class="hint" style="margin:0 0 10px">${lim()?'No prices yet. Add the rate you got: everyone on the list sees it, without your name.':(catsOf(v).includes('Transport')?'No prices yet. Add an airport pickup or drop-off, a full or half day, or an hourly rate: one line for each vehicle size, with the passengers and luggage it was for.':'No price lines yet. Add adult, child, Israeli senior or group rates as separate lines.')}</p>`));
