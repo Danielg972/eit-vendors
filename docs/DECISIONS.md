@@ -10,6 +10,14 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-65 · Winter or summer hours come first by themselves, with the D-33 hours layout (live 26 Oct 2026)
+
+**Owner, 26 Oct 2026, 15:39:** "Update city of David winter hours. Can we set winter hours as default when winter hours begin", with City of David's own notice of winter hours from 25 Oct. **15:56**, after an inline mock-up of the City of David hours box: "Go live."
+
+Where a supplier lists both Summer and Winter hours, the season Israel's clock is on today comes first with a "Now" mark and the other folds under one tap ("Summer hours" / "Winter hours"). Last-entry lines that start with Summer or Winter fold the same way. The clock change does it; nobody edits anything twice a year. Implementation choices: a sentence starting "Summer and winter time…" counts for neither; when a current-season line refers back ("all of these one hour earlier") nothing folds or moves; if the browser cannot tell Israel's clock, everything shows as written. Nothing in the stored text changes.
+
+It rides on D-33 (8 Oct: opening hours laid out as days and times, last entry as a list, the Unverified/Verified mark at the foot of the box), which was built on `supplier-page-hours` and never went live; brought onto main at 8ad13a7, keeping today's red report button, online links (D-62) and the D-64 price box. Front end only, no database change.
+
 ## D-64 · The old single "Main price" comes off a supplier's page once it has price lines (live 26 Oct 2026)
 
 **Owner, 26 Oct 2026, 12:20:** "Sure if it's just clutter remove it." Asked at 12:19 why the main price that goes to R5 is only the adult price (Machon Ayalon): R5's supplier record holds one listed and one agent price, so that box can hold only one number; the full prices (adult, child, senior, student) are the price lines. Offered: hide the box on any supplier that already has price lines.
