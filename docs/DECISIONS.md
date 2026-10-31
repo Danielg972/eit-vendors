@@ -42,7 +42,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 **Sender:** Edge Function `job-alerts` (`supabase/functions/job-alerts`), called every 5 minutes; refuses callers without the shared secret or the service key. Email rows wait while `RESEND_API_KEY` is missing; push rows wait while the VAPID keys are missing.
 
-**Checked (by the session that built it):** `supabase/tests/job_alerts/preview_walk.py` 81/81 in preview (phone, phone dark, desktop; guide, organisation, travel agent; iPhone Safari; the unsubscribe page signed out; `#contact`; the service worker and the self-update check); `recipients_probe.sql` 23/23 and `sender_probe.sql` 11/11 on a local database built from `schema.sql`; the limited-member checks 98/98 with this change; `holds_test.ts` 13/13 and `messages_test.ts` 4/4 (Deno). The D-68 walk still passes 42/42. Not checked: a real phone notification, a real email, anything on production.
+**Checked (by the session that built it):** `supabase/tests/job_alerts/preview_walk.py` 81/81 in preview (phone, phone dark, desktop; guide, organisation, travel agent; iPhone Safari; the unsubscribe page signed out; `#contact`; the service worker and the self-update check); `recipients_probe.sql` 23/23 and `sender_probe.sql` 12/12 on a local database built from `schema.sql`; the limited-member checks 98/98 with this change; `holds_test.ts` 13/13 and `messages_test.ts` 4/4 (Deno). The D-68 walk still passes 42/42. Not checked: a real phone notification, a real email, anything on production.
 
 ## D-68 · Job board: a line for each day, Jerusalem Old City, message in English first (live 31 Oct 2026)
 

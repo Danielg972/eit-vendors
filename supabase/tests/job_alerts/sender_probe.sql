@@ -42,6 +42,11 @@ begin
   for i in 1..6 loop perform public._alert_mark(qid, 'waiting', 'push 503'); end loop;
   got := (select status || ':' || tries from public.alert_queue where id = qid);
   n := n + 1; if got = 'failed:6' then ok := ok + 1; else r := r || jsonb_build_object('check','six busy tries become failed','got',got); end if;
+  -- 'later' (email limit reached) puts a row back without counting a try
+  insert into public.alert_queue (member, event, job_id, channel) values ('g1@invalid.test','job_given', jid, 'email') returning id into qid;
+  for i in 1..8 loop perform public._alert_mark(qid, 'later', 'email limit reached'); end loop;
+  got := (select status || ':' || tries || ':' || (claimed_at is null)::text from public.alert_queue where id = qid);
+  n := n + 1; if got = 'waiting:0:true' then ok := ok + 1; else r := r || jsonb_build_object('check','later counts no try','got',got); end if;
   -- a phone that is gone is switched off
   perform public._push_mark('https://push.invalid.test/g1', false, true);
   got := (select dead::text from public.push_subs where endpoint = 'https://push.invalid.test/g1');

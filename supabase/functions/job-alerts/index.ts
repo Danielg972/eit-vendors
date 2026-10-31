@@ -8,7 +8,9 @@
 //   2. asks the database (_alerts_due, service key) for the waiting rows of the channels it can send now: push when the
 //      VAPID keys are set, email when RESEND_API_KEY is set. Rows of a channel it cannot send stay waiting, not failed.
 //   3. sends each one (web push with npm:web-push, email with Resend's HTTP API) and marks it sent, failed, or waiting
-//      again when the service was busy (_alert_mark). A phone the push service says is gone (404 or 410) is switched off
+//      again when the service was busy (_alert_mark; at most 6 tries). When Resend says its limit is reached (429), the
+//      rest of the run's emails go back to waiting without counting a try (free plan: a daily cap); after 7 days unsent,
+//      a row is skipped. A phone the push service says is gone (404 or 410) is switched off
 //      for good (_push_mark).
 // Secrets: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT (mailto:… or https://…), RESEND_API_KEY, ALERTS_SECRET.
 // SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are given to every Edge Function by Supabase.
@@ -68,6 +70,7 @@ async function sendEmail(r: Row, key: string): Promise<[string, string]> {
   });
   if (res.ok) return ["sent", ""];
   const t = (await res.text()).slice(0, 200);
+  if (res.status === 429) return ["later", "email limit reached " + t];   // Resend's daily or per-second limit: try again later
   return [res.status === 429 || res.status >= 500 ? "waiting" : "failed", "email " + res.status + " " + t];
 }
 
@@ -85,9 +88,11 @@ Deno.serve(async (req) => {
   if (error) return json({ error: error.message }, 500);
   const rows = (data || []) as Row[];
   const done: Record<string, number> = {};
+  let emailFull = false;   // after Resend says the limit is reached, the rest of this run's emails wait for a later run
   for (const r of rows) {
     let st: [string, string];
-    try { st = r.channel === "push" ? await sendPush(r) : await sendEmail(r, resend); }
+    if (r.channel === "email" && emailFull) st = ["later", "email limit reached"];
+    else try { st = r.channel === "push" ? await sendPush(r) : await sendEmail(r, resend); if (st[0] === "later") emailFull = true; }
     catch (e) { st = ["waiting", String((e as Error).message || e).slice(0, 200)]; }
     await db.rpc("_alert_mark", { p_id: r.id, p_status: st[0], p_error: st[1] });
     done[st[0]] = (done[st[0]] || 0) + 1;

@@ -463,8 +463,11 @@ create or replace function public._alert_mark(p_id uuid, p_status text, p_error 
  returns void language plpgsql security definer set search_path to ''
 as $function$
 begin
+  -- 'later' = not tried (the email service's daily limit was reached): handed out again on a later run, no try counted.
   -- 'waiting' = could not be sent this time (the service was busy): tried again on a later run, at most 6 times.
-  if p_status = 'waiting' then
+  if p_status = 'later' then
+    update public.alert_queue set claimed_at = null, error = left(coalesce(p_error,''), 500) where id = p_id and status = 'waiting';
+  elsif p_status = 'waiting' then
     update public.alert_queue set claimed_at = null, tries = tries + 1, error = left(coalesce(p_error,''), 500),
       status = case when tries + 1 >= 6 then 'failed' else 'waiting' end, sent_at = case when tries + 1 >= 6 then now() end
     where id = p_id and status = 'waiting';
