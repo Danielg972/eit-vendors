@@ -21,6 +21,8 @@ import { APP, FROM, emailFor, pushFor, type Row } from "./messages.ts";
 const env = (k: string) => (Deno.env.get(k) || "").trim();
 const SERVICE = env("SUPABASE_SERVICE_ROLE_KEY");
 const db = createClient(env("SUPABASE_URL"), SERVICE, { auth: { persistSession: false } });
+// The browsers' own push services only (the database checks the same when a phone is added).
+const PUSH_HOST = /^https:\/\/([a-z0-9-]+\.)*(fcm\.googleapis\.com|push\.services\.mozilla\.com|push\.apple\.com|notify\.windows\.com)\//;
 const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { status, headers: { "Content-Type": "application/json" } });
 
 function same(a: string, b: string) {
@@ -40,6 +42,7 @@ async function sendPush(r: Row): Promise<[string, string]> {
   const payload = JSON.stringify({ title: p.title, body: p.body, url: p.url, tag: p.tag });
   let ok = 0, busy = 0; const errs: string[] = [];
   for (const s of subs) {
+    if (!PUSH_HOST.test(s.endpoint)) { errs.push("push host not allowed"); continue; }
     try {
       await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, payload, { TTL: 86400, urgency: "normal" });
       ok++; await db.rpc("_push_mark", { p_endpoint: s.endpoint, p_ok: true, p_gone: false });

@@ -268,7 +268,8 @@ declare m public.members; ep text := trim(coalesce(p_sub->>'endpoint','')); k1 t
 begin
   m := public._auth(p_token);
   if public._limited(m) then raise exception 'Job alerts are for colleagues with the Jobs tab.' using errcode = '42501'; end if;
-  if ep !~ '^https://[^\s]+$' or length(ep) > 1000 or k1 !~ '^[A-Za-z0-9_=-]{60,120}$' or k2 !~ '^[A-Za-z0-9_=-]{10,40}$' then
+  -- only the browsers' own push services (Google, Mozilla, Apple, Microsoft), so the sender never posts anywhere else
+  if ep !~ '^https://([a-z0-9-]+\.)*(fcm\.googleapis\.com|push\.services\.mozilla\.com|push\.apple\.com|notify\.windows\.com)/[^\s]+$' or length(ep) > 1000 or k1 !~ '^[A-Za-z0-9_=-]{60,120}$' or k2 !~ '^[A-Za-z0-9_=-]{10,40}$' then
     raise exception 'This phone sent something the app does not understand. Try again.'; end if;
   insert into public.push_subs (member, endpoint, p256dh, auth, device)
     values (m.email, ep, k1, k2, left(coalesce(p_device,''), 120))
