@@ -1524,7 +1524,12 @@ function wireCopy(root){ root.querySelectorAll('[data-copy]').forEach(b=>b.oncli
 // nothing from the list is shown to them, and the database is not asked. The link carries only the entry's id.
 // What a member may see is still decided by the database: a link opens nothing a member could not already open.
 const SHARE_KEY='eitv_shared', SHARE_KINDS={s:'supplier',h:'hike',r:'vehicle'};
-function shareLink(kind,id){ return APP_URL+'#'+kind+'='+encodeURIComponent(id); }
+// D-67. The link carries the entry's name (&n=), so a link sent on its own still says what it is.
+// Names in English letters only: a Hebrew name would turn into a long run of % codes. Spaces become +.
+function shareLink(kind,id,name){
+  const n=String(name||'').replace(/\s+/g,' ').trim().slice(0,60);
+  const tail=n&&/^[\x20-\x7E]+$/.test(n)?'&n='+encodeURIComponent(n).replace(/%20/g,'+').replace(/[!'()*]/g,c=>'%'+c.charCodeAt(0).toString(16).toUpperCase()):'';
+  return APP_URL+'#'+kind+'='+encodeURIComponent(id)+tail; }
 function shareMsg(kind,name,link){
   const he={s:'ספק',h:'מסלול',r:'רכב'}[kind], en={s:'',h:'Hike: ',r:''}[kind];
   return `${he}: ${name} — במעגל הפנימי, רשימת הספקים שמורי דרך מנהלים יחד: ${link}\n\n${en}${name} on The Inner Circle, the supplier list guides keep for each other: ${link}`; }
@@ -1532,7 +1537,7 @@ function shareMsg(kind,name,link){
 function readShared(){
   let got=null;
   try{ const m=/(?:^#|&)([shr])=([A-Za-z0-9_.:-]{1,80})(?:&n=([^&]*))?/.exec(location.hash||'');
-    if(m){ let n=''; try{ n=decodeURIComponent(m[3]||'').slice(0,80); }catch(e){}
+    if(m){ let n=''; try{ n=decodeURIComponent((m[3]||'').replace(/\+/g,' ')).slice(0,80); }catch(e){}
       got={k:m[1],id:decodeURIComponent(m[2]),n,t:Date.now()}; history.replaceState(history.state,'',location.pathname+location.search);
       try{ localStorage.setItem(SHARE_KEY,JSON.stringify(got)); }catch(e){} } }catch(e){}
   if(!got){ try{ const o=JSON.parse(localStorage.getItem(SHARE_KEY)||'null'); if(o&&o.k&&o.id&&Date.now()-(o.t||0)<14*864e5) got=o; }catch(e){} }
@@ -1563,18 +1568,18 @@ function shareWarn(go, back){
   w.querySelector('#swBack').onclick=()=>back();
   w.querySelector('#swGo').onclick=()=>{ if(w.querySelector('#swOff').checked){ try{ localStorage.setItem(SHARE_WARN_KEY,'1'); }catch(e){} } go(); }; }
 function openShare(kind,id,name,again,note){
-  const link=shareLink(kind,id), msg=shareMsg(kind,name,link);
+  const link=shareLink(kind,id,name), msg=shareMsg(kind,name,link), named=name+': '+link;
   const w=sheet('Share '+name, `${note?`<div class="msg warn" style="margin:0 0 14px">${note}</div>`:''}
     <p style="margin:0 0 8px">Members open straight onto this page. Anyone else gets the join form, and sees nothing from the list until they are approved.</p>
     <div class="f"><label for="shTxt">The message</label><textarea id="shTxt" rows="6" dir="auto">${esc(msg)}</textarea></div>
-    <div class="f"><label for="shLink">Just the link</label><div class="addrow"><input id="shLink" type="text" readonly value="${esc(link)}" class="mono" style="font-size:13px"><button class="btn soft" type="button" id="shLinkCopy">Copy</button></div></div>
+    <div class="f"><label for="shLink">Name and link</label><div class="addrow"><input id="shLink" type="text" readonly value="${esc(named)}" class="mono" style="font-size:13px"><button class="btn soft" type="button" id="shLinkCopy">Copy</button></div></div>
     <p class="hint">Prices, reviews and contacts never travel in the message. Each person sees only what their own membership allows.</p>`,
     `<button class="btn soft" id="shBack" type="button">Back</button>${navigator.share?'<button class="btn soft" id="shMore" type="button">More…</button>':''}<button class="btn soft" id="shCopy" type="button">Copy message</button><a class="btn primary" id="shWa" style="text-decoration:none" target="_blank" rel="noopener" href="#">WhatsApp</a>`);
   const t=w.querySelector('#shTxt'), wa=w.querySelector('#shWa'), set=()=>{ wa.href='https://wa.me/?text='+encodeURIComponent(t.value); };
   t.addEventListener('input',set); set();
   w.querySelector('#shCopy').onclick=()=>copyText(t.value,t);
   w.querySelector('#shLinkCopy').onclick=()=>{ const i=w.querySelector('#shLink'); copyText(i.value,i); };
-  const mo=w.querySelector('#shMore'); if(mo) mo.onclick=()=>navigator.share({text:t.value}).catch(()=>{});
+  const mo=w.querySelector('#shMore'); if(mo) mo.onclick=()=>navigator.share({title:name,text:t.value}).catch(()=>{});
   w.querySelector('#shBack').onclick=()=>again(); }
 
 const ROLES=['Licensed tour guide','Travel agent','Tour operator',ORG_ROLE,'Other'];
