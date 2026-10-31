@@ -5705,7 +5705,7 @@ Object.assign(DB, {
 // (supabase/migrations/2026-10-31b_job_alerts.sql); the page only turns things on and off.
 // The jobs group link and Eretz Israel Tours' WhatsApp number are app settings the database gives only to whom they are
 // for. They are never in this file, which anyone can download.
-const VAPID_PUBLIC='BIuOQQKSfeeL_euCfPVAXOF1LiU2R7b9ugl08oS95laf6Ht9yhZml_BEq0qRUiu8yHTlwDhkzT3S_9DimbspDjE';
+// The public key for phone alerts comes from the database (alerts_state.vapid_public); it is made there by the sender, never typed in.
 const AL_BAN_KEY='eitv_alerts_banner', AL_GROUP_KEY='eitv_group_card', AL_TOUR_KEY='eitv_group_tour';
 const AL_LINE='Alerts go only for jobs that fit what you take, and not for days you marked busy. Nothing is sent over Shabbat and Yom Tov, or from 23:00 to 07:00.';
 const lsGet=k=>{ try{ return localStorage.getItem(k); }catch(e){ return null; } };
@@ -5734,7 +5734,7 @@ async function alTurnOn(){
     if(perm!=='granted'){ toast(perm==='denied'?'Alerts are blocked for this site. Allow notifications in the browser\'s settings, then try again.':'Not turned on.'); return false; }
     const r=await alSw(); if(!r) throw new Error('Could not start alerts on this phone.');
     let sub=await r.pushManager.getSubscription();
-    if(!sub) sub=await r.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(VAPID_PUBLIC)});
+    if(!sub){ const vk=(S.alerts&&S.alerts.vapid_public)||''; if(!vk) throw new Error('Phone alerts are not ready yet. Try again in a few minutes.'); sub=await r.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(vk)}); }
     S.alerts=await DB.pushSubscribe(sub.toJSON(), (navigator.userAgent||'').slice(0,120));
     toast('Phone alerts are on for this phone.'); return true;
   }catch(e){ toast(e.message||'Could not turn alerts on.'); return false; } }

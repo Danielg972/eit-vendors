@@ -12,7 +12,10 @@
 //      rest of the run's emails go back to waiting without counting a try (free plan: a daily cap); after 7 days unsent,
 //      a row is skipped. A phone the push service says is gone (404 or 410) is switched off
 //      for good (_push_mark).
-// Secrets: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT (mailto:… or https://…), RESEND_API_KEY, ALERTS_SECRET.
+// Secrets: RESEND_API_KEY (an Edge Function secret). The shared secret and the VAPID key pair live in the database's Vault
+// (supabase/migrations/2026-10-31c_job_alerts_keys.sql), read through _alerts_config with the service key; on the first run
+// with no key pair, the function makes one (web-push) and stores it through _alerts_set_vapid, so no key is ever typed in.
+// Environment values ALERTS_SECRET, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY and VAPID_SUBJECT still win when set.
 // SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are given to every Edge Function by Supabase.
 // Nothing it sends names the poster or carries anyone's email or phone; the recipient's own address is only the "to".
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
@@ -32,8 +35,13 @@ function same(a: string, b: string) {
   let x = 0; for (let i = 0; i < a.length; i++) x |= a.charCodeAt(i) ^ b.charCodeAt(i);
   return x === 0;
 }
-function allowed(req: Request) {
-  const s = env("ALERTS_SECRET"), h = req.headers.get("x-alerts-secret") || "";
+type Cfg = { secret?: string; vapid_public?: string; vapid_private?: string };
+async function config(): Promise<Cfg> {
+  const { data } = await db.rpc("_alerts_config");
+  return (data || {}) as Cfg;
+}
+function allowed(req: Request, cfg: Cfg) {
+  const s = env("ALERTS_SECRET") || (cfg.secret || ""), h = req.headers.get("x-alerts-secret") || "";
   const bearer = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
   return (s.length >= 24 && same(h, s)) || (SERVICE.length > 0 && same(bearer, SERVICE));
 }
@@ -76,14 +84,23 @@ async function sendEmail(r: Row, key: string): Promise<[string, string]> {
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "POST only" }, 405);
-  if (!allowed(req)) return json({ error: "not allowed" }, 401);
+  let cfg = await config();
+  if (!allowed(req, cfg)) return json({ error: "not allowed" }, 401);
+  // The first run makes the key pair for phone notifications and keeps it in the Vault (once; a second maker changes nothing).
+  if (!env("VAPID_PRIVATE_KEY") && !cfg.vapid_private) {
+    const k = webpush.generateVAPIDKeys();
+    await db.rpc("_alerts_set_vapid", { p_public: k.publicKey, p_private: k.privateKey });
+    cfg = await config();
+  }
+  const VPUB = env("VAPID_PUBLIC_KEY") || (cfg.vapid_public || ""), VPRIV = env("VAPID_PRIVATE_KEY") || (cfg.vapid_private || "");
+  const VSUB = env("VAPID_SUBJECT") || "mailto:jobs@eretzisraeltours.com";
   const now = new Date(), hold = holdAt(now);
-  if (hold) return json({ held: hold.why, until: hold.until.toISOString() });
-  const vapid = env("VAPID_PUBLIC_KEY") && env("VAPID_PRIVATE_KEY") && env("VAPID_SUBJECT");
+  if (hold) return json({ held: hold.why, until: hold.until.toISOString(), keys: !!(VPUB && VPRIV) });
+  const vapid = VPUB && VPRIV;
   const resend = env("RESEND_API_KEY");
   const channels = [...(vapid ? ["push"] : []), ...(resend ? ["email"] : [])];
   if (!channels.length) return json({ waiting: "no channel set up yet" });
-  if (vapid) webpush.setVapidDetails(env("VAPID_SUBJECT"), env("VAPID_PUBLIC_KEY"), env("VAPID_PRIVATE_KEY"));
+  if (vapid) webpush.setVapidDetails(VSUB, VPUB, VPRIV);
   const { data, error } = await db.rpc("_alerts_due", { p_limit: 50, p_channels: channels });
   if (error) return json({ error: error.message }, 500);
   const rows = (data || []) as Row[];
