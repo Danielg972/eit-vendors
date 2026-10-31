@@ -14,8 +14,12 @@
 | Repo | `Danielg972/eit-vendors`, branch `main` (cite by commit SHA) |
 | Database | Supabase project `wjuqtjlrtcywjaspjpwu` (org "EIT Vendors", Frankfurt) |
 | Schema record | `supabase/schema.sql` (tables, functions, grants), plus `supabase/functions/files/index.ts` (edge function v12) and `supabase/functions/route/index.ts` (edge function `route` v1, D-53) |
-| Terms version | `2026-10-03c` live (adds 2c, organisations as limited members; `2026-10-03a` added 6d, jobs). `2026-10-03d` on the branch `guide-for-clients`: 3a malicious posts, 3c licensed guides and D1, 6e a guide's page for clients, 6f your own page and reviews. All draft, not yet reviewed by a lawyer |
+| Terms version | `2026-10-03c` live (adds 2c, organisations as limited members; `2026-10-03a` added 6d, jobs). `2026-10-03d` on the branch `guide-for-clients`: 3a malicious posts, 3c licensed guides and D1, 6e a guide's page for clients, 6f your own page and reviews. `2026-10-31a` on the branch `job-alerts-d69` (D-69): a paragraph on job alerts in 6d. All draft, not yet reviewed by a lawyer |
 | Decisions | `docs/DECISIONS.md` (D-1 Cockpit boundary; D-2 quote tracker; D-3 driver reviews; D-4 transport by vehicle size; D-5 booking sheets; D-6 welcome tour, name, use-and-add rule; D-7 Shomer Shabbat badge, kosher restaurants only; D-8 opening hours, no-certificate needs approval; D-9 verified hours, last entry, hours from websites; D-10 official buttons; D-11 jobs between colleagues and My days, live for Eretz Israel Tours only; D-15 limited members: organisations that are not in tourism; D-13 food nearby only on places; D-12 a guide's page for clients; D-14 claimed pages, disputes, reviews; D-16 licensed guides only, D1 for Eshkol, malicious posts) |
+
+## Job alerts by phone and email, and the jobs WhatsApp group (D-69): built, not live
+
+Branch `job-alerts-d69`. Alerts when a job fits a colleague (email on for everyone with a one-tap stop link; phone notifications once allowed), held over Shabbat, Yom Tov and 23:00 to 07:00. The jobs group link and Eretz Israel Tours' WhatsApp number are settings, never in the code. Colleagues' jobs wait on a "For the jobs group" list for Eretz Israel Tours. Terms `2026-10-31a` (everyone accepts again). Needs on production: the migration, the Edge Function `job-alerts` with its secrets, the 5-minute schedule, and the three settings. Details in DECISIONS D-69.
 
 ## Job board: day-by-day lines, Jerusalem Old City, message in English first (D-68): live 31 October 2026
 

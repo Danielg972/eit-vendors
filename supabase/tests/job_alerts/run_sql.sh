@@ -9,3 +9,4 @@ psql -q -v ON_ERROR_STOP=1 -d $DB -f $R/supabase/schema.sql 2>&1 | grep -v "NOTI
 psql -q -v ON_ERROR_STOP=1 -d $DB -f $R/supabase/migrations/2026-10-31b_job_alerts.sql 2>&1 | grep -v "NOTICE" | head -5 || true
 psql -q -v ON_ERROR_STOP=1 -d $DB -f $R/supabase/migrations/2026-10-31b_job_alerts.sql 2>&1 | grep -v "NOTICE" | head -5 || true
 psql -q -d $DB -f recipients_probe.sql 2>&1 | grep -o 'PROBE .*' || true
+psql -q -d $DB -f sender_probe.sql 2>&1 | grep -o "PROBE .*" || true
