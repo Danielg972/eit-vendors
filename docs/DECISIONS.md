@@ -10,7 +10,7 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
-## D-69 · Job alerts by phone and email; the jobs WhatsApp group (built, not live)
+## D-69 · Job alerts by phone and email; the jobs WhatsApp group (live 31 Oct 2026, alerts to Eretz Israel Tours only at first)
 
 **Owner, 31 Oct 2026, 20:29:** "can we do Free and automatic: the app sends each colleague a phone notification and an email when a job fits them". **20:41**, his answers: email on for everyone with an unsubscribe link, telling them it is for the jobs board; skip colleagues who marked those days busy; price shown in the alert; English then Hebrew; nothing over Shabbat and Yom Tov, candle lighting to havdalah, Jerusalem times; nothing at night "from 11 - 7"; also alert the colleague a job is given to and those who said available when a job closes, not on edits; alert the poster when someone says "I'm available"; email by Resend; no replies, "they click link and have a contact admin option"; a terms line is fine and every member accepts again. **20:44:** "(b) Guide jobs alert only guides, but a driver job alerts drivers". **21:28:** "add it to the job board when they sign up" (the jobs WhatsApp group). **21:57:** "It comes to me to approve the post and send it as admin." **21:58:** both ways for a colleague's job to reach him for the group (a list in the app with an alert, and a "Send to Eretz Israel Tours" button on WhatsApp).
 
@@ -43,6 +43,10 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 **Sender:** Edge Function `job-alerts` (`supabase/functions/job-alerts`), called every 5 minutes; refuses callers without the shared secret or the service key. Email rows wait while `RESEND_API_KEY` is missing; push rows wait while the VAPID keys are missing.
 
 **Checked (by the session that built it):** `supabase/tests/job_alerts/preview_walk.py` 81/81 in preview (phone, phone dark, desktop; guide, organisation, travel agent; iPhone Safari; the unsubscribe page signed out; `#contact`; the service worker and the self-update check); `recipients_probe.sql` 23/23 and `sender_probe.sql` 12/12 on a local database built from `schema.sql`; the limited-member checks 98/98 with this change; `holds_test.ts` 13/13 and `messages_test.ts` 4/4 (Deno). The D-68 walk still passes 42/42. Not checked: a real phone notification, a real email, anything on production.
+
+
+**Live (31 Oct 2026, 23:19: "Go. Live").** Applied through the connector: `job_alerts_2026_10_31` (the 2026-10-31b file without its last commented section). Production read first: `set_setting` and `_job_json` matched the record. `recipients_probe.sql` run on production as a rolled-back transaction: 23/23; nothing left behind; 0 table grants, 0 policies; 199 to 219 functions. Edge Function `job-alerts` deployed (verify_jwt false), version 1, the files in supabase/functions/job-alerts. Settings: `alerts_for` = admin (only Eretz Israel Tours gets alerts until the owner switches it), `jobs_group_link` and `admin_whatsapp` set (values only in the database).
+**Keys (implementation choice at go-live).** The keys are no longer typed in: `2026-10-31c_job_alerts_keys.sql` makes the shared secret inside the database's Vault, the Edge Function makes the phone-notification key pair on its first run and keeps it in the Vault (`_alerts_set_vapid`), and the app takes the public key from `alerts_state` (`vapid_public`). The builder's earlier key pair was discarded, never used. Writing to the Vault was refused to the master agent by a safety check, so the owner runs that file (with the pg_cron schedule) himself in the SQL editor.
 
 ## D-68 · Job board: a line for each day, Jerusalem Old City, message in English first (live 31 Oct 2026)
 
