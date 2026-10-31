@@ -5294,6 +5294,7 @@ create table if not exists public.alert_queue (
   status text default 'waiting'::text not null,
   created_at timestamp with time zone default now() not null,
   claimed_at timestamp with time zone,
+  tries integer default 0 not null,
   sent_at timestamp with time zone,
   error text default ''::text not null,
   constraint alert_queue_pkey primary key (id),
@@ -5624,7 +5625,7 @@ create or replace function public._alert_why_not(q public.alert_queue)
 as $function$
 declare m public.members; j public.jobs; d0 text := to_char(now() at time zone 'Asia/Jerusalem', 'YYYY-MM-DD');
 begin
-  if q.created_at < now() - interval '4 days' then return 'too old'; end if;
+  if q.created_at < now() - interval '7 days' then return 'too old'; end if;
   select * into m from public.members where email = q.member and status = 'approved' order by created_at limit 1;
   if m.id is null then return 'member not active'; end if;
   if not public._alerts_on(m) then return 'alerts not open to this member'; end if;
@@ -5649,10 +5650,10 @@ begin
 end $function$;
 revoke all on function public._alert_why_not(public.alert_queue) from public, anon, authenticated;
 
--- The rows to send now (at most p_limit), each with what the message needs. Rows that should not go any more are
+-- The rows to send now (at most p_limit, only the channels the sender can send now), each with what the message needs. Rows that should not go any more are
 -- marked skipped first. A row handed out is not handed out again for 10 minutes (claimed_at), so two runs never both
 -- send it. The job goes without its owner, note or payment line: an alert never names the poster.
-create or replace function public._alerts_due(p_limit integer default 50)
+create or replace function public._alerts_due(p_limit integer default 50, p_channels text[] default array['push','email'])
  returns json language plpgsql security definer set search_path to ''
 as $function$
 declare ids uuid[]; out json;
@@ -5661,7 +5662,8 @@ begin
     from (select x.id, public._alert_why_not(x) as why from public.alert_queue x where x.status = 'waiting') w
     where q.id = w.id and w.why is not null;
   select array_agg(id) into ids from (
-    select id from public.alert_queue where status = 'waiting' and (claimed_at is null or claimed_at < now() - interval '10 minutes')
+    select id from public.alert_queue where status = 'waiting' and channel = any (coalesce(p_channels, array[]::text[]))
+      and (claimed_at is null or claimed_at < now() - interval '10 minutes')
     order by created_at limit greatest(1, least(coalesce(p_limit, 50), 200)) for update skip locked) x;
   if ids is null then return '[]'::json; end if;
   update public.alert_queue set claimed_at = now() where id = any (ids);
@@ -5679,15 +5681,18 @@ begin
   where q.id = any (ids);
   return coalesce(out, '[]'::json);
 end $function$;
-revoke all on function public._alerts_due(integer) from public, anon, authenticated;
-grant execute on function public._alerts_due(integer) to service_role;
+revoke all on function public._alerts_due(integer,text[]) from public, anon, authenticated;
+grant execute on function public._alerts_due(integer,text[]) to service_role;
 
 create or replace function public._alert_mark(p_id uuid, p_status text, p_error text default '')
  returns void language plpgsql security definer set search_path to ''
 as $function$
 begin
+  -- 'waiting' = could not be sent this time (the service was busy): tried again on a later run, at most 6 times.
   if p_status = 'waiting' then
-    update public.alert_queue set claimed_at = null, error = left(coalesce(p_error,''), 500) where id = p_id and status = 'waiting';
+    update public.alert_queue set claimed_at = null, tries = tries + 1, error = left(coalesce(p_error,''), 500),
+      status = case when tries + 1 >= 6 then 'failed' else 'waiting' end, sent_at = case when tries + 1 >= 6 then now() end
+    where id = p_id and status = 'waiting';
   elsif p_status in ('sent','skipped','failed') then
     update public.alert_queue set status = p_status, sent_at = now(), error = left(coalesce(p_error,''), 500) where id = p_id and status = 'waiting';
   end if;
