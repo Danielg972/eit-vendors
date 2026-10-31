@@ -10,6 +10,20 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-68 · Job board: a line for each day, Jerusalem Old City, message in English first (live 31 Oct 2026)
+
+**Owner, 31 Oct 2026, 19:56:** "job board is not good. i need to message each person one by one in whatsapp and that is annoying. also it doesnt have a Jerusalem Old City option. also if more than one day each day should get its own description - also it should have english first in message andf then hebrew". **20:16**, after the preview pictures: "yes make it live".
+
+- A job of more than one day gets a box for each date when posting ("Day 1 · Thu 12 Nov"): what happens that day, and hours that day (optional). Colleagues see the lines under "Day by day" on the job, in the calendar entry and in the WhatsApp message. The general Hours box stays, labelled "Hours, if the same every day" on a multi-day job.
+- "Jerusalem Old City" is a region choice for jobs. Implementation choice: jobs only; suppliers keep "Jerusalem".
+- The WhatsApp message is English first, then Hebrew. Implementation choice: the day lines go once, under the English, as the poster wrote them.
+
+**Database** (`supabase/migrations/2026-10-31_job_days.sql`, applied through the connector as `job_days_2026_10_31`): adds `jobs.days`, adds `job_set_days` (poster or Eretz Israel Tours, open jobs only; keeps only days inside the job's dates, one per day, in order), replaces `_job_json` to send `days`. Adds and replaces only; no table grant or policy. The day lines are the poster's own words about the work; no name, phone or email goes in them.
+
+**Checked:** `supabase/tests/job_days/preview_walk.py` 42/42 in preview (phone, phone dark, desktop). On production, a rolled-back probe as Eretz Israel Tours: lines sorted, a day outside the dates and an empty day dropped, clearing works, `jobs_list` carries the lines; nothing left behind. Production `_job_json` was read first and matched the record. Built and checked by the same session.
+
+**Not decided:** how a job reaches colleagues without messaging each one. Put to the owner: send once to a WhatsApp group from the share sheet (free, works today); phone notification and email from the app (free, each colleague allows it once); automatic WhatsApp from an Eretz Israel Tours business number (Meta charges per message; his money decision).
+
 ## D-66 · "Open now" on places you visit (live 26 Oct 2026)
 
 **Owner, 26 Oct 2026, 21:02:** "I like the open now idea. I like how city of David looks, so forget revamping." (The idea was in a mock-up of a restyled list, 15:56; the restyle itself is dropped.) **21:29**, after a picture of it in the app's own style: "Go live"
