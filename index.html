@@ -5273,6 +5273,12 @@ const JOB_KINDS=[['guide','Guide','מדריך/ה'],['guide_vehicle','Guide with 
 const JOB_NEEDS=[['licensed','Licensed guide'],['eshkol','Eshkol license (D1)'],['midbari','Midbari 4x4 vehicle'],['gun','Carries a gun'],['shabbat','Shomer Shabbat']];
 const JOB_PER=[['day','per day','ליום'],['job','for the whole job','לכל העבודה'],['hour','per hour','לשעה'],['vehicle','per vehicle','לרכב']];
 const JOB_VAT={including_vat:['VAT included','כולל מע״מ'],plus_vat:['plus VAT','בתוספת מע״מ'],not_applicable:['no VAT','ללא מע״מ']};
+// D-68: the Old City is its own choice for a job's region (jobs only; suppliers keep Jerusalem).
+const JOB_REGIONS=REGIONS.flatMap(r=>r==='Jerusalem'?[r,'Jerusalem Old City']:[r]);
+// D-68: a job of more than one day has a line for each day. Only lines inside the job's dates count.
+const jDayLab=(iso,i)=>{ let s=iso; try{ s=new Date(iso+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}); }catch(e){} return 'Day '+(i+1)+' · '+s; };
+const jDays=j=>{ const r=isoRange(j.date_from,j.date_to); if(r.length<2) return []; const by=new Map((Array.isArray(j.days)?j.days:[]).map(x=>[x.d,x]));
+  return r.map((d,i)=>({d,i,text:(by.get(d)||{}).text||'',hours:(by.get(d)||{}).hours||''})).filter(x=>x.text||x.hours); };
 const WEEKDAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Shabbat'];
 const DAYS_STALE=21; // days before the app asks "are your days still right?"
 const jobsOn=()=>(!LIVE&&!lim())||!!(S.me&&S.me.jobs);
@@ -5357,6 +5363,7 @@ function wireJview(){ document.querySelectorAll('[data-jv]').forEach(x=>x.onclic
 function jobRows(j){
   const r=(k,v)=>v?`<dt>${k}</dt><dd>${esc(v)}</dd>`:'';
   return `<dl class="dl">${r('Date',bkRange(j,false))}${r('Hours',j.hours)}${r('Starts at',j.start_place)}${r('Region',j.region)}${r('Group',j.pax)}${r('Language',j.langs)}${r('Must have',csv(j.needs).map(k=>jLab(JOB_NEEDS,k)).join(', '))}${r('Payment',j.payment)}${r('Answer by',j.reply_by?ilDate(j.reply_by):'')}</dl>
+    ${jDays(j).length?`<p class="favs-h" style="margin:0 2px 8px">Day by day</p><dl class="dl">${jDays(j).map(x=>`<dt>${esc(jDayLab(x.d,x.i))}</dt><dd>${esc(x.text)}${x.hours?`<span class="hint" style="display:block">${esc(x.hours)}</span>`:''}</dd>`).join('')}</dl>`:''}
     ${j.note?`<div class="note"><div class="meta">${j.mine?'Your note':'From the colleague'}</div><p>${esc(j.note)}</p></div>`:''}`; }
 const jobHead=j=>`<div style="margin:0 0 12px"><span class="cat">${esc(jKind(j))}</span><div style="font-family:var(--f-display);font-size:22px;line-height:1.2">${esc(j.title)}</div></div>
   <div class="jbig"><span class="p">${esc(jMoney(j))}</span><span class="u">${esc(jPerLine(j))}</span><div class="nofee">${j.mine?'No fee. You pay this amount in full, directly to the colleague who takes the job.':'No fee. You are paid the full amount by the colleague who posted.'}</div></div>`;
@@ -5364,7 +5371,7 @@ function phoneRow(name, role, phone){
   const d=firstPhone(phone);
   return `<div class="jbig"><b>${esc(name)}</b>${role?` <span class="hint">· ${esc(role)}</span>`:''}<br>${d?`<span class="mono">${esc(phone)}</span><div class="btn-row" style="margin-top:8px"><a class="btn soft" style="text-decoration:none" href="tel:${esc(d)}">Call</a><a class="btn soft" style="text-decoration:none" href="https://wa.me/${esc(intlDigits(d))}" target="_blank" rel="noopener">Chat on WhatsApp</a></div>`:'<span class="hint">No phone number on file. Ask Eretz Israel Tours.</span>'}</div>`; }
 // "Add to my calendar": Google Calendar by link; Apple, Outlook and the rest by a calendar file.
-function jobCalText(j, who){ return [jKind(j)+': '+j.title, j.hours?'Hours: '+j.hours:'', j.start_place?'Starts at: '+j.start_place:'', j.pax?'Group: '+j.pax:'', j.langs?'Language: '+j.langs:'', 'Pay: '+jMoney(j)+' '+jPerLine(j), j.payment?'Payment: '+j.payment:'', who||'', j.note||'', 'From The Inner Circle – Israel Guide'].filter(Boolean).join('\n'); }
+function jobCalText(j, who){ return [jKind(j)+': '+j.title, j.hours?'Hours: '+j.hours:'', ...jDays(j).map(x=>jDayLab(x.d,x.i)+': '+[x.text,x.hours].filter(Boolean).join(', ')), j.start_place?'Starts at: '+j.start_place:'', j.pax?'Group: '+j.pax:'', j.langs?'Language: '+j.langs:'', 'Pay: '+jMoney(j)+' '+jPerLine(j), j.payment?'Payment: '+j.payment:'', who||'', j.note||'', 'From The Inner Circle – Israel Guide'].filter(Boolean).join('\n'); }
 function jobGcal(j, who){ const a=j.date_from.replace(/-/g,''), b=isoAdd(j.date_to||j.date_from,1).replace(/-/g,'');
   return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent(j.title)+'&dates='+a+'/'+b+'&details='+encodeURIComponent(jobCalText(j,who))+(j.start_place?'&location='+encodeURIComponent(j.start_place):''); }
 function jobIcs(j, who){
@@ -5434,7 +5441,7 @@ async function openJobMine(j){
 
 // Post a job, step 1: the job.
 function openJobForm(j){
-  const d=Object.assign({kind:'guide',title:'',date_from:'',date_to:'',hours:'',start_place:'',region:'',pax:'',langs:'',needs:'',price:'',currency:'ILS',per:'day',vat:'including_vat',payment:'',note:'',reply_by:'',anon:true,audience:'all'}, j||S.jobDraft||{needs:'licensed'});   // a new job starts as a guide job, and guiding is for licensed guides
+  const d=Object.assign({kind:'guide',title:'',date_from:'',date_to:'',days:[],hours:'',start_place:'',region:'',pax:'',langs:'',needs:'',price:'',currency:'ILS',per:'day',vat:'including_vat',payment:'',note:'',reply_by:'',anon:true,audience:'all'}, j||S.jobDraft||{needs:'licensed'});   // a new job starts as a guide job, and guiding is for licensed guides
   const tg=(grp,k,l,on)=>`<button class="tg" type="button" data-${grp}="${k}" aria-pressed="${on}">${esc(l)}</button>`;
   const w=sheet(j?'Change the job':'Post a job', `
     <fieldset><legend>Who you need</legend><div class="tgs" id="jfKind" role="group" aria-label="Who you need">${JOB_KINDS.map(k=>tg('kind',k[0],k[1],d.kind===k[0])).join('')}</div></fieldset>
@@ -5442,12 +5449,13 @@ function openJobForm(j){
       <div class="f wide"><label for="jfTitle">What is it, in a few words <em>*</em></label><input id="jfTitle" maxlength="120" value="${esc(d.title)}" placeholder="Old City and City of David, full day"></div>
       <div class="f"><label for="jfFrom">Date <em>*</em></label><input id="jfFrom" type="date" value="${esc(d.date_from)}"></div>
       <div class="f"><label for="jfTo">Last day, if more than one</label><input id="jfTo" type="date" value="${esc(d.date_to)}"></div>
-      <div class="f"><label for="jfHours">Hours</label><input id="jfHours" maxlength="40" value="${esc(d.hours)}" placeholder="08:00 to 17:00"></div>
+      <div class="f"><label for="jfHours" id="jfHoursL">Hours</label><input id="jfHours" maxlength="40" value="${esc(d.hours)}" placeholder="08:00 to 17:00"></div>
       <div class="f"><label for="jfStart">Starts at</label><input id="jfStart" maxlength="160" value="${esc(d.start_place)}" placeholder="Jaffa Gate"></div>
-      <div class="f"><label for="jfRegion">Region</label><select id="jfRegion"><option value="">Choose…</option>${REGIONS.map(r=>`<option${d.region===r?' selected':''}>${esc(r)}</option>`).join('')}</select></div>
+      <div class="f"><label for="jfRegion">Region</label><select id="jfRegion"><option value="">Choose…</option>${JOB_REGIONS.map(r=>`<option${d.region===r?' selected':''}>${esc(r)}</option>`).join('')}</select></div>
       <div class="f"><label for="jfPax">Group</label><input id="jfPax" maxlength="80" value="${esc(d.pax)}" placeholder="Family of 6"></div>
       <div class="f wide"><label for="jfLangs">Language of the group</label><input id="jfLangs" maxlength="120" value="${esc(d.langs)}" placeholder="English"></div>
     </div></fieldset>
+    <fieldset id="jfDaysF" hidden><legend>Day by day</legend><p class="hint" style="margin:0 0 10px">What each day is. Colleagues see these lines with the job and in the WhatsApp message.</p><div id="jfDays"></div></fieldset>
     <fieldset><legend>Must have</legend><div class="tgs" id="jfNeeds" role="group" aria-label="Must have">${JOB_NEEDS.map(k=>tg('need',k[0],k[1],csv(d.needs).includes(k[0]))).join('')}</div>
       <p class="hint" style="margin:8px 0 0">Only a licensed guide may guide. Leave "Licensed guide" on unless this is a specialty such as a shuk tour or a graffiti tour. An Eshkol driver or guide needs a D1 license.</p>
       <p class="hint" style="margin:-6px 0 0">The job goes only to colleagues who have said they have these.</p></fieldset>
@@ -5466,12 +5474,22 @@ function openJobForm(j){
   w.querySelectorAll('#jfKind .tg').forEach(b=>b.onclick=()=>w.querySelectorAll('#jfKind .tg').forEach(x=>x.setAttribute('aria-pressed',x===b)));
   w.querySelectorAll('#jfNeeds .tg').forEach(b=>b.onclick=()=>b.setAttribute('aria-pressed',b.getAttribute('aria-pressed')!=='true'));
   w.querySelector('#jfCancel').onclick=closeSheet;
+  // Day by day: one line per date once the job runs more than one day. What is typed is kept when the dates change.
+  const dayVals=new Map((Array.isArray(d.days)?d.days:[]).map(x=>[x.d,{text:x.text||'',hours:x.hours||''}]));
+  const keepDays=()=>w.querySelectorAll('#jfDays [data-day]').forEach(r=>dayVals.set(r.dataset.day,{text:r.querySelector('.dt').value,hours:r.querySelector('.dh').value}));
+  const drawDayRows=()=>{ keepDays(); const a=w.querySelector('#jfFrom').value, b=w.querySelector('#jfTo').value, list=a&&b&&b>a?isoRange(a,b):[];
+    w.querySelector('#jfDaysF').hidden=!list.length; w.querySelector('#jfHoursL').textContent=list.length?'Hours, if the same every day':'Hours';
+    w.querySelector('#jfDays').innerHTML=list.map((iso,i)=>{ const v=dayVals.get(iso)||{text:'',hours:''};
+      return `<div class="grid" data-day="${iso}" style="margin:0 0 10px"><div class="f wide"><label for="jfD${i}">${esc(jDayLab(iso,i))}</label><input id="jfD${i}" class="dt" maxlength="300" value="${esc(v.text)}" placeholder="What happens that day"></div>
+        <div class="f"><label for="jfDH${i}">Hours that day</label><input id="jfDH${i}" class="dh" maxlength="40" value="${esc(v.hours)}" placeholder="08:00 to 17:00"></div></div>`; }).join(''); };
+  ['jfFrom','jfTo'].forEach(id=>w.querySelector('#'+id).addEventListener('change',drawDayRows)); drawDayRows();
   const val=id=>w.querySelector('#'+id).value.trim();
   w.querySelector('#jfNext').onclick=()=>{
     const kind=(w.querySelector('#jfKind .tg[aria-pressed="true"]')||{dataset:{}}).dataset.kind||'';
     const out={id:j?j.id:undefined,kind,title:val('jfTitle'),date_from:val('jfFrom'),date_to:val('jfTo'),hours:val('jfHours'),start_place:val('jfStart'),region:val('jfRegion'),pax:val('jfPax'),langs:val('jfLangs'),
       needs:[...w.querySelectorAll('#jfNeeds .tg[aria-pressed="true"]')].map(b=>b.dataset.need).join(','),price:val('jfPrice').replace(/[,\s₪$€]/g,''),currency:val('jfCur'),per:val('jfPer'),vat:val('jfVat'),payment:val('jfPay'),note:val('jfNote'),reply_by:val('jfReply'),
-      anon:w.querySelector('#jfAnon').checked,audience:d.audience};
+      anon:w.querySelector('#jfAnon').checked,audience:d.audience,
+      days:[...w.querySelectorAll('#jfDays [data-day]')].map(r=>({d:r.dataset.day,text:r.querySelector('.dt').value.trim(),hours:r.querySelector('.dh').value.trim()})).filter(x=>x.text||x.hours)};
     const bad = !kind?'Choose who you need.' : out.title.length<3?'Say what the job is, in a few words.' : !out.date_from?'Add the date of the job.' : out.date_from<isoToday()?'That date has passed.'
       : out.date_to&&out.date_to<out.date_from?'The last day is before the first day.' : !/^\d{1,7}(\.\d{1,2})?$/.test(out.price)?'Add the price you pay, as a number.' : '';
     if(bad){ w.querySelector('#jfMsg').innerHTML=`<div class="msg err">${bad}</div>`; return; }
@@ -5507,12 +5525,14 @@ async function openJobSend(d){
     catch(e){ w.querySelector('#jsMsg').innerHTML=`<div class="msg err">${esc(e.message)}</div>`; post.disabled=false; } };
   draw();
 }
-// The WhatsApp message for a job: Hebrew, then English, with a link that opens the job in the app.
+// The WhatsApp message for a job: English, then Hebrew (D-68), with a link that opens the job in the app.
+// The day-by-day lines go once, under the English, as the poster wrote them.
 function jobMsg(j){
   const link=APP_URL+'#job='+j.id, k=JOB_KINDS.find(x=>x[0]===j.kind), per=JOB_PER.find(x=>x[0]===j.per);
   const he=[k?k[2]:'', bkRange(j,true), j.region, Number(j.price).toLocaleString('en-US')+' '+(CUR_SIGN[j.currency]||'₪')+' '+(per?per[2]:'')+(JOB_VAT[j.vat]?' '+JOB_VAT[j.vat][1]:'')].filter(Boolean).join(', ');
   const en=[jKind(j).toLowerCase(), bkRange(j,false), j.region, jMoney(j)+' '+jPerLine(j)].filter(Boolean).join(', ');
-  return `עבודה חדשה במעגל הפנימי: ${he}. פרטים ותשובה: ${link}\n\nNew job on The Inner Circle: ${en}. Details and answer: ${link}`; }
+  const days=jDays(j).map(x=>jDayLab(x.d,x.i)+': '+[x.text,x.hours].filter(Boolean).join(', '));
+  return `New job on The Inner Circle: ${en}.${days.length?'\n'+days.join('\n'):''}\nDetails and answer: ${link}\n\nעבודה חדשה במעגל הפנימי: ${he}. פרטים ותשובה: ${link}`; }
 // After posting: the job is in colleagues' Jobs tab; sharing on WhatsApp is the poster's own choice.
 function openJobPosted(j, again){
   const msg=jobMsg(j);
@@ -5588,7 +5608,8 @@ function demoJobsInit(){
   S.dj={people, me:{days:[{d:inD(9),src:'job',job:'Judean Desert sunset tour'},{d:inD(20),src:'tap',job:null},{d:isoAdd(inD(20),1),src:'tap',job:null}],weekly:'6',shared:true,updated_at:ago(26*24),kinds:'guide,jeep_driver',tags:'licensed,midbari',langs:'English, Hebrew',phone:'050-000-0000'},
     jobs:[
       job({id:'jd1',owner:'c1',title:'Old City and City of David, full day',date_from:inD(14),hours:'08:00 to 17:00',start_place:'Jaffa Gate',region:'Jerusalem',pax:'Family of 6',langs:'English',needs:'licensed',price:'1400',payment:'Bank transfer within 14 days',note:'Bar mitzvah family, two grandparents who walk slowly. Entrance tickets are booked.',created_at:ago(2)}),
-      job({id:'jd2',owner:'c6',anon:false,kind:'guide_vehicle',title:'Galilee and Golan, 2 days',date_from:inD(20),date_to:isoAdd(inD(20),1),start_place:'Tiberias',region:'Galilee',pax:'Couple',langs:'English or French',needs:'eshkol',price:'2600',vat:'plus_vat',reply_by:inD(12),created_at:ago(26)}),
+      job({id:'jd2',owner:'c6',anon:false,kind:'guide_vehicle',title:'Galilee and Golan, 2 days',date_from:inD(20),date_to:isoAdd(inD(20),1),
+        days:[{d:inD(20),text:'Tzfat old city and the artists\' quarter, lunch in Rosh Pina, sunset on Mount Arbel',hours:'08:30 to 18:00'},{d:isoAdd(inD(20),1),text:'Golan: Gamla, Katzrin, a winery, back to Tiberias',hours:'08:00 to 16:00'}],start_place:'Tiberias',region:'Galilee',pax:'Couple',langs:'English or French',needs:'eshkol',price:'2600',vat:'plus_vat',reply_by:inD(12),created_at:ago(26)}),
       job({id:'jd3',owner:'c4',kind:'jeep_driver',title:'Judean Desert sunset tour, 3 hours',date_from:inD(9),hours:'15:30',start_place:'Metzoke Dragot',region:'Dead Sea & Judean Desert',pax:'Group of 14, 2 jeeps',needs:'midbari',price:'900',per:'vehicle',status:'filled',taken:'me',myAnswer:'yes',created_at:ago(70)}),
       job({id:'jd4',owner:'me',anon:true,audience:'picked',title:'Shomron day: Shilo and Har Bracha',date_from:inD(11),hours:'08:30 to 16:30',start_place:'Hotel, Jerusalem',region:'Binyamin & Shomron',pax:'Group of 12',langs:'English',needs:'licensed,gun',price:'1500',payment:'Bank transfer, end of the month',
         offers:{c2:{picked:true,answer:'yes',answered_at:ago(1)},c1:{picked:true,answer:'',answered_at:null},c3:{picked:true,answer:'no',answered_at:ago(3)}},created_at:ago(5)})]};
@@ -5619,7 +5640,7 @@ Object.assign(DB, {
     return demoJobsInit().people.filter(p=>demoFits(d.kind,d.needs,p)).map(p=>({id:p.id,name:p.name,role:p.role,langs:p.langs,tags:p.tags,profile:p.kinds!=='',day:demoDay(p,d.date_from,d.date_to,false),days_age:p.shared?p.upd:null}))
       .sort((a,b)=>ord.indexOf(a.day)-ord.indexOf(b.day)||a.name.localeCompare(b.name)); },
   async saveJob(d, ids){
-    if(LIVE) return await rpc('job_save',{p_job:d,p_to:ids||[]});
+    if(LIVE){ const r=await rpc('job_save',{p_job:d,p_to:ids||[]}); return (d.id||(d.days&&d.days.length)) ? await rpc('job_set_days',{p_id:r.id,p_days:d.days||[]}) : r; }
     const D=demoJobsInit(), now=new Date().toISOString(); let j=d.id&&D.jobs.find(x=>x.id===d.id);
     if(!j){ j={id:'j'+Date.now(),owner:'me',status:'open',taken:'',myAnswer:'',offers:{},created_at:now}; D.jobs.unshift(j); }
     Object.assign(j,d,{id:j.id,updated_at:now}); Object.keys(j.offers).forEach(k=>{ if(!j.offers[k].answer) delete j.offers[k]; else j.offers[k].picked=false; });
