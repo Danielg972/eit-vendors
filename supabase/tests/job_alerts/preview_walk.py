@@ -21,6 +21,9 @@ async def ctx_for(b,w,h,dark=False,ua=None,tour_seen=True):
 async def page(ctx,tag,url=URL):
     pg=await ctx.new_page(); pg.on('pageerror',lambda e: errs.append(tag+': '+str(e)))
     await pg.goto(url); return pg
+async def shot(pg,path,loc=None):
+    await pg.evaluate("()=>{ const t=document.getElementById('toast'); if(t) t.hidden=true; }"); await pg.wait_for_timeout(350)
+    await (loc or pg).screenshot(path=path)
 async def view_as(pg,k):
     await pg.select_option('#demoAs',k); await pg.wait_for_timeout(150)
 
@@ -30,7 +33,7 @@ async def walk(p,w,h,tag,dark=False):
     await pg.click('.tab[data-tab="jobs"]'); await pg.wait_for_selector('.jobcard')
     check(tag+': banner "Get job alerts on this phone"', await pg.locator('#alBan').count()==1 and 'Get job alerts on this phone' in await pg.locator('#alBan').inner_text())
     check(tag+': group card for Eretz Israel Tours', await pg.locator('#alGroup').count()==1)
-    await pg.screenshot(path=OUT+tag+'_banner.png')
+    await shot(pg,OUT+tag+'_banner.png')
     await pg.click('#alNot'); await pg.wait_for_timeout(100)
     check(tag+': "Not now" hides the banner', await pg.locator('#alBan').count()==0)
     await pg.reload(); await pg.wait_for_selector('.tabs'); await pg.click('.tab[data-tab="jobs"]'); await pg.wait_for_selector('.jobcard')
@@ -47,20 +50,19 @@ async def walk(p,w,h,tag,dark=False):
     await pg.click('#alEmail'); await pg.wait_for_timeout(100)
     await pg.click('#alPhone'); await pg.wait_for_timeout(150)
     check(tag+': phone switch turns on (preview)', await pg.is_checked('#alPhone') and 'On for this phone' in await pg.inner_text('#alPhoneH'))
-    await pg.locator('#alSec').scroll_into_view_if_needed(); await pg.screenshot(path=OUT+tag+'_my_days_alerts.png')
+    await pg.locator('#alSec').scroll_into_view_if_needed(); await shot(pg,OUT+tag+'_my_days_alerts.png')
     check(tag+': no sideways scroll on My days', not await pg.evaluate(NOSCROLL))
     # 3. Eretz Israel Tours: the "For the jobs group" list
     await pg.click('[data-jv="mine"]'); await pg.wait_for_selector('#grpH')
-    tabtxt=await pg.locator('[data-jv="mine"]').inner_text()
-    check(tag+': My posts tab shows a count for the jobs group', '1' in tabtxt, tabtxt)
+    check(tag+': "For the jobs group" has a count badge', (await pg.locator('#grpH .pill').inner_text()).strip()=='1')
     check(tag+': one colleague job waiting, with both buttons', await pg.locator('[data-gshare]').count()==1 and await pg.locator('[data-gskip]').count()==1)
-    await pg.locator('#grpH').scroll_into_view_if_needed(); await pg.screenshot(path=OUT+tag+'_group_list.png')
+    await pg.locator('#grpH').scroll_into_view_if_needed(); await shot(pg,OUT+tag+'_group_list.png')
     if tag!='desktop':
         await pg.click('[data-gshare]'); await pg.wait_for_selector('#gmTxt')
         msg=await pg.input_value('#gmTxt')
         check(tag+': group message English first, then Hebrew', msg.startswith('New job on The Inner Circle') and msg.find('עבודה חדשה')>msg.find('New job'), msg[:120])
         check(tag+': group message has the link and no poster name', '#job=jd1' in msg and 'Tamar' not in msg and 'Levy' not in msg, msg)
-        await pg.locator('.sheet').screenshot(path=OUT+tag+'_group_share.png')
+        await shot(pg,OUT+tag+'_group_share.png',pg.locator('.sheet'))
         await ctx.grant_permissions(['clipboard-read','clipboard-write'])
         await pg.click('#gmCopy'); await pg.wait_for_timeout(300); await pg.click('#closeS'); await pg.wait_for_timeout(100)
         check(tag+': after sharing the list is empty', await pg.locator('[data-gshare]').count()==0)
@@ -90,7 +92,7 @@ async def guide_and_org(p):
     card=await pg.locator('#alGroup').inner_text() if await pg.locator('#alGroup').count() else ''
     check('guide: group card shown', 'Join the Inner Circle – Jobs WhatsApp group' in card and 'only admins post' in card and 'Join (opens WhatsApp)' in card, card)
     check('guide: card links to the sample group', await pg.get_attribute('#alJoin','href')=='https://chat.whatsapp.com/SAMPLE')
-    await pg.locator('#alGroup').screenshot(path=OUT+'guide_group_card.png'); await pg.screenshot(path=OUT+'guide_jobs_tab.png')
+    await shot(pg,OUT+'guide_group_card.png',pg.locator('#alGroup')); await shot(pg,OUT+'guide_jobs_tab.png')
     check('guide: no "For the jobs group" list', await pg.locator('#grpH').count()==0)
     await pg.click('#alGroupX'); await pg.wait_for_timeout(100)
     check('guide: dismiss hides the card', await pg.locator('#alGroup').count()==0)
@@ -107,7 +109,7 @@ async def guide_and_org(p):
     hint=await pg.locator('.sheet-body').inner_text()
     check('guide: the hint line under it', 'Eretz Israel Tours shares approved jobs in the Inner Circle – Jobs WhatsApp group.' in hint)
     check('guide: no preview alert list for a colleague', await pg.locator('.al-prev').count()==0)
-    await pg.locator('.sheet').screenshot(path=OUT+'guide_send_to_eit.png')
+    await shot(pg,OUT+'guide_send_to_eit.png',pg.locator('.sheet'))
     await pg.click('#jmDone')
     # the welcome tour has the group line for a guide
     await pg.click('#meBtn'); await pg.wait_for_selector('#myTour'); await pg.click('#myTour'); await pg.wait_for_selector('#tourWrap')
@@ -116,7 +118,7 @@ async def guide_and_org(p):
         if await pg.locator('#tourWrap .tour-grp').count(): found=True; break
         await pg.click('#tourWrap [data-t="next"]'); await pg.wait_for_timeout(80)
     check('guide: the welcome tour has the jobs group line', found)
-    if found: await pg.locator('#tourWrap').screenshot(path=OUT+'guide_tour_group.png')
+    if found: await pg.locator('#tourWrap .tour-grp').scroll_into_view_if_needed(); await shot(pg,OUT+'guide_tour_group.png')
     await b.close()
     # an organisation: no Jobs tab, no group card anywhere
     tag='org'; b=await p.chromium.launch(); ctx=await ctx_for(b,390,844); pg=await page(ctx,tag); await pg.wait_for_selector('.tabs')
@@ -136,7 +138,7 @@ async def iphone(p):
     await pg.click('#alOn'); await pg.wait_for_selector('.al-steps')
     t=await pg.locator('.sheet').inner_text()
     check('iphone: two steps with the Share button and Add to Home Screen', 'two steps' in t and 'Share' in t and 'square with an arrow up' in t and 'Add to Home Screen' in t and 'tap Turn on again' in t.replace('\n',' '), t)
-    await pg.screenshot(path=OUT+'iphone_steps.png')
+    await shot(pg,OUT+'iphone_steps.png')
     check('iphone: no sideways scroll', not await pg.evaluate(NOSCROLL))
     await pg.click('#alGot'); await pg.wait_for_timeout(100)
     check('iphone: banner stays (not turned on)', await pg.locator('#alBan').count()==1)
@@ -151,7 +153,7 @@ async def signed_out(p):
         check(tag+': unsubscribe page says done', "Done. You won't get job emails any more. You can turn them back on in My days." in t.replace('\n',' '), t)
         check(tag+': no tabs, no sign-in asked', await pg.locator('.tabs').count()==0 and await pg.locator('#gateForm').count()==0)
         check(tag+': address cleaned', '#unsub' not in pg.url, pg.url)
-        await pg.screenshot(path=OUT+tag+'_page.png'); await b.close()
+        await shot(pg,OUT+tag+'_page.png'); await b.close()
     b=await p.chromium.launch(); ctx=await ctx_for(b,390,844); pg=await page(ctx,'contact',URL+'#contact'); await pg.wait_for_selector('.tabs')
     await pg.wait_for_timeout(200)
     check('contact: #contact opens the Feedback sheet', await pg.locator('#fbMsg').count()==1)

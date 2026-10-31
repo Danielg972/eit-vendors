@@ -5336,7 +5336,7 @@ function jobCard(j, mode){
     <div class="jfoot">${esc(by)} · ${since(j.created_at)}${j.reply_by&&mode==='open'?' · answer by '+esc(ilDate(j.reply_by)):''}</div></button>`; }
 function jobFind(id){ const J=S.jobs||{}; for(const k of ['taken','open','mine','all']){ const j=(J[k]||[]).find(x=>String(x.id)===String(id)); if(j) return [j,k]; } return [null,'']; }
 function wireJobCards(root){ root.querySelectorAll('[data-job]').forEach(el=>el.onclick=()=>{ const k=el.dataset.mode, j=((S.jobs||{})[k]||[]).find(x=>String(x.id)===el.dataset.job); if(!j) return; (k==='mine'||k==='all')?openJobMine(j):openJob(j); }); }
-const jviewSwitch=()=>`<div class="otabs vtabs" role="tablist" style="margin:12px 0 10px">${[['open','Open jobs'],['mine','My posts'],['days','My days']].filter(x=>x[0]!=='mine'||jobsPost()).map(([k,l])=>`<button class="otab" type="button" role="tab" data-jv="${k}" aria-selected="${S.jview===k}">${l}${k==='mine'&&groupWaiting().length?` <span class="pill high" aria-label="${groupWaiting().length} for the jobs group">${groupWaiting().length}</span>`:''}</button>`).join('')}</div>`;
+const jviewSwitch=()=>`<div class="otabs vtabs" role="tablist" style="margin:12px 0 10px">${[['open','Open jobs'],['mine','My posts'],['days','My days']].filter(x=>x[0]!=='mine'||jobsPost()).map(([k,l])=>`<button class="otab" type="button" role="tab" data-jv="${k}" aria-selected="${S.jview===k}">${l}</button>`).join('')}</div>`;
 async function reloadJobs(){ S.jobs=await DB.loadJobs(); if(S.tab==='jobs') render(); }
 async function viewJobs(){
   const view=document.getElementById('view');
@@ -5562,7 +5562,7 @@ function openJobPosted(j, again){
     <div class="f"><label for="jmTxt">The message</label><textarea id="jmTxt" rows="7" dir="auto">${esc(msg)}</textarea></div>
     ${j.anon?`<div class="jnote warn" style="margin-top:12px">You posted without your name. A WhatsApp message comes from your own number, so whoever you send it to knows it is you.</div>`:''}
     <p class="hint" style="margin-top:12px">The link opens this job in the app. A colleague the job was not sent to sees "not open to you".</p>
-    ${!S.admin&&S.alerts&&S.alerts.admin_whatsapp?`<div class="jbig" style="margin-top:14px"><a class="btn soft" id="jmEit" style="text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/${esc(String(S.alerts.admin_whatsapp).replace(/\D/g,''))}?text=${encodeURIComponent(jobMsg(j))}">Send to Eretz Israel Tours for the jobs group</a><p class="hint" style="margin:8px 0 0">Eretz Israel Tours shares approved jobs in the Inner Circle – Jobs WhatsApp group.</p></div>`:''}
+    ${!S.admin&&S.alerts&&S.alerts.admin_whatsapp?`<div class="jbig" style="margin-top:14px"><a class="btn soft" id="jmEit" style="text-decoration:none;display:block;text-align:center" target="_blank" rel="noopener" href="https://wa.me/${esc(String(S.alerts.admin_whatsapp).replace(/\D/g,''))}?text=${encodeURIComponent(jobMsg(j))}">Send to Eretz Israel Tours for the jobs group</a><p class="hint" style="margin:8px 0 0">Eretz Israel Tours shares approved jobs in the Inner Circle – Jobs WhatsApp group.</p></div>`:''}
     ${again?'':demoAlertHtml(j)}`,
     `<button class="btn soft" id="jmDone" type="button">Done</button><button class="btn soft" id="jmCopy" type="button">Copy</button><a class="btn primary" id="jmWa" style="text-decoration:none" target="_blank" rel="noopener" href="#">Share on WhatsApp</a>`);
   const t=w.querySelector('#jmTxt'), wa=w.querySelector('#jmWa'), set=()=>{ wa.href='https://wa.me/?text='+encodeURIComponent(t.value); };
