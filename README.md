@@ -10,6 +10,7 @@ Shared vendor list for Eretz Israel Tours colleagues. Static single-page app (Gi
 - **Files:** private bucket `vendor-files` (photos/PDFs, 10 MB). The `files` edge function checks the link and signs uploads/downloads.
 - **Review:** colleague adds/edits are `pending` until Daniel approves. Only approved vendors go into the R5 export.
 - **R5 export:** Review tab → `{ "_exportFormatVersion": 3, "_tripVendors": [...], "days": [] }` with R5's exact 33 field keys + `id` (`vendor_` + 7 base-36 chars). Importing through R5's trip importer clears the open trip view, so save the trip first. R5 itself is never modified.
+- **Job alerts (D-69, built, not live):** `sw.js` at the site root shows phone notifications (web push; no fetch handler, caches nothing, so the self-update check is unchanged). The Edge Function `supabase/functions/job-alerts` sends what the database queues in `alert_queue` (email through Resend, push with VAPID), holding everything over Shabbat, Yom Tov and 23:00 to 07:00 Israel time. The jobs group link and Eretz Israel Tours' WhatsApp number are app settings (`jobs_group_link`, `admin_whatsapp`), never in the code. See DECISIONS D-69.
 - **Keep-alive:** `.github/workflows/keep-alive.yml` pings the database every 3 days so the free project doesn't pause.
 - The publishable key in `index.html` is meant to be public; data is protected by the personal links.
 
