@@ -27,7 +27,7 @@ shared a list (named by its filters) with him; after approval the link opens. Un
 
 ---
 
-## D-70 · Armored (bulletproof) and stone-proof vehicles in Transport, by size (built 1 Nov 2026, not live)
+## D-70 · Armored (bulletproof) and stone-proof vehicles in Transport, by size (live 1 Nov 2026)
 
 **Owner, 1 Nov 2026, 11:18:** "on transport bus all transport add armored / bulletproof with bus size options".
 **Owner, 11:32**, shown the preview and asked (1) go live, including the database change, and (2) stone-proof as its own option too: "1 yes 2 yes".
@@ -45,6 +45,11 @@ Armored bus (36–60 seats), Armored midibus (21–35), Armored van (up to 20), 
 ("armored", "armoured", "bulletproof", "ממוגן ירי"). Van sizes are not split for armored vans. Database: migration
 `2026-11-01_armored_vehicles.sql` adds the four keys to the vehicle lists in `_quote_kind`, `quote_save`, `booking_save` and the
 label in `_booking_to_quote` by editing their live text, and widens the check on `bookings.service` (drop and add again; no row changes).
+
+**Live (owner, 11:36: "do it for me"):** migration `armored_vehicles_2026_11_01` applied to production at about 11:37; the four
+functions on production match the tested copy (fingerprints; `_booking_to_quote` differs only in line endings); check widened;
+219 functions, 0 grants, 0 policies. Pull request #98 merged (main 26dae8f), site deployed 11:38. A rolled-back write probe on
+production was refused by a safety check and not run.
 
 ---
 
