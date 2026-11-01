@@ -10,9 +10,10 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
-## D-70 · Armored (bulletproof) vehicles in Transport, by size (built 1 Nov 2026, not live)
+## D-70 · Armored (bulletproof) and stone-proof vehicles in Transport, by size (built 1 Nov 2026, not live)
 
 **Owner, 1 Nov 2026, 11:18:** "on transport bus all transport add armored / bulletproof with bus size options".
+**Owner, 11:32**, shown the preview and asked (1) go live, including the database change, and (2) stone-proof as its own option too: "1 yes 2 yes".
 
 **Built (branch `armored-d70`):** four new vehicle sizes, everywhere Transport uses sizes (the list's size filter, a supplier's
 "Vehicles", the vehicles a company offers when editing, quote options, transport prices, the quotes board and booking sheets):
@@ -20,8 +21,10 @@ Armored bus (36–60 seats), Armored midibus (21–35), Armored van (up to 20), 
 `arm_midibus`, `arm_van`, `arm_car`. The booking sheet the company gets says it in Hebrew and English ("אוטובוס 50 מקומות ממוגן ירי"
 · "50-seat armored bus").
 
-**Implementation choices (not owner decisions):** armored means bulletproof (ממוגן ירי) only; stone-proof windows are not
-counted as armored. A seat count alone never makes a vehicle armored: it is chosen, or written in a tag or an option name
+**Stone-proof (owner, 11:32):** its own family with the same four sizes: Stone-proof bus, midibus, van, car (keys `stone_bus`,
+`stone_midibus`, `stone_van`, `stone_car`; Hebrew "ממוגן אבנים").
+
+**Implementation choices (not owner decisions):** armored means bulletproof (ממוגן ירי); stone-proof is never counted as armored. A seat count alone never makes a vehicle armored: it is chosen, or written in a tag or an option name
 ("armored", "armoured", "bulletproof", "ממוגן ירי"). Van sizes are not split for armored vans. Database: migration
 `2026-11-01_armored_vehicles.sql` adds the four keys to the vehicle lists in `_quote_kind`, `quote_save`, `booking_save` and the
 label in `_booking_to_quote` by editing their live text, and widens the check on `bookings.service` (drop and add again; no row changes).

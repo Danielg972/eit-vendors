@@ -1,6 +1,8 @@
 -- D-70 (owner, 1 Nov 2026 11:18): "on transport bus all transport add armored / bulletproof with bus size options".
--- Four new vehicle keys, bulletproof only: arm_bus (36–60 seats), arm_midibus (21–35), arm_van (up to 20), arm_car (up to 4).
--- Wherever the database lists the transport vehicle keys, the four are added after 'car'. Nothing else changes.
+-- Owner, 1 Nov 2026, 11:32, asked whether stone-proof should be its own option too: "yes".
+-- Eight new vehicle keys. Bulletproof (ממוגן ירי): arm_bus (36–60 seats), arm_midibus (21–35), arm_van (up to 20), arm_car (up to 4).
+-- Stone-proof (ממוגן אבנים): stone_bus, stone_midibus, stone_van, stone_car, the same sizes.
+-- Wherever the database lists the transport vehicle keys, the eight are added after 'car'. Nothing else changes.
 --
 -- The four functions are changed by editing their LIVE definition text (pg_get_functiondef), so this file can never put
 -- back an older copy of them. Each edit must change the text exactly as expected, or the whole file stops.
@@ -9,9 +11,9 @@
 do $mig$
 declare
   old_keys text := $k$'van8','car',$k$;
-  new_keys text := $k$'van8','car','arm_bus','arm_midibus','arm_van','arm_car',$k$;
+  new_keys text := $k$'van8','car','arm_bus','arm_midibus','arm_van','arm_car','stone_bus','stone_midibus','stone_van','stone_car',$k$;
   old_lab  text := $k$when 'car' then 'Car' $k$;
-  new_lab  text := $k$when 'car' then 'Car' when 'arm_bus' then 'Armored bus' when 'arm_midibus' then 'Armored midibus' when 'arm_van' then 'Armored van' when 'arm_car' then 'Armored car' $k$;
+  new_lab  text := $k$when 'car' then 'Car' when 'arm_bus' then 'Armored bus' when 'arm_midibus' then 'Armored midibus' when 'arm_van' then 'Armored van' when 'arm_car' then 'Armored car' when 'stone_bus' then 'Stone-proof bus' when 'stone_midibus' then 'Stone-proof midibus' when 'stone_van' then 'Stone-proof van' when 'stone_car' then 'Stone-proof car' $k$;
   f text; d text; n text;
 begin
   foreach f in array array['_quote_kind','quote_save','booking_save'] loop
@@ -39,4 +41,4 @@ end $mig$;
 alter table public.bookings drop constraint if exists bookings_service_check;
 alter table public.bookings add constraint bookings_service_check check (service = any (array[''::text, 'bus'::text, 'midibus'::text,
   'van20'::text, 'van16'::text, 'van10'::text, 'van8'::text, 'car'::text, 'arm_bus'::text, 'arm_midibus'::text, 'arm_van'::text,
-  'arm_car'::text, 'jeep_vehicle'::text, 'transfer'::text]));
+  'arm_car'::text, 'stone_bus'::text, 'stone_midibus'::text, 'stone_van'::text, 'stone_car'::text, 'jeep_vehicle'::text, 'transfer'::text]));
