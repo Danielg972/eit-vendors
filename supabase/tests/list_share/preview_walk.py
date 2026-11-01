@@ -1,0 +1,80 @@
+# Share a filtered supplier list (D-71). Preview mode only (sample data, no network).
+#   python3 -m http.server 8765 &   then   python3 supabase/tests/list_share/preview_walk.py [folder for pictures]
+import asyncio, os, sys, urllib.parse
+from playwright.async_api import async_playwright
+OUT=(sys.argv[1] if len(sys.argv)>1 else '/tmp/list_share').rstrip('/')+'/'; os.makedirs(OUT, exist_ok=True)
+res=[]; errs=[]
+def check(n,c,d=''): res.append(c); print(('PASS ' if c else 'FAIL ')+n+('' if c else ' :: '+str(d)[:400]))
+async def fresh(p, hash='', w=390, h=844, tour_seen=True, warned=False):
+    b=await p.chromium.launch(); ctx=await b.new_context(viewport={'width':w,'height':h},device_scale_factor=2)
+    await ctx.add_init_script("try{"+("localStorage.setItem('eitv_tour_seen','1');" if tour_seen else "")+("localStorage.setItem('eitv_share_warned','1');" if warned else "")+"}catch(e){}")
+    pg=await ctx.new_page(); pg.on('pageerror',lambda e: errs.append(str(e)))
+    await pg.goto('http://localhost:8765/index.html'+hash); await pg.wait_for_selector('.tabs'); await pg.wait_for_timeout(300)
+    return b,pg
+async def pressed(pg): return await pg.eval_on_selector_all('.chip[aria-pressed="true"]','e=>e.map(x=>x.innerText.replace("✓ ","").trim())')
+async def main():
+  async with async_playwright() as p:
+    b,pg=await fresh(p)
+    await pg.click('[data-cat="Transport"]'); await pg.click('[data-tveh="arm_bus"]'); await pg.click('[data-reg="Galilee"]'); await pg.wait_for_timeout(200)
+    await pg.click('#listShare'); await pg.wait_for_selector('#swGo')
+    check('the "for tourism professionals only" warning comes first', 'For tourism professionals only' in await pg.inner_text('.sheet'))
+    await pg.click('#swGo'); await pg.wait_for_selector('#shLink')
+    link=await pg.input_value('#shLink'); msg=await pg.input_value('#shTxt'); t=await pg.inner_text('.sheet')
+    check('the sheet names the list', 'Transport · Armored bus · Galilee' in t, t[:200])
+    check('the message names the list in Hebrew and English', 'רשימה: Transport · Armored bus · Galilee' in msg and 'List: Transport · Armored bus · Galilee' in msg, msg)
+    check('the link is short and readable', link.endswith('#l=c:Transport~r:Galilee~v:arm_bus'), link)
+    await pg.screenshot(path=OUT+'1_share_sheet.png')
+    await pg.click('#shBack'); await pg.wait_for_timeout(200)
+    check('Back closes the sheet and the list is still filtered', not await pg.locator('#shLink').count() and set(['Transport','Armored bus','Galilee'])<=set(await pressed(pg)), await pressed(pg))
+    await b.close()
+    h=link[link.index('#'):]
+    b,pg=await fresh(p, h)
+    ps=await pressed(pg)
+    check('opening the link shows the same filters', set(['Transport','Armored bus','Galilee'])<=set(ps), ps)
+    ids=await pg.eval_on_selector_all('#results .row','e=>e.map(x=>x.dataset.id)')
+    check('and the same suppliers', ids==['vendor_g4l1c0a'], ids)
+    check('the link is taken off the address', '#l=' not in pg.url, pg.url)
+    await pg.screenshot(path=OUT+'2_opened.png')
+    await b.close()
+    # a link opened before the welcome tour is finished still applies after it
+    b,pg=await fresh(p, h, tour_seen=False)
+    await pg.click('[data-t="skip"]'); await pg.wait_for_timeout(200)
+    for _ in range(3):
+        bx=pg.locator('[data-t="next"]')
+        if not await bx.count(): break
+        await bx.click(); await pg.wait_for_timeout(200)
+    ps=await pressed(pg); check('after the welcome tour the list opens filtered', 'Armored bus' in ps, ps)
+    await b.close()
+    # bad or hostile links do nothing harmful
+    bad='#l=c:Transport,'+urllib.parse.quote('<img src=x onerror=alert(1)>')+'~r:'+urllib.parse.quote('<b>x</b>')+'~v:tank~t:zzz~g:x~b:Transport/'+urllib.parse.quote('<i>')
+    b,pg=await fresh(p, bad)
+    ps=await pressed(pg); check('unknown values are dropped, known ones kept', 'Transport' in ps and 'Any vehicle' in ps, ps)
+    check('nothing injected runs', not errs, errs)
+    await b.close()
+    b,pg=await fresh(p, '#l=nonsense')
+    t=await pg.inner_text('body'); check('a broken link says so and the app still works', 'could not be read' in t and await pg.locator('#results .row').count()>0)
+    await b.close()
+    # a guide list with details; desktop width
+    b,pg=await fresh(p, w=1280, h=900, warned=True)
+    await pg.click('[data-cat="Guide"]'); await pg.click('[data-gat="Midbari 4x4 vehicle"]'); await pg.wait_for_timeout(200)
+    await pg.click('#listShare'); await pg.wait_for_selector('#shLink')
+    check('with the warning switched off, the share sheet opens straight away', True)
+    l2=await pg.input_value('#shLink'); await b.close()
+    b,pg=await fresh(p, l2[l2.index('#'):], w=1280, h=900)
+    ps=await pressed(pg); check('guide details travel too', 'Guide' in ps and 'Midbari 4x4 vehicle' in ps, ps)
+    check('a link with spaces in a value', 'Midbari%204x4%20vehicle' in l2, l2)
+    await b.close()
+    # several categories with a type chosen (Extreme: Jeeps)
+    b,pg=await fresh(p, warned=True)
+    await pg.click('[data-cat="Activity"]'); await pg.wait_for_timeout(150)
+    subs=await pg.eval_on_selector_all('[data-sub]:not([data-subv=""])','e=>e.map(x=>[x.dataset.sub,x.dataset.subv])')
+    if subs: await pg.click(f'[data-sub="{subs[0][0]}"][data-subv="{subs[0][1]}"]'); await pg.wait_for_timeout(150)
+    await pg.click('[data-cat="Hotel"]'); await pg.wait_for_timeout(150); before=await pressed(pg)
+    await pg.click('#listShare'); await pg.wait_for_selector('#shLink'); l3=await pg.input_value('#shLink'); await b.close()
+    b,pg=await fresh(p, l3[l3.index('#'):])
+    after=await pressed(pg); check('several categories and a type come back the same', sorted(before)==sorted(after) and len(after)>=3, [before,after,l3])
+    check('no sideways scroll', not await pg.evaluate("()=>document.documentElement.scrollWidth>innerWidth+1"))
+    await b.close()
+    check('no page errors', not errs, errs)
+  print(f'{len(res)} checks, {res.count(False)} failed')
+asyncio.run(main())

@@ -1550,17 +1550,53 @@ function wireCopy(root){ root.querySelectorAll('[data-copy]').forEach(b=>b.oncli
 // Someone without a member link lands on the join form, told that a colleague shared a supplier (or a hike) with them;
 // nothing from the list is shown to them, and the database is not asked. The link carries only the entry's id.
 // What a member may see is still decided by the database: a link opens nothing a member could not already open.
-const SHARE_KEY='eitv_shared', SHARE_KINDS={s:'supplier',h:'hike',r:'vehicle'};
-function shareLink(kind,id){ return APP_URL+'#'+kind+'='+encodeURIComponent(id); }
+const SHARE_KEY='eitv_shared', SHARE_KINDS={s:'supplier',h:'hike',r:'vehicle',l:'list of suppliers'};
+// D-71: a link to the supplier list as filtered: categories and their types, region, kind of transport supplier, vehicle size,
+// guide details. The search box is not carried. The link holds only the choices; each member still sees only his own list.
+function listState(){ const o={};
+  if(catsOn().length) o.c=catsOn(); const sb={}; Object.entries(S.subs||{}).forEach(([k,v])=>{ if(catsOn().includes(k)&&v&&v.length) sb[k]=v; }); if(Object.keys(sb).length) o.b=sb;
+  if(S.reg&&S.reg!=='All') o.r=S.reg;
+  if(catsOn().includes('Transport')){ if(S.tat) o.t=S.tat; if(S.tveh) o.v=S.tveh; }
+  if(catsOn().includes('Guide')&&(S.gat||[]).length) o.g=S.gat;
+  return o; }
+function listName(o){ const a=[];
+  (o.c||[]).forEach(c=>{ a.push(catDisp(c)+((o.b&&o.b[c]||[]).length?' ('+o.b[c].join(', ')+')':'')); });
+  if(o.t) a.push(o.t==='bus'?'Bus companies':'Independent van drivers'); if(o.v&&VEH[o.v]) a.push(VEH[o.v].tag);
+  (o.g||[]).forEach(x=>a.push(x)); if(o.r) a.push(o.r);
+  return a.length?a.join(' · '):'All suppliers'; }
+// Short and readable in a message: c:Transport~v:arm_bus~r:Galilee. Types: b:Extreme/Jeeps,ATVs. Values are URL-encoded.
+const LQ=x=>encodeURIComponent(x).replace(/~/g,'%7E');
+function listEnc(o){ const a=[];
+  if(o.c) a.push('c:'+o.c.map(LQ).join(','));
+  if(o.b) Object.entries(o.b).forEach(([k,v])=>a.push('b:'+LQ(k)+'/'+v.map(LQ).join(',')));
+  if(o.r) a.push('r:'+LQ(o.r)); if(o.t) a.push('t:'+LQ(o.t)); if(o.v) a.push('v:'+LQ(o.v)); if(o.g) a.push('g:'+o.g.map(LQ).join(','));
+  return a.join('~')||'all'; }
+function listDec(raw){ const o={}; let ok=raw==='all';
+  try{ String(raw).split('~').forEach(part=>{ const m=/^([cbrtvg]):(.*)$/.exec(part); if(!m) return; ok=true;
+    const vals=x=>x.split(',').map(y=>decodeURIComponent(y)).filter(Boolean);
+    if(m[1]==='c') o.c=vals(m[2]); else if(m[1]==='g') o.g=vals(m[2]);
+    else if(m[1]==='b'){ const i=m[2].indexOf('/'); if(i>0){ (o.b=o.b||{})[decodeURIComponent(m[2].slice(0,i))]=vals(m[2].slice(i+1)); } }
+    else o[m[1]]=decodeURIComponent(m[2]); }); }catch(e){ return null; }
+  return ok?o:null; }
+function listApply(raw){ const o=listDec(raw); if(!o) return false;
+  const str=(x,n)=>typeof x==='string'&&x.length<=(n||80);
+  S.cats=(Array.isArray(o.c)?o.c:[]).filter(c=>CATEGORIES.includes(c)).slice(0,6);
+  S.subs={}; if(o.b&&typeof o.b==='object') Object.entries(o.b).forEach(([k,v])=>{ if(S.cats.includes(k)&&Array.isArray(v)) S.subs[k]=v.filter(x=>str(x,40)).slice(0,12); });
+  S.reg=str(o.r)&&o.r?o.r:'All';
+  S.tat=['bus','van'].includes(o.t)?o.t:''; S.tveh=str(o.v,20)&&VEH[o.v]?o.v:'';
+  S.gat=(Array.isArray(o.g)?o.g:[]).filter(x=>GUIDE_ATTRS.includes(x));
+  S.q=''; S.tab='vendors'; closeSheet(); render(); return true; }
+function shareLink(kind,id){ return APP_URL+'#'+kind+'='+(kind==='l'?id:encodeURIComponent(id)); }   // a list (D-71) is already encoded
 function shareMsg(kind,name,link){
-  const he={s:'ספק',h:'מסלול',r:'רכב'}[kind], en={s:'',h:'Hike: ',r:''}[kind];
+  const he={s:'ספק',h:'מסלול',r:'רכב',l:'רשימה'}[kind], en={s:'',h:'Hike: ',r:'',l:'List: '}[kind];
   return `${he}: ${name} — במעגל הפנימי, רשימת הספקים שמורי דרך מנהלים יחד: ${link}\n\n${en}${name} on The Inner Circle, the supplier list guides keep for each other: ${link}`; }
 // Read a share link from the address once, at start. Kept on the device for 14 days, so it still opens after joining.
 function readShared(){
   let got=null;
-  try{ const m=/(?:^#|&)([shr])=([A-Za-z0-9_.:-]{1,80})(?:&n=([^&]*))?/.exec(location.hash||'');
-    if(m){ let n=''; try{ n=decodeURIComponent(m[3]||'').slice(0,80); }catch(e){}
-      got={k:m[1],id:decodeURIComponent(m[2]),n,t:Date.now()}; history.replaceState(history.state,'',location.pathname+location.search);
+  try{ const m=/(?:^#|&)([shr])=([A-Za-z0-9_.:-]{1,80})(?:&n=([^&]*))?/.exec(location.hash||'')
+      || /(?:^#|&)(l)=([^&]{2,700})()/.exec(location.hash||'');   // D-71: a list link
+    if(m){ let n=''; try{ n=m[1]==='l'?(listDec(m[2])?listName(listDec(m[2])):''):decodeURIComponent(m[3]||'').slice(0,80); }catch(e){}
+      got={k:m[1],id:m[1]==='l'?m[2]:decodeURIComponent(m[2]),n:n.slice(0,80),t:Date.now()}; history.replaceState(history.state,'',location.pathname+location.search);
       try{ localStorage.setItem(SHARE_KEY,JSON.stringify(got)); }catch(e){} } }catch(e){}
   if(!got){ try{ const o=JSON.parse(localStorage.getItem(SHARE_KEY)||'null'); if(o&&o.k&&o.id&&Date.now()-(o.t||0)<14*864e5) got=o; }catch(e){} }
   return got; }
@@ -1570,7 +1606,8 @@ function openShared(){
   const x=S.shared; if(!x) return; sharedDone();
   if(x.k==='s'){ if(S.vendors.some(v=>v.id===x.id)) openDetail(x.id); else toast((x.n?'"'+x.n+'"':'That supplier')+' is not open to you, or it is no longer on the list.'); }
   else if(x.k==='h') openHike(x.id);
-  else if(x.k==='r') openRental(x.id); }
+  else if(x.k==='r') openRental(x.id);
+  else if(x.k==='l'){ if(!listApply(x.id)) toast('That list link could not be read.'); } }
 // The share button in a page's header.
 function addShare(w, kind, id, name, again, note){
   const head=w.querySelector('.sheet-head'); if(!head||!id) return;
@@ -1592,7 +1629,7 @@ function shareWarn(go, back){
 function openShare(kind,id,name,again,note){
   const link=shareLink(kind,id), msg=shareMsg(kind,name,link);
   const w=sheet('Share '+name, `${note?`<div class="msg warn" style="margin:0 0 14px">${note}</div>`:''}
-    <p style="margin:0 0 8px">Members open straight onto this page. Anyone else gets the join form, and sees nothing from the list until they are approved.</p>
+    <p style="margin:0 0 8px">${kind==='l'?'Members open straight onto the supplier list, filtered like this. Each sees only the suppliers his own membership shows.':'Members open straight onto this page.'} Anyone else gets the join form, and sees nothing from the list until they are approved.</p>
     <div class="f"><label for="shTxt">The message</label><textarea id="shTxt" rows="6" dir="auto">${esc(msg)}</textarea></div>
     <div class="f"><label for="shLink">Just the link</label><div class="addrow"><input id="shLink" type="text" readonly value="${esc(link)}" class="mono" style="font-size:13px"><button class="btn soft" type="button" id="shLinkCopy">Copy</button></div></div>
     <p class="hint">Prices, reviews and contacts never travel in the message. Each person sees only what their own membership allows.</p>`,
@@ -1849,10 +1886,12 @@ function viewVendors(){
 }
 function drawList(){
   const rows=filtered(); const box=document.getElementById('results');
-  setTimeout(()=>{ const sb2=document.getElementById('sortBtn'); if(sb2) sb2.onclick=()=>{ S.sort=S.sort==='az'?'mix':'az'; try{ localStorage.setItem('eitv_sort',S.sort); }catch(e){} drawList(); }; });
+  setTimeout(()=>{ const ls=document.getElementById('listShare'); if(ls) ls.onclick=()=>{ const o=listState(), n=listName(o);   // D-71
+      shareWarn(()=>openShare('l',listEnc(o),n,()=>closeSheet()),()=>closeSheet()); };
+    const sb2=document.getElementById('sortBtn'); if(sb2) sb2.onclick=()=>{ S.sort=S.sort==='az'?'mix':'az'; try{ localStorage.setItem('eitv_sort',S.sort); }catch(e){} drawList(); }; });
   if(!S.sort){ try{ S.sort=localStorage.getItem('eitv_sort')||'mix'; }catch(e){ S.sort='mix'; } }
   if(!S.vendors.length){ box.innerHTML=`<div class="list"><div class="empty"><h3>No suppliers yet</h3>Tap <b>Add supplier</b> to add the first hotel, guide, bus company or site.</div></div>`; return; }
-  box.innerHTML = `<div class="count" style="display:flex;align-items:center;gap:8px">${rows.length} of ${S.vendors.length} suppliers<span style="flex:1"></span><button class="mini" id="sortBtn" type="button" title="Mixed order changes daily so no supplier always comes first">${S.sort==='az'?'Order: A–Z':'Order: Mixed'}</button></div>` + (rows.length? `<div class="list">${rows.map(v=>`
+  box.innerHTML = `<div class="count" style="display:flex;align-items:center;gap:8px">${rows.length} of ${S.vendors.length} suppliers<span style="flex:1"></span><button class="mini" id="listShare" type="button" title="Send a link to this list, filtered as it is now">Share list</button><button class="mini" id="sortBtn" type="button" title="Mixed order changes daily so no supplier always comes first">${S.sort==='az'?'Order: A–Z':'Order: Mixed'}</button></div>` + (rows.length? `<div class="list">${rows.map(v=>`
     <button class="row" data-id="${esc(v.id)}">
       <span class="row-name">${esc(v.name)}${heName(v)?` <span class="he-name" dir="rtl" lang="he">${esc(heName(v))}</span>`:''}</span>
       <span class="row-price">${priceLine(v)}</span>

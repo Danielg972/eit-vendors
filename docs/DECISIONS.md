@@ -10,7 +10,24 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
-## D-70 · Armored (bulletproof) and stone-proof vehicles in Transport, by size (built 1 Nov 2026, not live)
+## D-71 · Share a link to the supplier list as filtered (live 1 Nov 2026)
+
+**Owner, 1 Nov 2026, 11:55:** "someone asked to see what options there are. how can i send the category link like i can a vender";
+offered a "Share list" button that keeps the chosen filters, 11:55: "yes and make it live ill test it in real time" (no preview first,
+on his word).
+
+**Built:** a "Share list" button above the supplier list, beside the order button. The link carries the categories and their types,
+the region, the kind of transport supplier, the vehicle size and the guide details, short and readable
+(`#l=c:Transport~r:Galilee~v:arm_bus`); the search box is not carried. The same "for tourism professionals only" warning and the same
+share sheet as a supplier link (Hebrew and English message, WhatsApp, copy). A member lands on the list filtered the same way and
+sees only what his own membership shows; a category he does not have is dropped. Anyone else gets the join form, told a colleague
+shared a list (named by its filters) with him; after approval the link opens. Unknown values in a link are dropped; a broken link says so.
+
+**Implementation choices:** front end only, no database change. Kept on the device 14 days like other share links.
+
+---
+
+## D-70 · Armored (bulletproof) and stone-proof vehicles in Transport, by size (live 1 Nov 2026)
 
 **Owner, 1 Nov 2026, 11:18:** "on transport bus all transport add armored / bulletproof with bus size options".
 **Owner, 11:32**, shown the preview and asked (1) go live, including the database change, and (2) stone-proof as its own option too: "1 yes 2 yes".
@@ -28,6 +45,11 @@ Armored bus (36–60 seats), Armored midibus (21–35), Armored van (up to 20), 
 ("armored", "armoured", "bulletproof", "ממוגן ירי"). Van sizes are not split for armored vans. Database: migration
 `2026-11-01_armored_vehicles.sql` adds the four keys to the vehicle lists in `_quote_kind`, `quote_save`, `booking_save` and the
 label in `_booking_to_quote` by editing their live text, and widens the check on `bookings.service` (drop and add again; no row changes).
+
+**Live (owner, 11:36: "do it for me"):** migration `armored_vehicles_2026_11_01` applied to production at about 11:37; the four
+functions on production match the tested copy (fingerprints; `_booking_to_quote` differs only in line endings); check widened;
+219 functions, 0 grants, 0 policies. Pull request #98 merged (main 26dae8f), site deployed 11:38. A rolled-back write probe on
+production was refused by a safety check and not run.
 
 ---
 
