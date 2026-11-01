@@ -82,7 +82,7 @@ const esc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&
 // ---------- booking sheets: shared wording ----------
 // The SAME block sits in index.html (the guide's side) and b/index.html (the company's side). Change both together.
 // Hebrew first, English under it: the company reads Hebrew, many colleagues read English.
-const BK_VEH={bus:['אוטובוס','Bus'],midibus:['מידיבוס','Midibus'],van20:['מיניבוס 17–20 מקומות','Van, 17–20 seats'],van16:['מיניבוס 11–16 מקומות','Van, 11–16 seats'],van10:['ואן 9–10 מקומות','Van, 9–10 seats'],van8:['ואן עד 8 מקומות','Van, up to 8 seats'],car:['רכב פרטי','Car'],jeep_vehicle:['ג׳יפ / 4x4','Jeep / 4x4'],transfer:['העברה','Transfer']};
+const BK_VEH={bus:['אוטובוס','Bus'],midibus:['מידיבוס','Midibus'],van20:['מיניבוס 17–20 מקומות','Van, 17–20 seats'],van16:['מיניבוס 11–16 מקומות','Van, 11–16 seats'],van10:['ואן 9–10 מקומות','Van, 9–10 seats'],van8:['ואן עד 8 מקומות','Van, up to 8 seats'],car:['רכב פרטי','Car'],arm_bus:['אוטובוס ממוגן ירי','Armored bus'],arm_midibus:['מידיבוס ממוגן ירי','Armored midibus'],arm_van:['מיניבוס ממוגן ירי','Armored van'],arm_car:['רכב ממוגן ירי','Armored car'],stone_bus:['אוטובוס ממוגן אבנים','Stone-proof bus'],stone_midibus:['מידיבוס ממוגן אבנים','Stone-proof midibus'],stone_van:['מיניבוס ממוגן אבנים','Stone-proof van'],stone_car:['רכב ממוגן אבנים','Stone-proof car'],jeep_vehicle:['ג׳יפ / 4x4','Jeep / 4x4'],transfer:['העברה','Transfer']};
 const BK_SIGN={ILS:'₪',USD:'$',EUR:'€'};
 const BK_VAT={including_vat:['כולל מע״מ','incl. VAT'],plus_vat:['בתוספת מע״מ','plus VAT'],not_applicable:['ללא מע״מ, תיירים','no VAT, tourists']};
 const BK_IE={incl:['כלול במחיר','included'],extra:['בנוסף','extra']};
@@ -125,6 +125,8 @@ function bkDayLine(x,he){ x=x||{}; const a=[];
 const bkDayRows=b=>{ if(!bkHasPlan(b)) return []; const p=bkPlan(b); return bkAllDays(b).map(d=>[bkDayLabel(d,true),bkDayLabel(d,false),bkDayLine(p[d],true),bkDayLine(p[d],false)]); };
 function bkVehicle(b,he){ const v=BK_VEH[b.service];
   if(!v) return b.seats?(he?b.seats+' מקומות':b.seats+' seats'):'';
+  if(b.seats&&/^(arm|stone)_(bus|midibus|van)$/.test(b.service)){ const pr=v[0].match(/ ממוגן .+$/)[0];   // D-70
+    return he ? v[0].replace(pr,'')+' '+b.seats+' מקומות'+pr : b.seats+'-seat '+v[1].toLowerCase(); }
   if(b.seats&&/^(bus|midibus|van)/.test(b.service)){
     const base = he ? ({bus:'אוטובוס',midibus:'מידיבוס'}[b.service]||(+b.seats>10?'מיניבוס':'ואן')) : ({bus:'bus',midibus:'midibus'}[b.service]||'van');
     return he ? base+' '+b.seats+' מקומות' : b.seats+'-seat '+base; }

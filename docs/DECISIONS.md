@@ -10,6 +10,27 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-70 · Armored (bulletproof) and stone-proof vehicles in Transport, by size (built 1 Nov 2026, not live)
+
+**Owner, 1 Nov 2026, 11:18:** "on transport bus all transport add armored / bulletproof with bus size options".
+**Owner, 11:32**, shown the preview and asked (1) go live, including the database change, and (2) stone-proof as its own option too: "1 yes 2 yes".
+
+**Built (branch `armored-d70`):** four new vehicle sizes, everywhere Transport uses sizes (the list's size filter, a supplier's
+"Vehicles", the vehicles a company offers when editing, quote options, transport prices, the quotes board and booking sheets):
+Armored bus (36–60 seats), Armored midibus (21–35), Armored van (up to 20), Armored car (up to 4). Keys `arm_bus`,
+`arm_midibus`, `arm_van`, `arm_car`. The booking sheet the company gets says it in Hebrew and English ("אוטובוס 50 מקומות ממוגן ירי"
+· "50-seat armored bus").
+
+**Stone-proof (owner, 11:32):** its own family with the same four sizes: Stone-proof bus, midibus, van, car (keys `stone_bus`,
+`stone_midibus`, `stone_van`, `stone_car`; Hebrew "ממוגן אבנים").
+
+**Implementation choices (not owner decisions):** armored means bulletproof (ממוגן ירי); stone-proof is never counted as armored. A seat count alone never makes a vehicle armored: it is chosen, or written in a tag or an option name
+("armored", "armoured", "bulletproof", "ממוגן ירי"). Van sizes are not split for armored vans. Database: migration
+`2026-11-01_armored_vehicles.sql` adds the four keys to the vehicle lists in `_quote_kind`, `quote_save`, `booking_save` and the
+label in `_booking_to_quote` by editing their live text, and widens the check on `bookings.service` (drop and add again; no row changes).
+
+---
+
 ## D-69 · Job alerts by phone and email; the jobs WhatsApp group (live 31 Oct 2026, alerts to Eretz Israel Tours only at first)
 
 **Owner, 31 Oct 2026, 20:29:** "can we do Free and automatic: the app sends each colleague a phone notification and an email when a job fits them". **20:41**, his answers: email on for everyone with an unsubscribe link, telling them it is for the jobs board; skip colleagues who marked those days busy; price shown in the alert; English then Hebrew; nothing over Shabbat and Yom Tov, candle lighting to havdalah, Jerusalem times; nothing at night "from 11 - 7"; also alert the colleague a job is given to and those who said available when a job closes, not on edits; alert the poster when someone says "I'm available"; email by Resend; no replies, "they click link and have a contact admin option"; a terms line is fine and every member accepts again. **20:44:** "(b) Guide jobs alert only guides, but a driver job alerts drivers". **21:28:** "add it to the job board when they sign up" (the jobs WhatsApp group). **21:57:** "It comes to me to approve the post and send it as admin." **21:58:** both ways for a colleague's job to reach him for the group (a list in the app with an alert, and a "Send to Eretz Israel Tours" button on WhatsApp).
