@@ -96,7 +96,7 @@ create table public.bookings (
   constraint bookings_day_plan_check check (jsonb_typeof(day_plan) = 'object'::text and length(day_plan::text) <= 30000),
   constraint bookings_terms_off_check check (terms_off ~ '^[a-z,]{0,80}$'::text),
   constraint bookings_seats_check check (seats = ''::text or seats ~ '^\d{1,3}$'::text),
-  constraint bookings_service_check check (service = any (array[''::text, 'bus'::text, 'midibus'::text, 'van20'::text, 'van16'::text, 'van10'::text, 'van8'::text, 'car'::text, 'jeep_vehicle'::text, 'transfer'::text])),
+  constraint bookings_service_check check (service = any (array[''::text, 'bus'::text, 'midibus'::text, 'van20'::text, 'van16'::text, 'van10'::text, 'van8'::text, 'car'::text, 'arm_bus'::text, 'arm_midibus'::text, 'arm_van'::text, 'arm_car'::text, 'jeep_vehicle'::text, 'transfer'::text])),
   constraint bookings_lengths_check check (length(client_ref) <= 160 and length(booker_name) <= 80 and length(booker_phone) <= 40 and length(pax) <= 20
     and length(pickup_time) <= 20 and length(dropoff_time) <= 20 and length(pickup_place) <= 160 and length(dropoff_place) <= 160
     and length(route) <= 1500 and length(note) <= 1500 and length(private_note) <= 3000 and length(answered_by) <= 80 and length(link_key) >= 32)
@@ -1135,7 +1135,7 @@ as $function$
     when v.category = 'Guide' or exists (select 1 from public.quote_options o where o.quote_id = q.id and o.service in ('guide','guide_vehicle')) then 'guide'
     when v.category = 'Transport' or (exists (select 1 from public.quote_options o where o.quote_id = q.id)
       and not exists (select 1 from public.quote_options o where o.quote_id = q.id
-        and o.service <> all (array['bus','midibus','van20','van16','van10','van8','car','jeep_vehicle','transfer']))) then 'transport'
+        and o.service <> all (array['bus','midibus','van20','van16','van10','van8','car','arm_bus','arm_midibus','arm_van','arm_car','jeep_vehicle','transfer']))) then 'transport'
     else 'other' end
 $function$;
 
@@ -2089,7 +2089,7 @@ begin
   for o in select * from jsonb_array_elements(coalesce(p_quote->'options','[]'::jsonb)) loop
     insert into public.quote_options (quote_id, name, note, sort, service, seats, hours_incl, km_incl, fees)
     values (qid, left(coalesce(nullif(o->>'name',''),'Option'),120), left(coalesce(o->>'note',''),1000), oi,
-      case when coalesce(o->>'service','') = any (array['bus','midibus','van20','van16','van10','van8','car','jeep_vehicle','transfer','guide','guide_vehicle','hotel_room','apartment','rappelling','jeep_tour','atv','activity','site','meal','other']) then o->>'service' else '' end,
+      case when coalesce(o->>'service','') = any (array['bus','midibus','van20','van16','van10','van8','car','arm_bus','arm_midibus','arm_van','arm_car','jeep_vehicle','transfer','guide','guide_vehicle','hotel_room','apartment','rappelling','jeep_tour','atv','activity','site','meal','other']) then o->>'service' else '' end,
       case when coalesce(o->>'seats','') ~ '^\d{1,3}$' then o->>'seats' else '' end,
       case when coalesce(o->>'hours_incl','') ~ '^\d{1,2}(\.\d)?$' then o->>'hours_incl' else '' end,
       case when coalesce(o->>'km_incl','') ~ '^\d{1,4}$' then o->>'km_incl' else '' end,
@@ -2627,7 +2627,7 @@ begin
     elsif b.date_from <> '' and b.date_to <> '' and b.date_to >= b.date_from then days := (b.date_to::date - b.date_from::date) + 1; end if;
   exception when others then days := 1; end;
   lab := case b.service when 'bus' then 'Bus' when 'midibus' then 'Midibus' when 'van20' then 'Van' when 'van16' then 'Van' when 'van10' then 'Van'
-    when 'van8' then 'Van' when 'car' then 'Car' when 'jeep_vehicle' then 'Jeep / 4x4' when 'transfer' then 'Transfer' else 'Vehicle' end;
+    when 'van8' then 'Van' when 'car' then 'Car' when 'arm_bus' then 'Armored bus' when 'arm_midibus' then 'Armored midibus' when 'arm_van' then 'Armored van' when 'arm_car' then 'Armored car' when 'jeep_vehicle' then 'Jeep / 4x4' when 'transfer' then 'Transfer' else 'Vehicle' end;
   if t ? 'overtime' then fees := fees || jsonb_build_object('overtime', jsonb_build_object('s','extra','amt',t->>'overtime')); end if;
   if t ? 'extra_km' then fees := fees || jsonb_build_object('extra_km', jsonb_build_object('s','extra','amt',t->>'extra_km')); end if;
   if t ? 'tolls' then fees := fees || jsonb_build_object('tolls', jsonb_strip_nulls(jsonb_build_object('s',t->>'tolls','note',t->>'tolls_note'))); end if;
@@ -2757,7 +2757,7 @@ begin
     date_from = case when coalesce(p_booking->>'date_from','') ~ '^\d{4}-\d{2}-\d{2}$' then p_booking->>'date_from' else '' end,
     date_to = case when coalesce(p_booking->>'date_to','') ~ '^\d{4}-\d{2}-\d{2}$' then p_booking->>'date_to' else '' end,
     pax = left(coalesce(p_booking->>'pax',''),20),
-    service = case when coalesce(p_booking->>'service','') = any (array['bus','midibus','van20','van16','van10','van8','car','jeep_vehicle','transfer']) then p_booking->>'service' else '' end,
+    service = case when coalesce(p_booking->>'service','') = any (array['bus','midibus','van20','van16','van10','van8','car','arm_bus','arm_midibus','arm_van','arm_car','jeep_vehicle','transfer']) then p_booking->>'service' else '' end,
     seats = case when coalesce(p_booking->>'seats','') ~ '^\d{1,3}$' then p_booking->>'seats' else '' end,
     tourists = coalesce((p_booking->>'tourists')::boolean, true),
     pickup_time = left(coalesce(p_booking->>'pickup_time',''),20), pickup_place = left(coalesce(p_booking->>'pickup_place',''),160),

@@ -829,6 +829,8 @@ const EXTRA_FIELDS = ['region','tags','experience_years','also_categories','maps
 // Vehicle sizes, used everywhere in Transport: what a company offers (tags), what a quote is for, list filters.
 // Seat ranges follow how Israeli companies sell them: 6-8 seat vans (Vito / V-Class), 9-10, minibuses of 14-16 and 19-20
 // (19 passengers is the limit of the small-bus licence), midibuses of 25-35, buses of 50-60.
+// D-70: armored (bulletproof, ממוגן ירי) vehicles are their own family, by size. They come last so that a seat count alone
+// never reads as armored: armored is only ever chosen, or written in a tag or an option name.
 const VEHICLES = [ // key, label, tag written on the supplier, seats from, seats to, family
   ['bus','Bus (36–60 seats)','Bus',36,999,'Buses'],
   ['midibus','Midibus (21–35 seats)','Midibus',21,35,'Buses'],
@@ -836,7 +838,19 @@ const VEHICLES = [ // key, label, tag written on the supplier, seats from, seats
   ['van16','Van, 11–16 seats','Van 11–16 seats',11,16,'Vans'],
   ['van10','Van, 9–10 seats','Van 9–10 seats',9,10,'Vans'],
   ['van8','Van, up to 8 seats','Van up to 8 seats',5,8,'Vans'],
-  ['car','Car (up to 4 passengers)','Car',1,4,'Cars']];
+  ['car','Car (up to 4 passengers)','Car',1,4,'Cars'],
+  ['arm_bus','Armored bus (36–60 seats)','Armored bus',36,999,'Armored'],
+  ['arm_midibus','Armored midibus (21–35 seats)','Armored midibus',21,35,'Armored'],
+  ['arm_van','Armored van (up to 20 seats)','Armored van',5,20,'Armored'],
+  ['arm_car','Armored car (up to 4 passengers)','Armored car',1,4,'Armored']];
+// D-70: is a name or tag about an armored vehicle, and which size. Bulletproof only; stone-proof windows are not armored.
+const ARM_RX=/armou?red|bullet\s*-?\s*proof|ממוגן\s*ירי/i;
+function armoredKey(t){ t=String(t||'').toLowerCase(); if(!ARM_RX.test(t)) return '';
+  const n=+((t.match(/(\d{1,2})\s*-?\s*(seat|seater|pax|passenger|מקומות)/)||[])[1]||0);
+  if(/midi|מידי/.test(t)) return 'arm_midibus'; if(/\bvan\b|mini\s?bus|sprinter|transit|ואן|מיניבוס/.test(t)) return 'arm_van';
+  if(/\bcar\b|\bsuv\b|sedan|רכב/.test(t)) return 'arm_car';
+  if(n) return n<=4?'arm_car':n<=20?'arm_van':n<=35?'arm_midibus':'arm_bus';
+  return 'arm_bus'; }
 const VEH = Object.fromEntries(VEHICLES.map(x=>[x[0],{label:x[1],tag:x[2],from:x[3],to:x[4],family:x[5]}]));
 const vehicleBySeats = n => { n=+n; const hit=VEHICLES.find(x=>n>=x[3]&&n<=x[4]); return hit?hit[0]:''; };
 const tagKey = t => String(t||'').toLowerCase().replace(/[–—]/g,'-').replace(/\s+seats?$/,'').replace(/\s+/g,' ').trim();
@@ -844,6 +858,7 @@ const tagKey = t => String(t||'').toLowerCase().replace(/[–—]/g,'-').replace
 function fleetOf(v){ const out=new Set();
   String(v&&v.tags||'').split(',').map(tagKey).filter(Boolean).forEach(t=>{
     const exact=VEHICLES.find(x=>tagKey(x[2])===t); if(exact){ out.add(exact[0]); return; }
+    const ak=armoredKey(t); if(ak){ out.add(ak); return; }   // D-70: "Armored 50-seat bus", "bulletproof van"
     const m=t.match(/(\d{1,2})\s*-?\s*(seat|seater|pax|passenger)/); if(m&&vehicleBySeats(m[1])){ out.add(vehicleBySeats(m[1])); return; }
     if(t==='coach'||t==='buses') out.add('bus'); else if(t==='minibus'){ out.add('van16'); out.add('van20'); } else if(t==='van'||t==='vans'){ out.add('van8'); out.add('van10'); }
     else if(t==='cars'||t==='sedan'||t==='limousine'||t==='vip car') out.add('car'); });
@@ -974,7 +989,7 @@ function sample(){
     v({id:'vendor_p4prt02',name:'Ein Prat Nature Reserve',category:'National Parks',location:'Wadi Qelt',region:'Binyamin & Shomron',hours:'Sample hours: every day 8:00–16:00',hours_source:'sample data',listedPrice:'30',listedPriceVatTreatment:'including_vat',priceBasis:'Per person',notes:'Sample details, made up for the preview.'}),
     v({id:'vendor_p4stf03',name:'Sataf',category:'Attraction / Site',location:'Jerusalem hills',region:'Jerusalem',notes:'Sample details, made up for the preview.'}),
     v({id:'vendor_p0lk5sd',name:'Shomron Bus Lines',category:'Transport',contactPerson:'Avi',phone:'+972 54 000 1234',location:'Ariel',maxCap:'50',agentPrice:'2400',agentPriceVatTreatment:'plus_vat',priceBasis:'Per day',payTerms:'Cash or transfer on the day',rateReliability:'3',review_status:'pending',created_by:'rachel.ops@gmail.com',updated_by:'rachel.ops@gmail.com',updated_at:d(0)}),
-    v({id:'vendor_g4l1c0a',name:'Galil Buses',category:'Transport',contactPerson:'Dudu',phone:'+972 54 000 5678',location:'Tiberias',region:'Galilee',maxCap:'55',priceBasis:'Per day',tags:'Bus, Midibus'}),
+    v({id:'vendor_g4l1c0a',name:'Galil Buses',category:'Transport',contactPerson:'Dudu',phone:'+972 54 000 5678',location:'Tiberias',region:'Galilee',maxCap:'55',priceBasis:'Per day',tags:'Bus, Midibus, Armored bus, Armored van'}),
     v({id:'vendor_n3g7v2t',name:'Negev & Arava Transport',category:'Transport',contactPerson:'Eli',phone:'+972 54 000 9012',location:'Beer Sheva',region:'Negev & Arava',maxCap:'53',priceBasis:'Per day',tags:'Bus, Van 17–20 seats, Van 9–10 seats'}),
     v({id:'vendor_v4n0001',name:'Eli Dahan',category:'Transport',contactPerson:'Eli Dahan',phone:'050-000-3344',whatsapp:'050-000-3344',location:'Beer Sheva',region:'Negev & Arava',maxCap:'9',priceBasis:'Per day',tags:'Van 9–10 seats, Independent van driver'}),
     v({id:'vendor_q9x1b7e',name:'Machane Yehuda Food Walk',category:'Activity',tags:'Food & wine, Family',location:'Jerusalem',region:'Jerusalem',kosher:'Mixed stalls, mostly Rabbanut',agentPrice:'220',priceBasis:'Per person',maxPax:'15',rateService:'5',rateValue:'5',strengths:'Families love it'}),
@@ -3285,6 +3300,7 @@ function mustFees(svc){ if(svc==='transfer') return ['tolls']; if(svc==='apartme
 function seatsOf(name){ const m=String(name||'').match(/(\d{1,3})\s*[- ]?\s*(seat|seater|pax|מקומות)/i); return m?m[1]:''; }
 function guessService(name, v){
   const n=String(name||'').toLowerCase(), st=+seatsOf(n);
+  const ak=armoredKey(n); if(ak) return ak;   // D-70
   if(st) return vehicleBySeats(st)||'bus';
   const cats=v?catsOf(v):[];
   if(/midi/.test(n)) return 'midibus'; if(/mini\s?bus|sprinter|\bvan\b/.test(n)) return ''; if(/\bbus\b|coach|אוטובוס/.test(n)) return 'bus'; if(/vito|v-class|minivan/.test(n)) return 'van8'; if(/sedan|\bsuv\b|limo|\bcar\b/.test(n)) return 'car';
@@ -3601,7 +3617,7 @@ function openQuoteForm(v, q0, back){
 // ---------- booking sheets: shared wording ----------
 // The SAME block sits in index.html (the guide's side) and b/index.html (the company's side). Change both together.
 // Hebrew first, English under it: the company reads Hebrew, many colleagues read English.
-const BK_VEH={bus:['אוטובוס','Bus'],midibus:['מידיבוס','Midibus'],van20:['מיניבוס 17–20 מקומות','Van, 17–20 seats'],van16:['מיניבוס 11–16 מקומות','Van, 11–16 seats'],van10:['ואן 9–10 מקומות','Van, 9–10 seats'],van8:['ואן עד 8 מקומות','Van, up to 8 seats'],car:['רכב פרטי','Car'],jeep_vehicle:['ג׳יפ / 4x4','Jeep / 4x4'],transfer:['העברה','Transfer']};
+const BK_VEH={bus:['אוטובוס','Bus'],midibus:['מידיבוס','Midibus'],van20:['מיניבוס 17–20 מקומות','Van, 17–20 seats'],van16:['מיניבוס 11–16 מקומות','Van, 11–16 seats'],van10:['ואן 9–10 מקומות','Van, 9–10 seats'],van8:['ואן עד 8 מקומות','Van, up to 8 seats'],car:['רכב פרטי','Car'],arm_bus:['אוטובוס ממוגן ירי','Armored bus'],arm_midibus:['מידיבוס ממוגן ירי','Armored midibus'],arm_van:['מיניבוס ממוגן ירי','Armored van'],arm_car:['רכב ממוגן ירי','Armored car'],jeep_vehicle:['ג׳יפ / 4x4','Jeep / 4x4'],transfer:['העברה','Transfer']};
 const BK_SIGN={ILS:'₪',USD:'$',EUR:'€'};
 const BK_VAT={including_vat:['כולל מע״מ','incl. VAT'],plus_vat:['בתוספת מע״מ','plus VAT'],not_applicable:['ללא מע״מ, תיירים','no VAT, tourists']};
 const BK_IE={incl:['כלול במחיר','included'],extra:['בנוסף','extra']};
@@ -3646,6 +3662,7 @@ const bkDayRows=b=>{ if(!bkHasPlan(b)) return []; const p=bkPlan(b); return bkAl
 const bkShort=b=>{ const p=bkPicked(b), r=bkRange(b,false); return p.length>1&&r ? r+' · '+p.length+' days' : r; };
 function bkVehicle(b,he){ const v=BK_VEH[b.service];
   if(!v) return b.seats?(he?b.seats+' מקומות':b.seats+' seats'):'';
+  if(b.seats&&/^arm_(bus|midibus|van)$/.test(b.service)) return he ? v[0].replace(' ממוגן ירי','')+' '+b.seats+' מקומות ממוגן ירי' : b.seats+'-seat '+v[1].toLowerCase();   // D-70
   if(b.seats&&/^(bus|midibus|van)/.test(b.service)){
     const base = he ? ({bus:'אוטובוס',midibus:'מידיבוס'}[b.service]||(+b.seats>10?'מיניבוס':'ואן')) : ({bus:'bus',midibus:'midibus'}[b.service]||'van');
     return he ? base+' '+b.seats+' מקומות' : b.seats+'-seat '+base; }
