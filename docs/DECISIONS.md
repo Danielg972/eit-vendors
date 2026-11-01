@@ -10,6 +10,23 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-71 · Share a link to the supplier list as filtered (live 1 Nov 2026)
+
+**Owner, 1 Nov 2026, 11:55:** "someone asked to see what options there are. how can i send the category link like i can a vender";
+offered a "Share list" button that keeps the chosen filters, 11:55: "yes and make it live ill test it in real time" (no preview first,
+on his word).
+
+**Built:** a "Share list" button above the supplier list, beside the order button. The link carries the categories and their types,
+the region, the kind of transport supplier, the vehicle size and the guide details, short and readable
+(`#l=c:Transport~r:Galilee~v:arm_bus`); the search box is not carried. The same "for tourism professionals only" warning and the same
+share sheet as a supplier link (Hebrew and English message, WhatsApp, copy). A member lands on the list filtered the same way and
+sees only what his own membership shows; a category he does not have is dropped. Anyone else gets the join form, told a colleague
+shared a list (named by its filters) with him; after approval the link opens. Unknown values in a link are dropped; a broken link says so.
+
+**Implementation choices:** front end only, no database change. Kept on the device 14 days like other share links.
+
+---
+
 ## D-70 · Armored (bulletproof) and stone-proof vehicles in Transport, by size (built 1 Nov 2026, not live)
 
 **Owner, 1 Nov 2026, 11:18:** "on transport bus all transport add armored / bulletproof with bus size options".

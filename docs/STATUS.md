@@ -6,6 +6,12 @@
 
 **As of:** 1 November 2026
 
+## Share a filtered supplier list (D-71): live 1 November 2026
+
+"Share list" above the supplier list sends a link that opens the list with the same filters (categories, types, region, transport
+kind, vehicle size, guide details). Front end only. Checks: list-link walk 18/18, armored walk 8/8, logic 9/9. The Back-button walk
+(supabase/tests/back_button) stops with an error on main as well as on this branch; not caused by this change, not looked into.
+
 ## Identity
 
 | | |
