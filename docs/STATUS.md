@@ -17,13 +17,12 @@
 | Terms version | `2026-10-03c` live (adds 2c, organisations as limited members; `2026-10-03a` added 6d, jobs). `2026-10-03d` on the branch `guide-for-clients`: 3a malicious posts, 3c licensed guides and D1, 6e a guide's page for clients, 6f your own page and reviews. `2026-10-31a` on the branch `job-alerts-d69` (D-69): a paragraph on job alerts in 6d. All draft, not yet reviewed by a lawyer |
 | Decisions | `docs/DECISIONS.md` (D-1 Cockpit boundary; D-2 quote tracker; D-3 driver reviews; D-4 transport by vehicle size; D-5 booking sheets; D-6 welcome tour, name, use-and-add rule; D-7 Shomer Shabbat badge, kosher restaurants only; D-8 opening hours, no-certificate needs approval; D-9 verified hours, last entry, hours from websites; D-10 official buttons; D-11 jobs between colleagues and My days, live for Eretz Israel Tours only; D-15 limited members: organisations that are not in tourism; D-13 food nearby only on places; D-12 a guide's page for clients; D-14 claimed pages, disputes, reviews; D-16 licensed guides only, D1 for Eshkol, malicious posts) |
 
-## Armored (bulletproof) and stone-proof vehicles in Transport, by size (D-70): owner said go live; waiting on the database file
+## Armored (bulletproof) and stone-proof vehicles in Transport, by size (D-70): live 1 November 2026
 
 Branch `armored-d70`. Armored and stone-proof bus, midibus, van and car as vehicle sizes everywhere Transport uses sizes, including booking
-sheets (Hebrew and English). Needs `supabase/migrations/2026-11-01_armored_vehicles.sql` on production before going live,
-or a booking sheet or quote for an armored vehicle would lose its vehicle when saved. Checks: limited members 98/98, database
+sheets (Hebrew and English). `supabase/migrations/2026-11-01_armored_vehicles.sql` applied to production first, then main 26dae8f. Checks: limited members 98/98, database
 probe on a local copy (armored keys kept, unknown keys still blanked, booking turns into an "armored bus" quote), logic 8/8,
-screens 8/8. Not tested: production.
+screens 8/8. Checked on production: function fingerprints and the widened check. Not run on production: a write probe.
 
 ## Job alerts by phone and email, and the jobs WhatsApp group (D-69): built, not live
 
