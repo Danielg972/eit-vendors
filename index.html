@@ -6953,7 +6953,8 @@ Object.assign(DB, {
 // Seen once per device (localStorage), like the booking-sheet explainer. No database change.
 // The tour follows what the member has: the Jobs screen shows only to a member who has the Jobs tab,
 // and the guide's page for clients is mentioned only once that feature is in the app.
-const TOUR_KEY='eitv_tour_seen', TOUR_V='1';
+// D-72: the Hikes screen shows only to a member who has the Hikes tab; the job-alerts line only once alerts reach him.
+const TOUR_KEY='eitv_tour_seen', TOUR_V='2';   // D-72: raised to 2 so every member sees the updated tour once more
 function tourSeen(){ if(S.tourSeen) return true; try{ return localStorage.getItem(TOUR_KEY)===TOUR_V; }catch(e){ return false; } }
 function tourDone(){ S.tourSeen=true; try{ localStorage.setItem(TOUR_KEY,TOUR_V); }catch(e){} }
 function tourSteps(replay){
@@ -6966,9 +6967,9 @@ function tourSteps(replay){
     bus:svg('<rect x="4" y="4" width="16" height="13" rx="2"/><path d="M4 11h16M8 17v2M16 17v2"/>'), plus:svg('<path d="M12 5v14M5 12h14"/>'),
     phone:svg('<rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M11 18h2"/>'), people:svg('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.700 2 6.500 5.500"/><path d="M16 4.600a3.500 3.500 0 0 1 0 6.800M18.500 14.800c1.600.8 2.600 2.600 3 5.200"/>'),
     chat:svg('<path d="M21 12a8 8 0 0 1-11.800 7L4 20l1.100-4.600A8 8 0 1 1 21 12z"/><path d="M9.500 12h.01M13 12h.01M16.500 12h.01"/>'),
-    cal:svg('<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/>'), lock:svg('<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>') };
+    cal:svg('<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/>'), hike:svg('<path d="M3 20l6-11 4 6 3-4 5 9z"/><circle cx="17" cy="5" r="1.6"/>'), lock:svg('<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>') };
   const rule=(n,t,d)=>`<div class="tour-row"><div class="ti tour-num">${n}</div><div><b>${t}</b><span>${d}</span></div></div>`;
-  const jobs=jobsOn(), post=jobs&&jobsPost(), forClients=typeof clientBox==='function';
+  const jobs=jobsOn(), post=jobs&&jobsPost(), forClients=typeof clientBox==='function', hikes=hikesOn(), alerts=!!(S.alerts&&S.alerts.on);
   const myLink = S.token ? linkBox('tourLink', personalLink(S.token)) : `<div class="addrow" style="margin:8px 0"><input type="text" readonly value="vendors.eretzisraeltours.com/?k=…" class="mono" style="font-size:13px" tabindex="-1"></div>`;
   const noBk=lim()&&!bookingsOn();   // a limited member without bus and van quotes has no booking sheets
   const steps=[
@@ -6978,10 +6979,11 @@ function tourSteps(replay){
     <p>A supplier list kept by colleagues, for colleagues. It's free, and it works because everyone adds to it.</p>
     ${row(I.search,'Find a supplier','Hotels, guides, bus companies, drivers and sites. Call or WhatsApp in one tap.')}
     ${row(I.quote,'See real quotes','What colleagues were quoted per day and per hour, with every extra fee.')}
+    ${hikes?row(I.hike,'Hikes by region','Routes with trail markers, distance and time, and what colleagues found when they walked them.'):''}
     ${noBk?'':row(I.bus,'Book transport in writing',"A booking sheet both sides accept, so the price can't change afterwards.")}
     ${jobs?row(I.cal, post?'Pass work to a colleague':'Jobs from colleagues', post?'Post a job with the price you pay, and see who is free that day.':"Each job states what it pays. Tap I'm available, and mark the days you are busy."):''}
     ${row(I.plus,'Add what you know','Suppliers, prices, tips and driver reviews. The list is as good as what we all put in.')}
-    <p class="hint" style="margin:18px 0 0;font-size:13px">About two minutes. %N% short screens. <button type="button" class="linkbtn" data-t="skip">Skip to the house rules</button></p>` },
+    <p class="hint" style="margin:18px 0 0;font-size:13px">%T% %N% short screens. <button type="button" class="linkbtn" data-t="skip">Skip to the house rules</button></p>` },
   { html:`<div class="tour-ex"><div class="favs-h" style="margin:0">Your personal link</div>${myLink}
       <div class="tour-row" style="margin-top:10px"><div class="ti">${I.phone}</div><div><b>Add it to your home screen</b><span>In your browser's menu, choose Add to Home Screen. It then opens like an app.</span></div></div></div>
     <h2>Your link is your login</h2>
@@ -6997,18 +6999,20 @@ function tourSteps(replay){
         <div class="row"><span class="row-name">Eli Dahan</span><span class="row-meta"><span class="cat">Transport</span><span>Negev &amp; Arava</span><span class="hint">Van 9–10 seats</span></span></div></div>`, SAMPLE)+`
     <h2>Find a supplier fast</h2>
     <p>Search by name, region, type or contact person. Tap one or more categories, or a region, to narrow the list. Some categories open a second row: under Extreme, pick Jeeps, ATVs, Water or Rappelling.</p>
-    <p>The suppliers you use most sit at the top. The rest is in mixed order that changes daily, so nobody is always first. Tap <b>Order</b> for A–Z.</p>` },
+    <p>The suppliers you use most sit at the top. The rest is in mixed order that changes daily, so nobody is always first. Tap <b>Order</b> for A–Z.</p>
+    <p><b>Share list</b> sends a colleague a link to the list just as you filtered it.</p>` },
   { html:ex(`<div style="font-family:var(--f-display);font-size:20px;line-height:1.2">Golan Heights Jeep Tours</div>
       <div style="margin-top:2px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="cat">Jeep</span><span class="hint">Golan</span><span class="pill shab">Shomer Shabbat</span></div>
       <div class="actions"><span class="act">${ic.call}Call</span><span class="act">${bmark('whatsapp',ic.wa)}WhatsApp</span><span class="act">${ic.mail}Email</span><span class="act">${bmark('waze',ic.nav)}Waze</span><span class="act">${bmark('google-maps',ic.maps)}Google Maps</span></div>
-      <div class="hx-card" style="margin:10px 0"><div class="hx-body">${hoursHtml('Sun–Thu 8:00–17:00, Fri 8:00–13:00',esc)}</div><div class="hx-foot"><span class="hv"><span class="pill pending">Unverified</span><span class="hint">From their website</span><span class="mini">☐ I verified these hours</span></span></div></div>
+      <div class="hx-card" style="margin:10px 0"><div style="padding:10px 12px 0"><span class="pill approved">Open now · until 17:00</span></div><div class="hx-body">${hoursHtml('Sun–Thu 8:00–17:00, Fri 8:00–13:00',esc)}</div><div class="hx-foot"><span class="hv"><span class="pill pending">Unverified</span><span class="hint">From their website</span><span class="mini">☐ I verified these hours</span></span></div></div>
       <div class="btn red upd" style="box-sizing:border-box;text-align:center">Tap here to report a change</div>
       <div class="favs-h" style="margin:10px 0 6px">Standard prices</div>
       <div class="pl"><span class="who3">Adult ${lim()?'<span class="tag">Public price</span>':'<span class="tag agent">Agent</span>'}</span><span class="amt">₪360</span><span class="meta">Per person · plus VAT · checked 14/08/2026</span></div>`, SAMPLE)+`
     <h2>One page per supplier</h2>
     <p><b>Contact in one tap.</b> Call, WhatsApp, email, or navigate with Waze or Google Maps.</p>
-    <p><b>Opening hours.</b> They stay Unverified until a colleague has spoken to the supplier or been there. If you have, tick it. Last entry times are listed too.</p>
-    <p><b>Scroll for the rest.</b> ${lim()?'Prices, organisation rates, deals, reviews':"Prices and agent rates, deals, colleagues' notes"}, photos and PDFs. On places you visit, also food nearby and the kosher certificate.</p>
+    <p><b>Opening hours.</b> Open now or Closed now, worked out from the hours listed. In winter the winter hours come first. Hours stay Unverified until a colleague has spoken to the supplier or been there; if you have, tick it. Last entry times are listed too.</p>
+    <p><b>Scroll for the rest.</b> ${lim()?'Prices, organisation rates, deals, reviews':"Prices and agent rates, deals, colleagues' notes"}, photos and PDFs, and links to its website, social media, TripAdvisor and Google page. On places you visit, also food tips nearby and the kosher certificate.</p>
+    <p><b>Share it.</b> The share button at the top sends a colleague a link. It opens only for members Eretz Israel Tours has approved, so never send it to clients or suppliers.</p>
     ${forClients&&!lim()?`<p><b>A guide's page has a part for clients.</b> A bio, up to four pictures and a retail price that you can copy and send to your client. The rest of the page stays between colleagues.</p>`:''}
     <p><b>Something wrong?</b> The red button reports it: closed, moved, phone or prices changed.</p>` },
   { html:ex(`<div class="qstat"><div class="t">Bus (36–60 seats) · per day</div><div class="n">₪2,650<small>average of 4 quotes</small></div><div class="r">Lowest <b class="mono">₪2,400</b> · highest <b class="mono">₪3,000</b></div></div>
@@ -7017,7 +7021,7 @@ function tourSteps(replay){
         <div class="qsub" style="margin-top:6px">18/08/2026 · 45 people · plus VAT <span class="pill high">High season</span></div>
         <div class="flags"><span class="flag extra">⚠ Kvish 6: extra</span><span class="flag incl">✓ Parking included</span><span class="flag miss">? Overtime not stated</span></div></div>`, SAMPLE)+`
     <h2>See what others were quoted</h2>
-    <p><b>The Quotes tab.</b> ${lim()?'What bus and van companies quoted per day and per hour, in and out of high season, and what other organisations were quoted.':'Day and hour rates for buses, vans and cars, in and out of high season. Quotes for guides, hotels and activities are on each supplier\'s own page.'} An average shows once there are three quotes.</p>
+    <p><b>The Quotes tab.</b> ${lim()?'What bus and van companies quoted per day and per hour, in and out of high season, and what other organisations were quoted. Armored and stone-proof vehicles are listed by size too.':'Day and hour rates for buses, vans and cars, in and out of high season, including armored and stone-proof vehicles by size. Quotes for guides, hotels and activities are on each supplier\'s own page.'} An average shows once there are three quotes.</p>
     <p><b style="color:var(--bad)">Red</b> is charged extra, <b style="color:var(--ok)">green</b> is included, <b style="color:var(--warn)">amber</b> was never stated. Ask before you book.</p>
     <p><b>Add your own.</b> Your quotes are shared without your name. You can switch sharing off on any quote.</p>` },
   { html:`<div class="tour-sheet" aria-hidden="true" style="margin-top:6px"><div class="hd"><b lang="he" dir="rtl">דף הזמנת רכב</b><span class="hint">Vehicle booking sheet</span></div>
@@ -7047,9 +7051,18 @@ function tourSteps(replay){
     <h2>Jobs between colleagues</h2>
     <p><b>The Jobs tab.</b> ${post?'Need a guide, a driver or a jeep for a date? Post the job with the price you pay, with or without your name. It goes to the colleagues it fits, or to the ones you pick.':'A colleague who needs a guide, a driver or a jeep for a date posts the job, with the price it pays. You see the jobs that fit you. Some are posted without a name.'}</p>
     <p><b>Tap I'm available.</b> The colleague who posted then sees your name and role, and chooses. Phone numbers pass between the two of you only when the job is given.</p>
+    ${alerts?'<p><b>Job alerts.</b> When a job fits you and you are free, you get an email, and a phone alert once you turn it on in the Jobs tab. Nothing is sent on Shabbat, Yom Tov or at night; it waits until after.</p>':''}
     <p><b>My days.</b> Tap the days you are busy. A colleague posting a job sees only Free or Busy for the dates of that job, never why. A job you are given here is marked busy for you, and you can add it to your own calendar.</p>
     <p><b>As of now, nothing is charged on a job.</b> The price is paid directly by the colleague who posted. Eretz Israel Tours is not a party to the job.</p>
     ${S.alerts&&S.alerts.group_link?`<p class="tour-grp"><b>Join the Inner Circle – Jobs WhatsApp group.</b> Open jobs from the job board; only admins post. <a href="${esc(S.alerts.group_link)}" target="_blank" rel="noopener" data-grp="1">Join (opens WhatsApp)</a></p>`:''}` },
+  hikes && { html:ex(`<div class="hk-reg" style="margin-top:0">Galilee · 2</div>
+      <div class="list"><div class="row"><span class="row-name">Sample Stream Trail</span><span class="row-price"><b>6 km</b><span>3–4 hours</span></span><span class="row-meta"><span class="pill approved">Walked · 2 reports</span><span>Moderate</span><span class="flag info">Water shoes</span></span></div>
+        <div class="row"><span class="row-name">Sample Ridge Lookout</span><span class="row-price"><b>9 km</b><span>4–5 hours</span></span><span class="row-meta"><span class="pill pending">Unverified</span><span>Hard</span><span class="flag extra">Cliffs</span><span class="flag miss">Firing zone</span></span></div></div>`, 'Example. Hikes are samples.')+`
+    <h2>Hikes</h2>
+    <p><b>The Hikes tab.</b> Official marked trails, by region and by the park they are in. Each shows distance, time, difficulty, the trail markers in order, and warnings such as cliffs, water shoes or a firing zone.</p>
+    <p><b>The route.</b> Open it in Mapeak, Waze or Google Maps from the hike's page.</p>
+    <p><b>Walked it?</b> Add a report: group size, ages, difficulty, water and bathrooms. A hike taken from a website stays Unverified until a colleague has walked it.</p>
+    <p><b>Check before you go.</b> Hikes are colleagues' reports. Check the route, the weather and any firing zone yourself before every trip.</p>` },
   { html:ex(`<div style="display:flex;justify-content:flex-end"><span class="btn accent" style="border-radius:999px;box-shadow:0 6px 18px rgba(0,0,0,.18)">+ Add supplier</span></div>
       <div class="quickfill" style="margin:10px 0;background:var(--card)"><b>⚡ Quick fill</b><div class="presets"><span class="mini">From my contacts</span><span class="mini">Paste text</span><span class="mini">Contact card</span></div></div>
       <div class="list"><div class="row"><span class="row-name">Shomron Bus Lines</span><span class="row-price"><span class="pill pending">Pending review</span></span><span class="row-meta"><span class="cat">Transport</span><span>added by you</span></span></div></div>`, 'Example. Names are samples.')+`
@@ -7075,6 +7088,7 @@ function tourSteps(replay){
     <p style="margin:0"><button type="button" class="linkbtn" data-t="terms">Read the full terms and privacy notice</button></p>` }
   ].filter(Boolean);
   const out = noBk ? steps.filter((x,i)=>i!==5) : steps;   // step 5 is the booking sheet
+  out[0].html=out[0].html.replace('%T%', out.length-1>9?'About three minutes.':'About two minutes.');
   out[0].html=out[0].html.replace('%N%', ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve'][out.length-1]||String(out.length-1));
   return out;
 }

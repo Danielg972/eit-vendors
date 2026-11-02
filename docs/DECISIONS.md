@@ -10,6 +10,33 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-72 · The welcome tour brought up to date, shown to everyone once more (built 2 Nov 2026, not live)
+
+**Owner, 2 Nov 2026, 18:42:** "What does welcome tour loom like currently". Shown the ten live screens, and told the tour leaves out
+the Hikes tab, food tips, share links, job alerts, armored transport and Open now, and that members who saw it will not see it again,
+he was asked whether to update it and raise its version so everyone sees it once more. 18:47: "Yes".
+
+**Built (branch `tour-v2-d72`), front end only, no database change:**
+- A **Hikes** screen (only for a member who has the Hikes tab): official marked trails by region and park; distance, time,
+  difficulty, trail markers, cliffs / water shoes / firing zone; the route in Mapeak, Waze or Google Maps; reports after a walk;
+  Unverified until walked; check route, weather and firing zone yourself. And a "Hikes by region" line on the welcome screen.
+- **Find a supplier:** Share list.
+- **A supplier's page:** Open now / Closed now and winter hours first; links to website, social media, TripAdvisor and Google page;
+  food tips; the share button, opening only for approved members, never for clients or suppliers. The example shows "Open now".
+- **Quotes:** armored and stone-proof vehicles by size (for organisations too).
+- **Jobs:** a job-alerts line, shown only once alerts reach that member (`alerts_on`); today alerts go to Eretz Israel Tours only.
+- The welcome screen says "About three minutes" once there are ten screens or more.
+- `TOUR_V` raised from `1` to `2`: every member sees the tour once more on his next visit; Skip still lands on the house rules.
+
+**Not changed:** the terms, the house rules, the cost and use-and-add screens. No Hebrew version.
+
+**Checks (preview, sample data, headless Chrome):** tour walk as a guide, an agent, Eretz Israel Tours and both sample
+organisations at phone size, and as a guide at desktop size: opens on a first visit, stores version 2, screen count matches the
+words, no sideways scroll, no page errors; an organisation sees no agent wording and no Jobs screen; 0 failed. Built and checked
+by the same session. The Back-button walk stops with an error on main as well as on this branch (as recorded under D-71).
+
+---
+
 ## D-71 · Share a link to the supplier list as filtered (live 1 Nov 2026)
 
 **Owner, 1 Nov 2026, 11:55:** "someone asked to see what options there are. how can i send the category link like i can a vender";
