@@ -200,7 +200,7 @@ The owner asked for Israeli date order. A browser shows `<input type="date">` in
   - **Not in the tour:** limited members (organisations such as yeshivas) are a mock-up only; when they are built they need their own version of the tour, since they never see agent rates.
   - **Tested** in preview mode in a browser: phone (390 px and 320 px), desktop (1440 px), light and dark; with Jobs, without Jobs (eight screens, as before), and receive-only; and on a trial merge with `guide-for-clients` and pull request #8, where `index.html` merged without conflict and the clients paragraph appeared. Every screen, Back / Next / Skip, the terms over the last step, finishing, no tour on reload, replay from My settings. No page errors and nothing wider than the screen. Not tried on the live site by a person.
 
-- **Tour version 2 (D-72, 2 Nov 2026, branch `tour-v2-d72`, not live):** `TOUR_V` = `2`. Adds a Hikes screen (`hikesOn()`), Share list,
+- **Tour version 2 (D-72, 2 Nov 2026, live 2 Nov 2026 on the owner's word):** `TOUR_V` = `2`. Adds a Hikes screen (`hikesOn()`), Share list,
   Open now and winter hours, online links, the share button, armored / stone-proof transport, and a job-alerts line shown only when
   `S.alerts.on`. The welcome screen's time reads "About three minutes" at ten screens or more. Checked in preview as five sample members.
 

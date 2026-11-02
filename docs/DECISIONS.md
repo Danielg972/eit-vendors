@@ -10,11 +10,12 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
-## D-72 · The welcome tour brought up to date, shown to everyone once more (built 2 Nov 2026, not live)
+## D-72 · The welcome tour brought up to date, shown to everyone once more (live 2 Nov 2026)
 
 **Owner, 2 Nov 2026, 18:42:** "What does welcome tour loom like currently". Shown the ten live screens, and told the tour leaves out
 the Hikes tab, food tips, share links, job alerts, armored transport and Open now, and that members who saw it will not see it again,
-he was asked whether to update it and raise its version so everyone sees it once more. 18:47: "Yes".
+he was asked whether to update it and raise its version so everyone sees it once more. 18:47: "Yes". Shown the preview
+pictures of the six changed screens, 18:56: "Go live".
 
 **Built (branch `tour-v2-d72`), front end only, no database change:**
 - A **Hikes** screen (only for a member who has the Hikes tab): official marked trails by region and park; distance, time,
