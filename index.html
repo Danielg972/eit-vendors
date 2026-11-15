@@ -897,6 +897,7 @@ const TAG_SUGGEST = {Adventure:['Jeep','ATV / RZR','Rappelling','Kayak & rafting
   'Travel Agent':['Hotel bookings','Flights','Packages','Groups','Commission'],
   'Itinerary Planner':['Full trip planning','Day trips','Groups','Families','Bar/bat mitzvah'],
   Winery:['Tasting','Tour','Restaurant','Boutique','Free bottle for guide','Group menus'],
+  'Attraction / Site':['Jewish Quarter'],   // D-74
   Other:['Photographer']};   // D-23: a photographer is a type under Other, not a category of its own
 // Shomer Shabbat is a tag on the supplier (no database change); the kosher rule: no non-kosher restaurants on the list.
 const SHABBAT_TAG='Shomer Shabbat';
@@ -914,7 +915,8 @@ const SUBCATS = {
   // is the suppliers whose category is Winery, not a type tag; Meat, Dairy and Mehadrin are as in the approved mock-up.
   // Both rows show only once wineries are switched on for this member (winOn, below).
   Restaurant:[['Meat',['Meat']],['Dairy',['Dairy']],['Mehadrin',['Mehadrin']],['Wineries',[]]],
-  'Attraction / Site':[['Wineries',[]]]
+  // D-74 (15 Nov 2026): Jewish Quarter under Attraction / Site, from the "Jewish Quarter" type tag the main page and its sites carry.
+  'Attraction / Site':[['Jewish Quarter',['Jewish Quarter']],['Wineries',[]]]
 };
 const WINE_HOMES=['Restaurant','Attraction / Site'];
 const isWinery=v=>catsOf(v).includes('Winery');
@@ -995,6 +997,9 @@ function sample(){
     v({id:'vendor_p4avd01',name:'Ein Avdat National Park',category:'National Parks',location:'Sde Boker',region:'Negev & Arava',hours:'Sample hours: Sun–Thu 8:00–17:00, Fri 8:00–16:00',hours_last:'Sample: last entry one hour before closing',hours_source:'sample data',npResLink:'https://example.org/sample-park-booking',website:'https://example.org/sample-park-page',listedPrice:'30',listedPriceVatTreatment:'including_vat',priceBasis:'Per person',notes:'Sample details, made up for the preview.'}),
     v({id:'vendor_p4prt02',name:'Ein Prat Nature Reserve',category:'National Parks',location:'Wadi Qelt',region:'Binyamin & Shomron',hours:'Sample hours: every day 8:00–16:00',hours_source:'sample data',listedPrice:'30',listedPriceVatTreatment:'including_vat',priceBasis:'Per person',notes:'Sample details, made up for the preview.'}),
     v({id:'vendor_p4stf03',name:'Sataf',category:'Attraction / Site',location:'Jerusalem hills',region:'Jerusalem',notes:'Sample details, made up for the preview.'}),
+    // Preview only (D-74): an invented main page and one site under it, tagged Jewish Quarter.
+    v({id:'vendor_jq0main',name:'Sample Quarter Sites (main page)',category:'Attraction / Site',location:'Old City Jerusalem',region:'Jerusalem',tags:'Old City, Jewish Quarter',notes:'Sample details, made up for the preview.'}),
+    v({id:'vendor_jq0site',name:'Sample Quarter Lookout',category:'Attraction / Site',location:'Old City Jerusalem',region:'Jerusalem',tags:'Old City, Jewish Quarter',parent_id:'vendor_jq0main',notes:'Sample details, made up for the preview.'}),
     v({id:'vendor_p0lk5sd',name:'Shomron Bus Lines',category:'Transport',contactPerson:'Avi',phone:'+972 54 000 1234',location:'Ariel',maxCap:'50',agentPrice:'2400',agentPriceVatTreatment:'plus_vat',priceBasis:'Per day',payTerms:'Cash or transfer on the day',rateReliability:'3',review_status:'pending',created_by:'rachel.ops@gmail.com',updated_by:'rachel.ops@gmail.com',updated_at:d(0)}),
     v({id:'vendor_g4l1c0a',name:'Galil Buses',category:'Transport',contactPerson:'Dudu',phone:'+972 54 000 5678',location:'Tiberias',region:'Galilee',maxCap:'55',priceBasis:'Per day',tags:'Bus, Midibus, Armored bus, Armored van, Stone-proof midibus'}),
     v({id:'vendor_n3g7v2t',name:'Negev & Arava Transport',category:'Transport',contactPerson:'Eli',phone:'+972 54 000 9012',location:'Beer Sheva',region:'Negev & Arava',maxCap:'53',priceBasis:'Per day',tags:'Bus, Van 17–20 seats, Van 9–10 seats'}),
@@ -1823,8 +1828,8 @@ function viewVendors(){
   const view=document.getElementById('view');
   const cats=['All',...byUse('category',CATEGORIES.filter(c=>!(c==='Winery'&&winOn())&&(c!=='Vehicle Rental'||rentalsOn())&&S.vendors.some(v=>catsOf(v).includes(c))))];
   S.cats=catsOn().filter(c=>cats.includes(c)); const sel=S.cats;   // a category nobody on this person's list has cannot stay switched on
-  const subRow=c=>{ if(WINE_HOMES.includes(c)&&!winOn()) return '';
-    const opts=(SUBCATS[c]||[]).filter(g=>S.vendors.some(v=>(catsOf(v).includes(c)||g[0]==='Wineries')&&subHit(v,c,g[0]))); if(!opts.length) return '';
+  const subRow=c=>{ if(c==='Restaurant'&&!winOn()) return '';   // D-74: on Attraction / Site, wineries off leaves out only the Wineries button
+    const opts=(SUBCATS[c]||[]).filter(g=>!(g[0]==='Wineries'&&!winOn())&&S.vendors.some(v=>(catsOf(v).includes(c)||g[0]==='Wineries')&&subHit(v,c,g[0]))); if(!opts.length) return '';
     const cur=((S.subs||{})[c]||[]).filter(n=>opts.some(g=>g[0]===n)); (S.subs=S.subs||{})[c]=cur;
     return `<div class="chips" role="group" aria-label="${esc(catDisp(c))}: narrow by type" style="padding-top:2px"><button class="chip" data-sub="${esc(c)}" data-subv="" aria-pressed="${!cur.length}">${esc(({Restaurant:'All restaurants','Attraction / Site':'All sites'})[c]||'All '+catDisp(c).toLowerCase())}</button>${opts.map(g=>`<button class="chip" data-sub="${esc(c)}" data-subv="${esc(g[0])}" aria-pressed="${cur.includes(g[0])}">${cur.includes(g[0])?'✓ ':''}${esc(g[0])}</button>`).join('')}</div>`; };
   const keep=[...view.querySelectorAll('.chips')].map(e=>[e.getAttribute('aria-label'),e.scrollLeft]);   // a row scrolled sideways stays where it was after a tap

@@ -10,6 +10,24 @@ Decisions that bind this project. Newest first. Each entry says who decided, whe
 
 ---
 
+## D-74 · Jewish Quarter under Attraction / Site (built 15 Nov 2026, not live)
+
+**Owner, 15 Nov 2026, 10:21:** "Add to Jewish quarter as main category that includes burnt house, hurva etc". The data went in the
+same morning as a main page with six linked site pages, all tagged `Jewish Quarter` (data only, recorded in the rulebook). 10:33:
+"I reloaded the page and don't see it". Offered a Jewish Quarter button under Attraction / Site (like Jeeps under Extreme), or a
+bigger top-row category, 10:35: "Yes".
+
+**Built (branch `jewish-quarter-d74`), front end only, no database change:**
+- `SUBCATS['Attraction / Site']` gains **Jewish Quarter**, matched on the `Jewish Quarter` type tag; the button shows only when a
+  supplier on the member's list carries the tag.
+- On Attraction / Site, a member with wineries off now gets the row with Wineries left out, instead of no row at all. Restaurant is
+  unchanged (its row still needs wineries on, D-43).
+- `Jewish Quarter` is offered as a type tag on the Attraction / Site form, so a new Quarter site can join the button.
+- Two invented preview suppliers ("Sample Quarter Sites", "Sample Quarter Lookout"); preview only, never live.
+
+**Checked:** `supabase/tests/jewish_quarter/preview_walk.py`, 11/11, phone and desktop. **Not checked:** the wineries-off case
+(preview always has wineries on), the live site, a real phone, a session other than the one that built it.
+
 ## D-72 · The welcome tour brought up to date, shown to everyone once more (live 2 Nov 2026)
 
 **Owner, 2 Nov 2026, 18:42:** "What does welcome tour loom like currently". Shown the ten live screens, and told the tour leaves out
